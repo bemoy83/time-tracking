@@ -4,7 +4,7 @@
 
 .install-prompt {
   position: fixed;
-  bottom: calc(var(--timer-bar-height) + 56px + var(--space-md));
+  bottom: calc(56px + var(--space-md));
   left: var(--space-md);
   right: var(--space-md);
   max-width: 400px;
@@ -16,6 +16,11 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 150;
   animation: slideUp 0.3s ease-out;
+  transition: bottom 0.25s ease-out;
+}
+
+.is-tracking .install-prompt {
+  bottom: calc(var(--timer-bar-height) + 56px + var(--space-md));
 }
 
 .install-prompt__content {

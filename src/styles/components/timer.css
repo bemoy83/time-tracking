@@ -34,8 +34,17 @@
 }
 
 /* ============================================================
-   Timer Bar Component (Sticky Bottom)
+   Timer Bar Component (Drawer - slides up when tracking)
    ============================================================ */
+
+@keyframes timer-bar-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
 
 .timer-bar {
   position: fixed;
@@ -51,6 +60,7 @@
   flex-direction: column;
   gap: var(--space-sm);
   z-index: 100;
+  animation: timer-bar-slide-up 0.28s ease-out;
   transition: background-color 0.2s, border-color 0.2s;
 }
 

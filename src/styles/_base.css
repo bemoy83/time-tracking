@@ -31,14 +31,19 @@ body {
   overscroll-behavior: contain;
 }
 
-/* Main content area - leave room for sticky timer bar + tab nav */
+/* Main content area - leave room for tab nav; extra room when timer bar is open */
 main {
   max-width: 600px;
   margin: 0 auto;
   padding: var(--space-md);
-  padding-bottom: calc(var(--timer-bar-height) + 56px + var(--space-xl));
+  padding-bottom: calc(56px + var(--space-xl)); /* tab nav only */
   min-height: 100dvh;
   scroll-margin-top: 60px;
+  transition: padding-bottom 0.25s ease-out;
+}
+
+.is-tracking main {
+  padding-bottom: calc(var(--timer-bar-height) + 56px + var(--space-xl));
 }
 
 main:target {

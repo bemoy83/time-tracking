@@ -22,15 +22,10 @@ import {
   stopTimer,
 } from '../lib/stores/timer-store';
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
-import { TimerDisplay } from '../components/TimerDisplay';
 import { TaskCard } from '../components/TaskCard';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
-import {
-  StopIcon,
-  PlusIcon,
-  BlockedIcon,
-} from '../components/icons';
+import { PlusIcon, BlockedIcon } from '../components/icons';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -52,11 +47,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     dismissConfirm,
     dismissPrompt,
   } = useCompletionFlow(tasks, activeTimer?.taskId);
-
-  // Get active task if timer is running
-  const activeTask = activeTimer
-    ? tasks.find((t) => t.id === activeTimer.taskId)
-    : null;
 
   // Filter and group tasks
   const { groupedTasks, ungroupedTasks, blockedTasks } = useMemo(() => {
@@ -143,34 +133,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   return (
     <div className="today-view">
-      {/* Active Timer Section */}
-      {activeTask && (
-        <section className="today-view__active-timer">
-          <div className="today-view__active-header">
-            <span className="today-view__active-label">Now tracking</span>
-            <TimerDisplay size="large" />
-          </div>
-          <div
-            className="today-view__active-task"
-            onClick={() => onSelectTask(activeTask)}
-          >
-            <span className="today-view__active-task-title">
-              {activeTask.title}
-            </span>
-            <button
-              className="today-view__stop-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleStopTimer();
-              }}
-            >
-              <StopIcon className="today-view__icon" />
-              Stop
-            </button>
-          </div>
-        </section>
-      )}
-
       {/* Quick Add */}
       <form className="today-view__quick-add" onSubmit={handleAddTask}>
         <input

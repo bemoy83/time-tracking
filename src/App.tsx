@@ -23,7 +23,7 @@ type View =
 
 function App() {
   const [initialized, setInitialized] = useState(false);
-  const { isLoading: timerLoading } = useTimerStore();
+  const { isLoading: timerLoading, activeTimer } = useTimerStore();
   const { isLoading: tasksLoading } = useTaskStore();
   const { isOnline, pendingCount, isSyncing, lastError } = useSyncState();
   const [view, setView] = useState<View>({ type: 'tab', tab: 'today' });
@@ -80,8 +80,15 @@ function App() {
     });
   };
 
+  const rootClass = [
+    showNetworkStatus && 'has-network-status',
+    activeTimer && 'is-tracking',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={showNetworkStatus ? 'has-network-status' : ''}>
+    <div className={rootClass || undefined}>
       {/* Network status bar */}
       <NetworkStatus />
 
@@ -148,7 +155,7 @@ function App() {
       {/* Install prompt for PWA */}
       <InstallPrompt />
 
-      <TimerBar />
+      {activeTimer && <TimerBar />}
     </div>
   );
 }
