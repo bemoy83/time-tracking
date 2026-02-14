@@ -8,7 +8,10 @@ import type { ActiveTimer, TimeEntry, Task, Project } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+
+/** Legacy placeholder task ID – removed; migration cleans up any existing instances */
+const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
 
 /**
  * Database schema for idb type safety.
@@ -87,6 +90,11 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               }
             });
           });
+        }
+
+        // Version 3: Remove legacy "Unassigned" placeholder task
+        if (oldVersion < 3) {
+          transaction.objectStore('tasks').delete(LEGACY_UNASSIGNED_TASK_ID);
         }
       },
     });

@@ -62,11 +62,17 @@ let initialized = false;
  * Initialize the timer store by loading persisted state from IndexedDB.
  * Called once on app startup.
  */
+const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
+
 export async function initializeTimerStore(): Promise<void> {
   if (initialized) return;
 
   try {
-    const timer = await getActiveTimer();
+    let timer = await getActiveTimer();
+    if (timer?.taskId === LEGACY_UNASSIGNED_TASK_ID) {
+      await clearActiveTimer();
+      timer = null;
+    }
     setState({
       activeTimer: timer,
       isLoading: false,
