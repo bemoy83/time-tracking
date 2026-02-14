@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Task } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
-import { TaskRow } from './TaskRow';
+import { SwipeableTaskRow } from './SwipeableTaskRow';
 
 interface TaskDetailSubtasksProps {
   task: Task;
@@ -50,9 +50,10 @@ export function TaskDetailSubtasks({
       {subtasks.length > 0 && (
         <div className="task-detail__subtask-list">
           {subtasks.map((subtask) => (
-            <TaskRow
+            <SwipeableTaskRow
               key={subtask.id}
               task={subtask}
+              isSubtask
               onSelect={onSelectTask}
               onStartTimer={onStartTimer}
               onStopTimer={onStopTimer}
