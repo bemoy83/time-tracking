@@ -18,7 +18,6 @@ interface SwipeableTaskRowProps {
   onExpandToggle?: (e: React.MouseEvent) => void;
   onSelect: (task: Task) => void;
   onStartTimer?: (task: Task) => void;
-  onStopTimer?: () => void;
   onComplete?: (task: Task) => void;
 }
 
@@ -30,7 +29,6 @@ export function SwipeableTaskRow({
   onExpandToggle,
   onSelect,
   onStartTimer,
-  onStopTimer,
   onComplete,
 }: SwipeableTaskRowProps) {
   const { activeTimer } = useTimerStore();
@@ -71,9 +69,6 @@ export function SwipeableTaskRow({
         isExpanded={isExpanded}
         onExpandToggle={onExpandToggle}
         onSelect={onSelect}
-        onStartTimer={onStartTimer}
-        onStopTimer={onStopTimer}
-        onComplete={onComplete}
       />
     </SwipeableRow>
   );

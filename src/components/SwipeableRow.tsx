@@ -1,6 +1,6 @@
 /**
  * SwipeableRow component.
- * Provides swipe gestures with long-press fallback for accessibility.
+ * Provides swipe gestures (touch and pointer/mouse) with long-press fallback.
  *
  * Design requirements from PLAN.md:
  * - Swipe actions for Complete, Start/stop timer
@@ -41,6 +41,8 @@ export function SwipeableRow({
   const isHorizontalSwipe = useRef<boolean | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const hasTriggeredAction = useRef(false);
+  const isPointerActive = useRef(false);
+  const hasPointerCapture = useRef(false);
 
   const clearLongPress = useCallback(() => {
     if (longPressTimer.current) {
@@ -49,12 +51,14 @@ export function SwipeableRow({
     }
   }, []);
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      const touch = e.touches[0];
-      startX.current = touch.clientX;
-      startY.current = touch.clientY;
-      currentX.current = touch.clientX;
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return; // Only primary (left) mouse button
+      // Don't capture yet – wait for drag. Capturing on down steals the click from children.
+      isPointerActive.current = true;
+      startX.current = e.clientX;
+      startY.current = e.clientY;
+      currentX.current = e.clientX;
       isHorizontalSwipe.current = null;
       hasTriggeredAction.current = false;
 
@@ -69,11 +73,11 @@ export function SwipeableRow({
     [onLongPress]
   );
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - startX.current;
-      const deltaY = touch.clientY - startY.current;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isPointerActive.current) return;
+      const deltaX = e.clientX - startX.current;
+      const deltaY = e.clientY - startY.current;
 
       // Cancel long press on any movement
       clearLongPress();
@@ -87,7 +91,13 @@ export function SwipeableRow({
 
       // Only handle horizontal swipes
       if (isHorizontalSwipe.current) {
-        currentX.current = touch.clientX;
+        // Capture now so we get pointermove/up when pointer leaves the element
+        if (!hasPointerCapture.current) {
+          const target = e.currentTarget as HTMLElement;
+          target.setPointerCapture(e.pointerId);
+          hasPointerCapture.current = true;
+        }
+        currentX.current = e.clientX;
         setIsDragging(true);
 
         // Constrain offset based on available actions
@@ -109,38 +119,69 @@ export function SwipeableRow({
     [leftAction, rightAction, clearLongPress]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    clearLongPress();
-    setIsDragging(false);
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      isPointerActive.current = false;
+      if (hasPointerCapture.current) {
+        hasPointerCapture.current = false;
+        const target = e.currentTarget as HTMLElement;
+        try {
+          target.releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore if capture was already released
+        }
+      }
+      clearLongPress();
+      setIsDragging(false);
 
-    if (hasTriggeredAction.current) {
+      if (hasTriggeredAction.current) {
+        setOffset(0);
+        return;
+      }
+
+      // Check if swipe threshold was met
+      if (offset > SWIPE_THRESHOLD && leftAction) {
+        leftAction.onAction();
+      } else if (offset < -SWIPE_THRESHOLD && rightAction) {
+        rightAction.onAction();
+      }
+
       setOffset(0);
-      return;
-    }
+    },
+    [offset, leftAction, rightAction, clearLongPress]
+  );
 
-    // Check if swipe threshold was met
-    if (offset > SWIPE_THRESHOLD && leftAction) {
-      leftAction.onAction();
-    } else if (offset < -SWIPE_THRESHOLD && rightAction) {
-      rightAction.onAction();
-    }
-
-    setOffset(0);
-  }, [offset, leftAction, rightAction, clearLongPress]);
-
-  const handleTouchCancel = useCallback(() => {
-    clearLongPress();
-    setIsDragging(false);
-    setOffset(0);
-  }, [clearLongPress]);
+  const handlePointerCancel = useCallback(
+    (e: React.PointerEvent) => {
+      isPointerActive.current = false;
+      if (hasPointerCapture.current) {
+        hasPointerCapture.current = false;
+        const target = e.currentTarget as HTMLElement;
+        try {
+          target.releasePointerCapture(e.pointerId);
+        } catch {
+          // Ignore if capture was already released
+        }
+      }
+      clearLongPress();
+      setIsDragging(false);
+      setOffset(0);
+    },
+    [clearLongPress]
+  );
 
   const leftTriggered = offset > SWIPE_THRESHOLD;
   const rightTriggered = offset < -SWIPE_THRESHOLD;
 
+  // Only render the action matching the current swipe direction
+  // so the two full-width backgrounds don't overlap
+  const showLeft = leftAction && offset > 0;
+  const showRight = rightAction && offset < 0;
+
   return (
     <div className="swipeable-row">
-      {/* Left action background */}
-      {leftAction && (
+      {/* Left action background (visible when swiping right) */}
+      {showLeft && (
         <div
           className={`swipeable-row__action swipeable-row__action--left ${
             leftTriggered ? 'swipeable-row__action--triggered' : ''
@@ -154,8 +195,8 @@ export function SwipeableRow({
         </div>
       )}
 
-      {/* Right action background */}
-      {rightAction && (
+      {/* Right action background (visible when swiping left) */}
+      {showRight && (
         <div
           className={`swipeable-row__action swipeable-row__action--right ${
             rightTriggered ? 'swipeable-row__action--triggered' : ''
@@ -176,10 +217,10 @@ export function SwipeableRow({
           transform: `translateX(${offset}px)`,
           transition: isDragging ? 'none' : 'transform 0.2s ease-out',
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchCancel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
       >
         {children}
       </div>

@@ -364,7 +364,20 @@
 .task-detail__subtask-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Flat swipeable-rows inside subtask list */
+.task-detail__subtask-list .swipeable-row {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-detail__subtask-list .swipeable-row:last-child {
+  border-bottom: none;
 }
 
 .task-detail__add-subtask {

@@ -8,8 +8,8 @@ import { Task } from '../lib/types';
 import { SwipeableRow } from './SwipeableRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import {
-  PlayIcon,
   CheckIcon,
+  PlayIcon,
   ExpandChevronIcon,
 } from './icons';
 
@@ -17,17 +17,14 @@ export interface TaskCardProps {
   task: Task;
   isTimerActive: boolean;
   progress: { completed: number; total: number } | null;
-  showQuickActions: boolean;
   isExpanded: boolean;
   subtasks: Task[];
   onSelect: () => void;
   onSelectTask: (task: Task) => void;
   onStartTimer: () => void;
   onStartTimerForTask: (task: Task) => void;
-  onStopTimer: () => void;
   onComplete: () => void;
   onCompleteTask: (task: Task) => void;
-  onLongPress: () => void;
   onExpandToggle: () => void;
 }
 
@@ -35,17 +32,14 @@ export function TaskCard({
   task,
   isTimerActive,
   progress,
-  showQuickActions,
   isExpanded,
   subtasks,
   onSelect,
   onSelectTask,
   onStartTimer,
   onStartTimerForTask,
-  onStopTimer,
   onComplete,
   onCompleteTask,
-  onLongPress,
   onExpandToggle,
 }: TaskCardProps) {
   const progressPercent = progress
@@ -71,7 +65,6 @@ export function TaskCard({
               }
             : undefined
         }
-        onLongPress={onLongPress}
       >
         <div
           className={`task-card ${isTimerActive ? 'task-card--active' : ''}`}
@@ -85,20 +78,6 @@ export function TaskCard({
 
             {/* Title */}
             <span className="task-card__title">{task.title}</span>
-
-            {/* Quick timer button */}
-            {!isTimerActive && (
-              <button
-                className="task-card__timer-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartTimer();
-                }}
-                aria-label="Start timer"
-              >
-                <PlayIcon className="today-view__icon" />
-              </button>
-            )}
           </div>
 
           {/* Progress bar with expand */}
@@ -128,33 +107,6 @@ export function TaskCard({
             </div>
           )}
 
-          {/* Quick actions (long-press fallback) */}
-          {showQuickActions && (
-            <div className="task-card__quick-actions">
-              <button
-                className="task-card__action task-card__action--complete"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onComplete();
-                }}
-              >
-                <CheckIcon className="today-view__icon" />
-                Complete
-              </button>
-              {!isTimerActive && (
-                <button
-                  className="task-card__action task-card__action--timer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStartTimer();
-                  }}
-                >
-                  <PlayIcon className="today-view__icon" />
-                  Start Timer
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </SwipeableRow>
 
@@ -173,7 +125,6 @@ export function TaskCard({
               isSubtask
               onSelect={onSelectTask}
               onStartTimer={onStartTimerForTask}
-              onStopTimer={onStopTimer}
               onComplete={onCompleteTask}
             />
           ))}

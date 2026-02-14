@@ -13,7 +13,6 @@ interface TaskDetailSubtasksProps {
   subtasks: Task[];
   onSelectTask: (task: Task) => void;
   onStartTimer: (task: Task) => void;
-  onStopTimer: () => void;
   onCompleteSubtask: (subtask: Task) => void;
 }
 
@@ -22,7 +21,6 @@ export function TaskDetailSubtasks({
   subtasks,
   onSelectTask,
   onStartTimer,
-  onStopTimer,
   onCompleteSubtask,
 }: TaskDetailSubtasksProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -56,7 +54,6 @@ export function TaskDetailSubtasks({
               isSubtask
               onSelect={onSelectTask}
               onStartTimer={onStartTimer}
-              onStopTimer={onStopTimer}
               onComplete={onCompleteSubtask}
             />
           ))}

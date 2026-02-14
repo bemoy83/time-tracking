@@ -340,7 +340,6 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
           subtasks={subtasks}
           onSelectTask={onSelectTask}
           onStartTimer={handleStartTimerForTask}
-          onStopTimer={handleStopTimer}
           onCompleteSubtask={handleCompleteSubtask}
         />
       )}

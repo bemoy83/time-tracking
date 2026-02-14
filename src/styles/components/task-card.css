@@ -40,27 +40,6 @@
   text-overflow: ellipsis;
 }
 
-.task-card__timer-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-ready);
-  color: white;
-  cursor: pointer;
-  flex-shrink: 0;
-  /* Override global min touch target for compact card button */
-  min-width: 36px;
-  min-height: 36px;
-}
-
-.task-card__timer-btn:active {
-  transform: scale(0.95);
-}
-
 /* Expand button */
 .task-card__expand-btn {
   display: flex;
@@ -113,39 +92,3 @@
   flex-shrink: 0;
 }
 
-/* Quick actions (long-press fallback) */
-.task-card__quick-actions {
-  display: flex;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--color-border);
-}
-
-.task-card__action {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm);
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-}
-
-.task-card__action--complete {
-  background: var(--color-ready);
-}
-
-.task-card__action--timer {
-  background: var(--color-primary);
-}
-
-.task-card__action .today-view__icon {
-  width: 18px;
-  height: 18px;
-}

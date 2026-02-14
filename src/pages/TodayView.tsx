@@ -36,7 +36,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const { activeTimer } = useTimerStore();
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState<string | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const {
     confirmTarget,
@@ -94,10 +93,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     await startTimer(task.id);
   };
 
-  const handleStopTimer = async () => {
-    await stopTimer();
-  };
-
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
@@ -108,10 +103,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     } finally {
       setIsAdding(false);
     }
-  };
-
-  const handleLongPress = (taskId: string) => {
-    setShowQuickActions(showQuickActions === taskId ? null : taskId);
   };
 
   // Count subtasks for progress
@@ -172,17 +163,17 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 task={task}
                 isTimerActive={activeTimer?.taskId === task.id}
                 progress={getSubtaskProgress(task.id)}
-                showQuickActions={showQuickActions === task.id}
+
                 isExpanded={expandedTaskIds.has(task.id)}
                 subtasks={getSubtasks(task.id)}
                 onSelect={() => onSelectTask(task)}
                 onSelectTask={onSelectTask}
                 onStartTimer={() => handleStartTimer(task)}
                 onStartTimerForTask={handleStartTimer}
-                onStopTimer={handleStopTimer}
+
                 onComplete={() => handleComplete(task)}
                 onCompleteTask={handleComplete}
-                onLongPress={() => handleLongPress(task.id)}
+
                 onExpandToggle={() => toggleExpanded(task.id)}
               />
             ))}
@@ -212,17 +203,17 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 task={task}
                 isTimerActive={activeTimer?.taskId === task.id}
                 progress={getSubtaskProgress(task.id)}
-                showQuickActions={showQuickActions === task.id}
+
                 isExpanded={expandedTaskIds.has(task.id)}
                 subtasks={getSubtasks(task.id)}
                 onSelect={() => onSelectTask(task)}
                 onSelectTask={onSelectTask}
                 onStartTimer={() => handleStartTimer(task)}
                 onStartTimerForTask={handleStartTimer}
-                onStopTimer={handleStopTimer}
+
                 onComplete={() => handleComplete(task)}
                 onCompleteTask={handleComplete}
-                onLongPress={() => handleLongPress(task.id)}
+
                 onExpandToggle={() => toggleExpanded(task.id)}
               />
             ))}

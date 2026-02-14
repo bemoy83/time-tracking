@@ -176,10 +176,36 @@
   gap: var(--space-sm);
 }
 
-/* TodayView subtask container */
+/* ---- Connected drawer: parent card + subtasks ---- */
+
+/* Flatten parent card bottom when subtask drawer follows */
+.swipeable-row:has(+ .today-view__subtasks) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+/* Subtask drawer container */
 .today-view__subtasks {
-  border-top: 1px solid var(--color-border);
   background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  overflow: hidden;
+  /* Eat the flex gap so drawer attaches to parent card */
+  margin-top: calc(-1 * var(--space-sm));
+}
+
+/* Flat swipeable-rows inside drawer */
+.today-view__subtasks .swipeable-row {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.today-view__subtasks .swipeable-row:last-child {
+  border-bottom: none;
 }
 
 /* Project color dot */

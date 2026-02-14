@@ -13,13 +13,10 @@
 import { Task } from '../lib/types';
 import { useTimerStore } from '../lib/stores/timer-store';
 import {
-  PlayIcon,
-  PauseIcon,
   CheckIcon,
   BlockedIcon,
   ChevronIcon,
   ExpandChevronIcon,
-  CompleteCircleIcon,
 } from './icons';
 
 interface TaskRowProps {
@@ -29,9 +26,6 @@ interface TaskRowProps {
   onExpandToggle?: (e: React.MouseEvent) => void;
   isSubtask?: boolean;
   onSelect: (task: Task) => void;
-  onStartTimer?: (task: Task) => void;
-  onStopTimer?: () => void;
-  onComplete?: (task: Task) => void;
 }
 
 export function TaskRow({
@@ -41,9 +35,6 @@ export function TaskRow({
   onExpandToggle,
   isSubtask = false,
   onSelect,
-  onStartTimer,
-  onStopTimer,
-  onComplete,
 }: TaskRowProps) {
   const { activeTimer } = useTimerStore();
   const isTimerActive = activeTimer?.taskId === task.id;
@@ -53,16 +44,6 @@ export function TaskRow({
 
   const handleClick = () => {
     onSelect(task);
-  };
-
-  const handleTimerClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isBlocked || isCompleted) return;
-    if (isTimerActive) {
-      onStopTimer?.();
-    } else {
-      onStartTimer?.(task);
-    }
   };
 
   return (
@@ -109,35 +90,6 @@ export function TaskRow({
           </span>
         )}
       </div>
-
-      {/* Complete action */}
-      {!isCompleted && !isBlocked && onComplete && (
-        <button
-          type="button"
-          className="task-row__complete-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onComplete(task);
-          }}
-          aria-label="Complete task"
-        >
-          <CompleteCircleIcon className="task-row__icon" />
-        </button>
-      )}
-
-      {/* Quick timer action */}
-      {!isCompleted && !isBlocked && (
-        <button
-          type="button"
-          className={`task-row__timer-btn ${
-            isTimerActive ? 'task-row__timer-btn--active' : ''
-          }`}
-          onClick={handleTimerClick}
-          aria-label={isTimerActive ? 'Stop timer' : 'Start timer'}
-        >
-          {isTimerActive ? <PauseIcon className="task-row__icon" /> : <PlayIcon className="task-row__icon" />}
-        </button>
-      )}
 
       {/* Expand chevron for parents with subtasks, or nav chevron */}
       {!isSubtask && hasSubtasks && onExpandToggle ? (
