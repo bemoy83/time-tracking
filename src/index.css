@@ -24,6 +24,7 @@
 @import './styles/components/install-prompt.css';
 @import './styles/components/modal.css';
 @import './styles/components/project.css';
+@import './styles/components/settings.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

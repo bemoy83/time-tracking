@@ -1,0 +1,55 @@
+/* ============================================================
+   Settings View Page
+   ============================================================ */
+
+.settings-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.settings-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settings-view__section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.settings-view__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-min);
+  padding: var(--space-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1rem;
+  transition: background-color 0.15s;
+  width: 100%;
+}
+
+.settings-view__row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-view__row--danger .settings-view__row-label {
+  color: var(--color-recording);
+  font-weight: 600;
+}
+
+.settings-view__row-detail {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+}

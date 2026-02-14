@@ -316,3 +316,37 @@ export async function deleteProject(id: string): Promise<void> {
   const db = await getDB();
   await db.delete('projects', id);
 }
+
+// ============================================================
+// Bulk Delete Operations
+// ============================================================
+
+/**
+ * Delete all time entries.
+ */
+export async function deleteAllTimeEntries(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('timeEntries', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
+/**
+ * Delete all tasks.
+ */
+export async function deleteAllTasks(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('tasks', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
+/**
+ * Delete all projects.
+ */
+export async function deleteAllProjects(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('projects', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
