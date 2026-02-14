@@ -1,6 +1,6 @@
 /**
  * TaskDetailHeader component.
- * Back button, editable title, and project badge for TaskDetail page.
+ * Back button, breadcrumb ancestry, and editable title for TaskDetail page.
  */
 
 import { useState } from 'react';
@@ -11,16 +11,20 @@ import { BackIcon } from './icons';
 interface TaskDetailHeaderProps {
   task: Task;
   project: Project | null;
+  parentTask: Task | null;
   onBack: () => void;
   onNavigateToProject?: (project: Project) => void;
+  onNavigateToParent?: () => void;
   onShowProjectPicker: () => void;
 }
 
 export function TaskDetailHeader({
   task,
   project,
+  parentTask,
   onBack,
   onNavigateToProject,
+  onNavigateToParent,
   onShowProjectPicker,
 }: TaskDetailHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -32,6 +36,8 @@ export function TaskDetailHeader({
     setIsEditing(false);
   };
 
+  const hasBreadcrumb = project || parentTask;
+
   return (
     <>
       <header className="task-detail__header">
@@ -42,6 +48,43 @@ export function TaskDetailHeader({
       </header>
 
       <div className="task-detail__title-section">
+        {/* Breadcrumb: Project › Parent Task */}
+        {hasBreadcrumb ? (
+          <nav className="task-detail__breadcrumb">
+            {project && (
+              <button
+                className="task-detail__breadcrumb-segment"
+                onClick={() => onNavigateToProject?.(project)}
+              >
+                <span
+                  className="task-detail__breadcrumb-dot"
+                  style={{ backgroundColor: project.color }}
+                />
+                {project.name}
+              </button>
+            )}
+            {project && parentTask && (
+              <span className="task-detail__breadcrumb-sep">›</span>
+            )}
+            {parentTask && (
+              <button
+                className="task-detail__breadcrumb-segment"
+                onClick={onNavigateToParent}
+              >
+                {parentTask.title}
+              </button>
+            )}
+          </nav>
+        ) : (
+          <button
+            className="task-detail__breadcrumb-add"
+            onClick={onShowProjectPicker}
+          >
+            + Add to project
+          </button>
+        )}
+
+        {/* Editable title */}
         {isEditing ? (
           <div className="task-detail__edit-title">
             <input
@@ -76,27 +119,6 @@ export function TaskDetailHeader({
           >
             {task.title}
           </h1>
-        )}
-        {project ? (
-          <button
-            className="task-detail__project-row"
-            style={{ borderColor: project.color, color: project.color }}
-            onClick={() => onNavigateToProject?.(project)}
-          >
-            <span
-              className="task-detail__project-dot"
-              style={{ backgroundColor: project.color }}
-            />
-            <span className="task-detail__project-name">{project.name}</span>
-            <span className="task-detail__project-chevron">›</span>
-          </button>
-        ) : (
-          <button
-            className="task-detail__project-row task-detail__project-row--empty"
-            onClick={onShowProjectPicker}
-          >
-            + Add to project
-          </button>
         )}
       </div>
     </>

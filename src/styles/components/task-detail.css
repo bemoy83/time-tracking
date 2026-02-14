@@ -64,56 +64,70 @@
   color: var(--color-primary);
 }
 
-/* Project row - full-width tap target */
-.task-detail__project-row {
+/* Breadcrumb ancestry: Project › Parent Task */
+.task-detail__breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.task-detail__breadcrumb-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px var(--space-sm);
   background: none;
-  border: 1.5px solid currentColor;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.task-detail__project-row:hover {
-  opacity: 0.8;
-}
-
-.task-detail__project-row--empty {
-  color: var(--color-primary);
-  border-style: dashed;
-  border-color: var(--color-border);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8125rem;
   font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
-.task-detail__project-row--empty:hover {
-  border-color: var(--color-primary);
-  background: var(--color-ready-bg);
-  opacity: 1;
+.task-detail__breadcrumb-segment:hover {
+  background: var(--color-border);
+  color: var(--color-text);
 }
 
-.task-detail__project-dot {
-  width: 8px;
-  height: 8px;
+.task-detail__breadcrumb-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.task-detail__project-name {
-  flex: 1;
-  text-align: left;
+.task-detail__breadcrumb-sep {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  font-size: 0.875rem;
+  user-select: none;
 }
 
-.task-detail__project-chevron {
-  font-size: 1.25rem;
-  opacity: 0.5;
-  font-weight: 300;
+.task-detail__breadcrumb-add {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--space-sm);
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.task-detail__breadcrumb-add:hover {
+  opacity: 1;
 }
 
 /* Edit title */
@@ -211,6 +225,16 @@
 .task-detail__status-icon {
   width: 22px;
   height: 22px;
+}
+
+/* Override TimerDisplay colors when inside the status control */
+.task-detail__status-control .timer-display__time {
+  color: white;
+  font-size: 1.125rem;
+}
+
+.task-detail__status-control .timer-display__indicator {
+  background: white;
 }
 
 .task-detail__status-label {

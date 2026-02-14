@@ -81,6 +81,9 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
   const isSubtask = task.parentId !== null;
+  const parentTask = task.parentId
+    ? tasks.find((t) => t.id === task.parentId) ?? null
+    : null;
   const project = task.projectId
     ? projects.find((p) => p.id === task.projectId)
     : null;
@@ -214,8 +217,10 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       <TaskDetailHeader
         task={task}
         project={project ?? null}
+        parentTask={parentTask}
         onBack={onBack}
         onNavigateToProject={onNavigateToProject}
+        onNavigateToParent={parentTask ? () => onSelectTask(parentTask) : undefined}
         onShowProjectPicker={() => setShowProjectPicker(true)}
       />
 
