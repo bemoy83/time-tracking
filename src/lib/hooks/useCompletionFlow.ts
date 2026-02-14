@@ -9,6 +9,7 @@ import { Task } from '../types';
 import {
   completeTask,
   completeTaskAndChildren,
+  reactivateTask,
 } from '../stores/task-store';
 import { stopTimer } from '../stores/timer-store';
 
@@ -17,6 +18,8 @@ interface CompletionFlowState {
   confirmTarget: Task | null;
   /** Parent to prompt for completion (all subtasks done) */
   promptParent: Task | null;
+  /** Task that was just completed when prompt was shown (for Cancel undo) */
+  promptTriggeredByTaskId: string | null;
 }
 
 export function useCompletionFlow(
@@ -26,6 +29,7 @@ export function useCompletionFlow(
   const [state, setState] = useState<CompletionFlowState>({
     confirmTarget: null,
     promptParent: null,
+    promptTriggeredByTaskId: null,
   });
 
   const handleComplete = async (task: Task) => {
@@ -54,7 +58,11 @@ export function useCompletionFlow(
       if (allSiblingsDone) {
         const parent = tasks.find((t) => t.id === task.parentId);
         if (parent && parent.status !== 'completed') {
-          setState((s) => ({ ...s, promptParent: parent }));
+          setState((s) => ({
+            ...s,
+            promptParent: parent,
+            promptTriggeredByTaskId: task.id,
+          }));
         }
       }
     }
@@ -75,11 +83,30 @@ export function useCompletionFlow(
   const handlePromptYes = async () => {
     if (!state.promptParent) return;
     await completeTask(state.promptParent.id);
-    setState((s) => ({ ...s, promptParent: null }));
+    setState((s) => ({
+      ...s,
+      promptParent: null,
+      promptTriggeredByTaskId: null,
+    }));
   };
 
   const dismissConfirm = () => setState((s) => ({ ...s, confirmTarget: null }));
-  const dismissPrompt = () => setState((s) => ({ ...s, promptParent: null }));
+  const dismissPrompt = () =>
+    setState((s) => ({
+      ...s,
+      promptParent: null,
+      promptTriggeredByTaskId: null,
+    }));
+  const handlePromptCancel = async () => {
+    if (state.promptTriggeredByTaskId) {
+      await reactivateTask(state.promptTriggeredByTaskId);
+    }
+    setState((s) => ({
+      ...s,
+      promptParent: null,
+      promptTriggeredByTaskId: null,
+    }));
+  };
 
   return {
     confirmTarget: state.confirmTarget,
@@ -90,5 +117,6 @@ export function useCompletionFlow(
     handlePromptYes,
     dismissConfirm,
     dismissPrompt,
+    handlePromptCancel,
   };
 }

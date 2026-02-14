@@ -64,6 +64,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
   const [completePromptParentId, setCompletePromptParentId] = useState<string | null>(null);
+  const [lastCompletedSubtaskId, setLastCompletedSubtaskId] = useState<string | null>(null);
 
   if (!task) {
     return (
@@ -114,11 +115,11 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
     await completeTask(task.id);
 
     if (task.parentId) {
-      checkParentCompletion(task.parentId, task.id);
+      checkParentCompletion(task.parentId, task.id, task.id);
     }
   };
 
-  const checkParentCompletion = (parentId: string, excludeTaskId: string) => {
+  const checkParentCompletion = (parentId: string, excludeTaskId: string, completedTaskId: string) => {
     const siblings = tasks.filter((t) => t.parentId === parentId);
     const allSiblingsDone = siblings
       .filter((t) => t.id !== excludeTaskId)
@@ -126,6 +127,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
     if (allSiblingsDone) {
       const parent = tasks.find((t) => t.id === parentId);
       if (parent && parent.status !== 'completed') {
+        setLastCompletedSubtaskId(completedTaskId);
         setCompletePromptParentId(parentId);
         setShowCompletePrompt(true);
       }
@@ -147,6 +149,22 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       await completeTask(completePromptParentId);
     }
     setCompletePromptParentId(null);
+    setLastCompletedSubtaskId(null);
+    setShowCompletePrompt(false);
+  };
+
+  const handlePromptCancel = async () => {
+    if (lastCompletedSubtaskId) {
+      await reactivateTask(lastCompletedSubtaskId);
+    }
+    setCompletePromptParentId(null);
+    setLastCompletedSubtaskId(null);
+    setShowCompletePrompt(false);
+  };
+
+  const handlePromptNo = () => {
+    setCompletePromptParentId(null);
+    setLastCompletedSubtaskId(null);
     setShowCompletePrompt(false);
   };
 
@@ -160,6 +178,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       .filter((t) => t.id !== subtask.id)
       .every((t) => t.status === 'completed');
     if (allNowDone && task.status !== 'completed') {
+      setLastCompletedSubtaskId(subtask.id);
       setCompletePromptParentId(task.id);
       setShowCompletePrompt(true);
     }
@@ -375,7 +394,8 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
             : ''
         }
         onYes={handlePromptYes}
-        onNo={() => { setCompletePromptParentId(null); setShowCompletePrompt(false); }}
+        onNo={handlePromptNo}
+        onCancel={handlePromptCancel}
       />
     </div>
   );

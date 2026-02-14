@@ -46,6 +46,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     handlePromptYes,
     dismissConfirm,
     dismissPrompt,
+    handlePromptCancel,
   } = useCompletionFlow(tasks, activeTimer?.taskId);
 
   // Filter and group tasks
@@ -278,6 +279,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
         parentTitle={promptParent?.title ?? ''}
         onYes={handlePromptYes}
         onNo={dismissPrompt}
+        onCancel={handlePromptCancel}
       />
     </div>
   );

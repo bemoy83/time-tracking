@@ -13,6 +13,7 @@ interface CompleteParentPromptProps {
   parentTitle: string;
   onYes: () => void;
   onNo: () => void;
+  onCancel: () => void;
 }
 
 export function CompleteParentPrompt({
@@ -20,14 +21,15 @@ export function CompleteParentPrompt({
   parentTitle,
   onYes,
   onNo,
+  onCancel,
 }: CompleteParentPromptProps) {
-  const noBtnRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useModalFocusTrap(isOpen, onNo, noBtnRef);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useModalFocusTrap(isOpen, onCancel, cancelBtnRef);
 
   if (!isOpen) return null;
 
   return (
-    <div className="delete-confirm-backdrop" onClick={onNo} aria-hidden="true">
+    <div className="delete-confirm-backdrop" onClick={onCancel} aria-hidden="true">
       <div
         ref={dialogRef}
         className="complete-prompt"
@@ -47,9 +49,16 @@ export function CompleteParentPrompt({
 
         <div className="complete-prompt__actions">
           <button
-            ref={noBtnRef}
+            ref={cancelBtnRef}
             type="button"
             className="complete-prompt__btn complete-prompt__btn--cancel"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="complete-prompt__btn complete-prompt__btn--secondary"
             onClick={onNo}
           >
             No

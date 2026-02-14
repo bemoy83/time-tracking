@@ -54,7 +54,7 @@ export function SwipeableRow({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button !== 0) return; // Only primary (left) mouse button
-      // Don't capture yet – wait for drag. Capturing on down steals the click from children.
+      // Don't capture yet – wait for drag. Capturing on down steals tap/click from children.
       isPointerActive.current = true;
       startX.current = e.clientX;
       startY.current = e.clientY;
@@ -91,7 +91,8 @@ export function SwipeableRow({
 
       // Only handle horizontal swipes
       if (isHorizontalSwipe.current) {
-        // Capture now so we get pointermove/up when pointer leaves the element
+        e.preventDefault();
+        // Mouse: capture now so we get pointermove/up when pointer leaves the element
         if (!hasPointerCapture.current) {
           const target = e.currentTarget as HTMLElement;
           target.setPointerCapture(e.pointerId);

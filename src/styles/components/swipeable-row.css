@@ -53,4 +53,5 @@
   position: relative;
   background: var(--color-bg);
   z-index: 1;
+  touch-action: pan-y;
 }
