@@ -91,6 +91,14 @@ export function BackIcon({ className, 'aria-hidden': ariaHidden = true }: IconPr
   );
 }
 
+export function HomeIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+    </svg>
+  );
+}
+
 export function TrashIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>

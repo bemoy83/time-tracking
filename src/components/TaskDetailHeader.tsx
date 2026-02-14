@@ -1,12 +1,12 @@
 /**
  * TaskDetailHeader component.
- * Back button, breadcrumb ancestry, and editable title for TaskDetail page.
+ * Merged back-nav + breadcrumb bar, and editable title.
  */
 
 import { useState } from 'react';
 import { Task, Project } from '../lib/types';
 import { updateTaskTitle } from '../lib/stores/task-store';
-import { BackIcon } from './icons';
+import { HomeIcon } from './icons';
 
 interface TaskDetailHeaderProps {
   task: Task;
@@ -39,88 +39,90 @@ export function TaskDetailHeader({
   const hasBreadcrumb = project || parentTask;
 
   return (
-    <>
-      <header className="task-detail__header">
-        <button className="task-detail__back" onClick={onBack}>
-          <BackIcon className="task-detail__icon" />
-          <span>Back</span>
+    <div className="task-detail__title-section">
+      {/* Navigation bar: ← back arrow + breadcrumb merged */}
+      <nav className="task-detail__breadcrumb">
+        <button className="task-detail__breadcrumb-back" onClick={onBack}>
+          <HomeIcon className="task-detail__breadcrumb-back-icon" />
         </button>
-      </header>
-
-      <div className="task-detail__title-section">
-        {/* Breadcrumb: Project › Parent Task */}
         {hasBreadcrumb ? (
-          <nav className="task-detail__breadcrumb">
+          <>
             {project && (
-              <button
-                className="task-detail__breadcrumb-segment"
-                onClick={() => onNavigateToProject?.(project)}
-              >
-                <span
-                  className="task-detail__breadcrumb-dot"
-                  style={{ backgroundColor: project.color }}
-                />
-                {project.name}
-              </button>
-            )}
-            {project && parentTask && (
-              <span className="task-detail__breadcrumb-sep">›</span>
+              <>
+                <span className="task-detail__breadcrumb-sep">›</span>
+                <button
+                  className="task-detail__breadcrumb-segment"
+                  onClick={() => onNavigateToProject?.(project)}
+                >
+                  <span
+                    className="task-detail__breadcrumb-dot"
+                    style={{ backgroundColor: project.color }}
+                  />
+                  {project.name}
+                </button>
+              </>
             )}
             {parentTask && (
-              <button
-                className="task-detail__breadcrumb-segment"
-                onClick={onNavigateToParent}
-              >
-                {parentTask.title}
-              </button>
+              <>
+                <span className="task-detail__breadcrumb-sep">›</span>
+                <button
+                  className="task-detail__breadcrumb-segment"
+                  onClick={onNavigateToParent}
+                >
+                  {parentTask.title}
+                </button>
+              </>
             )}
-          </nav>
+          </>
         ) : (
-          <button
-            className="task-detail__breadcrumb-add"
-            onClick={onShowProjectPicker}
-          >
-            + Add to project
-          </button>
+          <>
+            <span className="task-detail__breadcrumb-sep">›</span>
+            <button
+              className="task-detail__breadcrumb-add"
+              onClick={onShowProjectPicker}
+            >
+              + Add to project
+            </button>
+          </>
         )}
+      </nav>
 
-        {/* Editable title */}
-        {isEditing ? (
-          <div className="task-detail__edit-title">
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className="task-detail__title-input"
-              autoFocus
-            />
-            <div className="task-detail__edit-actions">
-              <button
-                className="task-detail__btn task-detail__btn--secondary"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="task-detail__btn task-detail__btn--primary"
-                onClick={handleSaveTitle}
-              >
-                Save
-              </button>
-            </div>
+      {/* Editable title */}
+      {isEditing ? (
+        <div className="task-detail__edit-title">
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            className="input"
+            autoFocus
+          />
+          <div className="task-detail__edit-actions">
+            <button
+              className="task-detail__btn task-detail__btn--secondary"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="task-detail__btn task-detail__btn--primary"
+              onClick={handleSaveTitle}
+            >
+              Save
+            </button>
           </div>
-        ) : (
-          <h1
-            className="task-detail__title"
-            onClick={() => {
-              setEditTitle(task.title);
-              setIsEditing(true);
-            }}
-          >
-            {task.title}
-          </h1>
-        )}
-      </div>
-    </>
+        </div>
+      ) : (
+        <h1
+          className="task-detail__title"
+          onClick={() => {
+            setEditTitle(task.title);
+            setIsEditing(true);
+          }}
+        >
+          {task.title}
+        </h1>
+      )}
+    </div>
   );
 }

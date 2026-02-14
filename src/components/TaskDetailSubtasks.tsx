@@ -66,7 +66,7 @@ export function TaskDetailSubtasks({
           placeholder="Add subtask..."
           value={newSubtaskTitle}
           onChange={(e) => setNewSubtaskTitle(e.target.value)}
-          className="task-detail__input"
+          className="input"
         />
         <button
           type="submit"

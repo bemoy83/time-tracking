@@ -84,8 +84,9 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   const parentTask = task.parentId
     ? tasks.find((t) => t.id === task.parentId) ?? null
     : null;
-  const project = task.projectId
-    ? projects.find((p) => p.id === task.projectId)
+  const projectId = task.projectId ?? parentTask?.projectId ?? null;
+  const project = projectId
+    ? projects.find((p) => p.id === projectId) ?? null
     : null;
 
   const handleStartTimerForTask = async (t: Task) => {
@@ -298,7 +299,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
                   placeholder="Reason for blocking..."
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
-                  className="task-detail__input"
+                  className="input"
                 />
                 <button
                   className="task-detail__btn task-detail__btn--block"

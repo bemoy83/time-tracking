@@ -89,19 +89,8 @@
   gap: var(--space-sm);
 }
 
-.today-view__quick-add-input {
+.today-view__quick-add .input {
   flex: 1;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 2px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: var(--color-bg);
-}
-
-.today-view__quick-add-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
 }
 
 .today-view__quick-add-btn {

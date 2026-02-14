@@ -53,7 +53,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
             placeholder="Project name..."
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="project-list__create-input"
+            className="input"
             autoFocus
           />
           <div className="project-list__color-picker">

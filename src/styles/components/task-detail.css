@@ -9,26 +9,7 @@
   padding-bottom: var(--space-xl);
 }
 
-/* Header */
-.task-detail__header {
-  display: flex;
-  align-items: center;
-}
-
-.task-detail__back {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: none;
-  background: none;
-  color: var(--color-primary);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: calc(-1 * var(--space-md));
-}
+/* Header — no longer separate, merged into breadcrumb */
 
 .task-detail__icon {
   width: 20px;
@@ -64,7 +45,7 @@
   color: var(--color-primary);
 }
 
-/* Breadcrumb ancestry: Project › Parent Task */
+/* Breadcrumb: ← › Project › Parent Task */
 .task-detail__breadcrumb {
   display: flex;
   align-items: center;
@@ -72,6 +53,32 @@
   flex-wrap: wrap;
   font-size: 0.8125rem;
   line-height: 1.4;
+  margin-left: calc(-1 * var(--space-sm));
+}
+
+.task-detail__breadcrumb-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: var(--space-xs);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.task-detail__breadcrumb-back:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.task-detail__breadcrumb-back-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .task-detail__breadcrumb-segment {
@@ -135,14 +142,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-}
-
-.task-detail__title-input {
-  font-size: 1.5rem;
-  font-weight: 700;
-  padding: var(--space-sm);
-  border: 2px solid var(--color-primary);
-  border-radius: 10px;
 }
 
 .task-detail__edit-actions {
@@ -341,18 +340,9 @@
   width: 100%;
 }
 
-.task-detail__input {
-  width: 100%;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  font-size: 1rem;
-}
-
-.task-detail__input:focus {
-  outline: none;
-  border-color: var(--color-primary);
+.task-detail__add-subtask .input {
+  flex: 1;
+  width: auto;
 }
 
 /* ============================================================
@@ -447,4 +437,9 @@
 .task-detail__add-subtask {
   display: flex;
   gap: var(--space-sm);
+}
+
+.task-detail__add-subtask .task-detail__btn {
+  width: auto;
+  flex-shrink: 0;
 }

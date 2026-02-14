@@ -112,7 +112,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="project-detail__name-input"
+              className="input"
               autoFocus
             />
             <button className="project-detail__btn project-detail__btn--secondary" onClick={() => setIsEditingName(false)}>
@@ -167,7 +167,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
           placeholder="Add task to project..."
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
-          className="project-detail__task-input"
+          className="input"
         />
         <button
           type="submit"

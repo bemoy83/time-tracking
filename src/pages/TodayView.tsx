@@ -141,7 +141,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
           placeholder="Quick add task..."
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
-          className="today-view__quick-add-input"
+          className="input"
           disabled={isAdding}
         />
         <button

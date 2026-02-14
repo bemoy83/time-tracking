@@ -354,21 +354,8 @@
   gap: var(--space-sm);
 }
 
-.project-picker__create-input {
+.project-picker__create-form .input {
   flex: 1;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.project-picker__create-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .project-picker__create-btn {

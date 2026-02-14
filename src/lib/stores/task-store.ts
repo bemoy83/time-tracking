@@ -265,10 +265,23 @@ export async function assignToProject(
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return;
 
-  const updated = { ...task, projectId, updatedAt: nowUtc() };
+  const now = nowUtc();
+  const updated = { ...task, projectId, updatedAt: now };
   await dbUpdateTask(updated);
+
+  // Cascade to subtasks
+  const subtasks = state.tasks.filter((t) => t.parentId === taskId);
+  const updatedSubtasks = subtasks.map((s) => ({ ...s, projectId, updatedAt: now }));
+  for (const s of updatedSubtasks) {
+    await dbUpdateTask(s);
+  }
+
   setState({
-    tasks: state.tasks.map((t) => (t.id === taskId ? updated : t)),
+    tasks: state.tasks.map((t) => {
+      if (t.id === taskId) return updated;
+      if (t.parentId === taskId) return updatedSubtasks.find((s) => s.id === t.id) ?? t;
+      return t;
+    }),
   });
 }
 

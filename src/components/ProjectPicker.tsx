@@ -119,7 +119,7 @@ export function ProjectPicker({
               placeholder="Project name..."
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="project-picker__create-input"
+              className="input"
             />
             <button
               type="submit"

@@ -54,22 +54,8 @@
   margin-bottom: var(--space-lg);
 }
 
-.project-list__create-input {
-  width: 100%;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: var(--color-bg);
-  color: var(--color-text);
+.project-list__create-form .input {
   margin-bottom: var(--space-sm);
-}
-
-.project-list__create-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .project-list__color-picker {
@@ -271,22 +257,8 @@
   flex: 1;
 }
 
-.project-detail__name-input {
+.project-detail__edit-name .input {
   flex: 1;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.project-detail__name-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .project-detail__color-picker {
@@ -331,21 +303,8 @@
   margin-bottom: var(--space-lg);
 }
 
-.project-detail__task-input {
+.project-detail__add-task .input {
   flex: 1;
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.project-detail__task-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .project-detail__btn {

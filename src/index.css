@@ -11,6 +11,9 @@
 /* Accessibility (focus, skip-link, sr-only, touch targets) */
 @import './styles/_a11y.css';
 
+/* Shared components */
+@import './styles/_input.css';
+
 /* Components */
 @import './styles/components/timer.css';
 @import './styles/components/task-row.css';

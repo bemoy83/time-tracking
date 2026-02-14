@@ -47,6 +47,13 @@
     background: #2a2a2a;
   }
 
+  /* --- Shared Input --- */
+  .input {
+    background: #333;
+    border-color: #555;
+    color: var(--color-text);
+  }
+
   /* --- Task Time Tracking --- */
   .task-time-tracking {
     background: #252525;
@@ -66,11 +73,6 @@
 
   .project-picker {
     background: #252525;
-  }
-
-  .project-picker__create-input {
-    background: #333;
-    border-color: #555;
   }
 
   .delete-project-confirm {
@@ -108,10 +110,6 @@
     background: #252525;
     border-color: #444;
   }
-  .project-list__create-input {
-    background: #333;
-    border-color: #555;
-  }
   .project-list__cancel-btn {
     background: #404040;
   }
@@ -120,14 +118,6 @@
   }
 
   /* --- Project Detail --- */
-  .project-detail__name-input {
-    background: #333;
-    border-color: #555;
-  }
-  .project-detail__task-input {
-    background: #333;
-    border-color: #555;
-  }
   .project-detail__btn--secondary {
     background: #404040;
   }
