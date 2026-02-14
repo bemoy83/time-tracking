@@ -1,0 +1,63 @@
+/* ============================================================
+   Network Status Component
+   ============================================================ */
+
+.network-status {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.875rem;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  animation: slideDown 0.3s ease-out;
+}
+
+.network-status--offline {
+  background: #6b7280;
+}
+
+.network-status--error {
+  background: var(--color-recording);
+}
+
+.network-status__offline,
+.network-status__syncing,
+.network-status__pending,
+.network-status__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.network-status__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.network-status__icon--spin {
+  animation: spin 1s linear infinite;
+}
+
+.network-status__retry {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid white;
+  border-radius: 4px;
+  background: transparent;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.network-status__retry:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

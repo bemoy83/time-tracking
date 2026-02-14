@@ -1,0 +1,269 @@
+/**
+ * ProjectDetail page.
+ * Shows project info, task list, add-task form, and delete project.
+ */
+
+import { useState } from 'react';
+import { Task, PROJECT_COLORS } from '../lib/types';
+import { BackIcon, TrashIcon, ChevronIcon } from '../components/icons';
+import {
+  useTaskStore,
+  useProjectTasks,
+  createTask,
+  updateProjectName,
+  updateProjectColor,
+  getDeleteProjectPreview,
+  deleteProjectWithMode,
+  DeleteProjectPreview,
+} from '../lib/stores/task-store';
+import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
+
+interface ProjectDetailProps {
+  projectId: string;
+  onBack: () => void;
+  onSelectTask: (task: Task) => void;
+}
+
+export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetailProps) {
+  const { projects } = useTaskStore();
+  const project = projects.find((p) => p.id === projectId);
+  const projectTasks = useProjectTasks(projectId);
+
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePreview, setDeletePreview] = useState<DeleteProjectPreview | null>(null);
+
+  if (!project) {
+    return (
+      <div className="project-detail">
+        <button className="project-detail__back" onClick={onBack}>
+          <BackIcon className="project-detail__icon" />
+          <span>Back</span>
+        </button>
+        <p>Project not found.</p>
+      </div>
+    );
+  }
+
+  const activeTasks = projectTasks.filter((t) => t.status === 'active');
+  const completedTasks = projectTasks.filter((t) => t.status === 'completed');
+  const blockedTasks = projectTasks.filter((t) => t.status === 'blocked');
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    await createTask({ title: newTaskTitle.trim(), projectId });
+    setNewTaskTitle('');
+  };
+
+  const handleSaveName = async () => {
+    if (!editName.trim()) return;
+    await updateProjectName(project.id, editName.trim());
+    setIsEditingName(false);
+  };
+
+  const handleColorChange = async (color: string) => {
+    await updateProjectColor(project.id, color);
+    setShowColorPicker(false);
+  };
+
+  const handleDeleteClick = async () => {
+    const preview = await getDeleteProjectPreview(project.id);
+    setDeletePreview(preview);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteUnassign = async () => {
+    await deleteProjectWithMode(project.id, 'unassign');
+    setShowDeleteConfirm(false);
+    onBack();
+  };
+
+  const handleDeleteTasks = async () => {
+    await deleteProjectWithMode(project.id, 'delete_tasks');
+    setShowDeleteConfirm(false);
+    onBack();
+  };
+
+  return (
+    <div className="project-detail">
+      {/* Header */}
+      <header className="project-detail__header">
+        <button className="project-detail__back" onClick={onBack}>
+          <BackIcon className="project-detail__icon" />
+          <span>Back</span>
+        </button>
+      </header>
+
+      {/* Project name + color */}
+      <div className="project-detail__title-section">
+        <button
+          className="project-detail__color-dot"
+          style={{ backgroundColor: project.color }}
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          aria-label="Change project color"
+        />
+        {isEditingName ? (
+          <div className="project-detail__edit-name">
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="project-detail__name-input"
+              autoFocus
+            />
+            <button className="project-detail__btn project-detail__btn--secondary" onClick={() => setIsEditingName(false)}>
+              Cancel
+            </button>
+            <button className="project-detail__btn project-detail__btn--primary" onClick={handleSaveName}>
+              Save
+            </button>
+          </div>
+        ) : (
+          <h1
+            className="project-detail__name"
+            onClick={() => {
+              setEditName(project.name);
+              setIsEditingName(true);
+            }}
+          >
+            {project.name}
+          </h1>
+        )}
+      </div>
+
+      {/* Color picker */}
+      {showColorPicker && (
+        <div className="project-detail__color-picker">
+          {PROJECT_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`project-detail__color-swatch ${
+                project.color === color ? 'project-detail__color-swatch--selected' : ''
+              }`}
+              style={{ backgroundColor: color }}
+              onClick={() => handleColorChange(color)}
+              aria-label={`Select color ${color}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="project-detail__stats">
+        <span>{activeTasks.length} active</span>
+        {completedTasks.length > 0 && <span>{completedTasks.length} completed</span>}
+        {blockedTasks.length > 0 && <span>{blockedTasks.length} blocked</span>}
+      </div>
+
+      {/* Add task form */}
+      <form className="project-detail__add-task" onSubmit={handleAddTask}>
+        <input
+          type="text"
+          placeholder="Add task to project..."
+          value={newTaskTitle}
+          onChange={(e) => setNewTaskTitle(e.target.value)}
+          className="project-detail__task-input"
+        />
+        <button
+          type="submit"
+          className="project-detail__btn project-detail__btn--primary"
+          disabled={!newTaskTitle.trim()}
+        >
+          Add
+        </button>
+      </form>
+
+      {/* Active tasks */}
+      {activeTasks.length > 0 && (
+        <section className="project-detail__section">
+          <h2 className="project-detail__section-title">Active</h2>
+          <div className="project-detail__task-list">
+            {activeTasks.map((task) => (
+              <button
+                key={task.id}
+                className="project-detail__task-item"
+                onClick={() => onSelectTask(task)}
+              >
+                <span className="project-detail__task-title">{task.title}</span>
+                <ChevronIcon className="project-detail__chevron" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Blocked tasks */}
+      {blockedTasks.length > 0 && (
+        <section className="project-detail__section">
+          <h2 className="project-detail__section-title project-detail__section-title--blocked">Blocked</h2>
+          <div className="project-detail__task-list">
+            {blockedTasks.map((task) => (
+              <button
+                key={task.id}
+                className="project-detail__task-item project-detail__task-item--blocked"
+                onClick={() => onSelectTask(task)}
+              >
+                <span className="project-detail__task-title">{task.title}</span>
+                <span className="project-detail__blocked-reason">{task.blockedReason}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Completed tasks */}
+      {completedTasks.length > 0 && (
+        <section className="project-detail__section">
+          <h2 className="project-detail__section-title project-detail__section-title--completed">Completed</h2>
+          <div className="project-detail__task-list">
+            {completedTasks.map((task) => (
+              <button
+                key={task.id}
+                className="project-detail__task-item project-detail__task-item--completed"
+                onClick={() => onSelectTask(task)}
+              >
+                <span className="project-detail__task-title">{task.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Empty state */}
+      {projectTasks.length === 0 && (
+        <div className="project-detail__empty">
+          <p>No tasks in this project yet.</p>
+          <p>Add one above to get started.</p>
+        </div>
+      )}
+
+      {/* Delete project */}
+      <div className="project-detail__danger-zone">
+        <button
+          className="project-detail__btn project-detail__btn--delete"
+          onClick={handleDeleteClick}
+        >
+          <TrashIcon className="project-detail__icon" />
+          Delete Project
+        </button>
+      </div>
+
+      {/* Delete confirmation */}
+      <DeleteProjectConfirm
+        isOpen={showDeleteConfirm}
+        projectName={project.name}
+        taskCount={deletePreview?.taskCount ?? 0}
+        totalTimeMs={deletePreview?.totalTimeMs ?? 0}
+        onUnassign={handleDeleteUnassign}
+        onDeleteTasks={handleDeleteTasks}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    </div>
+  );
+}
+

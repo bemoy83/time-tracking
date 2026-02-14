@@ -1,0 +1,42 @@
+/* ============================================================
+   Tab Navigation
+   ============================================================ */
+
+.tab-nav {
+  position: fixed;
+  bottom: var(--timer-bar-height);
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  z-index: 99;
+}
+
+.tab-nav__btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: var(--space-sm);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+
+.tab-nav__btn--active {
+  color: var(--color-primary);
+}
+
+.tab-nav__icon {
+  width: 24px;
+  height: 24px;
+}

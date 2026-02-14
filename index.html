@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>Time Tracking</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Mobile-first PWA for on-site time tracking" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS Safari PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Time Tracking" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    <!-- Accessibility: Prevent FOUC -->
+    <style>
+      /* Critical CSS to prevent flash of unstyled content */
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100dvh; }
+    </style>
+  </head>
+  <body>
+    <!-- Skip link for keyboard users -->
+    <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- No-JS fallback -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center;">
+        <h1>Time Tracking</h1>
+        <p>This app requires JavaScript to run. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
+  </body>
+</html>

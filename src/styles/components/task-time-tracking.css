@@ -1,0 +1,116 @@
+/* ============================================================
+   Task Time Tracking Component
+   ============================================================ */
+
+.task-time-tracking {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: var(--space-md);
+}
+
+.task-time-tracking__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-md);
+}
+
+.task-time-tracking__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.task-time-tracking__live-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: var(--color-recording);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.task-time-tracking__loading {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.task-time-tracking__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.task-time-tracking__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.task-time-tracking__label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.task-time-tracking__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-time-tracking__breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.task-time-tracking__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.task-time-tracking__row-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.task-time-tracking__row-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-time-tracking__live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--color-recording);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.task-time-tracking__entries {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}

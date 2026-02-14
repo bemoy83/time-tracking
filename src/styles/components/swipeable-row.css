@@ -1,0 +1,56 @@
+/* ============================================================
+   Swipeable Row Component
+   ============================================================ */
+
+.swipeable-row {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.swipeable-row:has(.task-card--active) {
+  border-color: var(--color-recording-border);
+}
+
+.swipeable-row__action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  color: white;
+  padding: 0 var(--space-lg);
+}
+
+.swipeable-row__action--left {
+  left: 0;
+  justify-content: flex-start;
+}
+
+.swipeable-row__action--right {
+  right: 0;
+  justify-content: flex-end;
+}
+
+.swipeable-row__action--triggered {
+  opacity: 1;
+}
+
+.swipeable-row__action-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.swipeable-row__action-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.swipeable-row__content {
+  position: relative;
+  background: var(--color-bg);
+  z-index: 1;
+}

@@ -1,0 +1,212 @@
+/* ============================================================
+   Today View Page
+   ============================================================ */
+
+.today-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Active Timer Section */
+.today-view__active-timer {
+  background: var(--color-recording-bg);
+  border: 2px solid var(--color-recording-border);
+  border-radius: 12px;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.today-view__active-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.today-view__active-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-recording);
+  font-weight: 600;
+}
+
+.today-view__active-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  cursor: pointer;
+}
+
+.today-view__active-task-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today-view__stop-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: 8px;
+  background: var(--color-recording);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.today-view__stop-btn:active {
+  transform: scale(0.98);
+}
+
+/* Quick Add */
+.today-view__quick-add {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.today-view__quick-add-input {
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--color-bg);
+}
+
+.today-view__quick-add-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.today-view__quick-add-btn {
+  width: var(--touch-min);
+  height: var(--touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.today-view__quick-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sections */
+.today-view__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.today-view__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.today-view__section-title--blocked {
+  color: #b45309;
+}
+
+.today-view__project-badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-primary);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.today-view__section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  background: var(--color-border);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.today-view__task-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* TodayView subtask container */
+.today-view__subtasks {
+  border-top: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Project color dot */
+.today-view__project-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Blocked Tasks */
+.today-view__blocked-task {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-md);
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.today-view__blocked-task-title {
+  font-weight: 500;
+}
+
+.today-view__blocked-reason {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+/* Empty State */
+.today-view__empty {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.today-view__icon {
+  width: 20px;
+  height: 20px;
+}

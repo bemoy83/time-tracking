@@ -1,0 +1,30 @@
+/* ============================================================
+   Time Tracking App — CSS Entry Point
+   ============================================================ */
+
+/* Design tokens */
+@import './styles/_variables.css';
+
+/* Reset, base typography, shared keyframes */
+@import './styles/_base.css';
+
+/* Accessibility (focus, skip-link, sr-only, touch targets) */
+@import './styles/_a11y.css';
+
+/* Components */
+@import './styles/components/timer.css';
+@import './styles/components/task-row.css';
+@import './styles/components/task-card.css';
+@import './styles/components/swipeable-row.css';
+@import './styles/components/task-list.css';
+@import './styles/components/task-detail.css';
+@import './styles/components/task-time-tracking.css';
+@import './styles/components/today-view.css';
+@import './styles/components/tab-nav.css';
+@import './styles/components/network-status.css';
+@import './styles/components/install-prompt.css';
+@import './styles/components/modal.css';
+@import './styles/components/project.css';
+
+/* Dark mode overrides (must come last) */
+@import './styles/_dark.css';

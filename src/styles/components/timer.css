@@ -1,0 +1,181 @@
+/* ============================================================
+   Timer Display Component
+   ============================================================ */
+
+.timer-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-display__time {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.timer-display--large .timer-display__time {
+  font-size: 2rem;
+}
+
+.timer-display--active .timer-display__time {
+  color: var(--color-recording);
+}
+
+/* Recording indicator - pulsing dot */
+.timer-display__indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-recording);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   Timer Bar Component (Sticky Bottom)
+   ============================================================ */
+
+.timer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--timer-bar-height);
+  background: var(--color-bg);
+  border-top: 2px solid var(--color-border);
+  padding: var(--space-md);
+  padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  z-index: 100;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Active/recording state - visible even when scrolling */
+.timer-bar--active {
+  background: var(--color-recording-bg);
+  border-top-color: var(--color-recording-border);
+}
+
+/* Error message */
+.timer-bar__error {
+  background: var(--color-recording);
+  color: white;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Task info section */
+.timer-bar__task {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timer-bar__task-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.timer-bar--active .timer-bar__task-label {
+  color: var(--color-recording);
+}
+
+.timer-bar__task-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Controls section */
+.timer-bar__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+/* Start/Stop button - 44px+ touch target, full-width friendly */
+.timer-bar__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-min);
+  min-width: 120px;
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.timer-bar__button:active {
+  transform: scale(0.98);
+}
+
+.timer-bar__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Start button - green */
+.timer-bar__button--start {
+  background: var(--color-ready);
+  color: white;
+}
+
+.timer-bar__button--start:hover:not(:disabled) {
+  background: #15803d;
+}
+
+/* Stop button - red */
+.timer-bar__button--stop {
+  background: var(--color-recording);
+  color: white;
+}
+
+.timer-bar__button--stop:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* Button icon */
+.timer-bar__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Loading spinner */
+.timer-bar__button-loading {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Hide button text on very small screens, keep icon */
+@media (max-width: 360px) {
+  .timer-bar__button-text {
+    display: none;
+  }
+  .timer-bar__button {
+    min-width: var(--touch-min);
+    padding: var(--space-sm);
+  }
+}

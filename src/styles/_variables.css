@@ -1,0 +1,51 @@
+/* ============================================================
+   CSS Custom Properties (Design Tokens)
+   ============================================================ */
+
+:root {
+  /* Colors - designed for high contrast and visibility */
+  --color-bg: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-muted: #666666;
+  --color-border: #e0e0e0;
+
+  /* Timer states */
+  --color-recording: #dc2626;
+  --color-recording-bg: #fef2f2;
+  --color-recording-border: #fecaca;
+  --color-ready: #16a34a;
+  --color-ready-bg: #f0fdf4;
+
+  /* Interactive */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+
+  /* Sizing - 44px minimum for touch targets */
+  --touch-min: 44px;
+  --timer-bar-height: 140px;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-recording: #b91c1c;
+    --color-recording-bg: #ffffff;
+    --color-recording-border: #b91c1c;
+    --color-ready: #15803d;
+    --color-border: #000000;
+  }
+}
+
+/* Ensure adequate color contrast for muted text */
+@media (prefers-contrast: high) {
+  :root {
+    --color-text-muted: #444444;
+  }
+}

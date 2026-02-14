@@ -1,0 +1,105 @@
+/* ============================================================
+   Base Styles & Reset
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: var(--color-bg);
+  color: var(--color-text);
+  /* Prevent pull-to-refresh interfering with app */
+  overscroll-behavior: contain;
+}
+
+/* Main content area - leave room for sticky timer bar + tab nav */
+main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-md);
+  padding-bottom: calc(var(--timer-bar-height) + 56px + var(--space-xl));
+  min-height: 100dvh;
+  scroll-margin-top: 60px;
+}
+
+main:target {
+  outline: 2px solid var(--color-primary);
+}
+
+/* Adjust main content when network status bar is visible */
+.has-network-status main {
+  padding-top: calc(var(--space-md) + 40px);
+}
+
+/* Ensure text remains readable at 200% zoom */
+@media (min-resolution: 2dppx) {
+  body {
+    font-size: 16px;
+  }
+}
+
+/* Shared keyframes */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

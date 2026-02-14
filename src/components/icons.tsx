@@ -1,0 +1,108 @@
+/**
+ * Shared SVG icon components.
+ * Each icon accepts optional className and aria-hidden props.
+ */
+
+interface IconProps {
+  className?: string;
+  'aria-hidden'?: boolean | 'true' | 'false';
+}
+
+export function PlayIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+export function PauseIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </svg>
+  );
+}
+
+export function StopIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <rect x="6" y="6" width="12" height="12" rx="1" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+    </svg>
+  );
+}
+
+export function BlockedIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+export function ChevronIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+    </svg>
+  );
+}
+
+export function ExpandChevronIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+    </svg>
+  );
+}
+
+export function CompleteCircleIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden={ariaHidden}>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+    </svg>
+  );
+}
+
+export function BackIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+    </svg>
+  );
+}
+
+export function WarningIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+    </svg>
+  );
+}

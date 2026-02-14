@@ -1,0 +1,394 @@
+/* ============================================================
+   Shared Modal / Dialog Styles
+   ============================================================ */
+
+/* Shared backdrop */
+.delete-confirm-backdrop,
+.project-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: 300;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* ============================================================
+   Delete Task Confirmation
+   ============================================================ */
+
+.delete-confirm {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+.delete-confirm__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-md);
+  color: var(--color-recording);
+}
+
+.delete-confirm__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.delete-confirm__message {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
+}
+
+.delete-confirm__warning {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-recording);
+  margin: 0 0 var(--space-lg);
+}
+
+.delete-confirm__actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+.delete-confirm__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.delete-confirm__btn:active {
+  transform: scale(0.98);
+}
+
+.delete-confirm__btn--cancel {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.delete-confirm__btn--cancel:hover {
+  background: #d1d5db;
+}
+
+.delete-confirm__btn--delete {
+  background: var(--color-recording);
+  color: white;
+}
+
+.delete-confirm__btn--delete:hover {
+  background: #b91c1c;
+}
+
+.delete-confirm__btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================
+   Delete Project Confirmation
+   ============================================================ */
+
+.delete-project-confirm {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+.delete-project-confirm__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.delete-project-confirm__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 8px;
+  font-size: 0.938rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.delete-project-confirm__option strong {
+  font-weight: 700;
+}
+
+.delete-project-confirm__option span {
+  font-size: 0.813rem;
+  opacity: 0.7;
+}
+
+.delete-project-confirm__option--unassign {
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.delete-project-confirm__option--unassign:hover {
+  background: #d1d5db;
+}
+
+.delete-project-confirm__option--delete {
+  background: var(--color-recording-bg);
+  border: 1px solid var(--color-recording-border);
+  color: var(--color-recording);
+}
+
+.delete-project-confirm__option--delete:hover {
+  background: #fecaca;
+}
+
+/* ============================================================
+   Complete Parent Confirm / Prompt
+   ============================================================ */
+
+.complete-confirm,
+.complete-prompt {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+.complete-confirm__title,
+.complete-prompt__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-md);
+  color: var(--color-text);
+}
+
+.complete-confirm__message,
+.complete-prompt__message {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-lg);
+}
+
+.complete-confirm__actions,
+.complete-prompt__actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+.complete-confirm__btn,
+.complete-prompt__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.complete-confirm__btn:active,
+.complete-prompt__btn:active {
+  transform: scale(0.97);
+}
+
+.complete-confirm__btn--cancel,
+.complete-prompt__btn--cancel {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.complete-confirm__btn--secondary {
+  background: transparent;
+  color: var(--color-ready);
+  border: 1px solid var(--color-ready);
+}
+
+.complete-confirm__btn--primary,
+.complete-prompt__btn--primary {
+  background: var(--color-ready);
+  color: white;
+}
+
+.complete-confirm__btn-icon,
+.complete-prompt__btn-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Project Picker
+   ============================================================ */
+
+.project-picker {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+.project-picker__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-md);
+  color: var(--color-text);
+}
+
+.project-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-md);
+}
+
+.project-picker__option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.project-picker__option:hover {
+  background: var(--color-border);
+}
+
+.project-picker__option--selected {
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.project-picker__option--selected:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.project-picker__color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: var(--space-sm);
+}
+
+.project-picker__add-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 0.938rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.project-picker__add-btn:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: var(--color-primary);
+}
+
+.project-picker__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.project-picker__create-form {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.project-picker__create-input {
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.project-picker__create-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.project-picker__create-btn {
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.project-picker__create-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.project-picker__create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
