@@ -79,7 +79,7 @@ export function TaskDetailHeader({
         )}
         {project ? (
           <button
-            className="task-detail__project-badge"
+            className="task-detail__project-row"
             style={{ borderColor: project.color, color: project.color }}
             onClick={() => onNavigateToProject?.(project)}
           >
@@ -87,11 +87,12 @@ export function TaskDetailHeader({
               className="task-detail__project-dot"
               style={{ backgroundColor: project.color }}
             />
-            {project.name}
+            <span className="task-detail__project-name">{project.name}</span>
+            <span className="task-detail__project-chevron">›</span>
           </button>
         ) : (
           <button
-            className="task-detail__project-btn"
+            className="task-detail__project-row task-detail__project-row--empty"
             onClick={onShowProjectPicker}
           >
             + Add to project

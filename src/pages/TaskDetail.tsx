@@ -226,57 +226,40 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         </div>
       )}
 
-      {/* Status section */}
-      <div
-        className={`task-detail__status ${
-          isBlocked
-            ? 'task-detail__status--blocked'
-            : isCompleted
-            ? 'task-detail__status--completed'
-            : isTimerActive
-            ? 'task-detail__status--active'
-            : ''
-        }`}
-      >
-        {isBlocked && (
-          <>
-            <span className="task-detail__status-badge">Blocked</span>
-            <span className="task-detail__blocked-reason">{task.blockedReason}</span>
-          </>
-        )}
-        {isCompleted && <span className="task-detail__status-badge">Completed</span>}
-        {isTimerActive && (
-          <>
-            <span className="task-detail__status-badge">Recording</span>
-            <TimerDisplay size="large" />
-          </>
-        )}
-        {!isBlocked && !isCompleted && !isTimerActive && (
-          <span className="task-detail__status-badge">Active</span>
-        )}
-      </div>
-
-      {/* Timer controls */}
-      <div className="task-detail__timer-controls">
-        {isTimerActive ? (
-          <button
-            className="task-detail__timer-btn task-detail__timer-btn--stop"
-            onClick={handleStopTimer}
-          >
-            <StopIcon className="task-detail__icon" />
-            Stop Timer
-          </button>
-        ) : (
-          <button
-            className="task-detail__timer-btn task-detail__timer-btn--start"
-            onClick={() => handleStartTimerForTask(task)}
-            disabled={isBlocked || isCompleted}
-          >
-            <PlayIcon className="task-detail__icon" />
-            Start Timer
-          </button>
-        )}
-      </div>
+      {/* Unified status + timer control */}
+      {isBlocked ? (
+        <div className="task-detail__status-control task-detail__status-control--blocked">
+          <span className="task-detail__status-dot" />
+          <div className="task-detail__status-info">
+            <span className="task-detail__status-label">Blocked</span>
+            {task.blockedReason && (
+              <span className="task-detail__blocked-reason">{task.blockedReason}</span>
+            )}
+          </div>
+        </div>
+      ) : isCompleted ? (
+        <div className="task-detail__status-control task-detail__status-control--completed">
+          <span className="task-detail__status-dot" />
+          <span className="task-detail__status-label">Completed</span>
+        </div>
+      ) : isTimerActive ? (
+        <button
+          className="task-detail__status-control task-detail__status-control--recording"
+          onClick={handleStopTimer}
+        >
+          <StopIcon className="task-detail__status-icon" />
+          <span className="task-detail__status-label">Stop</span>
+          <TimerDisplay size="large" />
+        </button>
+      ) : (
+        <button
+          className="task-detail__status-control task-detail__status-control--active"
+          onClick={() => handleStartTimerForTask(task)}
+        >
+          <PlayIcon className="task-detail__status-icon" />
+          <span className="task-detail__status-label">Start Timer</span>
+        </button>
+      )}
 
       <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
 
@@ -341,15 +324,6 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
             )}
           </>
         )}
-
-        <button
-          className="task-detail__btn task-detail__btn--delete"
-          onClick={handleDeleteClick}
-          disabled={isDeleting}
-        >
-          <TrashIcon className="task-detail__icon" />
-          Delete
-        </button>
       </div>
 
       {/* Subtasks section */}
@@ -362,6 +336,16 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
           onCompleteSubtask={handleCompleteSubtask}
         />
       )}
+
+      {/* Delete - separated at bottom */}
+      <button
+        className="task-detail__delete-link"
+        onClick={handleDeleteClick}
+        disabled={isDeleting}
+      >
+        <TrashIcon className="task-detail__delete-link-icon" />
+        Delete Task
+      </button>
 
       {/* Dialogs */}
       <ProjectPicker
