@@ -25,7 +25,6 @@
   }
 
   .task-row--subtask,
-  .expandable-task-row__subtasks,
   .today-view__subtasks {
     background: rgba(255, 255, 255, 0.03);
   }

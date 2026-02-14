@@ -8,6 +8,18 @@
   gap: var(--space-lg);
 }
 
+/* Loading & Error States */
+.today-view__loading,
+.today-view__error {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.today-view__error {
+  color: var(--color-recording);
+}
+
 /* Active Timer Section */
 .today-view__active-timer {
   background: var(--color-recording-bg);

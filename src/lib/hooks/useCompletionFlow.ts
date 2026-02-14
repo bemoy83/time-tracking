@@ -1,6 +1,6 @@
 /**
  * useCompletionFlow hook.
- * Shared completion logic for list views (TodayView, TaskList).
+ * Shared completion logic for list views (TodayView).
  * Handles parent-with-incomplete-subtasks confirm and all-siblings-done prompt.
  */
 

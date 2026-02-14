@@ -188,17 +188,6 @@
   border-bottom: none;
 }
 
-/* ExpandableTaskRow subtask container */
-.expandable-task-row__subtasks {
-  margin-left: var(--space-lg);
-  margin-right: var(--space-xs);
-  border: 1px solid var(--color-border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.02);
-}
-
 /* Complete button */
 .task-row__complete-btn {
   display: flex;

@@ -32,9 +32,10 @@ interface TodayViewProps {
 }
 
 export function TodayView({ onSelectTask }: TodayViewProps) {
-  const { tasks, projects } = useTaskStore();
+  const { tasks, projects, isLoading, error } = useTaskStore();
   const { activeTimer } = useTimerStore();
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState<string | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const {
@@ -100,8 +101,13 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    await createTask({ title: newTaskTitle.trim() });
-    setNewTaskTitle('');
+    setIsAdding(true);
+    try {
+      await createTask({ title: newTaskTitle.trim() });
+      setNewTaskTitle('');
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleLongPress = (taskId: string) => {
@@ -131,6 +137,9 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     });
   };
 
+  if (error) return <div className="today-view__error">Error: {error}</div>;
+  if (isLoading) return <div className="today-view__loading">Loading tasks...</div>;
+
   return (
     <div className="today-view">
       {/* Quick Add */}
@@ -141,11 +150,12 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
           className="today-view__quick-add-input"
+          disabled={isAdding}
         />
         <button
           type="submit"
           className="today-view__quick-add-btn"
-          disabled={!newTaskTitle.trim()}
+          disabled={isAdding || !newTaskTitle.trim()}
         >
           <PlusIcon className="today-view__icon" />
         </button>

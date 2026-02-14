@@ -7,12 +7,11 @@ import { TimerBar } from './components/TimerBar';
 import { NetworkStatus } from './components/NetworkStatus';
 import { InstallPrompt } from './components/InstallPrompt';
 import { TodayView } from './pages/TodayView';
-import { TaskList } from './pages/TaskList';
 import { TaskDetail } from './pages/TaskDetail';
 import { ProjectList } from './pages/ProjectList';
 import { ProjectDetail } from './pages/ProjectDetail';
 
-type Tab = 'today' | 'tasks' | 'projects';
+type Tab = 'today' | 'projects';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab };
@@ -96,9 +95,6 @@ function App() {
         {view.type === 'tab' && view.tab === 'today' && (
           <TodayView onSelectTask={handleSelectTask} />
         )}
-        {view.type === 'tab' && view.tab === 'tasks' && (
-          <TaskList onSelectTask={handleSelectTask} />
-        )}
         {view.type === 'tab' && view.tab === 'projects' && (
           <ProjectList onSelectProject={handleNavigateToProject} />
         )}
@@ -132,15 +128,6 @@ function App() {
             <span>Today</span>
           </button>
           <button
-            className={`tab-nav__btn ${currentTab === 'tasks' ? 'tab-nav__btn--active' : ''}`}
-            onClick={() => handleTabChange('tasks')}
-            aria-label="All tasks"
-            aria-current={currentTab === 'tasks' ? 'page' : undefined}
-          >
-            <ListIcon />
-            <span>Tasks</span>
-          </button>
-          <button
             className={`tab-nav__btn ${currentTab === 'projects' ? 'tab-nav__btn--active' : ''}`}
             onClick={() => handleTabChange('projects')}
             aria-label="Projects"
@@ -165,14 +152,6 @@ function TodayIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="tab-nav__icon">
       <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="tab-nav__icon">
-      <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
     </svg>
   );
 }
