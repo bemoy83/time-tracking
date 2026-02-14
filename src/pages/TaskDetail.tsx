@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 import { Task, Project } from '../lib/types';
-import { PlayIcon, StopIcon, CheckIcon, TrashIcon } from '../components/icons';
+import { PlayIcon, StopIcon, CheckIcon, TrashIcon, HomeIcon } from '../components/icons';
 import {
   useTask,
   useSubtasks,
@@ -69,9 +69,11 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   if (!task) {
     return (
       <div className="task-detail">
-        <button className="task-detail__back" onClick={onBack}>
-          &larr; Back
-        </button>
+        <nav className="task-detail__breadcrumb">
+          <button className="task-detail__breadcrumb-back" onClick={onBack}>
+            <HomeIcon className="task-detail__breadcrumb-back-icon" />
+          </button>
+        </nav>
         <p>Task not found.</p>
       </div>
     );

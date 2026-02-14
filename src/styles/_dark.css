@@ -24,9 +24,12 @@
     background: #2a2a2a;
   }
 
-  .task-row--subtask,
-  .today-view__subtasks {
+  .task-row--subtask {
     background: rgba(255, 255, 255, 0.03);
+  }
+
+  .today-view__subtasks {
+    background: var(--color-bg);
   }
 
   .task-row--subtask:hover {

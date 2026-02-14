@@ -159,42 +159,68 @@
   color: var(--color-text);
 }
 
+/* ---- Grouped task list: single rounded container ---- */
+
 .today-view__task-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
 }
 
-/* ---- Connected drawer: parent card + subtasks ---- */
-
-/* Flatten parent card bottom when subtask drawer follows */
-.swipeable-row:has(+ .today-view__subtasks) {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+/* All swipeable rows inside are flat with dividers */
+.today-view__task-list > .swipeable-row {
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   border-bottom: none;
 }
 
-/* Subtask drawer container */
+/* First child gets top rounding */
+.today-view__task-list > :first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+/* Last child gets bottom rounding + border */
+.today-view__task-list > :last-child {
+  border-bottom: 1px solid var(--color-border);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* Divider between adjacent rows (top border acts as separator) */
+.today-view__task-list > .swipeable-row + .swipeable-row {
+  border-top: 1px solid var(--color-border);
+}
+
+/* Parent card before drawer: remove bottom border */
+.today-view__task-list > .swipeable-row:has(+ .today-view__subtasks) {
+  border-bottom: none;
+}
+
+/* ---- Subtask drawer ---- */
+
 .today-view__subtasks {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--color-border);
-  border-top: none;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
   overflow: hidden;
-  /* Eat the flex gap so drawer attaches to parent card */
-  margin-top: calc(-1 * var(--space-sm));
 }
 
 /* Flat swipeable-rows inside drawer */
 .today-view__subtasks .swipeable-row {
   border: none;
   border-radius: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  background: transparent;
 }
 
-.today-view__subtasks .swipeable-row:last-child {
-  border-bottom: none;
+/* Card after a drawer: start new group with top rounding */
+.today-view__task-list > .today-view__subtasks + .swipeable-row {
+  border-top: 1px solid var(--color-border);
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
 }
 
 /* Project color dot */
@@ -205,16 +231,22 @@
   flex-shrink: 0;
 }
 
-/* Blocked Tasks */
+/* Blocked Tasks — flat rows inside grouped container */
 .today-view__blocked-task {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   background: #fffbeb;
-  border: 1px solid #fbbf24;
-  border-radius: 8px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
+  min-height: var(--touch-min);
+  justify-content: center;
+}
+
+.today-view__blocked-task:last-child {
+  border-bottom: none;
 }
 
 .today-view__blocked-task-title {
