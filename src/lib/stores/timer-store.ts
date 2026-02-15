@@ -1,18 +1,17 @@
 /**
  * Timer store with React state management.
- * Implements timer rules from CONTEXT.md:
- * - Only one active timer per user
- * - Timer start blocked on blocked tasks
- * - Timer stop always allowed
- * - Timers survive reload, backgrounding, and offline use
- * - Time calculated from timestamps only (no setInterval)
+ * Supports multiple active timers (one per task).
+ * Parallel toggle controls whether multiple tasks can run simultaneously.
+ * - Parallel OFF (default): one timer app-wide (sequential)
+ * - Parallel ON: one timer per task, multiple tasks simultaneously
  */
 
 import { useSyncExternalStore, useCallback } from 'react';
 import {
-  getActiveTimer,
-  setActiveTimer,
-  clearActiveTimer,
+  getAllActiveTimers,
+  addActiveTimer,
+  removeActiveTimer,
+  updateActiveTimer as dbUpdateActiveTimer,
   addTimeEntry,
   getTask,
 } from '../db';
@@ -25,17 +24,39 @@ import {
 } from '../types';
 
 // ============================================================
+// Parallel Toggle (localStorage-backed)
+// ============================================================
+
+const PARALLEL_KEY = 'parallelSubtaskTimers';
+
+export function getParallelSubtaskTimers(): boolean {
+  try {
+    return localStorage.getItem(PARALLEL_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setParallelSubtaskTimers(enabled: boolean): void {
+  try {
+    localStorage.setItem(PARALLEL_KEY, String(enabled));
+  } catch {
+    // ignore
+  }
+}
+
+// ============================================================
 // Store State
 // ============================================================
 
 type TimerState = {
-  activeTimer: ActiveTimer | null;
+  activeTimers: ActiveTimer[];
   isLoading: boolean;
   error: string | null;
 };
 
 let state: TimerState = {
-  activeTimer: null,
+  activeTimers: [],
   isLoading: true,
   error: null,
 };
@@ -62,19 +83,13 @@ let initialized = false;
  * Initialize the timer store by loading persisted state from IndexedDB.
  * Called once on app startup.
  */
-const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
-
 export async function initializeTimerStore(): Promise<void> {
   if (initialized) return;
 
   try {
-    let timer = await getActiveTimer();
-    if (timer?.taskId === LEGACY_UNASSIGNED_TASK_ID) {
-      await clearActiveTimer();
-      timer = null;
-    }
+    const timers = await getAllActiveTimers();
     setState({
-      activeTimer: timer,
+      activeTimers: timers,
       isLoading: false,
       error: null,
     });
@@ -98,12 +113,22 @@ export type StartTimerResult =
 /**
  * Start a timer for a task.
  * Rules:
- * - Cannot start if a timer is already active (must stop first)
+ * - Cannot start if this task already has a timer
+ * - Parallel OFF: cannot start if any timer is active (must stop first)
  * - Cannot start timer on a blocked task
  */
 export async function startTimer(taskId: string): Promise<StartTimerResult> {
-  // Rule: Only one active timer
-  if (state.activeTimer) {
+  // Rule: One timer per task
+  if (state.activeTimers.some((t) => t.taskId === taskId)) {
+    return {
+      success: false,
+      reason: 'timer_active',
+      message: 'A timer is already running for this task.',
+    };
+  }
+
+  // Rule: Sequential mode — only one timer app-wide
+  if (!getParallelSubtaskTimers() && state.activeTimers.length > 0) {
     return {
       success: false,
       reason: 'timer_active',
@@ -122,7 +147,6 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       };
     }
 
-    // Rule: Timer start blocked on blocked tasks
     if (task.status === 'blocked') {
       return {
         success: false,
@@ -140,8 +164,8 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       workers: 1,
     };
 
-    await setActiveTimer(timer);
-    setState({ activeTimer: timer, error: null });
+    await addActiveTimer(timer);
+    setState({ activeTimers: [...state.activeTimers, timer], error: null });
 
     return { success: true };
   } catch (err) {
@@ -156,24 +180,22 @@ export type StopTimerResult =
   | { success: false; reason: 'no_active_timer' | 'error'; message: string };
 
 /**
- * Stop the current timer and create a time entry.
- * Rule: Timer stop always allowed.
+ * Stop the timer for a specific task and create a time entry.
  */
-export async function stopTimer(): Promise<StopTimerResult> {
-  const { activeTimer } = state;
+export async function stopTimer(taskId: string): Promise<StopTimerResult> {
+  const activeTimer = state.activeTimers.find((t) => t.taskId === taskId);
 
   if (!activeTimer) {
     return {
       success: false,
       reason: 'no_active_timer',
-      message: 'No timer is running.',
+      message: 'No timer is running for this task.',
     };
   }
 
   try {
     const now = nowUtc();
 
-    // Create the time entry (carry workers from active timer)
     const entry: TimeEntry = {
       id: generateId(),
       taskId: activeTimer.taskId,
@@ -181,16 +203,18 @@ export async function stopTimer(): Promise<StopTimerResult> {
       endUtc: now,
       source: activeTimer.source,
       workers: activeTimer.workers ?? 1,
-      syncStatus: 'pending', // Will be synced when online
+      syncStatus: 'pending',
       createdAt: now,
       updatedAt: now,
     };
 
-    // Persist the entry and clear the active timer
     await addTimeEntry(entry);
-    await clearActiveTimer();
+    await removeActiveTimer(taskId);
 
-    setState({ activeTimer: null, error: null });
+    setState({
+      activeTimers: state.activeTimers.filter((t) => t.taskId !== taskId),
+      error: null,
+    });
 
     return { success: true, entry };
   } catch (err) {
@@ -201,19 +225,21 @@ export async function stopTimer(): Promise<StopTimerResult> {
 }
 
 /**
- * Update the workers count on the currently active timer.
- * Persists to IndexedDB so it survives reload.
+ * Update the workers count on a task's active timer.
  */
-export async function setTimerWorkers(count: number): Promise<void> {
-  const { activeTimer: timer } = state;
+export async function setTimerWorkers(taskId: string, count: number): Promise<void> {
+  const timer = state.activeTimers.find((t) => t.taskId === taskId);
   if (!timer) return;
 
   const clamped = Math.max(1, Math.min(20, Math.round(count)));
-  const updated: ActiveTimer = { ...timer, workers: clamped };
 
   try {
-    await setActiveTimer(updated);
-    setState({ activeTimer: updated, error: null });
+    await dbUpdateActiveTimer(taskId, { workers: clamped });
+    const updated = { ...timer, workers: clamped };
+    setState({
+      activeTimers: state.activeTimers.map((t) => (t.taskId === taskId ? updated : t)),
+      error: null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update workers';
     setState({ error: message });
@@ -221,13 +247,15 @@ export async function setTimerWorkers(count: number): Promise<void> {
 }
 
 /**
- * Discard the current timer without saving a time entry.
- * Use with caution - this loses time data.
+ * Discard a task's timer without saving a time entry.
  */
-export async function discardTimer(): Promise<void> {
+export async function discardTimer(taskId: string): Promise<void> {
   try {
-    await clearActiveTimer();
-    setState({ activeTimer: null, error: null });
+    await removeActiveTimer(taskId);
+    setState({
+      activeTimers: state.activeTimers.filter((t) => t.taskId !== taskId),
+      error: null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to discard timer';
     setState({ error: message });
@@ -238,38 +266,35 @@ export async function discardTimer(): Promise<void> {
 // React Hooks
 // ============================================================
 
-/**
- * Subscribe to timer state changes.
- */
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
-/**
- * Get current snapshot of timer state.
- */
 function getSnapshot(): TimerState {
   return state;
 }
 
 /**
  * React hook to access timer state.
- * Automatically re-renders when state changes.
  */
 export function useTimerStore(): TimerState {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 /**
- * React hook to get elapsed time in milliseconds.
- * Returns 0 if no timer is active.
- * Must be called within a component that updates on an interval for live display.
+ * React hook to get elapsed time for a specific task's timer.
+ * Returns 0 if no timer is active for that task.
  */
-export function useElapsedMs(): number {
-  const { activeTimer } = useTimerStore();
-  if (!activeTimer) return 0;
-  return elapsedMs(activeTimer.startUtc);
+export function useElapsedMs(taskId?: string): number {
+  const { activeTimers } = useTimerStore();
+  if (!taskId) {
+    // Sum all active timers
+    return activeTimers.reduce((sum, t) => sum + elapsedMs(t.startUtc), 0);
+  }
+  const timer = activeTimers.find((t) => t.taskId === taskId);
+  if (!timer) return 0;
+  return elapsedMs(timer.startUtc);
 }
 
 /**
@@ -285,22 +310,27 @@ export function useTimerActions() {
 }
 
 // ============================================================
-// Visibility Change Handler (Resume on Focus)
+// Compatibility Helpers
 // ============================================================
 
 /**
- * Handle visibility changes to ensure timer state is fresh.
- * When the app comes back to foreground, we recalculate from timestamps.
+ * Get the active timer for a specific task from current state.
+ * Convenience for components that need to check a single task.
  */
+export function getActiveTimerForTask(taskId: string): ActiveTimer | null {
+  return state.activeTimers.find((t) => t.taskId === taskId) ?? null;
+}
+
+// ============================================================
+// Visibility Change Handler (Resume on Focus)
+// ============================================================
+
 function handleVisibilityChange() {
   if (document.visibilityState === 'visible') {
-    // Force re-render by notifying listeners
-    // The elapsed time will be recalculated from timestamps
     notifyListeners();
   }
 }
 
-// Set up visibility change listener
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', handleVisibilityChange);
 }

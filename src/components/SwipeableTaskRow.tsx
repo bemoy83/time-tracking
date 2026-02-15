@@ -33,8 +33,8 @@ export function SwipeableTaskRow({
   onStartTimer,
   onComplete,
 }: SwipeableTaskRowProps) {
-  const { activeTimer } = useTimerStore();
-  const isTimerActive = activeTimer?.taskId === task.id;
+  const { activeTimers } = useTimerStore();
+  const isTimerActive = activeTimers.some((t) => t.taskId === task.id);
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
 

@@ -9,17 +9,17 @@ import { Task, ActiveTimer, durationMs, elapsedMs } from '../types';
 
 /**
  * Returns a map of taskId → total rolled-up milliseconds (direct + subtask time).
- * Recomputes when tasks or activeTimer changes.
+ * Recomputes when tasks or activeTimers change.
  */
 export function useTaskTimes(
   tasks: Task[],
-  activeTimer: ActiveTimer | null
+  activeTimers: ActiveTimer[]
 ): Map<string, number> {
   const [timeMap, setTimeMap] = useState<Map<string, number>>(new Map());
 
-  // Recompute when task list or timer changes
+  // Recompute when task list or timers change
   const taskKey = tasks.map((t) => t.id).join(',');
-  const timerId = activeTimer?.id ?? null;
+  const timerKey = activeTimers.map((t) => t.id).join(',');
 
   useEffect(() => {
     let cancelled = false;
@@ -35,12 +35,12 @@ export function useTaskTimes(
         directMs.set(entry.taskId, (directMs.get(entry.taskId) ?? 0) + dur);
       }
 
-      // Add active timer elapsed
-      if (activeTimer) {
-        const elapsed = elapsedMs(activeTimer.startUtc);
+      // Add all active timer elapsed times
+      for (const timer of activeTimers) {
+        const elapsed = elapsedMs(timer.startUtc);
         directMs.set(
-          activeTimer.taskId,
-          (directMs.get(activeTimer.taskId) ?? 0) + elapsed
+          timer.taskId,
+          (directMs.get(timer.taskId) ?? 0) + elapsed
         );
       }
 
@@ -74,7 +74,7 @@ export function useTaskTimes(
 
     load();
     return () => { cancelled = true; };
-  }, [taskKey, timerId]);
+  }, [taskKey, timerKey]);
 
   return timeMap;
 }

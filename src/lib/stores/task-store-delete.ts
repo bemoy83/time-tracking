@@ -8,7 +8,7 @@ import {
   deleteTimeEntriesByTask,
   deleteTaskNotesByTask,
   deleteTask as dbDeleteTask,
-  getActiveTimer,
+  getAllActiveTimers,
 } from '../db';
 import { durationMs, elapsedMs } from '../types';
 import { stopTimer } from './timer-store';
@@ -33,7 +33,7 @@ export async function getDeletePreview(taskId: string): Promise<DeletePreview | 
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) return null;
 
-  const activeTimer = await getActiveTimer();
+  const activeTimers = await getAllActiveTimers();
   const taskIds: string[] = [taskId];
   let subtaskCount = 0;
 
@@ -51,9 +51,10 @@ export async function getDeletePreview(taskId: string): Promise<DeletePreview | 
     for (const entry of entries) {
       totalTimeMs += durationMs(entry.startUtc, entry.endUtc);
     }
-    if (activeTimer?.taskId === id) {
+    const timer = activeTimers.find((t) => t.taskId === id);
+    if (timer) {
       hasActiveTimer = true;
-      totalTimeMs += elapsedMs(activeTimer.startUtc);
+      totalTimeMs += elapsedMs(timer.startUtc);
     }
   }
 
@@ -72,7 +73,12 @@ export async function deleteTaskWithEntries(taskId: string): Promise<void> {
   const { taskIds, hasActiveTimer } = preview;
 
   if (hasActiveTimer) {
-    await stopTimer();
+    for (const id of taskIds) {
+      const activeTimers = await getAllActiveTimers();
+      if (activeTimers.some((t) => t.taskId === id)) {
+        await stopTimer(id);
+      }
+    }
   }
 
   const subtaskIds = taskIds.filter((id) => id !== taskId);

@@ -8,7 +8,7 @@ import type { ActiveTimer, TimeEntry, Task, Project, TaskNote } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -17,10 +17,13 @@ const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
  * Database schema for idb type safety.
  */
 interface TimeTrackingDBSchema extends DBSchema {
-  // Singleton store for active timer (max one record with key 'current')
-  activeTimer: {
+  // Active timers store (one record per task with active timer)
+  activeTimers: {
     key: string;
     value: ActiveTimer;
+    indexes: {
+      'by-task': string;
+    };
   };
   // Time entries with taskId index for querying by task
   timeEntries: {
@@ -29,6 +32,7 @@ interface TimeTrackingDBSchema extends DBSchema {
     indexes: {
       'by-task': string;
       'by-sync-status': string;
+      'by-startUtc': string;
     };
   };
   // Tasks with projectId and parentId indexes
@@ -68,13 +72,15 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
       upgrade(db, oldVersion, _newVersion, transaction) {
         // Version 1: Create all stores
         if (oldVersion < 1) {
-          // Active timer store (singleton pattern - key is always 'current')
-          db.createObjectStore('activeTimer', { keyPath: 'id' });
+          // Active timers store (multi-record, one per task)
+          const timerStore = db.createObjectStore('activeTimers', { keyPath: 'id' });
+          timerStore.createIndex('by-task', 'taskId', { unique: true });
 
           // Time entries store with indexes
           const entriesStore = db.createObjectStore('timeEntries', { keyPath: 'id' });
           entriesStore.createIndex('by-task', 'taskId');
           entriesStore.createIndex('by-sync-status', 'syncStatus');
+          entriesStore.createIndex('by-startUtc', 'startUtc');
 
           // Tasks store with indexes
           const tasksStore = db.createObjectStore('tasks', { keyPath: 'id' });
@@ -112,7 +118,7 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
         }
 
         // Version 4: Add workers field to timeEntries and activeTimer
-        if (oldVersion < 4) {
+        if (oldVersion < 4 && oldVersion >= 1) {
           const entryStore = transaction.objectStore('timeEntries');
           entryStore.getAll().then((entries) => {
             entries.forEach((entry) => {
@@ -123,16 +129,50 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               }
             });
           });
-          const timerStore = transaction.objectStore('activeTimer');
-          timerStore.getAll().then((timers) => {
-            timers.forEach((timer) => {
-              const t = timer as unknown as Record<string, unknown>;
-              if (t.workers === undefined) {
-                t.workers = 1;
-                timerStore.put(timer);
+          // Only touch old activeTimer store if it exists (pre-v6)
+          if (db.objectStoreNames.contains('activeTimer' as never)) {
+            const timerStore = transaction.objectStore('activeTimer' as never);
+            timerStore.getAll().then((timers: unknown[]) => {
+              timers.forEach((timer) => {
+                const t = timer as Record<string, unknown>;
+                if (t.workers === undefined) {
+                  t.workers = 1;
+                  timerStore.put(timer);
+                }
+              });
+            });
+          }
+        }
+
+        // Version 6: Migrate singleton activeTimer → multi-record activeTimers store
+        // Also add by-startUtc index on timeEntries
+        if (oldVersion >= 1 && oldVersion < 6) {
+          // Create new multi-record store
+          const newTimerStore = db.createObjectStore('activeTimers', { keyPath: 'id' });
+          newTimerStore.createIndex('by-task', 'taskId', { unique: true });
+
+          // Migrate existing singleton timer if present
+          if (db.objectStoreNames.contains('activeTimer' as never)) {
+            const oldStore = transaction.objectStore('activeTimer' as never);
+            oldStore.getAll().then((timers: unknown[]) => {
+              const allTimers = timers as ActiveTimer[];
+              if (allTimers.length > 0) {
+                const existing = allTimers[0];
+                const migrated: ActiveTimer = {
+                  ...existing,
+                  id: existing.taskId, // use taskId as id
+                };
+                newTimerStore.add(migrated);
               }
             });
-          });
+            db.deleteObjectStore('activeTimer' as never);
+          }
+
+          // Add by-startUtc index to timeEntries
+          const entriesStore = transaction.objectStore('timeEntries');
+          if (!entriesStore.indexNames.contains('by-startUtc')) {
+            entriesStore.createIndex('by-startUtc', 'startUtc');
+          }
         }
       },
     });
@@ -141,36 +181,54 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 }
 
 // ============================================================
-// Active Timer Operations (Singleton pattern)
+// Active Timer Operations (Multi-timer)
 // ============================================================
 
-const ACTIVE_TIMER_KEY = 'current';
+/**
+ * Get all active timers.
+ */
+export async function getAllActiveTimers(): Promise<ActiveTimer[]> {
+  const db = await getDB();
+  return db.getAll('activeTimers');
+}
 
 /**
- * Get the currently active timer, if any.
+ * Get the active timer for a specific task, if any.
  */
-export async function getActiveTimer(): Promise<ActiveTimer | null> {
+export async function getActiveTimerByTask(taskId: string): Promise<ActiveTimer | null> {
   const db = await getDB();
-  const timer = await db.get('activeTimer', ACTIVE_TIMER_KEY);
+  const timer = await db.getFromIndex('activeTimers', 'by-task', taskId);
   return timer ?? null;
 }
 
 /**
- * Set the active timer. Replaces any existing timer.
- * Enforces one-active-timer rule at the database level.
+ * Add an active timer. Each task may have at most one.
  */
-export async function setActiveTimer(timer: ActiveTimer): Promise<void> {
+export async function addActiveTimer(timer: ActiveTimer): Promise<void> {
   const db = await getDB();
-  // Always use the same key to enforce singleton
-  await db.put('activeTimer', { ...timer, id: ACTIVE_TIMER_KEY });
+  await db.add('activeTimers', timer);
 }
 
 /**
- * Clear the active timer.
+ * Remove the active timer for a specific task.
  */
-export async function clearActiveTimer(): Promise<void> {
+export async function removeActiveTimer(taskId: string): Promise<void> {
   const db = await getDB();
-  await db.delete('activeTimer', ACTIVE_TIMER_KEY);
+  const timer = await db.getFromIndex('activeTimers', 'by-task', taskId);
+  if (timer) {
+    await db.delete('activeTimers', timer.id);
+  }
+}
+
+/**
+ * Update fields on an active timer for a specific task.
+ */
+export async function updateActiveTimer(taskId: string, updates: Partial<ActiveTimer>): Promise<void> {
+  const db = await getDB();
+  const timer = await db.getFromIndex('activeTimers', 'by-task', taskId);
+  if (timer) {
+    await db.put('activeTimers', { ...timer, ...updates, id: timer.id, taskId: timer.taskId });
+  }
 }
 
 // ============================================================

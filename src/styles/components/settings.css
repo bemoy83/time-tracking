@@ -53,3 +53,49 @@
   font-size: 0.813rem;
   color: var(--color-text-muted);
 }
+
+/* Toggle row variant */
+.settings-view__row--toggle {
+  cursor: pointer;
+}
+
+.settings-view__toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-view__toggle {
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-border);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+.settings-view__toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.settings-view__toggle:checked {
+  background: var(--color-primary);
+}
+
+.settings-view__toggle:checked::after {
+  transform: translateX(20px);
+}

@@ -7,7 +7,8 @@ import {
   deleteAllTimeEntries,
   deleteAllTasks,
   deleteAllProjects,
-  clearActiveTimer,
+  getAllActiveTimers,
+  removeActiveTimer,
 } from '../db';
 import { getPendingCount } from '../sync/sync-queue';
 import { setState as setTaskState } from './task-store';
@@ -25,7 +26,11 @@ export async function purgeTimeEntries(): Promise<void> {
  * Refreshes task store and sync state afterwards.
  */
 export async function resetAllData(): Promise<void> {
-  await clearActiveTimer();
+  // Stop all active timers
+  const timers = await getAllActiveTimers();
+  for (const timer of timers) {
+    await removeActiveTimer(timer.taskId);
+  }
   await deleteAllTimeEntries();
   await deleteAllTasks();
   await deleteAllProjects();

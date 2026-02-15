@@ -11,34 +11,44 @@ import { elapsedMs, formatDuration } from '../lib/types';
 interface TimerDisplayProps {
   /** Size variant */
   size?: 'normal' | 'large';
+  /** Task ID to show timer for; omit to show sum of all active timers */
+  taskId?: string;
 }
 
 /**
  * Displays the current elapsed time.
  * Uses timestamps for accuracy - the interval is only for UI updates.
  */
-export function TimerDisplay({ size = 'normal' }: TimerDisplayProps) {
-  const { activeTimer } = useTimerStore();
+export function TimerDisplay({ size = 'normal', taskId }: TimerDisplayProps) {
+  const { activeTimers } = useTimerStore();
   const [displayMs, setDisplayMs] = useState(0);
 
+  // Find relevant timer(s)
+  const relevantTimers = taskId
+    ? activeTimers.filter((t) => t.taskId === taskId)
+    : activeTimers;
+
+  const timerKey = relevantTimers.map((t) => t.id).join(',');
+
   useEffect(() => {
-    if (!activeTimer) {
+    if (relevantTimers.length === 0) {
       setDisplayMs(0);
       return;
     }
 
-    // Calculate initial elapsed time from timestamp
-    setDisplayMs(elapsedMs(activeTimer.startUtc));
+    const calcElapsed = () =>
+      relevantTimers.reduce((sum, t) => sum + elapsedMs(t.startUtc), 0);
 
-    // Update display every second (visual only - actual time from timestamps)
+    setDisplayMs(calcElapsed());
+
     const interval = setInterval(() => {
-      setDisplayMs(elapsedMs(activeTimer.startUtc));
+      setDisplayMs(calcElapsed());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeTimer]);
+  }, [timerKey]);
 
-  const isActive = !!activeTimer;
+  const isActive = relevantTimers.length > 0;
   const formatted = formatDuration(displayMs);
 
   return (

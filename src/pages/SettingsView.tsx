@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '../lib/stores/task-store';
 import { purgeTimeEntries, resetAllData } from '../lib/stores/purge-store';
+import { getParallelSubtaskTimers, setParallelSubtaskTimers } from '../lib/stores/timer-store';
 import { getAllTimeEntries } from '../lib/db';
 import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
@@ -10,6 +11,7 @@ export function SettingsView() {
   const [entryCount, setEntryCount] = useState(0);
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
+  const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -29,6 +31,28 @@ export function SettingsView() {
 
   return (
     <div className="settings-view">
+      <section className="settings-view__section">
+        <h2 className="settings-view__section-title">Timers</h2>
+
+        <label className="settings-view__row settings-view__row--toggle">
+          <div className="settings-view__toggle-text">
+            <span className="settings-view__row-label">Parallel subtask timers</span>
+            <span className="settings-view__row-detail">
+              Allow multiple subtasks to run timers simultaneously
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            className="settings-view__toggle"
+            checked={parallelTimers}
+            onChange={(e) => {
+              setParallelTimers(e.target.checked);
+              setParallelSubtaskTimers(e.target.checked);
+            }}
+          />
+        </label>
+      </section>
+
       <section className="settings-view__section">
         <h2 className="settings-view__section-title">Data</h2>
 

@@ -62,13 +62,13 @@ function anyMultiWorker(entries: TimeEntry[]): boolean {
  *
  * @param taskId - The task to calculate time for
  * @param subtaskIds - IDs of direct subtasks (one level only)
- * @param activeTimer - Current active timer, if any
+ * @param activeTimers - All currently active timers
  * @returns Time breakdown with direct, subtask, and total time
  */
 export async function getTaskTimeBreakdown(
   taskId: string,
   subtaskIds: string[],
-  activeTimer: ActiveTimer | null
+  activeTimers: ActiveTimer[]
 ): Promise<TimeBreakdown> {
   // Get completed entries for the main task
   const directEntries = await getTimeEntriesByTask(taskId);
@@ -79,9 +79,10 @@ export async function getTaskTimeBreakdown(
   let hasMultiple = anyMultiWorker(directEntries);
 
   // Add active timer elapsed if running on this task
-  if (activeTimer?.taskId === taskId) {
-    const elapsed = elapsedMs(activeTimer.startUtc);
-    const workers = activeTimer.workers ?? 1;
+  const directTimer = activeTimers.find((t) => t.taskId === taskId);
+  if (directTimer) {
+    const elapsed = elapsedMs(directTimer.startUtc);
+    const workers = directTimer.workers ?? 1;
     directMs += elapsed;
     directPersonMs += elapsed * workers;
     if (workers > 1) hasMultiple = true;
@@ -101,9 +102,10 @@ export async function getTaskTimeBreakdown(
     if (anyMultiWorker(subtaskEntries)) hasMultiple = true;
 
     // Add active timer elapsed if running on this subtask
-    if (activeTimer?.taskId === subtaskId) {
-      const elapsed = elapsedMs(activeTimer.startUtc);
-      const workers = activeTimer.workers ?? 1;
+    const subtaskTimer = activeTimers.find((t) => t.taskId === subtaskId);
+    if (subtaskTimer) {
+      const elapsed = elapsedMs(subtaskTimer.startUtc);
+      const workers = subtaskTimer.workers ?? 1;
       subtaskMs += elapsed;
       subtaskPersonMs += elapsed * workers;
       if (workers > 1) hasMultiple = true;

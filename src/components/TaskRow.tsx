@@ -39,8 +39,8 @@ export function TaskRow({
   isSubtask = false,
   onSelect,
 }: TaskRowProps) {
-  const { activeTimer } = useTimerStore();
-  const isTimerActive = activeTimer?.taskId === task.id;
+  const { activeTimers } = useTimerStore();
+  const isTimerActive = activeTimers.some((t) => t.taskId === task.id);
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
   const hasSubtasks = subtaskCount > 0;

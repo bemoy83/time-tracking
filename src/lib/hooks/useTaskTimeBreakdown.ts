@@ -1,6 +1,6 @@
 /**
  * Hook for fetching task time breakdown.
- * Refetches when taskId, subtaskIds, or activeTimer changes.
+ * Refetches when taskId, subtaskIds, or activeTimers change.
  */
 
 import { useState, useEffect } from 'react';
@@ -24,12 +24,12 @@ const EMPTY_BREAKDOWN: TimeBreakdown = {
  *
  * @param taskId - The task to calculate time for
  * @param subtaskIds - IDs of direct subtasks
- * @param activeTimer - Current active timer (triggers refetch on change)
+ * @param activeTimers - All currently active timers (triggers refetch on change)
  */
 export function useTaskTimeBreakdown(
   taskId: string,
   subtaskIds: string[],
-  activeTimer: ActiveTimer | null
+  activeTimers: ActiveTimer[]
 ): {
   breakdown: TimeBreakdown;
   isLoading: boolean;
@@ -41,13 +41,13 @@ export function useTaskTimeBreakdown(
   // Create stable key for subtaskIds to detect changes
   const subtaskKey = subtaskIds.join(',');
 
-  // Track active timer ID to detect when timer stops
-  const activeTimerId = activeTimer?.id ?? null;
+  // Track active timer IDs to detect when timers start/stop
+  const timerKey = activeTimers.map((t) => t.id).join(',');
 
   const fetchBreakdown = async () => {
     setIsLoading(true);
     try {
-      const result = await getTaskTimeBreakdown(taskId, subtaskIds, activeTimer);
+      const result = await getTaskTimeBreakdown(taskId, subtaskIds, activeTimers);
       setBreakdown(result);
     } catch (err) {
       console.error('Failed to fetch time breakdown:', err);
@@ -60,7 +60,7 @@ export function useTaskTimeBreakdown(
   // Refetch when dependencies change
   useEffect(() => {
     fetchBreakdown();
-  }, [taskId, subtaskKey, activeTimerId]);
+  }, [taskId, subtaskKey, timerKey]);
 
   // Refresh function for manual updates
   const refresh = () => {

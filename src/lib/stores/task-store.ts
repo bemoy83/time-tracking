@@ -14,7 +14,7 @@ import {
   getTimeEntriesByTask,
   deleteTimeEntriesByTask,
   deleteTask as dbDeleteTask,
-  getActiveTimer,
+  getAllActiveTimers,
 } from '../db';
 import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs } from '../types';
 import { stopTimer } from './timer-store';
@@ -168,10 +168,12 @@ export async function completeTaskAndChildren(parentId: string): Promise<void> {
   const children = state.tasks.filter((t) => t.parentId === parentId);
   const allIds = [parentId, ...children.map((c) => c.id)];
 
-  // Stop timer if active on any affected task
-  const activeTimer = await getActiveTimer();
-  if (activeTimer && allIds.includes(activeTimer.taskId)) {
-    await stopTimer();
+  // Stop timers if active on any affected task
+  const activeTimers = await getAllActiveTimers();
+  for (const timer of activeTimers) {
+    if (allIds.includes(timer.taskId)) {
+      await stopTimer(timer.taskId);
+    }
   }
 
   const now = nowUtc();
@@ -359,15 +361,16 @@ export interface DeleteProjectPreview {
 export async function getDeleteProjectPreview(projectId: string): Promise<DeleteProjectPreview> {
   const projectTasks = state.tasks.filter((t) => t.projectId === projectId);
   let totalTimeMs = 0;
-  const activeTimer = await getActiveTimer();
+  const activeTimers = await getAllActiveTimers();
 
   for (const task of projectTasks) {
     const entries = await getTimeEntriesByTask(task.id);
     for (const entry of entries) {
       totalTimeMs += durationMs(entry.startUtc, entry.endUtc);
     }
-    if (activeTimer?.taskId === task.id) {
-      totalTimeMs += elapsedMs(activeTimer.startUtc);
+    const timer = activeTimers.find((t) => t.taskId === task.id);
+    if (timer) {
+      totalTimeMs += elapsedMs(timer.startUtc);
     }
   }
 
@@ -384,10 +387,12 @@ export async function deleteProjectWithMode(
 ): Promise<void> {
   const projectTasks = state.tasks.filter((t) => t.projectId === projectId);
 
-  // Stop active timer if on any affected task
-  const activeTimer = await getActiveTimer();
-  if (activeTimer && projectTasks.some((t) => t.id === activeTimer.taskId)) {
-    await stopTimer();
+  // Stop active timers if on any affected task
+  const activeTimers2 = await getAllActiveTimers();
+  for (const timer of activeTimers2) {
+    if (projectTasks.some((t) => t.id === timer.taskId)) {
+      await stopTimer(timer.taskId);
+    }
   }
 
   if (mode === 'unassign') {

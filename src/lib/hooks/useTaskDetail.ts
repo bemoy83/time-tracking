@@ -71,7 +71,7 @@ export interface UseTaskDetailReturn {
   isSubtask: boolean;
   error: string | null;
   taskTimes: Map<string, number>;
-  activeTimer: ReturnType<typeof useTimerStore>['activeTimer'];
+  activeTimers: ReturnType<typeof useTimerStore>['activeTimers'];
 
   // Actions
   handleStartTimer: (t: Task) => Promise<void>;
@@ -95,8 +95,8 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   const task = useTask(taskId);
   const subtasks = useSubtasks(taskId);
   const { tasks, projects } = useTaskStore();
-  const { activeTimer } = useTimerStore();
-  const taskTimes = useTaskTimes(tasks, activeTimer);
+  const { activeTimers } = useTimerStore();
+  const taskTimes = useTaskTimes(tasks, activeTimers);
 
   // Block flow state
   const [blockReason, setBlockReason] = useState('');
@@ -120,7 +120,7 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   const [lastCompletedSubtaskId, setLastCompletedSubtaskId] = useState<string | null>(null);
 
   // Derived state
-  const isTimerActive = activeTimer?.taskId === task?.id;
+  const isTimerActive = activeTimers.some((t) => t.taskId === task?.id);
   const isBlocked = task?.status === 'blocked';
   const isCompleted = task?.status === 'completed';
   const isSubtask = task?.parentId !== null;
@@ -143,14 +143,17 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   };
 
   const handleStopTimer = async () => {
+    if (!task) return;
     setError(null);
-    const result = await stopTimer();
+    const result = await stopTimer(task.id);
     if (!result.success) {
       setError(result.message);
     }
   };
 
-  const handleSetWorkers = (n: number) => setTimerWorkers(n);
+  const handleSetWorkers = (n: number) => {
+    if (task) setTimerWorkers(task.id, n);
+  };
 
   const handleReactivate = async () => {
     if (task) await reactivateTask(task.id);
@@ -176,7 +179,7 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   const handleComplete = async () => {
     if (!task) return;
     if (isTimerActive) {
-      await stopTimer();
+      await stopTimer(task.id);
     }
 
     const incompleteSubtasks = subtasks.filter((t) => t.status !== 'completed');
@@ -193,8 +196,8 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   };
 
   const handleCompleteSubtask = async (subtask: Task) => {
-    if (activeTimer?.taskId === subtask.id) {
-      await stopTimer();
+    if (activeTimers.some((t) => t.taskId === subtask.id)) {
+      await stopTimer(subtask.id);
     }
     await completeTask(subtask.id);
 
@@ -256,8 +259,12 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
     isDeleting,
     handleDeleteClick: async () => {
       if (!task) return;
-      if (activeTimer?.taskId === task.id || subtasks.some(s => activeTimer?.taskId === s.id)) {
-        await stopTimer();
+      // Stop any timers on this task or its subtasks
+      const affectedIds = [task.id, ...subtasks.map((s) => s.id)];
+      for (const id of affectedIds) {
+        if (activeTimers.some((t) => t.taskId === id)) {
+          await stopTimer(id);
+        }
       }
       const preview = await getDeletePreview(task.id);
       if (preview) {
@@ -315,7 +322,7 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
     isSubtask: !!isSubtask,
     error,
     taskTimes,
-    activeTimer,
+    activeTimers,
     handleStartTimer,
     handleStopTimer,
     handleReactivate,

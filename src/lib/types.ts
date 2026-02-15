@@ -15,7 +15,8 @@ export type TaskStatus = 'active' | 'completed' | 'blocked';
 
 /**
  * Active timer state.
- * Only one timer can be active at a time.
+ * One per task max; multiple tasks can each have a timer.
+ * Parents aggregate indirect timers from subtasks.
  * Time is calculated from timestamps, never from intervals.
  */
 export interface ActiveTimer {
@@ -102,7 +103,7 @@ export interface TaskNote {
  * Database schema definition for IndexedDB.
  */
 export interface TimeTrackingDB {
-  activeTimer: ActiveTimer;
+  activeTimers: ActiveTimer;
   timeEntries: TimeEntry;
   tasks: Task;
   projects: Project;

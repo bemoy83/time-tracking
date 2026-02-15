@@ -35,11 +35,12 @@ interface TodayViewProps {
 
 export function TodayView({ onSelectTask }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
-  const { activeTimer } = useTimerStore();
+  const { activeTimers } = useTimerStore();
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
-  const taskTimes = useTaskTimes(tasks, activeTimer);
+  const taskTimes = useTaskTimes(tasks, activeTimers);
+  const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
   const {
     confirmTarget,
     promptParent,
@@ -50,7 +51,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     dismissConfirm,
     dismissPrompt,
     handlePromptCancel,
-  } = useCompletionFlow(tasks, activeTimer?.taskId);
+  } = useCompletionFlow(tasks, activeTimerTaskIds);
 
   // Filter and group tasks
   const { groupedTasks, ungroupedTasks, blockedTasks } = useMemo(() => {
@@ -91,8 +92,11 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   }, [tasks, projects]);
 
   const handleStartTimer = async (task: Task) => {
-    if (activeTimer) {
-      await stopTimer();
+    // In sequential mode, stop the existing timer before starting a new one
+    if (activeTimers.length > 0) {
+      for (const timer of activeTimers) {
+        await stopTimer(timer.taskId);
+      }
     }
     await startTimer(task.id);
   };
@@ -165,7 +169,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
               <TaskCard
                 key={task.id}
                 task={task}
-                isTimerActive={activeTimer?.taskId === task.id}
+                isTimerActive={activeTimerTaskIds.has(task.id)}
                 totalMs={taskTimes.get(task.id)}
                 taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}
@@ -205,7 +209,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
               <TaskCard
                 key={task.id}
                 task={task}
-                isTimerActive={activeTimer?.taskId === task.id}
+                isTimerActive={activeTimerTaskIds.has(task.id)}
                 totalMs={taskTimes.get(task.id)}
                 taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}

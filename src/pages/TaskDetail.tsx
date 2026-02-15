@@ -68,7 +68,8 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         status={task.status}
         blockedReason={task.blockedReason}
         isTimerActive={detail.isTimerActive}
-        activeTimer={detail.activeTimer}
+        activeTimer={detail.activeTimers.find((t) => t.taskId === task.id)}
+        taskId={task.id}
         onSetWorkers={detail.handleSetWorkers}
       />
 

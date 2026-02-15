@@ -121,7 +121,9 @@ Timer data model:
 
 Rules:
 
-* Only one active timer per user
+* One direct timer per task; multiple tasks can each have an active timer
+* Parents may have multiple indirect timers via subtasks
+* Parallel subtask timers optional (feature toggle in Settings; default OFF = one timer app-wide)
 * Timer start blocked on blocked tasks
 * Timer stop always allowed
 * Timers survive reload, backgrounding, and offline use

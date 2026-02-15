@@ -23,11 +23,11 @@ interface TaskTimeTrackingProps {
 }
 
 export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) {
-  const { activeTimer } = useTimerStore();
+  const { activeTimers } = useTimerStore();
   const { breakdown, isLoading, refresh } = useTaskTimeBreakdown(
     taskId,
     subtaskIds,
-    activeTimer
+    activeTimers
   );
 
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -39,8 +39,8 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   const hasTime = breakdown.totalMs > 0;
 
   // Check if timer is running on this task or any subtask
-  const isTimerOnTask = activeTimer?.taskId === taskId;
-  const isTimerOnSubtask = subtaskIds.includes(activeTimer?.taskId ?? '');
+  const isTimerOnTask = activeTimers.some((t) => t.taskId === taskId);
+  const isTimerOnSubtask = activeTimers.some((t) => subtaskIds.includes(t.taskId));
   const isTimerActive = isTimerOnTask || isTimerOnSubtask;
 
   // Reset entry list when navigating to a different task
@@ -54,7 +54,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     if (showEntries) {
       loadEntries();
     }
-  }, [showEntries, taskId, activeTimer?.id]);
+  }, [showEntries, taskId, activeTimers.map((t) => t.id).join(',')]);
 
   const loadEntries = async () => {
     const result = await getTimeEntriesByTask(taskId);

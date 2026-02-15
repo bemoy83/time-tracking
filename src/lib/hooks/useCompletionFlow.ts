@@ -24,7 +24,7 @@ interface CompletionFlowState {
 
 export function useCompletionFlow(
   tasks: Task[],
-  activeTimerTaskId: string | undefined,
+  activeTimerTaskIds: Set<string>,
 ) {
   const [state, setState] = useState<CompletionFlowState>({
     confirmTarget: null,
@@ -33,8 +33,8 @@ export function useCompletionFlow(
   });
 
   const handleComplete = async (task: Task) => {
-    if (activeTimerTaskId === task.id) {
-      await stopTimer();
+    if (activeTimerTaskIds.has(task.id)) {
+      await stopTimer(task.id);
     }
 
     const subtasksOfTask = tasks.filter((t) => t.parentId === task.id);

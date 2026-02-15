@@ -13,6 +13,7 @@ interface TaskStatusBannerProps {
   blockedReason?: string | null;
   isTimerActive: boolean;
   activeTimer?: ActiveTimer | null;
+  taskId?: string;
   onSetWorkers?: (n: number) => void;
 }
 
@@ -21,6 +22,7 @@ export function TaskStatusBanner({
   blockedReason,
   isTimerActive,
   activeTimer,
+  taskId,
   onSetWorkers,
 }: TaskStatusBannerProps) {
   if (status === 'blocked') {
@@ -51,7 +53,7 @@ export function TaskStatusBanner({
       <div className="task-detail__status-control task-detail__status-control--recording-group">
         <div className="task-detail__status-control task-detail__status-control--recording">
           <span className="task-detail__status-label">Recording</span>
-          <TimerDisplay size="large" />
+          <TimerDisplay size="large" taskId={taskId} />
         </div>
         <div className="task-detail__workers-row">
           <span className="task-detail__workers-label">Workers</span>
