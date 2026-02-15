@@ -43,7 +43,7 @@ let state: TimerState = {
 // Subscribers for state changes
 const listeners = new Set<() => void>();
 
-function notifyListeners() {
+export function notifyListeners() {
   listeners.forEach((listener) => listener());
 }
 
@@ -137,6 +137,7 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       taskId,
       startUtc: nowUtc(),
       source: 'manual',
+      workers: 1,
     };
 
     await setActiveTimer(timer);
@@ -172,13 +173,14 @@ export async function stopTimer(): Promise<StopTimerResult> {
   try {
     const now = nowUtc();
 
-    // Create the time entry
+    // Create the time entry (carry workers from active timer)
     const entry: TimeEntry = {
       id: generateId(),
       taskId: activeTimer.taskId,
       startUtc: activeTimer.startUtc,
       endUtc: now,
       source: activeTimer.source,
+      workers: activeTimer.workers ?? 1,
       syncStatus: 'pending', // Will be synced when online
       createdAt: now,
       updatedAt: now,
@@ -195,6 +197,26 @@ export async function stopTimer(): Promise<StopTimerResult> {
     const message = err instanceof Error ? err.message : 'Failed to stop timer';
     setState({ error: message });
     return { success: false, reason: 'error', message };
+  }
+}
+
+/**
+ * Update the workers count on the currently active timer.
+ * Persists to IndexedDB so it survives reload.
+ */
+export async function setTimerWorkers(count: number): Promise<void> {
+  const { activeTimer: timer } = state;
+  if (!timer) return;
+
+  const clamped = Math.max(1, Math.min(20, Math.round(count)));
+  const updated: ActiveTimer = { ...timer, workers: clamped };
+
+  try {
+    await setActiveTimer(updated);
+    setState({ activeTimer: updated, error: null });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to update workers';
+    setState({ error: message });
   }
 }
 
@@ -258,6 +280,7 @@ export function useTimerActions() {
     startTimer: useCallback(startTimer, []),
     stopTimer: useCallback(stopTimer, []),
     discardTimer: useCallback(discardTimer, []),
+    setTimerWorkers: useCallback(setTimerWorkers, []),
   };
 }
 

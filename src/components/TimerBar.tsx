@@ -1,31 +1,23 @@
 /**
  * TimerBar component.
  * Sticky bottom bar with timer controls.
- *
- * Design requirements from PLAN.md:
- * - Sticky bottom timer controls
- * - Full-width buttons (thumb-friendly)
- * - 44px+ minimum tap targets
- * - Visual "recording" state visible even when scrolling
- * - One-tap start/stop
+ * Includes workers badge and inline stepper.
  */
 
 import { useState, useEffect } from 'react';
-import { useTimerStore, stopTimer } from '../lib/stores/timer-store';
+import { useTimerStore, stopTimer, setTimerWorkers } from '../lib/stores/timer-store';
 import { getAllTasks } from '../lib/db';
 import { Task } from '../lib/types';
 import { TimerDisplay } from './TimerDisplay';
+import { WorkersStepper } from './WorkersStepper';
 import { StopIcon } from './icons';
 
-/**
- * TimerBar - only shown when a timer is active.
- * Sticky bottom bar with timer controls for stopping the current task.
- */
 export function TimerBar() {
   const { activeTimer, error } = useTimerStore();
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWorkersStepper, setShowWorkersStepper] = useState(false);
 
   useEffect(() => {
     async function loadTask() {
@@ -51,6 +43,8 @@ export function TimerBar() {
     }
   };
 
+  const workers = activeTimer?.workers ?? 1;
+
   return (
     <div className="timer-bar timer-bar--active">
       {(error || actionError) && (
@@ -61,10 +55,31 @@ export function TimerBar() {
 
       <div className="timer-bar__task">
         <span className="timer-bar__task-label">Tracking</span>
-        <span className="timer-bar__task-name">
-          {currentTask?.title || 'No task'}
-        </span>
+        <div className="timer-bar__task-row">
+          <span className="timer-bar__task-name">
+            {currentTask?.title || 'No task'}
+          </span>
+          <button
+            type="button"
+            className={`timer-bar__workers-badge ${workers > 1 ? 'timer-bar__workers-badge--active' : ''}`}
+            onClick={() => setShowWorkersStepper(!showWorkersStepper)}
+            aria-label={`${workers} workers, tap to adjust`}
+          >
+            &times;{workers}
+          </button>
+        </div>
       </div>
+
+      {showWorkersStepper && (
+        <div className="timer-bar__workers-stepper">
+          <span className="timer-bar__workers-label">Workers</span>
+          <WorkersStepper
+            value={workers}
+            onChange={(n) => setTimerWorkers(n)}
+            size="compact"
+          />
+        </div>
+      )}
 
       <div className="timer-bar__controls">
         <TimerDisplay size="large" />
@@ -86,4 +101,3 @@ export function TimerBar() {
     </div>
   );
 }
-

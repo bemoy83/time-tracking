@@ -109,8 +109,136 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-.task-time-tracking__entries {
+/* Person-hours row */
+.task-time-tracking__total--person {
+  padding-bottom: var(--space-sm);
+}
+
+.task-time-tracking__value--person {
+  color: var(--color-primary);
+}
+
+/* Entry toggle button */
+.task-time-tracking__entries-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-sm) 0;
+  background: none;
+  border: none;
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  text-align: right;
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-time-tracking__entries-toggle:hover {
+  color: var(--color-text);
+}
+
+.task-time-tracking__chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: 0.875rem;
+}
+
+.task-time-tracking__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Entry list */
+.task-time-tracking__entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: var(--space-sm);
+}
+
+/* Time entry row */
+.time-entry-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-sm);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.time-entry-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.time-entry-row__date {
+  color: var(--color-text-muted);
+  min-width: 52px;
+  font-size: 0.813rem;
+}
+
+.time-entry-row__duration {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-entry-row__workers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.688rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.time-entry-row__person-hours {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.time-entry-row__logged-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  background: var(--color-border);
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: auto;
+}
+
+/* Add entry button */
+.task-time-tracking__add-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+  margin-top: var(--space-sm);
+}
+
+.task-time-tracking__add-entry:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: var(--color-primary);
 }

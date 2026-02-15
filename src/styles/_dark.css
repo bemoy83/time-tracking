@@ -131,6 +131,67 @@
     border-color: #444;
   }
 
+  /* --- Entry Modal --- */
+  .entry-modal {
+    background: #252525;
+  }
+
+  .entry-modal__duration-input {
+    background: #333;
+    border-color: #555;
+    color: var(--color-text);
+  }
+
+  .entry-modal__stepper-btn {
+    background: #404040;
+  }
+  .entry-modal__stepper-btn:hover:not(:disabled) {
+    background: #505050;
+  }
+
+  .entry-modal__btn--cancel {
+    background: #404040;
+  }
+  .entry-modal__btn--cancel:hover {
+    background: #505050;
+  }
+
+  .entry-modal__person-hours {
+    background: rgba(37, 99, 235, 0.15);
+  }
+
+  /* --- Workers Stepper --- */
+  .workers-stepper {
+    border-color: #555;
+  }
+  .workers-stepper__btn {
+    background: #404040;
+  }
+  .workers-stepper__btn:hover:not(:disabled) {
+    background: #505050;
+  }
+  .workers-stepper__value {
+    background: #333;
+  }
+
+  /* --- Timer Bar Workers Badge --- */
+  .timer-bar__workers-badge {
+    background: #404040;
+    color: var(--color-text-muted);
+  }
+  .timer-bar__workers-badge:hover {
+    background: #505050;
+  }
+
+  /* --- Time Entry Row --- */
+  .time-entry-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .time-entry-row__logged-badge {
+    background: #404040;
+  }
+
   /* --- Settings --- */
   .settings-view__row {
     background: #252525;

@@ -1,16 +1,18 @@
 /**
  * TaskTimeTracking component.
- * Displays time tracking summary for a task with breakdown.
- *
- * Shows:
- * - Total time (direct + subtasks)
- * - Direct time (on this task)
- * - Subtask time (on direct children, one level only)
+ * Displays time tracking summary for a task with breakdown,
+ * person-hours display, and collapsible entry list.
  */
 
+import { useState, useEffect } from 'react';
 import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
 import { useTimerStore } from '../lib/stores/timer-store';
-import { formatDurationShort } from '../lib/types';
+import { getTimeEntriesByTask } from '../lib/db';
+import { addManualEntry, updateEntry, deleteEntry } from '../lib/stores/entry-actions';
+import { TimeEntry, formatDurationShort } from '../lib/types';
+import { TimeEntryRow } from './TimeEntryRow';
+import { EditEntryModal } from './EditEntryModal';
+import { AddEntryModal } from './AddEntryModal';
 
 interface TaskTimeTrackingProps {
   taskId: string;
@@ -19,11 +21,16 @@ interface TaskTimeTrackingProps {
 
 export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) {
   const { activeTimer } = useTimerStore();
-  const { breakdown, isLoading } = useTaskTimeBreakdown(
+  const { breakdown, isLoading, refresh } = useTaskTimeBreakdown(
     taskId,
     subtaskIds,
     activeTimer
   );
+
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [showEntries, setShowEntries] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const hasSubtasks = subtaskIds.length > 0;
   const hasTime = breakdown.totalMs > 0;
@@ -32,6 +39,50 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   const isTimerOnTask = activeTimer?.taskId === taskId;
   const isTimerOnSubtask = subtaskIds.includes(activeTimer?.taskId ?? '');
   const isTimerActive = isTimerOnTask || isTimerOnSubtask;
+
+  // Reset entry list when navigating to a different task
+  useEffect(() => {
+    setEntries([]);
+    setShowEntries(false);
+  }, [taskId]);
+
+  // Load entries when section is expanded or task/timer changes
+  useEffect(() => {
+    if (showEntries) {
+      loadEntries();
+    }
+  }, [showEntries, taskId, activeTimer?.id]);
+
+  const loadEntries = async () => {
+    const result = await getTimeEntriesByTask(taskId);
+    // Sort newest first
+    result.sort((a, b) => new Date(b.startUtc).getTime() - new Date(a.startUtc).getTime());
+    setEntries(result);
+  };
+
+  const loggedCount = entries.filter((e) => e.source === 'logged').length;
+
+  const handleSaveEdit = async (changes: { durationMs: number; workers: number }) => {
+    if (!editingEntry) return;
+    await updateEntry(editingEntry.id, changes);
+    setEditingEntry(null);
+    await loadEntries();
+    refresh();
+  };
+
+  const handleDeleteEntry = async (id: string) => {
+    await deleteEntry(id);
+    setEditingEntry(null);
+    await loadEntries();
+    refresh();
+  };
+
+  const handleAddEntry = async (durationMs: number, workers: number) => {
+    await addManualEntry(taskId, durationMs, workers);
+    setShowAddModal(false);
+    await loadEntries();
+    refresh();
+  };
 
   return (
     <section className="task-time-tracking" aria-label="Time tracking summary">
@@ -56,6 +107,16 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
               {formatDurationShort(breakdown.totalMs)}
             </span>
           </div>
+
+          {/* Person-hours - shown only when any entry has workers > 1 */}
+          {breakdown.hasMultipleWorkers && (
+            <div className="task-time-tracking__total task-time-tracking__total--person">
+              <span className="task-time-tracking__label">Person-hours</span>
+              <span className="task-time-tracking__value task-time-tracking__value--person">
+                {formatDurationShort(breakdown.totalPersonMs)}
+              </span>
+            </div>
+          )}
 
           {/* Breakdown - shown if there's time or subtasks */}
           {(hasTime || hasSubtasks) && (
@@ -84,17 +145,67 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
             </div>
           )}
 
-          {/* Entry count info */}
-          {hasTime && (
-            <div className="task-time-tracking__entries">
-              {breakdown.entryCount + breakdown.subtaskEntryCount} time{' '}
-              {breakdown.entryCount + breakdown.subtaskEntryCount === 1
-                ? 'entry'
-                : 'entries'}
+          {/* Entry count + toggle (count only shows this task's direct entries) */}
+          {(hasTime || breakdown.entryCount > 0) && (
+            <button
+              type="button"
+              className="task-time-tracking__entries-toggle"
+              onClick={() => setShowEntries(!showEntries)}
+            >
+              <span>
+                {breakdown.entryCount}{' '}
+                {breakdown.entryCount === 1 ? 'entry' : 'entries'}
+                {loggedCount > 0 && showEntries
+                  ? ` \u00b7 ${loggedCount} crew-logged`
+                  : ''}
+              </span>
+              <span className={`task-time-tracking__chevron ${showEntries ? 'task-time-tracking__chevron--open' : ''}`}>
+                &#x25B8;
+              </span>
+            </button>
+          )}
+
+          {/* Entry list (collapsible) */}
+          {showEntries && (
+            <div className="task-time-tracking__entry-list">
+              {entries.map((entry) => (
+                <TimeEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  onTap={setEditingEntry}
+                />
+              ))}
             </div>
           )}
+
+          {/* Log time button - always visible so you can add to a fresh task */}
+          <button
+            type="button"
+            className="task-time-tracking__add-entry"
+            onClick={() => setShowAddModal(true)}
+          >
+            + Log time
+          </button>
         </div>
       )}
+
+      {/* Edit entry modal */}
+      {editingEntry && (
+        <EditEntryModal
+          isOpen={!!editingEntry}
+          entry={editingEntry}
+          onSave={handleSaveEdit}
+          onDelete={handleDeleteEntry}
+          onClose={() => setEditingEntry(null)}
+        />
+      )}
+
+      {/* Add entry modal */}
+      <AddEntryModal
+        isOpen={showAddModal}
+        onSave={handleAddEntry}
+        onClose={() => setShowAddModal(false)}
+      />
     </section>
   );
 }

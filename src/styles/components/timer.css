@@ -51,7 +51,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--timer-bar-height);
+  min-height: var(--timer-bar-height);
   background: var(--color-bg);
   border-top: 2px solid var(--color-border);
   padding: var(--space-md);
@@ -177,6 +177,60 @@
   border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* Task row with workers badge */
+.timer-bar__task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Workers badge (tappable pill) */
+.timer-bar__workers-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  background: var(--color-border);
+  border: none;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.timer-bar__workers-badge:hover {
+  background: #d1d5db;
+}
+
+.timer-bar__workers-badge--active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.timer-bar__workers-badge--active:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Inline workers stepper row */
+.timer-bar__workers-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+}
+
+.timer-bar__workers-label {
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 /* Hide button text on very small screens, keep icon */

@@ -199,6 +199,34 @@
   transform: scale(0.98);
 }
 
+/* Recording group wrapper (stop button + workers stepper) */
+.task-detail__status-control--recording-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 0;
+  min-height: auto;
+  background: none;
+  border: none;
+}
+
+.task-detail__status-control--recording-group .task-detail__status-control--recording {
+  border-radius: 14px;
+}
+
+.task-detail__workers-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.task-detail__workers-label {
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 /* Blocked - static display */
 .task-detail__status-control--blocked {
   background: #fffbeb;

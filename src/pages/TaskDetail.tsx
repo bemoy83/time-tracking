@@ -31,6 +31,7 @@ import {
   useTimerStore,
   startTimer,
   stopTimer,
+  setTimerWorkers,
 } from '../lib/stores/timer-store';
 import { TimerDisplay } from '../components/TimerDisplay';
 import { TaskTimeTracking } from '../components/TaskTimeTracking';
@@ -40,6 +41,7 @@ import { DeleteTaskConfirm } from '../components/DeleteTaskConfirm';
 import { ProjectPicker } from '../components/ProjectPicker';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
+import { WorkersStepper } from '../components/WorkersStepper';
 
 interface TaskDetailProps {
   taskId: string;
@@ -251,14 +253,24 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
           <span className="task-detail__status-label">Completed</span>
         </div>
       ) : isTimerActive ? (
-        <button
-          className="task-detail__status-control task-detail__status-control--recording"
-          onClick={handleStopTimer}
-        >
-          <StopIcon className="task-detail__status-icon" />
-          <span className="task-detail__status-label">Stop</span>
-          <TimerDisplay size="large" />
-        </button>
+        <div className="task-detail__status-control task-detail__status-control--recording-group">
+          <button
+            className="task-detail__status-control task-detail__status-control--recording"
+            onClick={handleStopTimer}
+          >
+            <StopIcon className="task-detail__status-icon" />
+            <span className="task-detail__status-label">Stop</span>
+            <TimerDisplay size="large" />
+          </button>
+          <div className="task-detail__workers-row">
+            <span className="task-detail__workers-label">Workers</span>
+            <WorkersStepper
+              value={activeTimer?.workers ?? 1}
+              onChange={(n) => setTimerWorkers(n)}
+              size="compact"
+            />
+          </div>
+        </div>
       ) : (
         <button
           className="task-detail__status-control task-detail__status-control--active"

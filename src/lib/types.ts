@@ -7,7 +7,8 @@
 export type SyncStatus = 'pending' | 'synced' | 'conflict';
 
 // Timer source indicates how a timer was started
-export type TimerSource = 'manual' | 'resumed';
+// 'logged' = manually entered after the fact (not from a running timer)
+export type TimerSource = 'manual' | 'resumed' | 'logged';
 
 // Task status
 export type TaskStatus = 'active' | 'completed' | 'blocked';
@@ -22,6 +23,7 @@ export interface ActiveTimer {
   taskId: string;
   startUtc: string; // ISO 8601 UTC timestamp
   source: TimerSource;
+  workers: number; // crew size, defaults to 1
 }
 
 /**
@@ -34,6 +36,7 @@ export interface TimeEntry {
   startUtc: string; // ISO 8601 UTC timestamp
   endUtc: string; // ISO 8601 UTC timestamp
   source: TimerSource;
+  workers: number; // crew size, defaults to 1
   syncStatus: SyncStatus;
   createdAt: string;
   updatedAt: string;
@@ -165,4 +168,12 @@ export function formatDurationShort(ms: number): string {
   }
 
   return `${hours}h ${minutes}m`;
+}
+
+/**
+ * Format person-hours: duration × workers, displayed like formatDurationShort.
+ * person-ms = ms × workers
+ */
+export function formatPersonHours(ms: number, workers: number): string {
+  return formatDurationShort(ms * workers);
 }

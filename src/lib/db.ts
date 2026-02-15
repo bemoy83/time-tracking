@@ -8,7 +8,7 @@ import type { ActiveTimer, TimeEntry, Task, Project } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -95,6 +95,30 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
         // Version 3: Remove legacy "Unassigned" placeholder task
         if (oldVersion < 3) {
           transaction.objectStore('tasks').delete(LEGACY_UNASSIGNED_TASK_ID);
+        }
+
+        // Version 4: Add workers field to timeEntries and activeTimer
+        if (oldVersion < 4) {
+          const entryStore = transaction.objectStore('timeEntries');
+          entryStore.getAll().then((entries) => {
+            entries.forEach((entry) => {
+              const e = entry as unknown as Record<string, unknown>;
+              if (e.workers === undefined) {
+                e.workers = 1;
+                entryStore.put(entry);
+              }
+            });
+          });
+          const timerStore = transaction.objectStore('activeTimer');
+          timerStore.getAll().then((timers) => {
+            timers.forEach((timer) => {
+              const t = timer as unknown as Record<string, unknown>;
+              if (t.workers === undefined) {
+                t.workers = 1;
+                timerStore.put(timer);
+              }
+            });
+          });
         }
       },
     });
@@ -190,6 +214,31 @@ export async function updateTimeEntrySyncStatus(
 export async function getAllTimeEntries(): Promise<TimeEntry[]> {
   const db = await getDB();
   return db.getAll('timeEntries');
+}
+
+/**
+ * Get a single time entry by ID.
+ */
+export async function getTimeEntry(id: string): Promise<TimeEntry | null> {
+  const db = await getDB();
+  const entry = await db.get('timeEntries', id);
+  return entry ?? null;
+}
+
+/**
+ * Update a time entry (full replace).
+ */
+export async function updateTimeEntry(entry: TimeEntry): Promise<void> {
+  const db = await getDB();
+  await db.put('timeEntries', entry);
+}
+
+/**
+ * Delete a single time entry by ID.
+ */
+export async function deleteTimeEntry(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('timeEntries', id);
 }
 
 /**

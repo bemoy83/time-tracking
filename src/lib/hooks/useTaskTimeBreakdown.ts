@@ -13,6 +13,10 @@ const EMPTY_BREAKDOWN: TimeBreakdown = {
   subtaskMs: 0,
   entryCount: 0,
   subtaskEntryCount: 0,
+  totalPersonMs: 0,
+  directPersonMs: 0,
+  subtaskPersonMs: 0,
+  hasMultipleWorkers: false,
 };
 
 /**

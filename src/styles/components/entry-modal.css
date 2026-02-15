@@ -1,0 +1,290 @@
+/* ============================================================
+   Entry Modal (Edit / Add)
+   ============================================================ */
+
+.entry-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: 300;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.entry-modal {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease-out;
+}
+
+.entry-modal__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-lg);
+  color: var(--color-text);
+}
+
+.entry-modal__field {
+  margin-bottom: var(--space-lg);
+}
+
+.entry-modal__label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-sm);
+}
+
+/* Duration grid: hours | minutes side by side */
+.entry-modal__duration-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.entry-modal__duration-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.entry-modal__stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  background: var(--color-border);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.entry-modal__stepper-btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.entry-modal__stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.entry-modal__duration-input {
+  width: 100%;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-sm);
+  -moz-appearance: textfield;
+}
+
+.entry-modal__duration-input::-webkit-inner-spin-button,
+.entry-modal__duration-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.entry-modal__duration-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.entry-modal__duration-unit {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* Person-hours display */
+.entry-modal__person-hours {
+  padding: var(--space-sm) var(--space-md);
+  background: #f0f9ff;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+/* Actions */
+.entry-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.entry-modal__actions-right {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.entry-modal__actions-right--full {
+  margin-left: auto;
+}
+
+.entry-modal__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.entry-modal__btn:active {
+  transform: scale(0.98);
+}
+
+.entry-modal__btn--cancel {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.entry-modal__btn--cancel:hover {
+  background: #d1d5db;
+}
+
+.entry-modal__btn--save {
+  background: var(--color-primary);
+  color: white;
+}
+
+.entry-modal__btn--save:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.entry-modal__btn--save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.entry-modal__btn--delete {
+  background: none;
+  color: var(--color-recording);
+  padding: var(--space-sm);
+}
+
+.entry-modal__btn--delete:hover {
+  background: var(--color-recording-bg);
+}
+
+.entry-modal__btn--delete-confirm {
+  background: var(--color-recording);
+  color: white;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.entry-modal__btn--delete-confirm:hover {
+  background: #b91c1c;
+}
+
+.entry-modal__btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================
+   Workers Stepper
+   ============================================================ */
+
+.workers-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.workers-stepper__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-border);
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workers-stepper__btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.workers-stepper__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.workers-stepper__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+/* Compact size (inline pill for TimerBar) */
+.workers-stepper--compact .workers-stepper__btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+
+.workers-stepper--compact .workers-stepper__value {
+  min-width: 32px;
+  padding: 0 var(--space-xs);
+  font-size: 1rem;
+  line-height: 36px;
+}
+
+/* Large size (for modals) */
+.workers-stepper--large {
+  width: 100%;
+}
+
+.workers-stepper--large .workers-stepper__btn {
+  width: 64px;
+  min-height: 48px;
+  font-size: 1.5rem;
+}
+
+.workers-stepper--large .workers-stepper__value {
+  flex: 1;
+  font-size: 1.5rem;
+  padding: var(--space-sm);
+}
