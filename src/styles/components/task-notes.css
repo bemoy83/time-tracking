@@ -1,57 +1,7 @@
 /* ============================================================
    Task Notes / Activity Log Component
+   Content styles only — container/toggle provided by ExpandableSection
    ============================================================ */
-
-.task-notes {
-  background: #f9fafb;
-  border-radius: 8px;
-  padding: var(--space-md);
-}
-
-/* Toggle header */
-.task-notes__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0;
-  background: none;
-  border: none;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.task-notes__toggle:hover {
-  color: var(--color-text);
-}
-
-.task-notes__toggle-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.task-notes__chevron {
-  display: inline-block;
-  transition: transform 0.2s;
-  font-size: 0.875rem;
-}
-
-.task-notes__chevron--open {
-  transform: rotate(90deg);
-}
-
-/* Content area */
-.task-notes__content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  margin-top: var(--space-md);
-}
 
 /* Input row */
 .task-notes__input-row {
@@ -72,7 +22,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: var(--font-base);
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -104,19 +54,19 @@
 .task-notes__timestamp {
   flex-shrink: 0;
   min-width: 64px;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   color: var(--color-text-muted);
   padding-top: 1px;
 }
 
 .task-notes__text {
-  font-size: 0.875rem;
+  font-size: var(--font-base);
   color: var(--color-text);
   word-break: break-word;
 }
 
 .task-notes__empty {
-  font-size: 0.875rem;
+  font-size: var(--font-base);
   color: var(--color-text-muted);
   margin: 0;
 }

@@ -2,6 +2,7 @@
  * TaskTimeTracking component.
  * Displays time tracking summary for a task with breakdown,
  * person-hours display, and collapsible entry list.
+ * Uses ExpandableSection for outer toggle.
  */
 
 import { useState, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { TimeEntry, formatDurationShort } from '../lib/types';
 import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
 import { AddEntryModal } from './AddEntryModal';
-import { CountBadge } from './CountBadge';
+import { ExpandableSection } from './ExpandableSection';
 import { ClockIcon } from './icons';
 
 interface TaskTimeTrackingProps {
@@ -86,113 +87,115 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     refresh();
   };
 
+  const liveBadge = isTimerActive ? (
+    <span className="task-time-tracking__live-indicator" aria-label="Timer running">
+      Live
+    </span>
+  ) : undefined;
+
   return (
-    <section className="task-time-tracking" aria-label="Time tracking summary">
-      <h2 className="task-time-tracking__title">
-        <ClockIcon className="task-time-tracking__icon" />
-        Time Tracked
-        {breakdown.entryCount > 0 && (
-          <CountBadge count={breakdown.entryCount} variant="muted" />
-        )}
-        {isTimerActive && (
-          <span className="task-time-tracking__live-indicator" aria-label="Timer running">
-            Live
-          </span>
-        )}
-      </h2>
-
-      {isLoading ? (
-        <div className="task-time-tracking__loading">Loading...</div>
-      ) : (
-        <div className="task-time-tracking__content">
-          {/* Total time - always shown */}
-          <div className="task-time-tracking__total">
-            <span className="task-time-tracking__label">Total</span>
-            <span className="task-time-tracking__value">
-              {formatDurationShort(breakdown.totalMs)}
-            </span>
-          </div>
-
-          {/* Person-hours - shown only when any entry has workers > 1 */}
-          {breakdown.hasMultipleWorkers && (
-            <div className="task-time-tracking__total task-time-tracking__total--person">
-              <span className="task-time-tracking__label">Person-hours</span>
-              <span className="task-time-tracking__value task-time-tracking__value--person">
-                {formatDurationShort(breakdown.totalPersonMs)}
+    <>
+      <ExpandableSection
+        label="Time Tracked"
+        count={breakdown.entryCount}
+        countVariant="muted"
+        icon={<ClockIcon className="task-time-tracking__icon" />}
+        defaultOpen={true}
+        badge={liveBadge}
+      >
+        {isLoading ? (
+          <div className="task-time-tracking__loading">Loading...</div>
+        ) : (
+          <div className="task-time-tracking__content">
+            {/* Total time - always shown */}
+            <div className="task-time-tracking__total">
+              <span className="task-time-tracking__label">Total</span>
+              <span className="task-time-tracking__value">
+                {formatDurationShort(breakdown.totalMs)}
               </span>
             </div>
-          )}
 
-          {/* Breakdown - shown if there's time or subtasks */}
-          {(hasTime || hasSubtasks) && (
-            <div className="task-time-tracking__breakdown">
-              <div className="task-time-tracking__row">
-                <span className="task-time-tracking__row-label">
-                  Direct
-                  {isTimerOnTask && <LiveDot />}
-                </span>
-                <span className="task-time-tracking__row-value">
-                  {formatDurationShort(breakdown.directMs)}
+            {/* Person-hours - shown only when any entry has workers > 1 */}
+            {breakdown.hasMultipleWorkers && (
+              <div className="task-time-tracking__total task-time-tracking__total--person">
+                <span className="task-time-tracking__label">Person-hours</span>
+                <span className="task-time-tracking__value task-time-tracking__value--person">
+                  {formatDurationShort(breakdown.totalPersonMs)}
                 </span>
               </div>
+            )}
 
-              {hasSubtasks && (
+            {/* Breakdown - shown if there's time or subtasks */}
+            {(hasTime || hasSubtasks) && (
+              <div className="task-time-tracking__breakdown">
                 <div className="task-time-tracking__row">
                   <span className="task-time-tracking__row-label">
-                    Subtasks ({subtaskIds.length})
-                    {isTimerOnSubtask && <LiveDot />}
+                    Direct
+                    {isTimerOnTask && <LiveDot />}
                   </span>
                   <span className="task-time-tracking__row-value">
-                    {formatDurationShort(breakdown.subtaskMs)}
+                    {formatDurationShort(breakdown.directMs)}
                   </span>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Entry count + toggle (count only shows this task's direct entries) */}
-          {(hasTime || breakdown.entryCount > 0) && (
+                {hasSubtasks && (
+                  <div className="task-time-tracking__row">
+                    <span className="task-time-tracking__row-label">
+                      Subtasks ({subtaskIds.length})
+                      {isTimerOnSubtask && <LiveDot />}
+                    </span>
+                    <span className="task-time-tracking__row-value">
+                      {formatDurationShort(breakdown.subtaskMs)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Entry count + toggle (nested collapsible for entries) */}
+            {(hasTime || breakdown.entryCount > 0) && (
+              <button
+                type="button"
+                className="task-time-tracking__entries-toggle"
+                onClick={() => setShowEntries(!showEntries)}
+              >
+                <span>
+                  {breakdown.entryCount}{' '}
+                  {breakdown.entryCount === 1 ? 'entry' : 'entries'}
+                  {loggedCount > 0 && showEntries
+                    ? ` \u00b7 ${loggedCount} crew-logged`
+                    : ''}
+                </span>
+                <span className={`task-time-tracking__chevron ${showEntries ? 'task-time-tracking__chevron--open' : ''}`}>
+                  &#x25B8;
+                </span>
+              </button>
+            )}
+
+            {/* Entry list (collapsible) */}
+            {showEntries && (
+              <div className="task-time-tracking__entry-list">
+                {entries.map((entry) => (
+                  <TimeEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    onTap={setEditingEntry}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Log time button - always visible so you can add to a fresh task */}
             <button
               type="button"
-              className="task-time-tracking__entries-toggle"
-              onClick={() => setShowEntries(!showEntries)}
+              className="task-time-tracking__add-entry"
+              onClick={() => setShowAddModal(true)}
             >
-              <span>
-                {breakdown.entryCount}{' '}
-                {breakdown.entryCount === 1 ? 'entry' : 'entries'}
-                {loggedCount > 0 && showEntries
-                  ? ` \u00b7 ${loggedCount} crew-logged`
-                  : ''}
-              </span>
-              <span className={`task-time-tracking__chevron ${showEntries ? 'task-time-tracking__chevron--open' : ''}`}>
-                &#x25B8;
-              </span>
+              + Log time
             </button>
-          )}
-
-          {/* Entry list (collapsible) */}
-          {showEntries && (
-            <div className="task-time-tracking__entry-list">
-              {entries.map((entry) => (
-                <TimeEntryRow
-                  key={entry.id}
-                  entry={entry}
-                  onTap={setEditingEntry}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Log time button - always visible so you can add to a fresh task */}
-          <button
-            type="button"
-            className="task-time-tracking__add-entry"
-            onClick={() => setShowAddModal(true)}
-          >
-            + Log time
-          </button>
-        </div>
-      )}
+          </div>
+        )}
+      </ExpandableSection>
 
       {/* Edit entry modal */}
       {editingEntry && (
@@ -211,7 +214,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         onSave={handleAddEntry}
         onClose={() => setShowAddModal(false)}
       />
-    </section>
+    </>
   );
 }
 

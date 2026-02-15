@@ -58,13 +58,25 @@
   }
 
   /* --- Task Time Tracking --- */
-  .task-time-tracking {
+  /* (outer background now provided by .expandable-section dark override) */
+
+  /* --- Expandable Section --- */
+  .expandable-section {
     background: #252525;
   }
 
-  /* --- Task Notes --- */
-  .task-notes {
-    background: #252525;
+  /* --- Task Action Bar --- */
+  .task-action-bar {
+    background: var(--color-bg);
+  }
+
+  .task-action-bar__btn--secondary {
+    background: #404040;
+    border-color: #555;
+  }
+
+  .task-action-bar__btn--secondary:hover {
+    background: #505050;
   }
 
   /* --- Modals / Dialogs --- */

@@ -1,0 +1,54 @@
+/* ============================================================
+   Expandable Section — Shared collapsible component
+   ============================================================ */
+
+.expandable-section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: var(--space-md);
+}
+
+/* Toggle header */
+.expandable-section__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--font-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.expandable-section__toggle:hover {
+  color: var(--color-text);
+}
+
+.expandable-section__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.expandable-section__chevron {
+  display: inline-block;
+  transition: transform 0.2s;
+  font-size: var(--font-base);
+}
+
+.expandable-section__chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Content area */
+.expandable-section__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}

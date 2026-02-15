@@ -1,0 +1,110 @@
+/* ============================================================
+   Task Action Bar — Fixed bottom bar on TaskDetail
+   ============================================================ */
+
+.task-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--action-bar-height);
+  padding: var(--space-sm) var(--space-md);
+  padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
+  background: var(--color-bg);
+  border-top: 1.5px solid var(--color-border);
+  z-index: 90;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Buttons */
+.task-action-bar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: 10px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.task-action-bar__btn:active {
+  transform: scale(0.98);
+}
+
+.task-action-bar__icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Start - green */
+.task-action-bar__btn--start {
+  background: var(--color-ready);
+  color: white;
+}
+
+.task-action-bar__btn--start:hover {
+  background: #15803d;
+}
+
+/* Stop - red */
+.task-action-bar__btn--stop {
+  background: var(--color-recording);
+  color: white;
+}
+
+.task-action-bar__btn--stop:hover {
+  background: #b91c1c;
+}
+
+/* Override TimerDisplay colors inside stop button */
+.task-action-bar__btn--stop .timer-display__time {
+  color: white;
+  font-size: var(--font-base);
+}
+
+.task-action-bar__btn--stop .timer-display__indicator {
+  background: white;
+  width: 8px;
+  height: 8px;
+}
+
+/* Complete - green outline */
+.task-action-bar__btn--complete {
+  background: var(--color-ready);
+  color: white;
+}
+
+.task-action-bar__btn--complete:hover {
+  background: #15803d;
+}
+
+/* Unblock - green */
+.task-action-bar__btn--unblock {
+  background: var(--color-ready);
+  color: white;
+}
+
+.task-action-bar__btn--unblock:hover {
+  background: #15803d;
+}
+
+/* Secondary - neutral */
+.task-action-bar__btn--secondary {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
+}
+
+.task-action-bar__btn--secondary:hover {
+  background: #f9fafb;
+}

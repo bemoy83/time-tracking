@@ -20,6 +20,8 @@
 @import './styles/components/task-row.css';
 @import './styles/components/task-card.css';
 @import './styles/components/swipeable-row.css';
+@import './styles/components/expandable-section.css';
+@import './styles/components/task-action-bar.css';
 @import './styles/components/task-detail.css';
 @import './styles/components/task-time-tracking.css';
 @import './styles/components/task-notes.css';

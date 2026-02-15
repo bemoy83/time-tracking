@@ -2,12 +2,13 @@
  * TaskNotes component.
  * Collapsible activity log section for a task.
  * Append-only: add notes, view newest-first, no edit/delete.
+ * Uses ExpandableSection for toggle behavior.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { TaskNote } from '../lib/types';
 import { addNote, getNotesByTask, subscribeNotes } from '../lib/stores/note-actions';
-import { CountBadge } from './CountBadge';
+import { ExpandableSection } from './ExpandableSection';
 
 interface TaskNotesProps {
   taskId: string;
@@ -15,7 +16,7 @@ interface TaskNotesProps {
 
 export function TaskNotes({ taskId }: TaskNotesProps) {
   const [notes, setNotes] = useState<TaskNote[]>([]);
-  const [showNotes, setShowNotes] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,24 +28,24 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
   // Reset when navigating to different task
   useEffect(() => {
     setNotes([]);
-    setShowNotes(false);
+    setIsOpen(false);
     setText('');
   }, [taskId]);
 
   // Load notes when expanded, and re-load on changes
   useEffect(() => {
-    if (showNotes) {
+    if (isOpen) {
       loadNotes();
     }
-  }, [showNotes, loadNotes]);
+  }, [isOpen, loadNotes]);
 
   // Subscribe to note changes
   useEffect(() => {
-    if (!showNotes) return;
+    if (!isOpen) return;
     return subscribeNotes(() => {
       loadNotes();
     });
-  }, [showNotes, loadNotes]);
+  }, [isOpen, loadNotes]);
 
   // Always load note count (lightweight)
   useEffect(() => {
@@ -68,65 +69,55 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
     }
   };
 
+  const handleToggle = (open: boolean) => {
+    setIsOpen(open);
+  };
+
   return (
-    <section className="task-notes" aria-label="Activity log">
-      <button
-        type="button"
-        className="task-notes__toggle"
-        onClick={() => setShowNotes(!showNotes)}
-      >
-        <span className="task-notes__toggle-label">
-          Notes
-          {notes.length > 0 && (
-            <CountBadge count={notes.length} variant="primary" size="compact" />
-          )}
-        </span>
-        <span className={`task-notes__chevron ${showNotes ? 'task-notes__chevron--open' : ''}`}>
-          &#x25B8;
-        </span>
-      </button>
+    <ExpandableSection
+      label="Notes"
+      count={notes.length}
+      countVariant="primary"
+      defaultOpen={false}
+      onToggle={handleToggle}
+    >
+      {/* Input at top */}
+      <div className="task-notes__input-row">
+        <input
+          type="text"
+          className="task-notes__input input"
+          placeholder="Add a note..."
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, 280))}
+          onKeyDown={handleKeyDown}
+          maxLength={280}
+        />
+        <button
+          type="button"
+          className="task-notes__add-btn"
+          onClick={handleSubmit}
+          disabled={!text.trim() || isSubmitting}
+        >
+          Add
+        </button>
+      </div>
 
-      {showNotes && (
-        <div className="task-notes__content">
-          {/* Input at top */}
-          <div className="task-notes__input-row">
-            <input
-              type="text"
-              className="task-notes__input input"
-              placeholder="Add a note..."
-              value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 280))}
-              onKeyDown={handleKeyDown}
-              maxLength={280}
-            />
-            <button
-              type="button"
-              className="task-notes__add-btn"
-              onClick={handleSubmit}
-              disabled={!text.trim() || isSubmitting}
-            >
-              Add
-            </button>
-          </div>
-
-          {/* Notes list, newest first */}
-          {notes.length > 0 ? (
-            <div className="task-notes__list">
-              {notes.map((note) => (
-                <div key={note.id} className="task-notes__item">
-                  <span className="task-notes__timestamp">
-                    {formatRelativeTime(note.createdAt)}
-                  </span>
-                  <span className="task-notes__text">{note.text}</span>
-                </div>
-              ))}
+      {/* Notes list, newest first */}
+      {notes.length > 0 ? (
+        <div className="task-notes__list">
+          {notes.map((note) => (
+            <div key={note.id} className="task-notes__item">
+              <span className="task-notes__timestamp">
+                {formatRelativeTime(note.createdAt)}
+              </span>
+              <span className="task-notes__text">{note.text}</span>
             </div>
-          ) : (
-            <p className="task-notes__empty">No notes yet</p>
-          )}
+          ))}
         </div>
+      ) : (
+        <p className="task-notes__empty">No notes yet</p>
       )}
-    </section>
+    </ExpandableSection>
   );
 }
 
