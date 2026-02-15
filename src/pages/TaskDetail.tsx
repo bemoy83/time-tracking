@@ -42,6 +42,7 @@ import { ProjectPicker } from '../components/ProjectPicker';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { WorkersStepper } from '../components/WorkersStepper';
+import { useTaskTimes } from '../lib/hooks/useTaskTimes';
 
 interface TaskDetailProps {
   taskId: string;
@@ -55,6 +56,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   const subtasks = useSubtasks(taskId);
   const { tasks, projects } = useTaskStore();
   const { activeTimer } = useTimerStore();
+  const taskTimes = useTaskTimes(tasks, activeTimer);
 
   const [blockReason, setBlockReason] = useState('');
   const [showBlockInput, setShowBlockInput] = useState(false);
@@ -351,6 +353,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         <TaskDetailSubtasks
           task={task}
           subtasks={subtasks}
+          taskTimes={taskTimes}
           onSelectTask={onSelectTask}
           onStartTimer={handleStartTimerForTask}
           onCompleteSubtask={handleCompleteSubtask}

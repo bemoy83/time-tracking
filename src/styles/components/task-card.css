@@ -40,6 +40,23 @@
   text-overflow: ellipsis;
 }
 
+.task-card__time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.task-card__time-badge-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
 /* Expand button */
 .task-card__expand-btn {
   display: flex;

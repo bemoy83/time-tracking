@@ -108,6 +108,22 @@
   color: var(--color-text-muted);
 }
 
+.task-row__time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.task-row__time-badge-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
 /* Chevron */
 .task-row__chevron {
   width: 20px;

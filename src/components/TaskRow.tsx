@@ -10,18 +10,20 @@
  * - Inline subtask expansion via chevron
  */
 
-import { Task } from '../lib/types';
+import { Task, formatDurationShort } from '../lib/types';
 import { useTimerStore } from '../lib/stores/timer-store';
 import {
   CheckIcon,
   BlockedIcon,
   ChevronIcon,
   ExpandChevronIcon,
+  ClockIcon,
 } from './icons';
 
 interface TaskRowProps {
   task: Task;
   subtaskCount?: number;
+  totalMs?: number;
   isExpanded?: boolean;
   onExpandToggle?: (e: React.MouseEvent) => void;
   isSubtask?: boolean;
@@ -31,6 +33,7 @@ interface TaskRowProps {
 export function TaskRow({
   task,
   subtaskCount = 0,
+  totalMs = 0,
   isExpanded = false,
   onExpandToggle,
   isSubtask = false,
@@ -87,6 +90,12 @@ export function TaskRow({
         {!isSubtask && subtaskCount > 0 && (
           <span className="task-row__subtask-count">
             {subtaskCount} subtask{subtaskCount !== 1 ? 's' : ''}
+          </span>
+        )}
+        {totalMs > 0 && (
+          <span className="task-row__time-badge">
+            <ClockIcon className="task-row__time-badge-icon" />
+            {formatDurationShort(totalMs)}
           </span>
         )}
       </div>

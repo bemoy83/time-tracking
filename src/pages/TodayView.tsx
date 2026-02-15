@@ -22,6 +22,7 @@ import {
   stopTimer,
 } from '../lib/stores/timer-store';
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
+import { useTaskTimes } from '../lib/hooks/useTaskTimes';
 import { TaskCard } from '../components/TaskCard';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
@@ -37,6 +38,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const taskTimes = useTaskTimes(tasks, activeTimer);
   const {
     confirmTarget,
     promptParent,
@@ -163,6 +165,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 key={task.id}
                 task={task}
                 isTimerActive={activeTimer?.taskId === task.id}
+                totalMs={taskTimes.get(task.id)}
+                taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}
 
                 isExpanded={expandedTaskIds.has(task.id)}
@@ -203,6 +207,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 key={task.id}
                 task={task}
                 isTimerActive={activeTimer?.taskId === task.id}
+                totalMs={taskTimes.get(task.id)}
+                taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}
 
                 isExpanded={expandedTaskIds.has(task.id)}

@@ -4,18 +4,21 @@
  * Used in TodayView for the card-based layout.
  */
 
-import { Task } from '../lib/types';
+import { Task, formatDurationShort } from '../lib/types';
 import { SwipeableRow } from './SwipeableRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import {
   CheckIcon,
   PlayIcon,
   ExpandChevronIcon,
+  ClockIcon,
 } from './icons';
 
 export interface TaskCardProps {
   task: Task;
   isTimerActive: boolean;
+  totalMs?: number;
+  taskTimes?: Map<string, number>;
   progress: { completed: number; total: number } | null;
   isExpanded: boolean;
   subtasks: Task[];
@@ -31,6 +34,8 @@ export interface TaskCardProps {
 export function TaskCard({
   task,
   isTimerActive,
+  totalMs = 0,
+  taskTimes,
   progress,
   isExpanded,
   subtasks,
@@ -78,6 +83,14 @@ export function TaskCard({
 
             {/* Title */}
             <span className="task-card__title">{task.title}</span>
+
+            {/* Time badge */}
+            {totalMs > 0 && (
+              <span className="task-card__time-badge">
+                <ClockIcon className="task-card__time-badge-icon" />
+                {formatDurationShort(totalMs)}
+              </span>
+            )}
           </div>
 
           {/* Progress bar with expand */}
@@ -123,6 +136,7 @@ export function TaskCard({
               key={subtask.id}
               task={subtask}
               isSubtask
+              totalMs={taskTimes?.get(subtask.id)}
               onSelect={onSelectTask}
               onStartTimer={onStartTimerForTask}
               onComplete={onCompleteTask}

@@ -14,6 +14,7 @@ interface SwipeableTaskRowProps {
   task: Task;
   isSubtask?: boolean;
   subtaskCount?: number;
+  totalMs?: number;
   isExpanded?: boolean;
   onExpandToggle?: (e: React.MouseEvent) => void;
   onSelect: (task: Task) => void;
@@ -25,6 +26,7 @@ export function SwipeableTaskRow({
   task,
   isSubtask,
   subtaskCount,
+  totalMs,
   isExpanded,
   onExpandToggle,
   onSelect,
@@ -66,6 +68,7 @@ export function SwipeableTaskRow({
         task={task}
         isSubtask={isSubtask}
         subtaskCount={subtaskCount}
+        totalMs={totalMs}
         isExpanded={isExpanded}
         onExpandToggle={onExpandToggle}
         onSelect={onSelect}

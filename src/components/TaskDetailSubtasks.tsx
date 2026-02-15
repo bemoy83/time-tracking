@@ -11,6 +11,7 @@ import { SwipeableTaskRow } from './SwipeableTaskRow';
 interface TaskDetailSubtasksProps {
   task: Task;
   subtasks: Task[];
+  taskTimes?: Map<string, number>;
   onSelectTask: (task: Task) => void;
   onStartTimer: (task: Task) => void;
   onCompleteSubtask: (subtask: Task) => void;
@@ -19,6 +20,7 @@ interface TaskDetailSubtasksProps {
 export function TaskDetailSubtasks({
   task,
   subtasks,
+  taskTimes,
   onSelectTask,
   onStartTimer,
   onCompleteSubtask,
@@ -52,6 +54,7 @@ export function TaskDetailSubtasks({
               key={subtask.id}
               task={subtask}
               isSubtask
+              totalMs={taskTimes?.get(subtask.id)}
               onSelect={onSelectTask}
               onStartTimer={onStartTimer}
               onComplete={onCompleteSubtask}
