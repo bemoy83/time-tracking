@@ -10,9 +10,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  height: var(--action-bar-height);
-  padding: var(--space-sm) var(--space-md);
-  padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
+  min-height: var(--action-bar-height);
+  padding: var(--space-md);
+  padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
   background: var(--color-bg);
   border-top: 1.5px solid var(--color-border);
   z-index: 90;

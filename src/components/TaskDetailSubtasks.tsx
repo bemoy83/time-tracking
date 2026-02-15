@@ -44,7 +44,7 @@ export function TaskDetailSubtasks({
     <ExpandableSection
       label="Subtasks"
       count={subtasks.length}
-      countVariant="muted"
+      countVariant="primary"
       defaultOpen={true}
       flush
     >

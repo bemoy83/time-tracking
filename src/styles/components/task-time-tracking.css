@@ -138,13 +138,15 @@
   padding-top: var(--space-sm);
 }
 
-/* Time entry row */
+/* Time entry row - small dot by source */
 .time-entry-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
   padding: var(--space-sm) var(--space-sm);
+  padding-left: 20px;
   background: none;
   border: none;
   border-radius: 6px;
@@ -153,6 +155,28 @@
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s;
+}
+
+.time-entry-row[data-source="manual"]::before,
+.time-entry-row[data-source="resumed"]::before,
+.time-entry-row[data-source="logged"]::before {
+  content: '';
+  position: absolute;
+  left: var(--space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.time-entry-row[data-source="manual"]::before,
+.time-entry-row[data-source="resumed"]::before {
+  background: rgba(37, 99, 235, 0.6);
+}
+
+.time-entry-row[data-source="logged"]::before {
+  background: var(--color-amber);
 }
 
 .time-entry-row:hover {
@@ -186,20 +210,6 @@
 .time-entry-row__person-hours {
   font-size: 0.75rem;
   color: var(--color-text-muted);
-}
-
-.time-entry-row__logged-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 5px;
-  background: var(--color-border);
-  border-radius: 4px;
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-left: auto;
 }
 
 /* Add entry button */

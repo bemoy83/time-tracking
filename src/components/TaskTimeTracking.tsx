@@ -98,7 +98,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
       <ExpandableSection
         label="Time Tracked"
         count={breakdown.entryCount}
-        countVariant="muted"
+        countVariant="primary"
         icon={<ClockIcon className="task-time-tracking__icon" />}
         defaultOpen={true}
         badge={liveBadge}

@@ -19,6 +19,7 @@
   /* Interactive */
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
+  --color-amber: #d97706;
 
   /* Typography scale */
   --font-xs: 0.75rem;      /* 12px - timestamps, tertiary */

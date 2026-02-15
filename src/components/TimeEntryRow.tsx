@@ -25,6 +25,7 @@ export function TimeEntryRow({ entry, onTap }: TimeEntryRowProps) {
     <button
       type="button"
       className="time-entry-row"
+      data-source={entry.source}
       onClick={() => onTap(entry)}
     >
       <span className="time-entry-row__date">{dateStr}</span>
@@ -36,9 +37,6 @@ export function TimeEntryRow({ entry, onTap }: TimeEntryRowProps) {
             {formatPersonHours(dur, workers)} person-hrs
           </span>
         </>
-      )}
-      {entry.source === 'logged' && (
-        <span className="time-entry-row__logged-badge">logged</span>
       )}
     </button>
   );

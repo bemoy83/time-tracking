@@ -205,8 +205,13 @@
     background: rgba(255, 255, 255, 0.06);
   }
 
-  .time-entry-row__logged-badge {
-    background: #404040;
+  .time-entry-row[data-source="manual"]::before,
+  .time-entry-row[data-source="resumed"]::before {
+    background: rgba(37, 99, 235, 0.7);
+  }
+
+  .time-entry-row[data-source="logged"]::before {
+    background: #f59e0b;
   }
 
   /* --- Settings --- */
