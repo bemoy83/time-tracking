@@ -102,6 +102,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         icon={<ClockIcon className="task-time-tracking__icon" />}
         defaultOpen={true}
         badge={liveBadge}
+        timeBadgeMs={breakdown.totalMs}
       >
         {isLoading ? (
           <div className="task-time-tracking__loading">Loading...</div>

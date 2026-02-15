@@ -414,53 +414,32 @@
    Subtasks section
    ============================================================ */
 
-.task-detail__subtasks {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  margin-top: var(--space-sm);
-}
-
-.task-detail__section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-md);
-  font-weight: 600;
-  margin: 0;
-}
-
-.task-detail__subtask-list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* Flat swipeable-rows inside subtask list */
-.task-detail__subtask-list .swipeable-row {
+/* Flush swipeable-rows inside subtask expandable */
+.expandable-section--flush .swipeable-row {
   border: none;
   border-radius: 0;
   border-bottom: 1px solid var(--color-border);
 }
 
-.task-detail__subtask-list .swipeable-row:last-child {
+.expandable-section--flush .swipeable-row:last-of-type {
   border-bottom: none;
 }
 
-.task-detail__add-subtask {
+/* Footer: add-subtask form */
+.task-detail__add-subtask-footer {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-border);
 }
 
-.task-detail__add-subtask .input {
+.task-detail__add-subtask-footer .input {
   flex: 1;
   min-width: 0;
 }
 
-.task-detail__add-subtask .task-detail__btn {
+.task-detail__add-subtask-footer .task-detail__btn {
   width: auto;
   flex-shrink: 0;
 }

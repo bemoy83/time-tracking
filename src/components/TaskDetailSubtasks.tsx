@@ -1,7 +1,7 @@
 /**
  * TaskDetailSubtasks component.
  * Subtask list with add form for TaskDetail page.
- * Uses ExpandableSection for toggle behavior.
+ * Uses ExpandableSection flush variant — the card IS the list.
  */
 
 import { useState } from 'react';
@@ -46,24 +46,21 @@ export function TaskDetailSubtasks({
       count={subtasks.length}
       countVariant="muted"
       defaultOpen={true}
+      flush
     >
-      {subtasks.length > 0 && (
-        <div className="task-detail__subtask-list">
-          {subtasks.map((subtask) => (
-            <SwipeableTaskRow
-              key={subtask.id}
-              task={subtask}
-              isSubtask
-              totalMs={taskTimes?.get(subtask.id)}
-              onSelect={onSelectTask}
-              onStartTimer={onStartTimer}
-              onComplete={onCompleteSubtask}
-            />
-          ))}
-        </div>
-      )}
+      {subtasks.map((subtask) => (
+        <SwipeableTaskRow
+          key={subtask.id}
+          task={subtask}
+          isSubtask
+          totalMs={taskTimes?.get(subtask.id)}
+          onSelect={onSelectTask}
+          onStartTimer={onStartTimer}
+          onComplete={onCompleteSubtask}
+        />
+      ))}
 
-      <form className="task-detail__add-subtask" onSubmit={handleAddSubtask}>
+      <form className="task-detail__add-subtask-footer" onSubmit={handleAddSubtask}>
         <input
           type="text"
           placeholder="Add subtask..."

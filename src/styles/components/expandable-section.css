@@ -8,11 +8,24 @@
   padding: var(--space-md);
 }
 
+/* Flush variant — border instead of background fill, content edge-to-edge */
+.expandable-section--flush {
+  padding: 0;
+  background: none;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.expandable-section--flush .expandable-section__toggle {
+  padding: var(--space-md);
+}
+
 /* Toggle header */
 .expandable-section__toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   width: 100%;
   padding: 0;
   background: none;
@@ -35,6 +48,10 @@
   gap: var(--space-sm);
 }
 
+.expandable-section__time-badge {
+  margin-left: auto;
+}
+
 .expandable-section__chevron {
   display: inline-block;
   transition: transform 0.2s;
@@ -51,4 +68,11 @@
   flex-direction: column;
   gap: var(--space-md);
   margin-top: var(--space-md);
+}
+
+/* Flush content — no gap, no margin, rows manage their own borders */
+.expandable-section__content--flush {
+  gap: 0;
+  margin-top: 0;
+  border-top: 1px solid var(--color-border);
 }
