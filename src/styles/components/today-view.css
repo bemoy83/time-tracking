@@ -146,19 +146,6 @@
   letter-spacing: normal;
 }
 
-.today-view__section-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--space-xs);
-  background: var(--color-border);
-  border-radius: 12px;
-  font-size: 0.75rem;
-  color: var(--color-text);
-}
-
 /* ---- Grouped task list: single rounded container ---- */
 
 .today-view__task-list {

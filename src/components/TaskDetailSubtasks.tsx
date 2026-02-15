@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Task } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
+import { CountBadge } from './CountBadge';
 
 interface TaskDetailSubtasksProps {
   task: Task;
@@ -43,7 +44,7 @@ export function TaskDetailSubtasks({
       <h2 className="task-detail__section-title">
         Subtasks
         {subtasks.length > 0 && (
-          <span className="task-detail__section-count">{subtasks.length}</span>
+          <CountBadge count={subtasks.length} variant="muted" />
         )}
       </h2>
 

@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TaskNote } from '../lib/types';
 import { addNote, getNotesByTask, subscribeNotes } from '../lib/stores/note-actions';
+import { CountBadge } from './CountBadge';
 
 interface TaskNotesProps {
   taskId: string;
@@ -77,7 +78,7 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
         <span className="task-notes__toggle-label">
           Notes
           {notes.length > 0 && (
-            <span className="task-notes__count">{notes.length}</span>
+            <CountBadge count={notes.length} variant="primary" size="compact" />
           )}
         </span>
         <span className={`task-notes__chevron ${showNotes ? 'task-notes__chevron--open' : ''}`}>

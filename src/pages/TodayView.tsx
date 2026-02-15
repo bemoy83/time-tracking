@@ -24,6 +24,7 @@ import {
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
 import { useTaskTimes } from '../lib/hooks/useTaskTimes';
 import { TaskCard } from '../components/TaskCard';
+import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { PlusIcon, BlockedIcon } from '../components/icons';
@@ -197,9 +198,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
             <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: 'white' }}>
               {project.name}
             </span>
-            <span className="today-view__section-count">
-              {projectTasks.length}
-            </span>
+            <CountBadge count={projectTasks.length} variant="muted" />
           </h2>
           <div className="today-view__task-list">
             {projectTasks.map((task) => (
@@ -234,7 +233,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
           <h2 className="today-view__section-title today-view__section-title--blocked">
             <BlockedIcon className="today-view__icon" />
             Blocked
-            <span className="today-view__section-count">{blockedTasks.length}</span>
+            <CountBadge count={blockedTasks.length} variant="muted" />
           </h2>
           <div className="today-view__task-list">
             {blockedTasks.map((task) => (

@@ -35,22 +35,6 @@
   gap: var(--space-sm);
 }
 
-.task-notes__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  background: var(--color-primary);
-  color: white;
-  border-radius: 10px;
-  font-size: 0.688rem;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
 .task-notes__chevron {
   display: inline-block;
   transition: transform 0.2s;

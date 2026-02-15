@@ -13,6 +13,7 @@ import { TimeEntry, formatDurationShort } from '../lib/types';
 import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
 import { AddEntryModal } from './AddEntryModal';
+import { CountBadge } from './CountBadge';
 import { ClockIcon } from './icons';
 
 interface TaskTimeTrackingProps {
@@ -90,6 +91,9 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
       <h2 className="task-time-tracking__title">
         <ClockIcon className="task-time-tracking__icon" />
         Time Tracked
+        {breakdown.entryCount > 0 && (
+          <CountBadge count={breakdown.entryCount} variant="muted" />
+        )}
         {isTimerActive && (
           <span className="task-time-tracking__live-indicator" aria-label="Timer running">
             Live

@@ -1,0 +1,35 @@
+/* ============================================================
+   Count Badge — unified across views (notes, section counts, etc.)
+   ============================================================ */
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--space-xs);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.count-badge--primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.count-badge--muted {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+/* Compact variant for inline headers */
+.count-badge--compact {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 0.688rem;
+}

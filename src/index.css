@@ -15,6 +15,7 @@
 @import './styles/_input.css';
 
 /* Components */
+@import './styles/components/count-badge.css';
 @import './styles/components/timer.css';
 @import './styles/components/task-row.css';
 @import './styles/components/task-card.css';
