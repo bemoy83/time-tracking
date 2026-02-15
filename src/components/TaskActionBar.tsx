@@ -5,7 +5,6 @@
  */
 
 import { PlayIcon, StopIcon, CheckIcon } from './icons';
-import { TimerDisplay } from './TimerDisplay';
 
 interface TaskActionBarProps {
   status: 'active' | 'completed' | 'blocked';
@@ -41,7 +40,6 @@ export function TaskActionBar({
           <button className="task-action-bar__btn task-action-bar__btn--stop" onClick={onStopTimer}>
             <StopIcon className="task-action-bar__icon" />
             <span>Stop</span>
-            <TimerDisplay size="large" />
           </button>
           <button className="task-action-bar__btn task-action-bar__btn--complete" onClick={onComplete}>
             <CheckIcon className="task-action-bar__icon" />

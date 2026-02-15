@@ -14,10 +14,6 @@
   transition: bottom 0.25s ease-out;
 }
 
-.is-tracking .tab-nav {
-  bottom: var(--timer-bar-height);
-}
-
 .tab-nav__btn {
   flex: 1;
   display: flex;

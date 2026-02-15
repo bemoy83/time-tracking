@@ -42,10 +42,6 @@ main {
   transition: padding-bottom 0.25s ease-out;
 }
 
-.is-tracking main {
-  padding-bottom: calc(var(--timer-bar-height) + 56px + var(--space-xl));
-}
-
 main:target {
   outline: 2px solid var(--color-primary);
 }

@@ -19,10 +19,6 @@
   transition: bottom 0.25s ease-out;
 }
 
-.is-tracking .install-prompt {
-  bottom: calc(var(--timer-bar-height) + 56px + var(--space-md));
-}
-
 .install-prompt__content {
   display: flex;
   align-items: flex-start;

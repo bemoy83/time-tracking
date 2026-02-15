@@ -3,7 +3,6 @@ import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeSyncQueue, useSyncState } from './lib/sync/sync-queue';
 import { Task, Project } from './lib/types';
-import { TimerBar } from './components/TimerBar';
 import { NetworkStatus } from './components/NetworkStatus';
 import { InstallPrompt } from './components/InstallPrompt';
 import { TodayView } from './pages/TodayView';
@@ -23,7 +22,7 @@ type View =
 
 function App() {
   const [initialized, setInitialized] = useState(false);
-  const { isLoading: timerLoading, activeTimer } = useTimerStore();
+  const { isLoading: timerLoading } = useTimerStore();
   const { isLoading: tasksLoading } = useTaskStore();
   const { isOnline, pendingCount, isSyncing, lastError } = useSyncState();
   const [view, setView] = useState<View>({ type: 'tab', tab: 'today' });
@@ -82,7 +81,6 @@ function App() {
 
   const rootClass = [
     showNetworkStatus && 'has-network-status',
-    activeTimer && 'is-tracking',
   ]
     .filter(Boolean)
     .join(' ');
@@ -155,7 +153,6 @@ function App() {
       {/* Install prompt for PWA */}
       <InstallPrompt />
 
-      {activeTimer && <TimerBar />}
     </div>
   );
 }

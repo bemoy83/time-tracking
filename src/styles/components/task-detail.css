@@ -9,10 +9,6 @@
   padding-bottom: calc(var(--action-bar-height) + var(--space-xl));
 }
 
-.is-tracking .task-detail {
-  padding-bottom: calc(var(--action-bar-height) + var(--timer-bar-height) + var(--space-xl));
-}
-
 /* Header — no longer separate, merged into breadcrumb */
 
 .task-detail__icon {
@@ -455,7 +451,13 @@
 
 .task-detail__add-subtask {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
+}
+
+.task-detail__add-subtask .input {
+  flex: 1;
+  min-width: 0;
 }
 
 .task-detail__add-subtask .task-detail__btn {

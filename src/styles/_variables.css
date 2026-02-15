@@ -31,7 +31,7 @@
   /* Sizing - 44px minimum for touch targets */
   --touch-min: 44px;
   --timer-bar-height: 140px;
-  --action-bar-height: 64px;
+  --action-bar-height: 76px;
 
   /* Spacing */
   --space-xs: 0.25rem;

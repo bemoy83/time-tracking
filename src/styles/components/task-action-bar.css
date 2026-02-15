@@ -16,7 +16,7 @@
   background: var(--color-bg);
   border-top: 1.5px solid var(--color-border);
   z-index: 90;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: transform 0.28s ease-out, background-color 0.2s, border-color 0.2s;
 }
 
 /* Buttons */
@@ -46,14 +46,14 @@
   height: 20px;
 }
 
-/* Start - green */
+/* Start - blue (matches swipe action) */
 .task-action-bar__btn--start {
-  background: var(--color-ready);
+  background: var(--color-primary);
   color: white;
 }
 
 .task-action-bar__btn--start:hover {
-  background: #15803d;
+  background: var(--color-primary-hover);
 }
 
 /* Stop - red */
@@ -64,18 +64,6 @@
 
 .task-action-bar__btn--stop:hover {
   background: #b91c1c;
-}
-
-/* Override TimerDisplay colors inside stop button */
-.task-action-bar__btn--stop .timer-display__time {
-  color: white;
-  font-size: var(--font-base);
-}
-
-.task-action-bar__btn--stop .timer-display__indicator {
-  background: white;
-  width: 8px;
-  height: 8px;
 }
 
 /* Complete - green outline */
