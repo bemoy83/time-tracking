@@ -88,6 +88,17 @@ export const PROJECT_COLORS: readonly string[] = [
 ] as const;
 
 /**
+ * Task note / activity log entry.
+ * Append-only — no edit, no updatedAt.
+ */
+export interface TaskNote {
+  id: string;
+  taskId: string;
+  text: string;        // plain text, max ~280 chars
+  createdAt: string;   // ISO 8601 UTC
+}
+
+/**
  * Database schema definition for IndexedDB.
  */
 export interface TimeTrackingDB {

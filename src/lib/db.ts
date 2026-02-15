@@ -4,11 +4,11 @@
  */
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { ActiveTimer, TimeEntry, Task, Project } from './types';
+import type { ActiveTimer, TimeEntry, Task, Project, TaskNote } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -45,6 +45,14 @@ interface TimeTrackingDBSchema extends DBSchema {
   projects: {
     key: string;
     value: Project;
+  };
+  // Task notes / activity log
+  taskNotes: {
+    key: string;
+    value: TaskNote;
+    indexes: {
+      'by-task': string;
+    };
   };
 }
 
@@ -95,6 +103,12 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
         // Version 3: Remove legacy "Unassigned" placeholder task
         if (oldVersion < 3) {
           transaction.objectStore('tasks').delete(LEGACY_UNASSIGNED_TASK_ID);
+        }
+
+        // Version 5: Add taskNotes store
+        if (oldVersion < 5) {
+          const notesStore = db.createObjectStore('taskNotes', { keyPath: 'id' });
+          notesStore.createIndex('by-task', 'taskId');
         }
 
         // Version 4: Add workers field to timeEntries and activeTimer
@@ -364,6 +378,51 @@ export async function updateProject(project: Project): Promise<void> {
 export async function deleteProject(id: string): Promise<void> {
   const db = await getDB();
   await db.delete('projects', id);
+}
+
+// ============================================================
+// Task Note Operations
+// ============================================================
+
+/**
+ * Add a task note.
+ */
+export async function addTaskNote(note: TaskNote): Promise<void> {
+  const db = await getDB();
+  await db.add('taskNotes', note);
+}
+
+/**
+ * Get all notes for a task, sorted newest-first.
+ */
+export async function getTaskNotesByTask(taskId: string): Promise<TaskNote[]> {
+  const db = await getDB();
+  const notes = await db.getAllFromIndex('taskNotes', 'by-task', taskId);
+  notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return notes;
+}
+
+/**
+ * Delete a single task note.
+ */
+export async function deleteTaskNote(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('taskNotes', id);
+}
+
+/**
+ * Delete all notes for a task (cascade delete).
+ */
+export async function deleteTaskNotesByTask(taskId: string): Promise<void> {
+  const db = await getDB();
+  const notes = await db.getAllFromIndex('taskNotes', 'by-task', taskId);
+  if (notes.length === 0) return;
+
+  const tx = db.transaction('taskNotes', 'readwrite');
+  await Promise.all([
+    ...notes.map((note) => tx.store.delete(note.id)),
+    tx.done,
+  ]);
 }
 
 // ============================================================

@@ -6,6 +6,7 @@
 import {
   getTimeEntriesByTask,
   deleteTimeEntriesByTask,
+  deleteTaskNotesByTask,
   deleteTask as dbDeleteTask,
   getActiveTimer,
 } from '../db';
@@ -78,10 +79,12 @@ export async function deleteTaskWithEntries(taskId: string): Promise<void> {
 
   for (const subtaskId of subtaskIds) {
     await deleteTimeEntriesByTask(subtaskId);
+    await deleteTaskNotesByTask(subtaskId);
     await dbDeleteTask(subtaskId);
   }
 
   await deleteTimeEntriesByTask(taskId);
+  await deleteTaskNotesByTask(taskId);
   await dbDeleteTask(taskId);
 
   setState({

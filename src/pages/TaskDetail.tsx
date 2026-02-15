@@ -43,6 +43,7 @@ import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { WorkersStepper } from '../components/WorkersStepper';
 import { useTaskTimes } from '../lib/hooks/useTaskTimes';
+import { TaskNotes } from '../components/TaskNotes';
 
 interface TaskDetailProps {
   taskId: string;
@@ -284,6 +285,8 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       )}
 
       <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+
+      <TaskNotes taskId={task.id} />
 
       {/* Action buttons */}
       <div className="task-detail__actions">

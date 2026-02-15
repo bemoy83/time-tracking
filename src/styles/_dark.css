@@ -62,6 +62,11 @@
     background: #252525;
   }
 
+  /* --- Task Notes --- */
+  .task-notes {
+    background: #252525;
+  }
+
   /* --- Modals / Dialogs --- */
   .delete-confirm {
     background: #252525;
