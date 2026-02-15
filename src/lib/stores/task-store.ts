@@ -106,6 +106,7 @@ export interface CreateTaskInput {
   title: string;
   projectId?: string | null;
   parentId?: string | null;
+  estimatedMinutes?: number | null;
 }
 
 /**
@@ -120,6 +121,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     projectId: input.projectId ?? null,
     parentId: input.parentId ?? null,
     blockedReason: null,
+    estimatedMinutes: input.estimatedMinutes ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -137,6 +139,20 @@ export async function updateTaskTitle(id: string, title: string): Promise<void> 
   if (!task) return;
 
   const updated = { ...task, title, updatedAt: nowUtc() };
+  await dbUpdateTask(updated);
+  setState({
+    tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
+  });
+}
+
+/**
+ * Update a task's estimated time in minutes.
+ */
+export async function updateTaskEstimate(id: string, estimatedMinutes: number | null): Promise<void> {
+  const task = state.tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  const updated = { ...task, estimatedMinutes, updatedAt: nowUtc() };
   await dbUpdateTask(updated);
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),

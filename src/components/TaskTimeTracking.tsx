@@ -8,12 +8,16 @@
 import { useState, useEffect } from 'react';
 import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
 import { useTimerStore } from '../lib/stores/timer-store';
+import { useTask } from '../lib/stores/task-store';
+import { updateTaskEstimate } from '../lib/stores/task-store';
 import { getTimeEntriesByTask } from '../lib/db';
 import { addManualEntry, updateEntry, deleteEntry } from '../lib/stores/entry-actions';
-import { TimeEntry, formatDurationShort } from '../lib/types';
+import { TimeEntry, formatDurationShort, calculateBudgetStatus } from '../lib/types';
 import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
 import { AddEntryModal } from './AddEntryModal';
+import { EstimateInput } from './EstimateInput';
+import { BudgetRing } from './BudgetRing';
 import { ExpandableSection } from './ExpandableSection';
 import { ClockIcon } from './icons';
 
@@ -24,6 +28,7 @@ interface TaskTimeTrackingProps {
 
 export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) {
   const { activeTimers } = useTimerStore();
+  const task = useTask(taskId);
   const { breakdown, isLoading, refresh } = useTaskTimeBreakdown(
     taskId,
     subtaskIds,
@@ -34,6 +39,9 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   const [showEntries, setShowEntries] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+
+  const budgetStatus = calculateBudgetStatus(breakdown.totalMs, task?.estimatedMinutes ?? null);
 
   const hasSubtasks = subtaskIds.length > 0;
   const hasTime = breakdown.totalMs > 0;
@@ -87,6 +95,11 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     refresh();
   };
 
+  const handleSaveEstimate = async (estimateMinutes: number | null) => {
+    await updateTaskEstimate(taskId, estimateMinutes);
+    setShowEstimateModal(false);
+  };
+
   const liveBadge = isTimerActive ? (
     <span className="task-time-tracking__live-indicator" aria-label="Timer running">
       Live
@@ -124,6 +137,36 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                   {formatDurationShort(breakdown.totalPersonMs)}
                 </span>
               </div>
+            )}
+
+            {/* Budget status - shown when estimate is set */}
+            {budgetStatus.status !== 'none' && (
+              <div className="task-time-tracking__budget">
+                <BudgetRing budgetStatus={budgetStatus} size="medium" />
+                <div className="task-time-tracking__budget-info">
+                  <span className={`task-time-tracking__variance task-time-tracking__variance--${budgetStatus.status}`}>
+                    {budgetStatus.varianceText}
+                  </span>
+                  <button
+                    type="button"
+                    className="task-time-tracking__estimate-btn"
+                    onClick={() => setShowEstimateModal(true)}
+                  >
+                    Est: {formatDurationShort((task?.estimatedMinutes ?? 0) * 60_000)}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Set estimate link - shown when no estimate */}
+            {budgetStatus.status === 'none' && (
+              <button
+                type="button"
+                className="task-time-tracking__set-estimate"
+                onClick={() => setShowEstimateModal(true)}
+              >
+                + Set estimate
+              </button>
             )}
 
             {/* Breakdown - shown if there's time or subtasks */}
@@ -214,6 +257,14 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         isOpen={showAddModal}
         onSave={handleAddEntry}
         onClose={() => setShowAddModal(false)}
+      />
+
+      {/* Estimate modal */}
+      <EstimateInput
+        isOpen={showEstimateModal}
+        currentEstimate={task?.estimatedMinutes ?? null}
+        onSave={handleSaveEstimate}
+        onClose={() => setShowEstimateModal(false)}
       />
     </>
   );

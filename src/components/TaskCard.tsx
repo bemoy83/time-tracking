@@ -4,9 +4,10 @@
  * Used in TodayView for the card-based layout.
  */
 
-import { Task, formatDurationShort } from '../lib/types';
+import { Task, formatDurationShort, calculateBudgetStatus } from '../lib/types';
 import { SwipeableRow } from './SwipeableRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
+import { BudgetRing } from './BudgetRing';
 import {
   CheckIcon,
   PlayIcon,
@@ -50,6 +51,7 @@ export function TaskCard({
   const progressPercent = progress
     ? Math.round((progress.completed / progress.total) * 100)
     : null;
+  const budgetStatus = calculateBudgetStatus(totalMs, task.estimatedMinutes);
 
   return (
     <>
@@ -90,6 +92,11 @@ export function TaskCard({
                 <ClockIcon className="task-card__time-badge-icon" />
                 {formatDurationShort(totalMs)}
               </span>
+            )}
+
+            {/* Budget ring */}
+            {budgetStatus.status !== 'none' && (
+              <BudgetRing budgetStatus={budgetStatus} size="small" />
             )}
           </div>
 

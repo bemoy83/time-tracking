@@ -55,6 +55,7 @@ export interface Task {
   projectId: string | null;
   parentId: string | null; // For one-level subtasks
   blockedReason: string | null; // Why the task is blocked
+  estimatedMinutes: number | null; // Optional time budget
   createdAt: string;
   updatedAt: string;
 }
@@ -188,4 +189,48 @@ export function formatDurationShort(ms: number): string {
  */
 export function formatPersonHours(ms: number, workers: number): string {
   return formatDurationShort(ms * workers);
+}
+
+/**
+ * Budget status for comparing tracked vs estimated time.
+ */
+export type BudgetLevel = 'under' | 'approaching' | 'over' | 'none';
+
+export interface BudgetStatus {
+  status: BudgetLevel;
+  percentUsed: number;
+  varianceMs: number; // positive = over budget, negative = under
+  varianceText: string; // "Over by 25m" / "Under by 1h 15m"
+}
+
+/**
+ * Calculate budget status from tracked time and estimate.
+ * Thresholds: green < 75%, amber 75–99%, red >= 100%.
+ */
+export function calculateBudgetStatus(
+  trackedMs: number,
+  estimatedMinutes: number | null
+): BudgetStatus {
+  if (estimatedMinutes === null || estimatedMinutes <= 0) {
+    return { status: 'none', percentUsed: 0, varianceMs: 0, varianceText: '' };
+  }
+
+  const estimatedMs = estimatedMinutes * 60_000;
+  const percentUsed = (trackedMs / estimatedMs) * 100;
+  const varianceMs = trackedMs - estimatedMs;
+
+  let status: BudgetLevel;
+  if (percentUsed >= 100) {
+    status = 'over';
+  } else if (percentUsed >= 75) {
+    status = 'approaching';
+  } else {
+    status = 'under';
+  }
+
+  const absVariance = Math.abs(varianceMs);
+  const prefix = varianceMs >= 0 ? 'Over by ' : 'Under by ';
+  const varianceText = prefix + formatDurationShort(absVariance);
+
+  return { status, percentUsed, varianceMs, varianceText };
 }

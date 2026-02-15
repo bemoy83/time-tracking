@@ -33,6 +33,7 @@
 @import './styles/components/entry-modal.css';
 @import './styles/components/project.css';
 @import './styles/components/settings.css';
+@import './styles/components/budget-ring.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

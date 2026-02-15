@@ -1,0 +1,60 @@
+/* Budget Progress Ring */
+
+.budget-ring {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.budget-ring--small {
+  width: 32px;
+  height: 32px;
+}
+
+.budget-ring--medium {
+  width: 48px;
+  height: 48px;
+}
+
+.budget-ring__svg {
+  width: 100%;
+  height: 100%;
+}
+
+.budget-ring__bg {
+  stroke: var(--color-border);
+}
+
+.budget-ring__progress {
+  transition: stroke-dasharray 0.3s ease;
+}
+
+/* Color by status */
+.budget-ring--under .budget-ring__progress {
+  stroke: var(--color-ready);
+}
+
+.budget-ring--approaching .budget-ring__progress {
+  stroke: var(--color-amber);
+}
+
+.budget-ring--over .budget-ring__progress {
+  stroke: var(--color-recording);
+}
+
+.budget-ring__text {
+  font-size: 8px;
+  font-weight: 700;
+  fill: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-ring--small .budget-ring__text {
+  font-size: 9px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .budget-ring__bg {
+    stroke: #404040;
+  }
+}
