@@ -4,6 +4,7 @@
  */
 
 import { PROJECT_COLORS } from '../lib/types';
+import { ColorSwatch } from './ColorSwatch';
 
 interface ProjectColorPickerProps {
   colors?: readonly string[];
@@ -21,13 +22,13 @@ export function ProjectColorPicker({
   return (
     <div className="project-color-picker">
       {colors.map((color) => (
-        <button
+        <ColorSwatch
           key={color}
-          type="button"
-          className={`project-color-picker__swatch ${
-            value === color ? 'project-color-picker__swatch--selected' : ''
-          }`}
-          style={{ backgroundColor: color }}
+          color={color}
+          shape="swatch"
+          size="lg"
+          interactive
+          selected={value === color}
           onClick={() => onChange(color)}
           aria-label={`${ariaLabelPrefix} ${color}`}
         />

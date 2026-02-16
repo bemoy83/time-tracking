@@ -5,6 +5,7 @@ import { getParallelSubtaskTimers, setParallelSubtaskTimers } from '../lib/store
 import { getAllTimeEntries } from '../lib/db';
 import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
+import { pluralize } from '../lib/utils/pluralize';
 
 export function SettingsView() {
   const { tasks, projects } = useTaskStore();
@@ -32,7 +33,7 @@ export function SettingsView() {
   return (
     <div className="settings-view">
       <section className="settings-view__section">
-        <h2 className="settings-view__section-title">Timers</h2>
+        <h2 className="settings-view__section-title section-heading">Timers</h2>
 
         <label className="settings-view__row settings-view__row--toggle">
           <div className="settings-view__toggle-text">
@@ -54,7 +55,7 @@ export function SettingsView() {
       </section>
 
       <section className="settings-view__section">
-        <h2 className="settings-view__section-title">Data</h2>
+        <h2 className="settings-view__section-title section-heading">Data</h2>
 
         <button
           className="settings-view__row settings-view__row--danger"
@@ -65,7 +66,7 @@ export function SettingsView() {
           <span className="settings-view__row-detail">
             {entryCount === 0
               ? 'No time entries'
-              : `${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}`}
+              : pluralize(entryCount, 'entry', 'entries')}
           </span>
         </button>
 

@@ -27,8 +27,9 @@ import { TaskCard } from '../components/TaskCard';
 import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
-import { PlusIcon, BlockedIcon } from '../components/icons';
+import { BlockedIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
+import { InlineCreateForm } from '../components/InlineCreateForm';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -102,8 +103,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     await startTimer(task.id);
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
     setIsAdding(true);
     try {
@@ -143,28 +143,20 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   return (
     <div className="today-view">
       {/* Quick Add */}
-      <form className="today-view__quick-add" onSubmit={handleAddTask}>
-        <input
-          type="text"
-          placeholder="Quick add task..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          className="input"
-          disabled={isAdding}
-        />
-        <button
-          type="submit"
-          className="today-view__quick-add-btn"
-          disabled={isAdding || !newTaskTitle.trim()}
-        >
-          <PlusIcon className="today-view__icon" />
-        </button>
-      </form>
+      <InlineCreateForm
+        className="today-view__quick-add"
+        placeholder="Quick add task..."
+        submitLabel="Add"
+        value={newTaskTitle}
+        onChange={setNewTaskTitle}
+        onSubmit={handleAddTask}
+        disabled={isAdding}
+      />
 
       {/* Ungrouped Tasks */}
       {ungroupedTasks.length > 0 && (
         <section className="today-view__section">
-          <h2 className="today-view__section-title">Tasks</h2>
+          <h2 className="today-view__section-title section-heading">Tasks</h2>
           <div className="today-view__task-list">
             {ungroupedTasks.map((task) => (
               <TaskCard
@@ -195,7 +187,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       {/* Grouped by Project */}
       {groupedTasks.map(({ project, tasks: projectTasks }) => (
         <section key={project.id} className="today-view__section">
-          <h2 className="today-view__section-title">
+          <h2 className="today-view__section-title section-heading">
             <ProjectColorDot color={project.color} />
             <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: 'white' }}>
               {project.name}
@@ -232,7 +224,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       {/* Blocked Tasks */}
       {blockedTasks.length > 0 && (
         <section className="today-view__section today-view__section--blocked">
-          <h2 className="today-view__section-title today-view__section-title--blocked">
+          <h2 className="today-view__section-title section-heading section-heading--blocked">
             <BlockedIcon className="today-view__icon" />
             Blocked
             <CountBadge count={blockedTasks.length} variant="muted" />
@@ -291,5 +283,3 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     </div>
   );
 }
-
-

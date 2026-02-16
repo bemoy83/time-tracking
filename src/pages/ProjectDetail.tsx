@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Task } from '../lib/types';
 import { BackIcon, TrashIcon, ChevronIcon } from '../components/icons';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
+import { ProjectColorDot } from '../components/ProjectColorDot';
 import {
   useTaskStore,
   useProjectTasks,
@@ -18,6 +19,7 @@ import {
   DeleteProjectPreview,
 } from '../lib/stores/task-store';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
+import { InlineCreateForm } from '../components/InlineCreateForm';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -53,8 +55,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
   const completedTasks = projectTasks.filter((t) => t.status === 'completed');
   const blockedTasks = projectTasks.filter((t) => t.status === 'blocked');
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
     await createTask({ title: newTaskTitle.trim(), projectId });
     setNewTaskTitle('');
@@ -102,11 +103,12 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Project name + color */}
       <div className="project-detail__title-section">
         <button
-          className="project-detail__color-dot"
-          style={{ backgroundColor: project.color }}
+          className="project-detail__color-toggle"
           onClick={() => setShowColorPicker(!showColorPicker)}
           aria-label="Change project color"
-        />
+        >
+          <ProjectColorDot color={project.color} size="lg" />
+        </button>
         {isEditingName ? (
           <div className="project-detail__edit-name">
             <input
@@ -138,12 +140,10 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
 
       {/* Color picker */}
       {showColorPicker && (
-        <div className="project-detail__color-picker">
-          <ProjectColorPicker
-            value={project.color}
-            onChange={handleColorChange}
-          />
-        </div>
+        <ProjectColorPicker
+          value={project.color}
+          onChange={handleColorChange}
+        />
       )}
 
       {/* Stats */}
@@ -154,27 +154,19 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       </div>
 
       {/* Add task form */}
-      <form className="project-detail__add-task" onSubmit={handleAddTask}>
-        <input
-          type="text"
-          placeholder="Add task to project..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          className="input"
-        />
-        <button
-          type="submit"
-          className="btn btn--primary"
-          disabled={!newTaskTitle.trim()}
-        >
-          Add
-        </button>
-      </form>
+      <InlineCreateForm
+        className="project-detail__add-task"
+        placeholder="Add task to project..."
+        submitLabel="Add"
+        value={newTaskTitle}
+        onChange={setNewTaskTitle}
+        onSubmit={handleAddTask}
+      />
 
       {/* Active tasks */}
       {activeTasks.length > 0 && (
         <section className="project-detail__section">
-          <h2 className="project-detail__section-title">Active</h2>
+          <h2 className="project-detail__section-title section-heading">Active</h2>
           <div className="project-detail__task-list">
             {activeTasks.map((task) => (
               <button
@@ -193,7 +185,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Blocked tasks */}
       {blockedTasks.length > 0 && (
         <section className="project-detail__section">
-          <h2 className="project-detail__section-title project-detail__section-title--blocked">Blocked</h2>
+          <h2 className="project-detail__section-title section-heading section-heading--blocked">Blocked</h2>
           <div className="project-detail__task-list">
             {blockedTasks.map((task) => (
               <button
@@ -212,7 +204,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Completed tasks */}
       {completedTasks.length > 0 && (
         <section className="project-detail__section">
-          <h2 className="project-detail__section-title project-detail__section-title--completed">Completed</h2>
+          <h2 className="project-detail__section-title section-heading section-heading--completed">Completed</h2>
           <div className="project-detail__task-list">
             {completedTasks.map((task) => (
               <button
@@ -259,4 +251,3 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
     </div>
   );
 }
-

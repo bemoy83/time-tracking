@@ -1,0 +1,19 @@
+/* ============================================================
+   Section Heading Primitive
+   ============================================================ */
+
+.section-heading {
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.section-heading--blocked {
+  color: var(--color-recording);
+}
+
+.section-heading--completed {
+  color: var(--color-ready);
+}

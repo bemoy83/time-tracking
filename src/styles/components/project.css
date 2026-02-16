@@ -58,31 +58,6 @@
   margin-bottom: var(--space-sm);
 }
 
-.project-list__color-picker {
-  display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-md);
-}
-
-.project-list__color-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform 0.1s, border-color 0.15s;
-}
-
-.project-list__color-swatch:hover {
-  transform: scale(1.15);
-}
-
-.project-list__color-swatch--selected {
-  border-color: var(--color-text);
-  transform: scale(1.15);
-}
-
 .project-list__create-actions {
   display: flex;
   gap: var(--space-sm);
@@ -115,13 +90,6 @@
 
 .project-list__item:hover {
   background: var(--color-border);
-}
-
-.project-list__item-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .project-list__item-name {
@@ -189,17 +157,21 @@
   margin-bottom: var(--space-md);
 }
 
-.project-detail__color-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+.project-detail__color-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  background: none;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
   transition: transform 0.1s;
 }
 
-.project-detail__color-dot:hover {
+.project-detail__color-toggle:hover {
   transform: scale(1.15);
 }
 
@@ -226,32 +198,11 @@
   flex: 1;
 }
 
-.project-detail__color-picker {
-  display: flex;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+.project-detail .project-color-picker {
   margin-bottom: var(--space-md);
   padding: var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: 8px;
-}
-
-.project-detail__color-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform 0.1s, border-color 0.15s;
-}
-
-.project-detail__color-swatch:hover {
-  transform: scale(1.15);
-}
-
-.project-detail__color-swatch--selected {
-  border-color: var(--color-text);
-  transform: scale(1.15);
 }
 
 .project-detail__stats {
@@ -278,20 +229,7 @@
 }
 
 .project-detail__section-title {
-  font-size: var(--font-body);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
   margin: 0 0 var(--space-sm);
-}
-
-.project-detail__section-title--blocked {
-  color: var(--color-recording);
-}
-
-.project-detail__section-title--completed {
-  color: var(--color-ready);
 }
 
 .project-detail__task-list {

@@ -26,6 +26,25 @@
   color: var(--color-recording);
 }
 
+.alert-dialog__title--warning {
+  color: var(--color-amber);
+}
+
+.alert-dialog__title--success {
+  color: var(--color-ready);
+}
+
+.alert-dialog__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.alert-dialog__icon--sm {
+  width: 18px;
+  height: 18px;
+}
+
 .alert-dialog__message {
   font-size: var(--font-body);
   line-height: 1.5;
@@ -48,8 +67,8 @@
 
 .alert-dialog__btn-icon {
   display: inline-flex;
-  width: 18px;
-  height: 18px;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 

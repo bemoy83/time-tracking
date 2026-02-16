@@ -1,5 +1,6 @@
 import { WarningIcon, TrashIcon } from './icons';
 import { AlertDialog } from './AlertDialog';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface PurgeResetConfirmProps {
   isOpen: boolean;
@@ -19,9 +20,9 @@ export function PurgeResetConfirm({
   onCancel,
 }: PurgeResetConfirmProps) {
   const parts: string[] = [];
-  if (taskCount > 0) parts.push(`${taskCount} task${taskCount !== 1 ? 's' : ''}`);
-  if (projectCount > 0) parts.push(`${projectCount} project${projectCount !== 1 ? 's' : ''}`);
-  if (entryCount > 0) parts.push(`${entryCount} time ${entryCount !== 1 ? 'entries' : 'entry'}`);
+  if (taskCount > 0) parts.push(pluralize(taskCount, 'task'));
+  if (projectCount > 0) parts.push(pluralize(projectCount, 'project'));
+  if (entryCount > 0) parts.push(pluralize(entryCount, 'time entry', 'time entries'));
 
   const summary = parts.length > 0
     ? `This will permanently delete ${parts.join(', ')}.`
@@ -32,7 +33,7 @@ export function PurgeResetConfirm({
       isOpen={isOpen}
       tone="danger"
       title="Reset all data?"
-      titleIcon={<WarningIcon className="delete-confirm__icon" />}
+      titleIcon={<WarningIcon className="alert-dialog__icon" />}
       description={summary}
       onClose={onCancel}
       ariaLabelledBy="purge-reset-title"
@@ -43,7 +44,7 @@ export function PurgeResetConfirm({
           label: 'Reset all',
           onClick: onConfirm,
           variant: 'danger',
-          icon: <TrashIcon className="delete-confirm__btn-icon" />,
+          icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
         },
       ]}
     >

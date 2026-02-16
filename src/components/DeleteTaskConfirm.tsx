@@ -6,6 +6,7 @@
 import { formatDurationShort } from '../lib/types';
 import { WarningIcon, TrashIcon } from './icons';
 import { AlertDialog } from './AlertDialog';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface DeleteTaskConfirmProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export function DeleteTaskConfirm({
 
   let message = `This will permanently delete "${taskTitle}"`;
   if (hasSubtasks) {
-    message += ` and its ${subtaskCount} subtask${subtaskCount > 1 ? 's' : ''}`;
+    message += ` and its ${pluralize(subtaskCount, 'subtask')}`;
   }
   if (hasTime) {
     message += `, including ${formatDurationShort(totalTimeMs)} of tracked time`;
@@ -41,7 +42,7 @@ export function DeleteTaskConfirm({
       isOpen={isOpen}
       tone="danger"
       title="Delete task?"
-      titleIcon={<WarningIcon className="delete-confirm__icon" />}
+      titleIcon={<WarningIcon className="alert-dialog__icon" />}
       description={message}
       onClose={onCancel}
       ariaLabelledBy="delete-confirm-title"
@@ -52,7 +53,7 @@ export function DeleteTaskConfirm({
           label: 'Delete',
           onClick: onConfirm,
           variant: 'danger',
-          icon: <TrashIcon className="delete-confirm__btn-icon" />,
+          icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
         },
       ]}
     >

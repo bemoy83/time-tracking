@@ -97,13 +97,13 @@ export function TaskDetailHeader({
           />
           <div className="task-detail__edit-actions">
             <button
-              className="task-detail__btn task-detail__btn--secondary"
+              className="btn btn--secondary"
               onClick={() => setIsEditing(false)}
             >
               Cancel
             </button>
             <button
-              className="task-detail__btn task-detail__btn--primary"
+              className="btn btn--primary"
               onClick={handleSaveTitle}
             >
               Save

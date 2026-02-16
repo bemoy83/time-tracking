@@ -20,69 +20,6 @@
   color: var(--color-recording);
 }
 
-/* Active Timer Section */
-.today-view__active-timer {
-  background: var(--color-recording-bg);
-  border: 2px solid var(--color-recording-border);
-  border-radius: 12px;
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.today-view__active-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.today-view__active-label {
-  font-size: var(--font-small);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-recording);
-  font-weight: 600;
-}
-
-.today-view__active-task {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  cursor: pointer;
-}
-
-.today-view__active-task-title {
-  font-size: var(--font-large);
-  font-weight: 600;
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.today-view__stop-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: none;
-  border-radius: 8px;
-  background: var(--color-recording);
-  color: white;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.today-view__stop-btn:active {
-  transform: scale(0.98);
-}
-
 /* Quick Add */
 .today-view__quick-add {
   display: flex;
@@ -91,25 +28,6 @@
 
 .today-view__quick-add .input {
   flex: 1;
-}
-
-.today-view__quick-add-btn {
-  width: var(--touch-min);
-  height: var(--touch-min);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-primary);
-  color: white;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.today-view__quick-add-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Sections */
@@ -123,16 +41,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: var(--font-body);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
   margin: 0;
-}
-
-.today-view__section-title--blocked {
-  color: #b45309;
 }
 
 .today-view__project-badge {
@@ -152,8 +61,8 @@
   display: flex;
   flex-direction: column;
   background: var(--color-surface-subtle);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
 /* No outer border — only horizontal divider between rows */
@@ -163,7 +72,7 @@
   border-top: 1px solid var(--color-border);
 }
 
-.today-view__task-list>.swipeable-row:first-child {
+.today-view__task-list > .swipeable-row:first-child {
   border-top: none;
 }
 
@@ -180,36 +89,28 @@
   border-top: 1px solid var(--color-border);
   background: transparent;
   border-radius: 0;
-  }
-  
-  /* First of multiple: no rounded corners */
-  .today-view__subtasks .swipeable-row:first-child:not(:last-child) {
-    border-radius: 0;
-  }
-  
-  /* Single subtask (first and last): bottom rounded only */
-  .today-view__subtasks .swipeable-row:first-child:last-child {
-    border-bottom-left-radius: var(--radius-xl);
-    border-bottom-right-radius: var(--radius-xl);
-  }
-  
-  /* Last of multiple: bottom rounded only */
-  .today-view__subtasks .swipeable-row:last-child:not(:first-child) {
-    border-bottom-left-radius: var(--radius-xl);
-    border-bottom-right-radius: var(--radius-xl);
+}
+
+/* First of multiple: no rounded corners */
+.today-view__subtasks .swipeable-row:first-child:not(:last-child) {
+  border-radius: 0;
+}
+
+/* Single subtask (first and last): bottom rounded only */
+.today-view__subtasks .swipeable-row:first-child:last-child {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+/* Last of multiple: bottom rounded only */
+.today-view__subtasks .swipeable-row:last-child:not(:first-child) {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
 }
 
 /* Card after a drawer: divider only (no special rounding) */
 .today-view__task-list > .today-view__subtasks + .swipeable-row {
   border-top: 1px solid var(--color-border);
-}
-
-/* Project color dot */
-.today-view__project-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* Blocked Tasks — flat rows inside grouped container */

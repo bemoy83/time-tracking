@@ -9,6 +9,7 @@ import { useTaskStore, createProject } from '../lib/stores/task-store';
 import { useModalFocusTrap } from '../lib/hooks/useModalFocusTrap';
 import { PlusIcon } from './icons';
 import { ProjectColorDot } from './ProjectColorDot';
+import { InlineCreateForm } from './InlineCreateForm';
 
 interface ProjectPickerProps {
   isOpen: boolean;
@@ -56,8 +57,7 @@ export function ProjectPicker({
     onClose();
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreate = async () => {
     if (!newName.trim()) return;
     const project = await createProject(newName.trim());
     onSelect(project.id);
@@ -110,23 +110,16 @@ export function ProjectPicker({
 
         {/* Create new project */}
         {showCreateInput ? (
-          <form className="project-picker__create-form" onSubmit={handleCreate}>
-            <input
-              ref={createInputRef}
-              type="text"
-              placeholder="Project name..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="input"
-            />
-            <button
-              type="submit"
-              className="project-picker__create-btn"
-              disabled={!newName.trim()}
-            >
-              Add
-            </button>
-          </form>
+          <InlineCreateForm
+            className="project-picker__create-form"
+            placeholder="Project name..."
+            submitLabel="Add"
+            value={newName}
+            onChange={setNewName}
+            onSubmit={handleCreate}
+            inputRef={createInputRef}
+            autoFocus
+          />
         ) : (
           <button
             className="project-picker__add-btn"
@@ -140,4 +133,3 @@ export function ProjectPicker({
     </div>
   );
 }
-

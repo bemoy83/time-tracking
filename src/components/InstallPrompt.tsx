@@ -93,14 +93,14 @@ export function InstallPrompt() {
 
       <div className="install-prompt__actions">
         <button
-          className="install-prompt__btn install-prompt__btn--dismiss"
+          className="btn btn--ghost btn--sm"
           onClick={handleDismiss}
         >
           Not now
         </button>
         {!isIOS && deferredPrompt && (
           <button
-            className="install-prompt__btn install-prompt__btn--install"
+            className="btn btn--primary btn--sm"
             onClick={handleInstall}
           >
             Install
@@ -108,7 +108,7 @@ export function InstallPrompt() {
         )}
         {isIOS && (
           <button
-            className="install-prompt__btn install-prompt__btn--install"
+            className="btn btn--primary btn--sm"
             onClick={handleDismiss}
           >
             Got it

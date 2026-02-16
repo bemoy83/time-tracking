@@ -58,26 +58,10 @@
   justify-content: flex-end;
 }
 
-.install-prompt__btn {
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.install-prompt__btn--dismiss {
-  background: transparent;
+.install-prompt__actions .btn--ghost {
   color: var(--color-text-muted);
 }
 
-.install-prompt__btn--install {
-  background: var(--color-primary);
-  color: white;
-}
-
-.install-prompt__btn--install:hover {
-  background: var(--color-primary-hover);
+.install-prompt__actions .btn--ghost:hover:not(:disabled) {
+  background: var(--color-border);
 }

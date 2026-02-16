@@ -12,6 +12,7 @@
 
 import { Task, formatDurationShort } from '../lib/types';
 import { useTimerStore } from '../lib/stores/timer-store';
+import { pluralize } from '../lib/utils/pluralize';
 import {
   CheckIcon,
   BlockedIcon,
@@ -89,7 +90,7 @@ export function TaskRow({
         )}
         {!isSubtask && subtaskCount > 0 && (
           <span className="task-row__subtask-count">
-            {subtaskCount} subtask{subtaskCount !== 1 ? 's' : ''}
+            {pluralize(subtaskCount, 'subtask')}
           </span>
         )}
         {totalMs > 0 && (
@@ -121,4 +122,3 @@ export function TaskRow({
     </div>
   );
 }
-

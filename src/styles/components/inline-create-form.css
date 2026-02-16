@@ -1,0 +1,22 @@
+/* ============================================================
+   Inline Create Form
+   ============================================================ */
+
+.inline-create-form {
+  gap: var(--space-sm);
+}
+
+.inline-create-form--row {
+  display: flex;
+  align-items: center;
+}
+
+.inline-create-form--block {
+  display: flex;
+  flex-direction: column;
+}
+
+.inline-create-form .input {
+  flex: 1;
+  min-width: 0;
+}

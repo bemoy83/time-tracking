@@ -9,6 +9,7 @@ import { Task } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import { ExpandableSection } from './ExpandableSection';
+import { InlineCreateForm } from './InlineCreateForm';
 
 interface TaskDetailSubtasksProps {
   task: Task;
@@ -31,8 +32,7 @@ export function TaskDetailSubtasks({
   const completedCount = subtasks.filter((t) => t.status === 'completed').length;
   const sectionSummary = subtasks.length > 0 ? `${completedCount}/${subtasks.length} completed` : undefined;
 
-  const handleAddSubtask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddSubtask = async () => {
     if (!newSubtaskTitle.trim()) return;
     await createTask({
       title: newSubtaskTitle.trim(),
@@ -61,22 +61,14 @@ export function TaskDetailSubtasks({
         />
       ))}
 
-      <form className="task-detail__add-subtask-footer" onSubmit={handleAddSubtask}>
-        <input
-          type="text"
-          placeholder="Add subtask..."
-          value={newSubtaskTitle}
-          onChange={(e) => setNewSubtaskTitle(e.target.value)}
-          className="input"
-        />
-        <button
-          type="submit"
-          className="task-detail__btn task-detail__btn--primary"
-          disabled={!newSubtaskTitle.trim()}
-        >
-          Add
-        </button>
-      </form>
+      <InlineCreateForm
+        className="task-detail__add-subtask-footer"
+        placeholder="Add subtask..."
+        submitLabel="Add"
+        value={newSubtaskTitle}
+        onChange={setNewSubtaskTitle}
+        onSubmit={handleAddSubtask}
+      />
     </ExpandableSection>
   );
 }

@@ -104,14 +104,14 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
                 className="input"
               />
               <button
-                className="task-detail__btn task-detail__btn--block"
+                className="btn btn--warning btn--full"
                 onClick={detail.blockFlow.handleBlock}
                 disabled={!detail.blockFlow.reason.trim()}
               >
                 Block
               </button>
               <button
-                className="task-detail__btn task-detail__btn--secondary"
+                className="btn btn--secondary btn--full"
                 onClick={detail.blockFlow.hideBlockInput}
               >
                 Cancel
@@ -119,7 +119,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
             </div>
           ) : (
             <button
-              className="task-detail__btn task-detail__btn--secondary"
+              className="btn btn--secondary btn--full"
               onClick={detail.blockFlow.showBlockInput}
             >
               Mark Blocked

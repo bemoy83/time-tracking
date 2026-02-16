@@ -9,6 +9,7 @@ import { useTaskStore, createProject } from '../lib/stores/task-store';
 import { PlusIcon, ChevronIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface ProjectListProps {
   onSelectProject: (project: Project) => void;
@@ -98,7 +99,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                 <ProjectColorDot color={project.color} size="md" />
                 <span className="project-list__item-name">{project.name}</span>
                 <span className="project-list__item-count">
-                  {count} {count === 1 ? 'task' : 'tasks'}
+                  {pluralize(count, 'task')}
                 </span>
                 <ChevronIcon className="project-list__chevron" />
               </button>
@@ -116,4 +117,3 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
     </div>
   );
 }
-

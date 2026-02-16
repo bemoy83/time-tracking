@@ -64,6 +64,15 @@
   background: var(--color-success-hover);
 }
 
+.btn--warning {
+  background: var(--color-amber);
+  color: white;
+}
+
+.btn--warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
 .btn--ghost {
   background: none;
   color: var(--color-recording);

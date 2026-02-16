@@ -8,6 +8,7 @@
 import { formatDurationShort } from '../lib/types';
 import { WarningIcon, TrashIcon } from './icons';
 import { AlertDialog } from './AlertDialog';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface DeleteProjectConfirmProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export function DeleteProjectConfirm({
   const hasTime = totalTimeMs > 0;
 
   const description = hasTasks
-    ? `"${projectName}" has ${taskCount} task${taskCount > 1 ? 's' : ''}${hasTime ? ` with ${formatDurationShort(totalTimeMs)} of tracked time` : ''}.`
+    ? `"${projectName}" has ${pluralize(taskCount, 'task')}${hasTime ? ` with ${formatDurationShort(totalTimeMs)} of tracked time` : ''}.`
     : `This will permanently delete "${projectName}".`;
 
   return (
@@ -40,7 +41,7 @@ export function DeleteProjectConfirm({
       isOpen={isOpen}
       tone="danger"
       title="Delete project?"
-      titleIcon={<WarningIcon className="delete-confirm__icon" />}
+      titleIcon={<WarningIcon className="alert-dialog__icon" />}
       description={description}
       onClose={onCancel}
       ariaLabelledBy="delete-project-title"
@@ -54,7 +55,7 @@ export function DeleteProjectConfirm({
                 label: 'Delete',
                 onClick: onUnassign,
                 variant: 'danger' as const,
-                icon: <TrashIcon className="delete-confirm__btn-icon" />,
+                icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
               },
             ]
       }

@@ -1,5 +1,6 @@
 import { WarningIcon, TrashIcon } from './icons';
 import { AlertDialog } from './AlertDialog';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface PurgeEntriesConfirmProps {
   isOpen: boolean;
@@ -19,8 +20,8 @@ export function PurgeEntriesConfirm({
       isOpen={isOpen}
       tone="danger"
       title="Clear time entries?"
-      titleIcon={<WarningIcon className="delete-confirm__icon" />}
-      description={`This will permanently delete all ${entryCount} time ${entryCount === 1 ? 'entry' : 'entries'}.`}
+      titleIcon={<WarningIcon className="alert-dialog__icon" />}
+      description={`This will permanently delete all ${pluralize(entryCount, 'time entry', 'time entries')}.`}
       onClose={onCancel}
       ariaLabelledBy="purge-entries-title"
       ariaDescribedBy="purge-entries-desc"
@@ -30,7 +31,7 @@ export function PurgeEntriesConfirm({
           label: 'Clear all',
           onClick: onConfirm,
           variant: 'danger',
-          icon: <TrashIcon className="delete-confirm__btn-icon" />,
+          icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
         },
       ]}
     >

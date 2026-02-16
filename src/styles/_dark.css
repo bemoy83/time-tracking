@@ -50,10 +50,6 @@
     background: rgba(34, 197, 94, 0.1);
   }
 
-  .task-detail__btn:hover:not(:disabled) {
-    background: #2a2a2a;
-  }
-
   /* --- Shared Input --- */
   .input {
     background: #333;
@@ -88,17 +84,6 @@
   }
 
   /* --- Modals / Dialogs --- */
-  .delete-confirm {
-    background: #252525;
-  }
-
-  .delete-confirm__btn--cancel {
-    background: #404040;
-  }
-  .delete-confirm__btn--cancel:hover {
-    background: #505050;
-  }
-
   .project-picker {
     background: #252525;
   }
@@ -122,11 +107,6 @@
     background: rgba(220, 38, 38, 0.25);
   }
 
-  .complete-confirm,
-  .complete-prompt {
-    background: #252525;
-  }
-
   /* --- Install Prompt --- */
   .install-prompt {
     background: #252525;
@@ -138,21 +118,15 @@
     background: #252525;
     border-color: #444;
   }
-  .project-list__cancel-btn {
-    background: #404040;
-  }
-  .project-list__cancel-btn:hover {
-    background: #505050;
-  }
 
   /* --- Project Detail --- */
-  .project-detail__btn--secondary {
+  .project-detail .btn--secondary {
     background: #404040;
   }
-  .project-detail__btn--secondary:hover {
+  .project-detail .btn--secondary:hover:not(:disabled) {
     background: #505050;
   }
-  .project-detail__color-picker {
+  .project-detail .project-color-picker {
     border-color: #444;
   }
 

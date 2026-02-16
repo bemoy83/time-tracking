@@ -17,61 +17,6 @@
 }
 
 /* ============================================================
-   Delete Task Confirmation
-   ============================================================ */
-
-.delete-confirm {
-  background: var(--color-bg);
-  border-radius: 12px;
-  padding: var(--space-lg);
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.2s ease-out;
-}
-
-.delete-confirm__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: var(--font-large);
-  font-weight: 700;
-  margin: 0 0 var(--space-md);
-  color: var(--color-recording);
-}
-
-.delete-confirm__icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.delete-confirm__message {
-  font-size: var(--font-body);
-  line-height: 1.5;
-  color: var(--color-text);
-  margin: 0 0 var(--space-sm);
-}
-
-.delete-confirm__warning {
-  font-size: var(--font-body);
-  font-weight: 600;
-  color: var(--color-recording);
-  margin: 0 0 var(--space-lg);
-}
-
-.delete-confirm__actions {
-  display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-}
-
-.delete-confirm__btn-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* ============================================================
    Delete Project Confirmation
    ============================================================ */
 
@@ -137,63 +82,6 @@
 }
 
 /* ============================================================
-   Complete Parent Confirm / Prompt
-   ============================================================ */
-
-.complete-confirm,
-.complete-prompt {
-  background: var(--color-bg);
-  border-radius: 12px;
-  padding: var(--space-lg);
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.2s ease-out;
-}
-
-.complete-confirm__title,
-.complete-prompt__title {
-  font-size: var(--font-large);
-  font-weight: 700;
-  margin: 0 0 var(--space-md);
-  color: var(--color-text);
-}
-
-.complete-confirm__message,
-.complete-prompt__message {
-  font-size: var(--font-body);
-  line-height: 1.5;
-  color: var(--color-text-muted);
-  margin: 0 0 var(--space-lg);
-}
-
-.complete-confirm__actions,
-.complete-prompt__actions {
-  display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-}
-
-.complete-confirm__btn--secondary {
-  background: transparent;
-  color: var(--color-ready);
-  border: 1px solid var(--color-ready);
-}
-
-.complete-prompt__btn--secondary {
-  background: transparent;
-  color: var(--color-ready);
-  border: 1px solid var(--color-ready);
-}
-
-.complete-confirm__btn-icon,
-.complete-prompt__btn-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-/* ============================================================
    Project Picker
    ============================================================ */
 
@@ -224,6 +112,7 @@
 .project-picker__option {
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
   width: 100%;
   min-height: var(--touch-min);
   padding: var(--space-sm) var(--space-md);
@@ -249,14 +138,6 @@
 
 .project-picker__option--selected:hover {
   background: rgba(37, 99, 235, 0.12);
-}
-
-.project-picker__color-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-right: var(--space-sm);
 }
 
 .project-picker__add-btn {
@@ -292,26 +173,4 @@
 
 .project-picker__create-form .input {
   flex: 1;
-}
-
-.project-picker__create-btn {
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.project-picker__create-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.project-picker__create-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }

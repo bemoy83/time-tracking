@@ -135,84 +135,28 @@
 }
 
 .task-time-tracking__section-label {
-  font-size: var(--font-body);
-  font-weight: 600;
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-/* Budget section */
-.task-time-tracking__budget {
+/* Estimate summary */
+.task-time-tracking__estimate-summary {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-sm) 0;
 }
 
-.task-time-tracking__budget-header {
+.task-time-tracking__estimate-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-md);
 }
 
-.task-time-tracking__budget-header-left {
+.task-time-tracking__estimate-metrics {
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
-}
-
-.task-time-tracking__budget-bar-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.task-time-tracking__budget-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--color-border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.task-time-tracking__budget-pct {
-  font-size: var(--font-small);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  min-width: 38px;
-  text-align: right;
-}
-
-.task-time-tracking__budget-pct--under {
-  color: var(--color-ready);
-}
-
-.task-time-tracking__budget-pct--approaching {
-  color: var(--color-amber);
-}
-
-.task-time-tracking__budget-pct--over {
-  color: var(--color-recording);
-}
-
-.task-time-tracking__budget-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-.task-time-tracking__budget-fill--under {
-  background: var(--color-ready);
-}
-
-.task-time-tracking__budget-fill--approaching {
-  background: var(--color-amber);
-}
-
-.task-time-tracking__budget-fill--over {
-  background: var(--color-recording);
 }
 
 .task-time-tracking__variance {

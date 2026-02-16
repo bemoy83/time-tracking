@@ -29,6 +29,7 @@ interface AlertDialogProps {
 
 export function AlertDialog({
   isOpen,
+  tone,
   title,
   titleIcon,
   description,
@@ -69,7 +70,10 @@ export function AlertDialog({
         aria-describedby={description ? ariaDescribedBy : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={ariaLabelledBy} className="alert-dialog__title">
+        <h2
+          id={ariaLabelledBy}
+          className={`alert-dialog__title ${tone ? `alert-dialog__title--${tone}` : ''}`.trim()}
+        >
           {titleIcon}
           {title}
         </h2>

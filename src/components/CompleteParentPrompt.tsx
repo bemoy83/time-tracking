@@ -37,7 +37,7 @@ export function CompleteParentPrompt({
           label: 'Yes, complete',
           onClick: onYes,
           variant: 'success',
-          icon: <CheckIcon className="complete-prompt__btn-icon" />,
+          icon: <CheckIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
         },
       ]}
     />

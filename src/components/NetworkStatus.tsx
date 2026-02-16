@@ -8,6 +8,7 @@
  */
 
 import { useSyncState, retryFailedSync } from '../lib/sync/sync-queue';
+import { pluralize } from '../lib/utils/pluralize';
 
 export function NetworkStatus() {
   const { isOnline, isSyncing, pendingCount, lastError } = useSyncState();
@@ -45,7 +46,7 @@ export function NetworkStatus() {
       {isOnline && !isSyncing && pendingCount > 0 && !lastError && (
         <div className="network-status__pending">
           <span>
-            {pendingCount} {pendingCount === 1 ? 'entry' : 'entries'} pending sync
+            {pluralize(pendingCount, 'entry', 'entries')} pending sync
           </span>
         </div>
       )}

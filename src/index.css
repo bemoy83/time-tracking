@@ -14,6 +14,8 @@
 /* Shared components */
 @import './styles/_input.css';
 @import './styles/components/btn.css';
+@import './styles/components/inline-create-form.css';
+@import './styles/components/color-swatch.css';
 
 /* Components */
 @import './styles/components/count-badge.css';
@@ -29,6 +31,7 @@
 @import './styles/components/task-time-tracking.css';
 @import './styles/components/task-notes.css';
 @import './styles/components/today-view.css';
+@import './styles/components/section-heading.css';
 @import './styles/components/tab-nav.css';
 @import './styles/components/network-status.css';
 @import './styles/components/install-prompt.css';

@@ -6,6 +6,7 @@
 
 import { CheckIcon } from './icons';
 import { AlertDialog } from './AlertDialog';
+import { pluralize } from '../lib/utils/pluralize';
 
 interface CompleteParentConfirmProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ export function CompleteParentConfirm({
     <AlertDialog
       isOpen={isOpen}
       title="Complete task?"
-      description={`"${taskTitle}" has ${incompleteCount} incomplete subtask${incompleteCount !== 1 ? 's' : ''}.`}
+      description={`"${taskTitle}" has ${pluralize(incompleteCount, 'incomplete subtask')}.`}
       onClose={onCancel}
       ariaLabelledBy="complete-confirm-title"
       ariaDescribedBy="complete-confirm-desc"
@@ -39,7 +40,7 @@ export function CompleteParentConfirm({
           label: 'Complete all',
           onClick: onCompleteAll,
           variant: 'success',
-          icon: <CheckIcon className="complete-confirm__btn-icon" />,
+          icon: <CheckIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
         },
       ]}
     />

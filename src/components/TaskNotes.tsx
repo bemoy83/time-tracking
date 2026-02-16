@@ -9,6 +9,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { TaskNote } from '../lib/types';
 import { addNote, getNotesByTask, subscribeNotes } from '../lib/stores/note-actions';
 import { ExpandableSection } from './ExpandableSection';
+import { pluralize } from '../lib/utils/pluralize';
+import { formatUiDate } from '../lib/utils/formatUiDate';
 
 interface TaskNotesProps {
   taskId: string;
@@ -73,8 +75,7 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
     setIsOpen(open);
   };
 
-  const notesSummary =
-    notes.length > 0 ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : undefined;
+  const notesSummary = notes.length > 0 ? pluralize(notes.length, 'note') : undefined;
 
   return (
     <ExpandableSection
@@ -110,7 +111,7 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
           {notes.map((note) => (
             <div key={note.id} className="task-notes__item">
               <span className="task-notes__timestamp">
-                {formatRelativeTime(note.createdAt)}
+                {formatUiDate(note.createdAt, 'relative')}
               </span>
               <span className="task-notes__text">{note.text}</span>
             </div>
@@ -121,21 +122,4 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
       )}
     </ExpandableSection>
   );
-}
-
-function formatRelativeTime(isoDate: string): string {
-  const now = Date.now();
-  const then = new Date(isoDate).getTime();
-  const diffMs = now - then;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHr / 24);
-
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(isoDate).toLocaleDateString();
 }

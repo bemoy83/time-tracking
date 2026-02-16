@@ -5,6 +5,7 @@
  */
 
 import { TimeEntry, durationMs, formatDurationShort, formatPersonHours } from '../lib/types';
+import { formatUiDate } from '../lib/utils/formatUiDate';
 
 interface TimeEntryRowProps {
   entry: TimeEntry;
@@ -14,12 +15,7 @@ interface TimeEntryRowProps {
 export function TimeEntryRow({ entry, onTap }: TimeEntryRowProps) {
   const dur = durationMs(entry.startUtc, entry.endUtc);
   const workers = entry.workers ?? 1;
-  const date = new Date(entry.startUtc);
-
-  const dateStr = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  const dateStr = formatUiDate(entry.startUtc, 'short');
 
   return (
     <button
