@@ -19,7 +19,7 @@ import { AddEntryModal } from './AddEntryModal';
 import { EstimateInput } from './EstimateInput';
 import { ExpandableSection } from './ExpandableSection';
 import { TrackedVsEstimateBadge } from './TrackedVsEstimateBadge';
-import { ClockIcon } from './icons';
+import { ClockIcon, PencilIcon } from './icons';
 
 interface TaskTimeTrackingProps {
   taskId: string;
@@ -186,8 +186,9 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                     type="button"
                     className="task-time-tracking__estimate-btn"
                     onClick={() => setShowEstimateModal(true)}
+                    aria-label={`Edit estimate (${formatDurationShort((task?.estimatedMinutes ?? 0) * 60_000)})`}
                   >
-                    Est: {formatDurationShort((task?.estimatedMinutes ?? 0) * 60_000)}
+                    <PencilIcon className="task-time-tracking__icon" />
                   </button>
                 </div>
                 <div className="task-time-tracking__budget-bar-row">

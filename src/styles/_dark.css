@@ -28,8 +28,12 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
+  .today-view__task-list {
+    background: #252525;
+  }
+
   .today-view__subtasks {
-    background: var(--color-bg);
+    background: #252525;
   }
 
   .task-row--subtask:hover {
@@ -60,8 +64,12 @@
   /* --- Task Time Tracking --- */
   /* (outer background now provided by .expandable-section dark override) */
 
-  /* --- Expandable Section --- */
+  /* --- Expandable Section & Task Card (shared section bg) --- */
   .expandable-section {
+    background: #252525;
+  }
+
+  .task-card {
     background: #252525;
   }
 

@@ -44,6 +44,8 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-md);
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .task-time-tracking__label {
@@ -56,6 +58,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 .task-time-tracking__breakdown-line {
@@ -67,7 +71,9 @@
 }
 
 .task-time-tracking__value {
-  font-size: var(--font-large);
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--font-body);
   font-weight: 700;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -228,18 +234,21 @@
 }
 
 .task-time-tracking__estimate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
   background: none;
   border: none;
-  padding: 0;
-  font-size: var(--font-small);
   color: var(--color-text-muted);
   cursor: pointer;
-  text-align: left;
 }
 
 .task-time-tracking__estimate-btn:hover {
   color: var(--color-primary);
-  text-decoration: underline;
 }
 
 .task-time-tracking__set-estimate {
@@ -248,13 +257,13 @@
   padding: var(--space-xs) 0;
   font-size: var(--font-small);
   font-weight: 500;
-  color: var(--color-text-muted);
+  color: var(--color-primary);
   cursor: pointer;
   text-align: left;
 }
 
 .task-time-tracking__set-estimate:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
 }
 
 /* Entries section */
@@ -388,26 +397,19 @@
   color: var(--color-text-muted);
 }
 
-/* Add entry button */
+/* Add entry button — matches set-estimate for unified add-button style */
 .task-time-tracking__add-entry {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: var(--touch-min);
-  padding: var(--space-sm);
   background: none;
-  border: 1px dashed var(--color-border);
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
+  border: none;
+  padding: var(--space-xs) 0;
+  font-size: var(--font-small);
+  font-weight: 500;
   color: var(--color-primary);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  text-align: left;
   margin-top: var(--space-sm);
 }
 
 .task-time-tracking__add-entry:hover {
-  background: rgba(37, 99, 235, 0.06);
-  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
 }

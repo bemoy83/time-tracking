@@ -140,74 +140,68 @@
   padding: var(--space-xs) var(--space-sm);
   background: var(--color-primary);
   color: white;
-  border-radius: 4px;
+  border-radius: var(--radius-xl);
   font-size: var(--font-small);
   text-transform: none;
   letter-spacing: normal;
 }
 
-/* ---- Grouped task list: single rounded container ---- */
+/* ---- Grouped task list: flat look like expandable-section ---- */
 
 .today-view__task-list {
   display: flex;
   flex-direction: column;
+  background: #f9fafb;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
 }
 
-/* All swipeable rows inside are flat with dividers */
+/* No outer border — only horizontal divider between rows */
 .today-view__task-list > .swipeable-row {
-  border: 1px solid var(--color-border);
+  border: none;
   border-radius: 0;
-  border-bottom: none;
-}
-
-/* First child gets top rounding */
-.today-view__task-list > :first-child {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-}
-
-/* Last child gets bottom rounding + border */
-.today-view__task-list > :last-child {
-  border-bottom: 1px solid var(--color-border);
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-
-/* Divider between adjacent rows (top border acts as separator) */
-.today-view__task-list > .swipeable-row + .swipeable-row {
   border-top: 1px solid var(--color-border);
 }
 
-/* Parent card before drawer: remove bottom border */
-.today-view__task-list > .swipeable-row:has(+ .today-view__subtasks) {
-  border-bottom: none;
+.today-view__task-list>.swipeable-row:first-child {
+  border-top: none;
 }
 
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
-  background: var(--color-bg);
-  border-left: 1px solid var(--color-border);
-  border-right: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
+  background: #f9fafb;
   overflow: hidden;
 }
 
-/* Flat swipeable-rows inside drawer */
+/* Swipeable-rows inside drawer — first connects to parent (no top radius) */
 .today-view__subtasks .swipeable-row {
   border: none;
-  border-radius: 0;
   border-top: 1px solid var(--color-border);
   background: transparent;
+  border-radius: 0;
+  }
+  
+  /* First of multiple: no rounded corners */
+  .today-view__subtasks .swipeable-row:first-child:not(:last-child) {
+    border-radius: 0;
+  }
+  
+  /* Single subtask (first and last): bottom rounded only */
+  .today-view__subtasks .swipeable-row:first-child:last-child {
+    border-bottom-left-radius: var(--radius-xl);
+    border-bottom-right-radius: var(--radius-xl);
+  }
+  
+  /* Last of multiple: bottom rounded only */
+  .today-view__subtasks .swipeable-row:last-child:not(:first-child) {
+    border-bottom-left-radius: var(--radius-xl);
+    border-bottom-right-radius: var(--radius-xl);
 }
 
-/* Card after a drawer: start new group with top rounding */
+/* Card after a drawer: divider only (no special rounding) */
 .today-view__task-list > .today-view__subtasks + .swipeable-row {
   border-top: 1px solid var(--color-border);
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
 }
 
 /* Project color dot */

@@ -22,6 +22,7 @@ interface ExpandableSectionProps {
   timeBadgeMs?: number;
   estimatedMinutes?: number | null;
   timeBadgeStatus?: BudgetLevel;
+  sectionSummary?: string;
   flush?: boolean;
   onToggle?: (isOpen: boolean) => void;
   children: React.ReactNode;
@@ -37,6 +38,7 @@ export function ExpandableSection({
   timeBadgeMs,
   estimatedMinutes,
   timeBadgeStatus,
+  sectionSummary,
   flush = false,
   onToggle,
   children,
@@ -49,7 +51,7 @@ export function ExpandableSection({
     onToggle?.(next);
   };
 
-  const sectionClass = `expandable-section${flush ? ' expandable-section--flush' : ''}`;
+  const sectionClass = `expandable-section${flush ? ' expandable-section--flush' : ''}${!isOpen ? ' expandable-section--collapsed' : ''}`;
   const contentClass = `expandable-section__content${flush ? ' expandable-section__content--flush' : ''}`;
 
   return (
@@ -81,6 +83,9 @@ export function ExpandableSection({
               ? formatTrackedVsEstimate(timeBadgeMs, estimatedMinutes)
               : formatDurationShort(timeBadgeMs)}
           </span>
+        )}
+        {!isOpen && sectionSummary != null && sectionSummary !== '' && (
+          <span className="expandable-section__section-summary">{sectionSummary}</span>
         )}
         <span className={`expandable-section__chevron${isOpen ? ' expandable-section__chevron--open' : ''}`}>
           &#x25B8;

@@ -28,6 +28,8 @@ export function TaskDetailSubtasks({
   onCompleteSubtask,
 }: TaskDetailSubtasksProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const completedCount = subtasks.filter((t) => t.status === 'completed').length;
+  const sectionSummary = subtasks.length > 0 ? `${completedCount}/${subtasks.length} completed` : undefined;
 
   const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +45,7 @@ export function TaskDetailSubtasks({
   return (
     <ExpandableSection
       label="Subtasks"
-      count={subtasks.length}
-      countVariant="primary"
+      sectionSummary={sectionSummary}
       defaultOpen={true}
       flush
     >

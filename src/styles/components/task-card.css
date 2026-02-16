@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-bg);
+  background: #f9fafb;
   cursor: pointer;
   min-height: var(--touch-min);
 }

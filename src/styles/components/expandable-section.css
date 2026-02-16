@@ -4,8 +4,13 @@
 
 .expandable-section {
   background: #f9fafb;
-  border-radius: 8px;
-  padding: var(--space-md);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xs) var(--space-md) var(--space-md);
+}
+
+/* Collapsed: slim bottom only — top stays xs so toggle is fixed */
+.expandable-section--collapsed {
+  padding-bottom: var(--space-xs);
 }
 
 /* Flush variant — border instead of background fill, content edge-to-edge */
@@ -50,6 +55,19 @@
 
 .expandable-section__time-badge {
   margin-left: auto;
+  text-transform: none;
+}
+
+.expandable-section__section-summary {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
   text-transform: none;
 }
 

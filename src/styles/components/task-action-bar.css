@@ -27,11 +27,13 @@
   gap: var(--space-xs);
   flex: 1;
   min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-sm);
   border: none;
   border-radius: 10px;
   font-size: var(--font-body);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
   -webkit-tap-highlight-color: transparent;
