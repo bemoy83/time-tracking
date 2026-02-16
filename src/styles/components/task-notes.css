@@ -22,7 +22,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -54,19 +54,19 @@
 .task-notes__timestamp {
   flex-shrink: 0;
   min-width: 64px;
-  font-size: var(--font-xs);
+  font-size: var(--font-small);
   color: var(--color-text-muted);
   padding-top: 1px;
 }
 
 .task-notes__text {
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   color: var(--color-text);
   word-break: break-word;
 }
 
 .task-notes__empty {
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   color: var(--color-text-muted);
   margin: 0;
 }

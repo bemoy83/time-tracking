@@ -34,7 +34,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: 1.25rem;
+  font-size: var(--font-large);
   font-weight: 700;
   margin: 0 0 var(--space-md);
   color: var(--color-recording);
@@ -47,14 +47,14 @@
 }
 
 .delete-confirm__message {
-  font-size: 1rem;
+  font-size: var(--font-body);
   line-height: 1.5;
   color: var(--color-text);
   margin: 0 0 var(--space-sm);
 }
 
 .delete-confirm__warning {
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   font-weight: 600;
   color: var(--color-recording);
   margin: 0 0 var(--space-lg);
@@ -75,7 +75,7 @@
   padding: var(--space-sm) var(--space-lg);
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
@@ -138,7 +138,7 @@
   min-height: var(--touch-min);
   padding: var(--space-sm) var(--space-md);
   border-radius: 8px;
-  font-size: 0.938rem;
+  font-size: var(--font-body);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s;
@@ -149,7 +149,7 @@
 }
 
 .delete-project-confirm__option span {
-  font-size: 0.813rem;
+  font-size: var(--font-small);
   opacity: 0.7;
 }
 
@@ -190,7 +190,7 @@
 
 .complete-confirm__title,
 .complete-prompt__title {
-  font-size: 1.25rem;
+  font-size: var(--font-large);
   font-weight: 700;
   margin: 0 0 var(--space-md);
   color: var(--color-text);
@@ -198,7 +198,7 @@
 
 .complete-confirm__message,
 .complete-prompt__message {
-  font-size: 1rem;
+  font-size: var(--font-body);
   line-height: 1.5;
   color: var(--color-text-muted);
   margin: 0 0 var(--space-lg);
@@ -221,7 +221,7 @@
   padding: var(--space-sm) var(--space-lg);
   border: none;
   border-radius: 8px;
-  font-size: 0.9375rem;
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
@@ -272,7 +272,7 @@
 }
 
 .project-picker__title {
-  font-size: 1.125rem;
+  font-size: var(--font-large);
   font-weight: 700;
   margin: 0 0 var(--space-md);
   color: var(--color-text);
@@ -294,7 +294,7 @@
   background: none;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: var(--font-body);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -333,7 +333,7 @@
   background: none;
   border: 1px dashed var(--color-border);
   border-radius: 8px;
-  font-size: 0.938rem;
+  font-size: var(--font-body);
   color: var(--color-primary);
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
@@ -365,7 +365,7 @@
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s;

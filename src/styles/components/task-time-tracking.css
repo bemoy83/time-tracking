@@ -15,7 +15,7 @@
   background: var(--color-recording);
   color: white;
   border-radius: 4px;
-  font-size: 0.625rem;
+  font-size: var(--font-small);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -24,13 +24,19 @@
 
 .task-time-tracking__loading {
   color: var(--color-text-muted);
-  font-size: var(--font-base);
+  font-size: var(--font-body);
 }
 
 .task-time-tracking__content {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.task-time-tracking__total-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .task-time-tracking__total {
@@ -41,13 +47,27 @@
 }
 
 .task-time-tracking__label {
-  font-size: var(--font-md);
+  font-size: var(--font-body);
   font-weight: 500;
   color: var(--color-text);
 }
 
+.task-time-tracking__label-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.task-time-tracking__breakdown-line {
+  display: block;
+  font-size: var(--font-small);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .task-time-tracking__value {
-  font-size: var(--font-xl);
+  font-size: var(--font-large);
   font-weight: 700;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -72,12 +92,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   color: var(--color-text-muted);
 }
 
 .task-time-tracking__row-value {
-  font-size: var(--font-md);
+  font-size: var(--font-body);
   font-weight: 600;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
@@ -101,23 +121,97 @@
   color: var(--color-primary);
 }
 
+/* Estimate section */
+.task-time-tracking__estimate-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.task-time-tracking__section-label {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Budget section */
 .task-time-tracking__budget {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+  gap: var(--space-xs);
   padding: var(--space-sm) 0;
 }
 
-.task-time-tracking__budget-info {
+.task-time-tracking__budget-header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.task-time-tracking__budget-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.task-time-tracking__budget-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.task-time-tracking__budget-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.task-time-tracking__budget-pct {
+  font-size: var(--font-small);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+  text-align: right;
+}
+
+.task-time-tracking__budget-pct--under {
+  color: var(--color-ready);
+}
+
+.task-time-tracking__budget-pct--approaching {
+  color: var(--color-amber);
+}
+
+.task-time-tracking__budget-pct--over {
+  color: var(--color-recording);
+}
+
+.task-time-tracking__budget-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.task-time-tracking__budget-fill--under {
+  background: var(--color-ready);
+}
+
+.task-time-tracking__budget-fill--approaching {
+  background: var(--color-amber);
+}
+
+.task-time-tracking__budget-fill--over {
+  background: var(--color-recording);
 }
 
 .task-time-tracking__variance {
-  font-size: var(--font-md);
-  font-weight: 700;
+  font-size: var(--font-small);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -137,7 +231,7 @@
   background: none;
   border: none;
   padding: 0;
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   color: var(--color-text-muted);
   cursor: pointer;
   text-align: left;
@@ -152,7 +246,7 @@
   background: none;
   border: none;
   padding: var(--space-xs) 0;
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -163,33 +257,53 @@
   color: var(--color-primary);
 }
 
-/* Entry toggle button */
-.task-time-tracking__entries-toggle {
+/* Entries section */
+.task-time-tracking__entries-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Entry header as expand toggle — matches expandable-section__toggle color and spacing */
+.task-time-tracking__entries-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   width: 100%;
   padding: var(--space-sm) 0;
   background: none;
   border: none;
-  font-size: var(--font-xs);
-  color: var(--color-text-muted);
   cursor: pointer;
   text-align: left;
+  color: var(--color-text-muted);
 }
 
-.task-time-tracking__entries-toggle:hover {
+.task-time-tracking__entries-header:hover {
   color: var(--color-text);
 }
 
-.task-time-tracking__chevron {
-  display: inline-block;
-  transition: transform 0.2s;
-  font-size: var(--font-base);
+.task-time-tracking__entries-header:hover .task-time-tracking__section-label {
+  color: var(--color-text);
 }
 
-.task-time-tracking__chevron--open {
-  transform: rotate(90deg);
+.task-time-tracking__entries-header .task-time-tracking__section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+/* Section summary — matches expandable-section__time-badge (task-card__time-badge) */
+.task-time-tracking__entries-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
 }
 
 /* Entry list */
@@ -212,7 +326,7 @@
   background: none;
   border: none;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -248,7 +362,7 @@
 .time-entry-row__date {
   color: var(--color-text-muted);
   min-width: 52px;
-  font-size: 0.813rem;
+  font-size: var(--font-small);
 }
 
 .time-entry-row__duration {
@@ -264,13 +378,13 @@
   background: var(--color-primary);
   color: white;
   border-radius: 4px;
-  font-size: 0.688rem;
+  font-size: var(--font-small);
   font-weight: 700;
   line-height: 1.2;
 }
 
 .time-entry-row__person-hours {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   color: var(--color-text-muted);
 }
 
@@ -285,7 +399,7 @@
   background: none;
   border: 1px dashed var(--color-border);
   border-radius: 8px;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   font-weight: 600;
   color: var(--color-primary);
   cursor: pointer;

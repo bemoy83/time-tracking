@@ -99,12 +99,12 @@
 }
 
 .task-row__blocked-reason {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   color: #b45309;
 }
 
 .task-row__subtask-count {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   color: var(--color-text-muted);
 }
 
@@ -112,7 +112,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--color-primary);

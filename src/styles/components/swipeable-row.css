@@ -46,7 +46,7 @@
 
 .swipeable-row__action-label {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
 }
 
 .swipeable-row__content {

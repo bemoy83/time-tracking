@@ -30,7 +30,7 @@
   padding: 0;
   background: none;
   border: none;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -50,12 +50,25 @@
 
 .expandable-section__time-badge {
   margin-left: auto;
+  text-transform: none;
+}
+
+.expandable-section__time-badge--under {
+  color: var(--color-ready);
+}
+
+.expandable-section__time-badge--approaching {
+  color: var(--color-amber);
+}
+
+.expandable-section__time-badge--over {
+  color: var(--color-recording);
 }
 
 .expandable-section__chevron {
   display: inline-block;
   transition: transform 0.2s;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
 }
 
 .expandable-section__chevron--open {

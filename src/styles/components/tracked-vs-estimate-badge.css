@@ -1,0 +1,18 @@
+.tracked-vs-estimate-badge {
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.tracked-vs-estimate-badge--under {
+  color: var(--color-ready);
+}
+
+.tracked-vs-estimate-badge--approaching {
+  color: var(--color-amber);
+}
+
+.tracked-vs-estimate-badge--over {
+  color: var(--color-recording);
+}

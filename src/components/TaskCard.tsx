@@ -4,10 +4,9 @@
  * Used in TodayView for the card-based layout.
  */
 
-import { Task, formatDurationShort, calculateBudgetStatus } from '../lib/types';
+import { Task, calculateBudgetStatus, formatTrackedVsEstimate } from '../lib/types';
 import { SwipeableRow } from './SwipeableRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
-import { BudgetRing } from './BudgetRing';
 import {
   CheckIcon,
   PlayIcon,
@@ -48,10 +47,19 @@ export function TaskCard({
   onCompleteTask,
   onExpandToggle,
 }: TaskCardProps) {
+  const budgetStatus = calculateBudgetStatus(totalMs, task.estimatedMinutes);
+  const hasBudget = budgetStatus.status !== 'none';
+
+  // Budget bar takes priority over subtask progress bar
+  const showBudgetBar = hasBudget;
+  const showSubtaskBar = !showBudgetBar && progress !== null;
+
   const progressPercent = progress
     ? Math.round((progress.completed / progress.total) * 100)
     : null;
-  const budgetStatus = calculateBudgetStatus(totalMs, task.estimatedMinutes);
+  const budgetPercent = Math.min(Math.round(budgetStatus.percentUsed), 100);
+
+  const timeBadgeText = formatTrackedVsEstimate(totalMs, task.estimatedMinutes);
 
   return (
     <>
@@ -87,21 +95,49 @@ export function TaskCard({
             <span className="task-card__title">{task.title}</span>
 
             {/* Time badge */}
-            {totalMs > 0 && (
-              <span className="task-card__time-badge">
+            {(totalMs > 0 || hasBudget) && (
+              <span
+                className={`task-card__time-badge${
+                  hasBudget ? ` task-card__time-badge--${budgetStatus.status}` : ''
+                }`}
+              >
                 <ClockIcon className="task-card__time-badge-icon" />
-                {formatDurationShort(totalMs)}
+                {timeBadgeText}
               </span>
-            )}
-
-            {/* Budget ring */}
-            {budgetStatus.status !== 'none' && (
-              <BudgetRing budgetStatus={budgetStatus} size="small" />
             )}
           </div>
 
-          {/* Progress bar with expand */}
-          {progress && (
+          {/* Budget progress bar — replaces subtask bar when estimate set */}
+          {showBudgetBar && (
+            <div className="task-card__progress">
+              <div className="task-card__progress-bar">
+                <div
+                  className={`task-card__progress-fill task-card__progress-fill--${budgetStatus.status}`}
+                  style={{ width: `${budgetPercent}%` }}
+                />
+              </div>
+              <span className={`task-card__progress-text task-card__progress-text--${budgetStatus.status}`}>
+                {Math.round(budgetStatus.percentUsed)}%
+              </span>
+              {progress && (
+                <button
+                  className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpandToggle();
+                  }}
+                  aria-expanded={isExpanded}
+                  aria-controls={`subtasks-${task.id}`}
+                  aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                >
+                  <ExpandChevronIcon className="today-view__icon" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Subtask progress bar — only when no estimate */}
+          {showSubtaskBar && (
             <div className="task-card__progress">
               <div className="task-card__progress-bar">
                 <div
@@ -110,7 +146,7 @@ export function TaskCard({
                 />
               </div>
               <span className="task-card__progress-text">
-                {progress.completed}/{progress.total}
+                {progress!.completed}/{progress!.total}
               </span>
               <button
                 className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}

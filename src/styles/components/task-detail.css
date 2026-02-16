@@ -23,7 +23,7 @@
   color: white;
   border-radius: 12px;
   text-align: center;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
 }
 
 /* Title section */
@@ -34,7 +34,7 @@
 }
 
 .task-detail__title {
-  font-size: var(--font-xl);
+  font-size: var(--font-large);
   font-weight: 700;
   margin: 0;
   cursor: pointer;
@@ -51,7 +51,7 @@
   align-items: center;
   gap: var(--space-xs);
   flex-wrap: wrap;
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   line-height: 1.4;
   margin-left: calc(-1 * var(--space-sm));
 }
@@ -89,7 +89,7 @@
   background: none;
   border: none;
   border-radius: 4px;
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -115,7 +115,7 @@
 .task-detail__breadcrumb-sep {
   color: var(--color-text-muted);
   opacity: 0.5;
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   user-select: none;
 }
 
@@ -125,7 +125,7 @@
   padding: 3px var(--space-sm);
   background: none;
   border: none;
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   font-weight: 500;
   color: var(--color-primary);
   cursor: pointer;
@@ -163,7 +163,7 @@
   padding: var(--space-md) var(--space-lg);
   border: none;
   border-radius: 14px;
-  font-size: var(--font-lg);
+  font-size: var(--font-large);
   font-weight: 600;
   cursor: default;
   transition: background-color 0.15s, transform 0.1s;
@@ -222,7 +222,7 @@
 }
 
 .task-detail__workers-label {
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -257,7 +257,7 @@
 /* Override TimerDisplay colors when inside the status control */
 .task-detail__status-control .timer-display__time {
   color: white;
-  font-size: var(--font-lg);
+  font-size: var(--font-large);
 }
 
 .task-detail__status-control .timer-display__indicator {
@@ -265,7 +265,7 @@
 }
 
 .task-detail__status-label {
-  font-size: var(--font-lg);
+  font-size: var(--font-large);
   font-weight: 600;
 }
 
@@ -277,7 +277,7 @@
 }
 
 .task-detail__blocked-reason {
-  font-size: var(--font-sm);
+  font-size: var(--font-small);
   font-weight: 400;
   opacity: 0.8;
 }
@@ -304,7 +304,7 @@
   border-radius: 10px;
   background: var(--color-bg);
   color: var(--color-text);
-  font-size: var(--font-md);
+  font-size: var(--font-body);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
@@ -389,7 +389,7 @@
   background: none;
   border: none;
   color: var(--color-recording);
-  font-size: var(--font-base);
+  font-size: var(--font-body);
   font-weight: 500;
   cursor: pointer;
   opacity: 0.7;

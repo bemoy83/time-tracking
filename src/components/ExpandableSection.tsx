@@ -9,7 +9,8 @@
 import { useState } from 'react';
 import { CountBadge } from './CountBadge';
 import { ClockIcon } from './icons';
-import { formatDurationShort } from '../lib/types';
+import type { BudgetLevel } from '../lib/types';
+import { formatDurationShort, formatTrackedVsEstimate } from '../lib/types';
 
 interface ExpandableSectionProps {
   label: string;
@@ -19,6 +20,8 @@ interface ExpandableSectionProps {
   defaultOpen?: boolean;
   badge?: React.ReactNode;
   timeBadgeMs?: number;
+  estimatedMinutes?: number | null;
+  timeBadgeStatus?: BudgetLevel;
   flush?: boolean;
   onToggle?: (isOpen: boolean) => void;
   children: React.ReactNode;
@@ -32,6 +35,8 @@ export function ExpandableSection({
   defaultOpen = false,
   badge,
   timeBadgeMs,
+  estimatedMinutes,
+  timeBadgeStatus,
   flush = false,
   onToggle,
   children,
@@ -63,10 +68,18 @@ export function ExpandableSection({
           )}
           {badge}
         </span>
-        {timeBadgeMs != null && timeBadgeMs > 0 && (
-          <span className="expandable-section__time-badge task-card__time-badge">
+        {!isOpen && timeBadgeMs != null && timeBadgeMs > 0 && (
+          <span
+            className={`expandable-section__time-badge task-card__time-badge${
+              timeBadgeStatus && timeBadgeStatus !== 'none'
+                ? ` expandable-section__time-badge--${timeBadgeStatus}`
+                : ''
+            }`}
+          >
             <ClockIcon className="task-card__time-badge-icon" />
-            {formatDurationShort(timeBadgeMs)}
+            {estimatedMinutes != null
+              ? formatTrackedVsEstimate(timeBadgeMs, estimatedMinutes)
+              : formatDurationShort(timeBadgeMs)}
           </span>
         )}
         <span className={`expandable-section__chevron${isOpen ? ' expandable-section__chevron--open' : ''}`}>

@@ -17,8 +17,8 @@ import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
 import { AddEntryModal } from './AddEntryModal';
 import { EstimateInput } from './EstimateInput';
-import { BudgetRing } from './BudgetRing';
 import { ExpandableSection } from './ExpandableSection';
+import { TrackedVsEstimateBadge } from './TrackedVsEstimateBadge';
 import { ClockIcon } from './icons';
 
 interface TaskTimeTrackingProps {
@@ -71,8 +71,6 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     setEntries(result);
   };
 
-  const loggedCount = entries.filter((e) => e.source === 'logged').length;
-
   const handleSaveEdit = async (changes: { durationMs: number; workers: number }) => {
     if (!editingEntry) return;
     await updateEntry(editingEntry.id, changes);
@@ -109,21 +107,36 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   return (
     <>
       <ExpandableSection
-        label="Time Tracked"
-        count={breakdown.entryCount}
-        countVariant="primary"
+        label="TIME"
         icon={<ClockIcon className="task-time-tracking__icon" />}
         defaultOpen={true}
         badge={liveBadge}
         timeBadgeMs={breakdown.totalMs}
+        estimatedMinutes={task?.estimatedMinutes ?? null}
+        timeBadgeStatus={budgetStatus.status}
       >
         {isLoading ? (
           <div className="task-time-tracking__loading">Loading...</div>
         ) : (
           <div className="task-time-tracking__content">
-            {/* Total time - always shown */}
+            {/* Time tracked section */}
+            <div className="task-time-tracking__total-section">
+              <span className="task-time-tracking__section-label">TIME TRACKED</span>
             <div className="task-time-tracking__total">
-              <span className="task-time-tracking__label">Total</span>
+              <span className="task-time-tracking__label-block">
+                <span className="task-time-tracking__label">Total</span>
+                {(hasTime || hasSubtasks) && (
+                  <span className="task-time-tracking__breakdown-line">
+                    {breakdown.directMs > 0 && (
+                      <>{formatDurationShort(breakdown.directMs)} direct{isTimerOnTask && <LiveDot />}</>
+                    )}
+                    {breakdown.directMs > 0 && hasSubtasks && ' + '}
+                    {hasSubtasks && (
+                      <>{formatDurationShort(breakdown.subtaskMs)} from subtasks{isTimerOnSubtask && <LiveDot />}</>
+                    )}
+                  </span>
+                )}
+              </span>
               <span className="task-time-tracking__value">
                 {formatDurationShort(breakdown.totalMs)}
               </span>
@@ -132,20 +145,42 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
             {/* Person-hours - shown only when any entry has workers > 1 */}
             {breakdown.hasMultipleWorkers && (
               <div className="task-time-tracking__total task-time-tracking__total--person">
-                <span className="task-time-tracking__label">Person-hours</span>
+                <span className="task-time-tracking__label-block">
+                  <span className="task-time-tracking__label">Person-hours</span>
+                  {(hasTime || hasSubtasks) && (
+                    <span className="task-time-tracking__breakdown-line">
+                      {breakdown.directPersonMs > 0 && (
+                        <>{formatDurationShort(breakdown.directPersonMs)} direct{isTimerOnTask && <LiveDot />}</>
+                      )}
+                      {breakdown.directPersonMs > 0 && hasSubtasks && ' + '}
+                      {hasSubtasks && (
+                        <>{formatDurationShort(breakdown.subtaskPersonMs)} from subtasks{isTimerOnSubtask && <LiveDot />}</>
+                      )}
+                    </span>
+                  )}
+                </span>
                 <span className="task-time-tracking__value task-time-tracking__value--person">
                   {formatDurationShort(breakdown.totalPersonMs)}
                 </span>
               </div>
             )}
+            </div>
 
-            {/* Budget status - shown when estimate is set */}
-            {budgetStatus.status !== 'none' && (
+            {/* Time estimate section */}
+            <div className="task-time-tracking__estimate-section">
+              <span className="task-time-tracking__section-label">TIME ESTIMATE</span>
+              {budgetStatus.status !== 'none' ? (
               <div className="task-time-tracking__budget">
-                <BudgetRing budgetStatus={budgetStatus} size="medium" />
-                <div className="task-time-tracking__budget-info">
-                  <span className={`task-time-tracking__variance task-time-tracking__variance--${budgetStatus.status}`}>
-                    {budgetStatus.varianceText}
+                <div className="task-time-tracking__budget-header">
+                  <span className="task-time-tracking__budget-header-left">
+                    <TrackedVsEstimateBadge
+                      trackedMs={breakdown.totalMs}
+                      estimatedMinutes={task?.estimatedMinutes ?? null}
+                      status={budgetStatus.status}
+                    />
+                    <span className={`task-time-tracking__variance task-time-tracking__variance--${budgetStatus.status}`}>
+                      {budgetStatus.varianceText}
+                    </span>
                   </span>
                   <button
                     type="button"
@@ -155,11 +190,19 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                     Est: {formatDurationShort((task?.estimatedMinutes ?? 0) * 60_000)}
                   </button>
                 </div>
+                <div className="task-time-tracking__budget-bar-row">
+                  <div className="task-time-tracking__budget-bar">
+                    <div
+                      className={`task-time-tracking__budget-fill task-time-tracking__budget-fill--${budgetStatus.status}`}
+                      style={{ width: `${Math.min(Math.round(budgetStatus.percentUsed), 100)}%` }}
+                    />
+                  </div>
+                  <span className={`task-time-tracking__budget-pct task-time-tracking__budget-pct--${budgetStatus.status}`}>
+                    {Math.round(budgetStatus.percentUsed)}%
+                  </span>
+                </div>
               </div>
-            )}
-
-            {/* Set estimate link - shown when no estimate */}
-            {budgetStatus.status === 'none' && (
+              ) : (
               <button
                 type="button"
                 className="task-time-tracking__set-estimate"
@@ -167,54 +210,27 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
               >
                 + Set estimate
               </button>
-            )}
+              )}
+            </div>
 
-            {/* Breakdown - shown if there's time or subtasks */}
-            {(hasTime || hasSubtasks) && (
-              <div className="task-time-tracking__breakdown">
-                <div className="task-time-tracking__row">
-                  <span className="task-time-tracking__row-label">
-                    Direct
-                    {isTimerOnTask && <LiveDot />}
-                  </span>
-                  <span className="task-time-tracking__row-value">
-                    {formatDurationShort(breakdown.directMs)}
-                  </span>
-                </div>
-
-                {hasSubtasks && (
-                  <div className="task-time-tracking__row">
-                    <span className="task-time-tracking__row-label">
-                      Subtasks ({subtaskIds.length})
-                      {isTimerOnSubtask && <LiveDot />}
-                    </span>
-                    <span className="task-time-tracking__row-value">
-                      {formatDurationShort(breakdown.subtaskMs)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Entry count + toggle (nested collapsible for entries) */}
-            {(hasTime || breakdown.entryCount > 0) && (
+            {/* Entry header as expand toggle */}
+            <div className="task-time-tracking__entries-section">
               <button
                 type="button"
-                className="task-time-tracking__entries-toggle"
+                className="task-time-tracking__entries-header"
                 onClick={() => setShowEntries(!showEntries)}
+                aria-expanded={showEntries}
               >
-                <span>
-                  {breakdown.entryCount}{' '}
-                  {breakdown.entryCount === 1 ? 'entry' : 'entries'}
-                  {loggedCount > 0 && showEntries
-                    ? ` \u00b7 ${loggedCount} crew-logged`
-                    : ''}
-                </span>
-                <span className={`task-time-tracking__chevron ${showEntries ? 'task-time-tracking__chevron--open' : ''}`}>
+                <span className="task-time-tracking__section-label">TIME ENTRIES</span>
+                {!showEntries && (hasTime || breakdown.entryCount > 0) && (
+                  <span className="task-time-tracking__entries-count">
+                    {breakdown.entryCount} {breakdown.entryCount === 1 ? 'entry' : 'entries'}
+                  </span>
+                )}
+                <span className={`expandable-section__chevron ${showEntries ? 'expandable-section__chevron--open' : ''}`}>
                   &#x25B8;
                 </span>
               </button>
-            )}
 
             {/* Entry list (collapsible) */}
             {showEntries && (
@@ -237,6 +253,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
             >
               + Log time
             </button>
+            </div>
           </div>
         )}
       </ExpandableSection>

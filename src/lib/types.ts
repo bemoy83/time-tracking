@@ -192,6 +192,33 @@ export function formatPersonHours(ms: number, workers: number): string {
 }
 
 /**
+ * Format tracked time vs estimate: "1h 45m / 2h" when estimate set, "1h 45m" otherwise.
+ */
+export function formatTrackedVsEstimate(trackedMs: number, estimatedMinutes: number | null): string {
+  const tracked = formatDurationShort(trackedMs);
+  if (estimatedMinutes !== null && estimatedMinutes > 0) {
+    return `${tracked} / ${formatDurationShort(estimatedMinutes * 60_000)}`;
+  }
+  return tracked;
+}
+
+/**
+ * Format for badge: "tracked / estimate" when time tracked, "estimate" only when no time tracked.
+ * Returns empty string when no estimate.
+ */
+export function formatTrackedVsEstimateBadge(
+  trackedMs: number,
+  estimatedMinutes: number | null
+): string {
+  if (estimatedMinutes === null || estimatedMinutes <= 0) return '';
+  const estimate = formatDurationShort(estimatedMinutes * 60_000);
+  if (trackedMs > 0) {
+    return `${formatDurationShort(trackedMs)} / ${estimate}`;
+  }
+  return estimate;
+}
+
+/**
  * Budget status for comparing tracked vs estimated time.
  */
 export type BudgetLevel = 'under' | 'approaching' | 'over' | 'none';

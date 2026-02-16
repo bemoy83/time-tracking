@@ -10,14 +10,14 @@
 }
 
 .timer-display__time {
-  font-size: 1.5rem;
+  font-size: var(--font-large);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--color-text-muted);
 }
 
 .timer-display--large .timer-display__time {
-  font-size: 2rem;
+  font-size: var(--font-large);
 }
 
 .timer-display--active .timer-display__time {
@@ -76,7 +76,7 @@
   color: white;
   padding: var(--space-xs) var(--space-sm);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   text-align: center;
 }
 
@@ -88,7 +88,7 @@
 }
 
 .timer-bar__task-label {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
@@ -99,7 +99,7 @@
 }
 
 .timer-bar__task-name {
-  font-size: 1rem;
+  font-size: var(--font-body);
   font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
@@ -126,7 +126,7 @@
   padding: var(--space-sm) var(--space-lg);
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
@@ -197,7 +197,7 @@
   background: var(--color-border);
   border: none;
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   font-weight: 700;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -228,7 +228,7 @@
 }
 
 .timer-bar__workers-label {
-  font-size: 0.813rem;
+  font-size: var(--font-small);
   font-weight: 600;
   color: var(--color-text-muted);
 }

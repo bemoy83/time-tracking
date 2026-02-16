@@ -15,7 +15,7 @@
 }
 
 .settings-view__section-title {
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -34,7 +34,7 @@
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  font-size: 1rem;
+  font-size: var(--font-body);
   transition: background-color 0.15s;
   width: 100%;
 }
@@ -50,7 +50,7 @@
 }
 
 .settings-view__row-detail {
-  font-size: 0.813rem;
+  font-size: var(--font-small);
   color: var(--color-text-muted);
 }
 

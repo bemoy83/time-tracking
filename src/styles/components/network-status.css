@@ -10,7 +10,7 @@
   padding: var(--space-sm) var(--space-md);
   background: var(--color-primary);
   color: white;
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -52,7 +52,7 @@
   border-radius: 4px;
   background: transparent;
   color: white;
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   font-weight: 600;
   cursor: pointer;
 }

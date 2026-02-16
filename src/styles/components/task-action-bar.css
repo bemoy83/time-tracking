@@ -30,7 +30,7 @@
   padding: var(--space-sm) var(--space-md);
   border: none;
   border-radius: 10px;
-  font-size: var(--font-md);
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;

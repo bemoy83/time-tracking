@@ -38,7 +38,7 @@
 }
 
 .today-view__active-label {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-recording);
@@ -54,7 +54,7 @@
 }
 
 .today-view__active-task-title {
-  font-size: 1.125rem;
+  font-size: var(--font-large);
   font-weight: 600;
   flex: 1;
   min-width: 0;
@@ -73,7 +73,7 @@
   border-radius: 8px;
   background: var(--color-recording);
   color: white;
-  font-size: 1rem;
+  font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
@@ -123,7 +123,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  font-size: 0.875rem;
+  font-size: var(--font-body);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -141,7 +141,7 @@
   background: var(--color-primary);
   color: white;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -241,7 +241,7 @@
 }
 
 .today-view__blocked-reason {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   color: #b45309;
 }
 

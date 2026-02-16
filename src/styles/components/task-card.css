@@ -45,10 +45,22 @@
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--color-primary);
+}
+
+.task-card__time-badge--under {
+  color: var(--color-ready);
+}
+
+.task-card__time-badge--approaching {
+  color: var(--color-amber);
+}
+
+.task-card__time-badge--over {
+  color: var(--color-recording);
 }
 
 .task-card__time-badge-icon {
@@ -100,12 +112,41 @@
   height: 100%;
   background: var(--color-ready);
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Budget bar color variants */
+.task-card__progress-fill--under {
+  background: var(--color-ready);
+}
+
+.task-card__progress-fill--approaching {
+  background: var(--color-amber);
+}
+
+.task-card__progress-fill--over {
+  background: var(--color-recording);
 }
 
 .task-card__progress-text {
-  font-size: 0.75rem;
+  font-size: var(--font-small);
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+}
+
+.task-card__progress-text--under {
+  color: var(--color-ready);
+  font-weight: 600;
+}
+
+.task-card__progress-text--approaching {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+.task-card__progress-text--over {
+  color: var(--color-recording);
+  font-weight: 600;
 }
 
