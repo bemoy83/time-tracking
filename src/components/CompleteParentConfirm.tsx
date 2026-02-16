@@ -4,9 +4,8 @@
  * Offers: Cancel / Complete only / Complete all.
  */
 
-import { useRef } from 'react';
-import { useModalFocusTrap } from '../lib/hooks/useModalFocusTrap';
 import { CheckIcon } from './icons';
+import { AlertDialog } from './AlertDialog';
 
 interface CompleteParentConfirmProps {
   isOpen: boolean;
@@ -25,57 +24,24 @@ export function CompleteParentConfirm({
   onCompleteAll,
   onCancel,
 }: CompleteParentConfirmProps) {
-  const cancelBtnRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useModalFocusTrap(isOpen, onCancel, cancelBtnRef);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="delete-confirm-backdrop" onClick={onCancel} aria-hidden="true">
-      <div
-        ref={dialogRef}
-        className="complete-confirm"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="complete-confirm-title"
-        aria-describedby="complete-confirm-desc"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="complete-confirm-title" className="complete-confirm__title">
-          Complete task?
-        </h2>
-
-        <p id="complete-confirm-desc" className="complete-confirm__message">
-          "{taskTitle}" has {incompleteCount} incomplete subtask{incompleteCount !== 1 ? 's' : ''}.
-        </p>
-
-        <div className="complete-confirm__actions">
-          <button
-            ref={cancelBtnRef}
-            type="button"
-            className="complete-confirm__btn complete-confirm__btn--cancel"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="complete-confirm__btn complete-confirm__btn--secondary"
-            onClick={onCompleteOnly}
-          >
-            Complete only
-          </button>
-          <button
-            type="button"
-            className="complete-confirm__btn complete-confirm__btn--primary"
-            onClick={onCompleteAll}
-          >
-            <CheckIcon className="complete-confirm__btn-icon" />
-            Complete all
-          </button>
-        </div>
-      </div>
-    </div>
+    <AlertDialog
+      isOpen={isOpen}
+      title="Complete task?"
+      description={`"${taskTitle}" has ${incompleteCount} incomplete subtask${incompleteCount !== 1 ? 's' : ''}.`}
+      onClose={onCancel}
+      ariaLabelledBy="complete-confirm-title"
+      ariaDescribedBy="complete-confirm-desc"
+      actions={[
+        { label: 'Cancel', onClick: onCancel, variant: 'secondary' },
+        { label: 'Complete only', onClick: onCompleteOnly, variant: 'outline-success' },
+        {
+          label: 'Complete all',
+          onClick: onCompleteAll,
+          variant: 'success',
+          icon: <CheckIcon className="complete-confirm__btn-icon" />,
+        },
+      ]}
+    />
   );
 }
-

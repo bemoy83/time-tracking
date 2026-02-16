@@ -177,7 +177,7 @@
 }
 
 .task-detail__status-control--active:hover {
-  background: #15803d;
+  background: var(--color-success-hover);
 }
 
 .task-detail__status-control--active:active {
@@ -192,7 +192,7 @@
 }
 
 .task-detail__status-control--recording:hover {
-  background: #b91c1c;
+  background: var(--color-danger-hover);
 }
 
 .task-detail__status-control--recording:active {
@@ -311,7 +311,7 @@
 }
 
 .task-detail__btn:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
 }
 
 .task-detail__btn:active:not(:disabled) {
@@ -345,7 +345,7 @@
 }
 
 .task-detail__btn--complete:hover:not(:disabled) {
-  background: #15803d;
+  background: var(--color-success-hover);
 }
 
 .task-detail__btn--block {

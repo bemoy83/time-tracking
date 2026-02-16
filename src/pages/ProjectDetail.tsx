@@ -4,8 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Task, PROJECT_COLORS } from '../lib/types';
+import { Task } from '../lib/types';
 import { BackIcon, TrashIcon, ChevronIcon } from '../components/icons';
+import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import {
   useTaskStore,
   useProjectTasks,
@@ -115,10 +116,10 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
               className="input"
               autoFocus
             />
-            <button className="project-detail__btn project-detail__btn--secondary" onClick={() => setIsEditingName(false)}>
+            <button className="btn btn--secondary" onClick={() => setIsEditingName(false)}>
               Cancel
             </button>
-            <button className="project-detail__btn project-detail__btn--primary" onClick={handleSaveName}>
+            <button className="btn btn--primary" onClick={handleSaveName}>
               Save
             </button>
           </div>
@@ -138,18 +139,10 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Color picker */}
       {showColorPicker && (
         <div className="project-detail__color-picker">
-          {PROJECT_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`project-detail__color-swatch ${
-                project.color === color ? 'project-detail__color-swatch--selected' : ''
-              }`}
-              style={{ backgroundColor: color }}
-              onClick={() => handleColorChange(color)}
-              aria-label={`Select color ${color}`}
-            />
-          ))}
+          <ProjectColorPicker
+            value={project.color}
+            onChange={handleColorChange}
+          />
         </div>
       )}
 
@@ -171,7 +164,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
         />
         <button
           type="submit"
-          className="project-detail__btn project-detail__btn--primary"
+          className="btn btn--primary"
           disabled={!newTaskTitle.trim()}
         >
           Add
@@ -245,7 +238,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Delete project */}
       <div className="project-detail__danger-zone">
         <button
-          className="project-detail__btn project-detail__btn--delete"
+          className="btn btn--ghost"
           onClick={handleDeleteClick}
         >
           <TrashIcon className="project-detail__icon" />

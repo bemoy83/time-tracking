@@ -77,7 +77,7 @@
 }
 
 .entry-modal__stepper-btn:hover:not(:disabled) {
-  background: #d1d5db;
+  background: var(--color-surface-hover);
 }
 
 .entry-modal__stepper-btn:disabled {
@@ -147,68 +147,6 @@
   margin-left: auto;
 }
 
-.entry-modal__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-lg);
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
-}
-
-.entry-modal__btn:active {
-  transform: scale(0.98);
-}
-
-.entry-modal__btn--cancel {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.entry-modal__btn--cancel:hover {
-  background: #d1d5db;
-}
-
-.entry-modal__btn--save {
-  background: var(--color-primary);
-  color: white;
-}
-
-.entry-modal__btn--save:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.entry-modal__btn--save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.entry-modal__btn--delete {
-  background: none;
-  color: var(--color-recording);
-  padding: var(--space-sm);
-}
-
-.entry-modal__btn--delete:hover {
-  background: var(--color-recording-bg);
-}
-
-.entry-modal__btn--delete-confirm {
-  background: var(--color-recording);
-  color: white;
-  padding: var(--space-sm) var(--space-md);
-}
-
-.entry-modal__btn--delete-confirm:hover {
-  background: #b91c1c;
-}
-
 .entry-modal__btn-icon {
   width: 18px;
   height: 18px;
@@ -242,7 +180,7 @@
 }
 
 .workers-stepper__btn:hover:not(:disabled) {
-  background: #d1d5db;
+  background: var(--color-surface-hover);
 }
 
 .workers-stepper__btn:disabled {

@@ -28,31 +28,31 @@ export function TaskActionBar({
   return (
     <div className="task-action-bar">
       {status === 'blocked' ? (
-        <button className="task-action-bar__btn task-action-bar__btn--unblock" onClick={onUnblock}>
+        <button className="task-action-bar__btn btn btn--success" onClick={onUnblock}>
           Unblock
         </button>
       ) : status === 'completed' ? (
-        <button className="task-action-bar__btn task-action-bar__btn--secondary" onClick={onReactivate}>
+        <button className="task-action-bar__btn btn btn--secondary" onClick={onReactivate}>
           Reactivate
         </button>
       ) : isTimerActive ? (
         <>
-          <button className="task-action-bar__btn task-action-bar__btn--stop" onClick={onStopTimer}>
+          <button className="task-action-bar__btn btn btn--danger" onClick={onStopTimer}>
             <StopIcon className="task-action-bar__icon" />
             <span>Stop</span>
           </button>
-          <button className="task-action-bar__btn task-action-bar__btn--complete" onClick={onComplete}>
+          <button className="task-action-bar__btn btn btn--success" onClick={onComplete}>
             <CheckIcon className="task-action-bar__icon" />
             Complete
           </button>
         </>
       ) : (
         <>
-          <button className="task-action-bar__btn task-action-bar__btn--start" onClick={onStartTimer}>
+          <button className="task-action-bar__btn btn btn--primary" onClick={onStartTimer}>
             <PlayIcon className="task-action-bar__icon" />
             Start Timer
           </button>
-          <button className="task-action-bar__btn task-action-bar__btn--complete" onClick={onComplete}>
+          <button className="task-action-bar__btn btn btn--success" onClick={onComplete}>
             <CheckIcon className="task-action-bar__icon" />
             Complete
           </button>

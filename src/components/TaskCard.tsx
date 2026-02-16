@@ -13,6 +13,7 @@ import {
   ExpandChevronIcon,
   ClockIcon,
 } from './icons';
+import { StatusProgressBar } from './StatusProgressBar';
 
 export interface TaskCardProps {
   task: Task;
@@ -110,15 +111,11 @@ export function TaskCard({
           {/* Budget progress bar — replaces subtask bar when estimate set */}
           {showBudgetBar && (
             <div className="task-card__progress">
-              <div className="task-card__progress-bar">
-                <div
-                  className={`task-card__progress-fill task-card__progress-fill--${budgetStatus.status}`}
-                  style={{ width: `${budgetPercent}%` }}
-                />
-              </div>
-              <span className={`task-card__progress-text task-card__progress-text--${budgetStatus.status}`}>
-                {Math.round(budgetStatus.percentUsed)}%
-              </span>
+              <StatusProgressBar
+                percent={budgetPercent}
+                status={budgetStatus.status as 'under' | 'approaching' | 'over'}
+                label={`${Math.round(budgetStatus.percentUsed)}%`}
+              />
               {progress && (
                 <button
                   className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}
@@ -139,15 +136,10 @@ export function TaskCard({
           {/* Subtask progress bar — only when no estimate */}
           {showSubtaskBar && (
             <div className="task-card__progress">
-              <div className="task-card__progress-bar">
-                <div
-                  className="task-card__progress-fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className="task-card__progress-text">
-                {progress!.completed}/{progress!.total}
-              </span>
+              <StatusProgressBar
+                percent={progressPercent!}
+                label={`${progress!.completed}/${progress!.total}`}
+              />
               <button
                 className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}
                 onClick={(e) => {

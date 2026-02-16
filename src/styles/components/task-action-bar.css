@@ -19,82 +19,15 @@
   transition: transform 0.28s ease-out, background-color 0.2s, border-color 0.2s;
 }
 
-/* Buttons */
+/* Buttons — layout overrides for action bar (flex:1) */
 .task-action-bar__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
   flex: 1;
-  min-height: var(--touch-min);
   min-width: 0;
-  padding: var(--space-sm) var(--space-sm);
-  border: none;
-  border-radius: 10px;
-  font-size: var(--font-body);
-  font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
   -webkit-tap-highlight-color: transparent;
-}
-
-.task-action-bar__btn:active {
-  transform: scale(0.98);
 }
 
 .task-action-bar__icon {
   width: 20px;
   height: 20px;
-}
-
-/* Start - blue (matches swipe action) */
-.task-action-bar__btn--start {
-  background: var(--color-primary);
-  color: white;
-}
-
-.task-action-bar__btn--start:hover {
-  background: var(--color-primary-hover);
-}
-
-/* Stop - red */
-.task-action-bar__btn--stop {
-  background: var(--color-recording);
-  color: white;
-}
-
-.task-action-bar__btn--stop:hover {
-  background: #b91c1c;
-}
-
-/* Complete - green outline */
-.task-action-bar__btn--complete {
-  background: var(--color-ready);
-  color: white;
-}
-
-.task-action-bar__btn--complete:hover {
-  background: #15803d;
-}
-
-/* Unblock - green */
-.task-action-bar__btn--unblock {
-  background: var(--color-ready);
-  color: white;
-}
-
-.task-action-bar__btn--unblock:hover {
-  background: #15803d;
-}
-
-/* Secondary - neutral */
-.task-action-bar__btn--secondary {
-  background: var(--color-bg);
-  color: var(--color-text);
-  border: 1.5px solid var(--color-border);
-}
-
-.task-action-bar__btn--secondary:hover {
-  background: #f9fafb;
 }

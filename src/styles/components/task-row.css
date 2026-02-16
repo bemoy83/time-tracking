@@ -17,7 +17,7 @@
 }
 
 .task-row:hover {
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
 }
 
 .task-row:active {

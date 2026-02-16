@@ -20,6 +20,7 @@ import { EstimateInput } from './EstimateInput';
 import { ExpandableSection } from './ExpandableSection';
 import { TrackedVsEstimateBadge } from './TrackedVsEstimateBadge';
 import { ClockIcon, PencilIcon } from './icons';
+import { StatusProgressBar } from './StatusProgressBar';
 
 interface TaskTimeTrackingProps {
   taskId: string;
@@ -191,17 +192,12 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                     <PencilIcon className="task-time-tracking__icon" />
                   </button>
                 </div>
-                <div className="task-time-tracking__budget-bar-row">
-                  <div className="task-time-tracking__budget-bar">
-                    <div
-                      className={`task-time-tracking__budget-fill task-time-tracking__budget-fill--${budgetStatus.status}`}
-                      style={{ width: `${Math.min(Math.round(budgetStatus.percentUsed), 100)}%` }}
-                    />
-                  </div>
-                  <span className={`task-time-tracking__budget-pct task-time-tracking__budget-pct--${budgetStatus.status}`}>
-                    {Math.round(budgetStatus.percentUsed)}%
-                  </span>
-                </div>
+                <StatusProgressBar
+                  percent={Math.min(Math.round(budgetStatus.percentUsed), 100)}
+                  status={budgetStatus.status as 'under' | 'approaching' | 'over'}
+                  label={`${Math.round(budgetStatus.percentUsed)}%`}
+                  height={6}
+                />
               </div>
               ) : (
               <button

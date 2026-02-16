@@ -3,7 +3,7 @@
    ============================================================ */
 
 .expandable-section {
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-xs) var(--space-md) var(--space-md);
 }

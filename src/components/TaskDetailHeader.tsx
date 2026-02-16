@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Task, Project } from '../lib/types';
 import { updateTaskTitle } from '../lib/stores/task-store';
 import { HomeIcon } from './icons';
+import { ProjectColorDot } from './ProjectColorDot';
 
 interface TaskDetailHeaderProps {
   task: Task;
@@ -54,10 +55,7 @@ export function TaskDetailHeader({
                   className="task-detail__breadcrumb-segment"
                   onClick={() => onNavigateToProject?.(project)}
                 >
-                  <span
-                    className="task-detail__breadcrumb-dot"
-                    style={{ backgroundColor: project.color }}
-                  />
+                  <ProjectColorDot color={project.color} size="sm" />
                   {project.name}
                 </button>
               </>

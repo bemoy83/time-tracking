@@ -73,11 +73,13 @@ export function TaskNotes({ taskId }: TaskNotesProps) {
     setIsOpen(open);
   };
 
+  const notesSummary =
+    notes.length > 0 ? `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}` : undefined;
+
   return (
     <ExpandableSection
       label="Notes"
-      count={notes.length}
-      countVariant="primary"
+      sectionSummary={notesSummary}
       defaultOpen={false}
       onToggle={handleToggle}
     >

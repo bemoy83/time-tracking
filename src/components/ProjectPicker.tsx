@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTaskStore, createProject } from '../lib/stores/task-store';
 import { useModalFocusTrap } from '../lib/hooks/useModalFocusTrap';
 import { PlusIcon } from './icons';
+import { ProjectColorDot } from './ProjectColorDot';
 
 interface ProjectPickerProps {
   isOpen: boolean;
@@ -101,10 +102,7 @@ export function ProjectPicker({
               }`}
               onClick={() => handleSelectProject(project.id)}
             >
-              <span
-                className="project-picker__color-dot"
-                style={{ backgroundColor: project.color }}
-              />
+              <ProjectColorDot color={project.color} />
               {project.name}
             </button>
           ))}

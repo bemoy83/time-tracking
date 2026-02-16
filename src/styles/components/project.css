@@ -89,41 +89,6 @@
   justify-content: flex-end;
 }
 
-.project-list__cancel-btn {
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-border);
-  color: var(--color-text);
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  cursor: pointer;
-}
-
-.project-list__cancel-btn:hover {
-  background: #d1d5db;
-}
-
-.project-list__submit-btn {
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.project-list__submit-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.project-list__submit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .project-list__items {
   display: flex;
@@ -307,58 +272,6 @@
   flex: 1;
 }
 
-.project-detail__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
-}
-
-.project-detail__btn:active {
-  transform: scale(0.98);
-}
-
-.project-detail__btn--primary {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.project-detail__btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.project-detail__btn--primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.project-detail__btn--secondary {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.project-detail__btn--secondary:hover {
-  background: #d1d5db;
-}
-
-.project-detail__btn--delete {
-  background: transparent;
-  border-color: var(--color-recording);
-  color: var(--color-recording);
-}
-
-.project-detail__btn--delete:hover {
-  background: var(--color-recording-bg);
-}
 
 .project-detail__section {
   margin-bottom: var(--space-lg);

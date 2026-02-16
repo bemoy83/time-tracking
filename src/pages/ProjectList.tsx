@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Project, PROJECT_COLORS } from '../lib/types';
 import { useTaskStore, createProject } from '../lib/stores/task-store';
 import { PlusIcon, ChevronIcon } from '../components/icons';
+import { ProjectColorDot } from '../components/ProjectColorDot';
+import { ProjectColorPicker } from '../components/ProjectColorPicker';
 
 interface ProjectListProps {
   onSelectProject: (project: Project) => void;
@@ -56,24 +58,14 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
             className="input"
             autoFocus
           />
-          <div className="project-list__color-picker">
-            {PROJECT_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`project-list__color-swatch ${
-                  selectedColor === color ? 'project-list__color-swatch--selected' : ''
-                }`}
-                style={{ backgroundColor: color }}
-                onClick={() => setSelectedColor(color)}
-                aria-label={`Select color ${color}`}
-              />
-            ))}
-          </div>
+          <ProjectColorPicker
+            value={selectedColor}
+            onChange={setSelectedColor}
+          />
           <div className="project-list__create-actions">
             <button
               type="button"
-              className="project-list__cancel-btn"
+              className="btn btn--secondary"
               onClick={() => {
                 setShowCreateForm(false);
                 setNewName('');
@@ -83,7 +75,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
             </button>
             <button
               type="submit"
-              className="project-list__submit-btn"
+              className="btn btn--primary"
               disabled={!newName.trim()}
             >
               Create
@@ -103,10 +95,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
                 className="project-list__item"
                 onClick={() => onSelectProject(project)}
               >
-                <span
-                  className="project-list__item-dot"
-                  style={{ backgroundColor: project.color }}
-                />
+                <ProjectColorDot color={project.color} size="md" />
                 <span className="project-list__item-name">{project.name}</span>
                 <span className="project-list__item-count">
                   {count} {count === 1 ? 'task' : 'tasks'}

@@ -1,6 +1,5 @@
-import { useRef } from 'react';
-import { useModalFocusTrap } from '../lib/hooks/useModalFocusTrap';
 import { WarningIcon, TrashIcon } from './icons';
+import { AlertDialog } from './AlertDialog';
 
 interface PurgeResetConfirmProps {
   isOpen: boolean;
@@ -19,11 +18,6 @@ export function PurgeResetConfirm({
   onConfirm,
   onCancel,
 }: PurgeResetConfirmProps) {
-  const cancelBtnRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useModalFocusTrap(isOpen, onCancel, cancelBtnRef);
-
-  if (!isOpen) return null;
-
   const parts: string[] = [];
   if (taskCount > 0) parts.push(`${taskCount} task${taskCount !== 1 ? 's' : ''}`);
   if (projectCount > 0) parts.push(`${projectCount} project${projectCount !== 1 ? 's' : ''}`);
@@ -34,50 +28,26 @@ export function PurgeResetConfirm({
     : 'This will reset all app data.';
 
   return (
-    <div
-      className="delete-confirm-backdrop"
-      onClick={onCancel}
-      aria-hidden="true"
+    <AlertDialog
+      isOpen={isOpen}
+      tone="danger"
+      title="Reset all data?"
+      titleIcon={<WarningIcon className="delete-confirm__icon" />}
+      description={summary}
+      onClose={onCancel}
+      ariaLabelledBy="purge-reset-title"
+      ariaDescribedBy="purge-reset-desc"
+      actions={[
+        { label: 'Cancel', onClick: onCancel, variant: 'secondary' },
+        {
+          label: 'Reset all',
+          onClick: onConfirm,
+          variant: 'danger',
+          icon: <TrashIcon className="delete-confirm__btn-icon" />,
+        },
+      ]}
     >
-      <div
-        ref={dialogRef}
-        className="delete-confirm"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="purge-reset-title"
-        aria-describedby="purge-reset-desc"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="purge-reset-title" className="delete-confirm__title">
-          <WarningIcon className="delete-confirm__icon" />
-          Reset all data?
-        </h2>
-
-        <p id="purge-reset-desc" className="delete-confirm__message">
-          {summary}
-        </p>
-
-        <p className="delete-confirm__warning">This cannot be undone.</p>
-
-        <div className="delete-confirm__actions">
-          <button
-            ref={cancelBtnRef}
-            type="button"
-            className="delete-confirm__btn delete-confirm__btn--cancel"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="delete-confirm__btn delete-confirm__btn--delete"
-            onClick={onConfirm}
-          >
-            <TrashIcon className="delete-confirm__btn-icon" />
-            Reset all
-          </button>
-        </div>
-      </div>
-    </div>
+      <p className="alert-dialog__warning">This cannot be undone.</p>
+    </AlertDialog>
   );
 }

@@ -21,6 +21,13 @@
   --color-primary-hover: #1d4ed8;
   --color-amber: #d97706;
 
+  /* Interaction surfaces */
+  --color-surface-hover: #d1d5db;
+  --color-surface-subtle: #f9fafb;
+  --color-danger-hover: #b91c1c;
+  --color-success-hover: #15803d;
+  --color-danger-bg-hover: #fecaca;
+
   /* Typography scale — 3 sizes */
   --font-large: 1.5rem;    /* 24px - titles, key values */
   --font-body: 1rem;       /* 16px - buttons, labels, body */

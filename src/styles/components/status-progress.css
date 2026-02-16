@@ -1,0 +1,57 @@
+/* ============================================================
+   Status Progress Bar — Shared progress indicator
+   ============================================================ */
+
+.status-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-progress__bar {
+  flex: 1;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.status-progress__fill {
+  height: 100%;
+  background: var(--color-ready);
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.status-progress__fill--under {
+  background: var(--color-ready);
+}
+
+.status-progress__fill--approaching {
+  background: var(--color-amber);
+}
+
+.status-progress__fill--over {
+  background: var(--color-recording);
+}
+
+.status-progress__label {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.status-progress__label--under {
+  color: var(--color-ready);
+  font-weight: 600;
+}
+
+.status-progress__label--approaching {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+.status-progress__label--over {
+  color: var(--color-recording);
+  font-weight: 600;
+}

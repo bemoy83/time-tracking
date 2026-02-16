@@ -151,7 +151,7 @@
 .today-view__task-list {
   display: flex;
   flex-direction: column;
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
     border-radius: var(--radius-xl);
     overflow: hidden;
 }
@@ -170,7 +170,7 @@
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
   overflow: hidden;
 }
 

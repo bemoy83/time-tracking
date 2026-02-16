@@ -1,21 +1,18 @@
 /**
  * ExpandableSection component.
- * Shared collapsible section with toggle header, optional CountBadge, and rotating chevron.
+ * Shared collapsible section with toggle header, optional section summary (e.g. "5 entries"), and rotating chevron.
  *
  * flush: content goes edge-to-edge (no padding/gap). Use for list-style cards
  * where rows should span the full card width.
  */
 
 import { useState } from 'react';
-import { CountBadge } from './CountBadge';
 import { ClockIcon } from './icons';
 import type { BudgetLevel } from '../lib/types';
 import { formatDurationShort, formatTrackedVsEstimate } from '../lib/types';
 
 interface ExpandableSectionProps {
   label: string;
-  count?: number;
-  countVariant?: 'primary' | 'muted';
   icon?: React.ReactNode;
   defaultOpen?: boolean;
   badge?: React.ReactNode;
@@ -30,8 +27,6 @@ interface ExpandableSectionProps {
 
 export function ExpandableSection({
   label,
-  count,
-  countVariant = 'muted',
   icon,
   defaultOpen = false,
   badge,
@@ -65,9 +60,6 @@ export function ExpandableSection({
         <span className="expandable-section__label">
           {icon}
           {label}
-          {count != null && count > 0 && (
-            <CountBadge count={count} variant={countVariant} size="compact" />
-          )}
           {badge}
         </span>
         {!isOpen && timeBadgeMs != null && timeBadgeMs > 0 && (

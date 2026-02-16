@@ -149,7 +149,7 @@
 }
 
 .timer-bar__button--start:hover:not(:disabled) {
-  background: #15803d;
+  background: var(--color-success-hover);
 }
 
 /* Stop button - red */
@@ -159,7 +159,7 @@
 }
 
 .timer-bar__button--stop:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--color-danger-hover);
 }
 
 /* Button icon */
@@ -206,7 +206,7 @@
 }
 
 .timer-bar__workers-badge:hover {
-  background: #d1d5db;
+  background: var(--color-surface-hover);
 }
 
 .timer-bar__workers-badge--active {

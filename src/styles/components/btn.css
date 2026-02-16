@@ -1,0 +1,94 @@
+/* ============================================================
+   Shared Button Primitive
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-xl);
+  font-size: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Variants ---- */
+
+.btn--primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.btn--danger {
+  background: var(--color-recording);
+  color: white;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+}
+
+.btn--success {
+  background: var(--color-ready);
+  color: white;
+}
+
+.btn--success:hover:not(:disabled) {
+  background: var(--color-success-hover);
+}
+
+.btn--ghost {
+  background: none;
+  color: var(--color-recording);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--color-recording-bg);
+}
+
+/* ---- Sizes ---- */
+
+.btn--sm {
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.btn--lg {
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.btn--icon {
+  padding: var(--space-sm);
+  min-width: var(--touch-min);
+}
+
+.btn--full {
+  width: 100%;
+}

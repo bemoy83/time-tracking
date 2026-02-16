@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-sm) var(--space-md);
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
   cursor: pointer;
   min-height: var(--touch-min);
 }
@@ -93,60 +93,15 @@
   transform: rotate(180deg);
 }
 
-/* Progress bar */
+/* Progress bar — StatusProgressBar needs flex to fill horizontal space */
 .task-card__progress {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
 }
 
-.task-card__progress-bar {
+.task-card__progress .status-progress {
   flex: 1;
-  height: 4px;
-  background: var(--color-border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.task-card__progress-fill {
-  height: 100%;
-  background: var(--color-ready);
-  border-radius: 2px;
-  transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-/* Budget bar color variants */
-.task-card__progress-fill--under {
-  background: var(--color-ready);
-}
-
-.task-card__progress-fill--approaching {
-  background: var(--color-amber);
-}
-
-.task-card__progress-fill--over {
-  background: var(--color-recording);
-}
-
-.task-card__progress-text {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-
-.task-card__progress-text--under {
-  color: var(--color-ready);
-  font-weight: 600;
-}
-
-.task-card__progress-text--approaching {
-  color: var(--color-amber);
-  font-weight: 600;
-}
-
-.task-card__progress-text--over {
-  color: var(--color-recording);
-  font-weight: 600;
+  min-width: 0;
 }
 

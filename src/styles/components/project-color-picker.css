@@ -1,0 +1,27 @@
+/* ============================================================
+   Project Color Picker — Shared color swatch grid
+   ============================================================ */
+
+.project-color-picker {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.project-color-picker__swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+
+.project-color-picker__swatch:hover {
+  transform: scale(1.15);
+}
+
+.project-color-picker__swatch--selected {
+  border-color: var(--color-text);
+  transform: scale(1.15);
+}

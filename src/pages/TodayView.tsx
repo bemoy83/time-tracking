@@ -28,6 +28,7 @@ import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { PlusIcon, BlockedIcon } from '../components/icons';
+import { ProjectColorDot } from '../components/ProjectColorDot';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -195,10 +196,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       {groupedTasks.map(({ project, tasks: projectTasks }) => (
         <section key={project.id} className="today-view__section">
           <h2 className="today-view__section-title">
-            <span
-              className="today-view__project-dot"
-              style={{ backgroundColor: project.color }}
-            />
+            <ProjectColorDot color={project.color} />
             <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: 'white' }}>
               {project.name}
             </span>

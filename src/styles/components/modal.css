@@ -66,43 +66,6 @@
   justify-content: flex-end;
 }
 
-.delete-confirm__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-lg);
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
-}
-
-.delete-confirm__btn:active {
-  transform: scale(0.98);
-}
-
-.delete-confirm__btn--cancel {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
-.delete-confirm__btn--cancel:hover {
-  background: #d1d5db;
-}
-
-.delete-confirm__btn--delete {
-  background: var(--color-recording);
-  color: white;
-}
-
-.delete-confirm__btn--delete:hover {
-  background: #b91c1c;
-}
-
 .delete-confirm__btn-icon {
   width: 18px;
   height: 18px;
@@ -160,7 +123,7 @@
 }
 
 .delete-project-confirm__option--unassign:hover {
-  background: #d1d5db;
+  background: var(--color-surface-hover);
 }
 
 .delete-project-confirm__option--delete {
@@ -170,7 +133,7 @@
 }
 
 .delete-project-confirm__option--delete:hover {
-  background: #fecaca;
+  background: var(--color-danger-bg-hover);
 }
 
 /* ============================================================
@@ -211,43 +174,16 @@
   justify-content: flex-end;
 }
 
-.complete-confirm__btn,
-.complete-prompt__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: var(--space-sm) var(--space-lg);
-  border: none;
-  border-radius: 8px;
-  font-size: var(--font-body);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
-}
-
-.complete-confirm__btn:active,
-.complete-prompt__btn:active {
-  transform: scale(0.97);
-}
-
-.complete-confirm__btn--cancel,
-.complete-prompt__btn--cancel {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
 .complete-confirm__btn--secondary {
   background: transparent;
   color: var(--color-ready);
   border: 1px solid var(--color-ready);
 }
 
-.complete-confirm__btn--primary,
-.complete-prompt__btn--primary {
-  background: var(--color-ready);
-  color: white;
+.complete-prompt__btn--secondary {
+  background: transparent;
+  color: var(--color-ready);
+  border: 1px solid var(--color-ready);
 }
 
 .complete-confirm__btn-icon,
