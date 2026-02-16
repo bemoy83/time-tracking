@@ -56,11 +56,10 @@ export function TaskStatusBanner({
           <TimerDisplay size="large" taskId={taskId} />
         </div>
         <div className="task-detail__workers-row">
-          <span className="task-detail__workers-label">Workers</span>
           <WorkersStepper
             value={activeTimer?.workers ?? 1}
             onChange={(n) => onSetWorkers?.(n)}
-            size="compact"
+            size="large"
           />
         </div>
       </div>

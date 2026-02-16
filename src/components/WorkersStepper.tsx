@@ -4,8 +4,11 @@
  *
  * Two sizes:
  * - compact: inline pill [- 3 +] for TimerBar
- * - large: full-width stepper for modals
+ * - large: icon + "Personnel" + count + StepperPill [− | +] for modals
  */
+
+import { PeopleIcon } from './icons';
+import { StepperPill } from './StepperPill';
 
 interface WorkersStepperProps {
   value: number;
@@ -13,46 +16,30 @@ interface WorkersStepperProps {
   size?: 'compact' | 'large';
 }
 
+const MIN = 1;
+const MAX = 20;
+
 export function WorkersStepper({ value, onChange, size = 'compact' }: WorkersStepperProps) {
-  const min = 1;
-  const max = 20;
-
-  const decrement = () => {
-    if (value > min) onChange(value - 1);
-  };
-
-  const increment = () => {
-    if (value < max) onChange(value + 1);
-  };
-
   return (
-    <div
-      className={`workers-stepper workers-stepper--${size}`}
-      role="spinbutton"
-      aria-label="Workers count"
-      aria-valuenow={value}
-      aria-valuemin={min}
-      aria-valuemax={max}
-    >
-      <button
-        type="button"
-        className="workers-stepper__btn"
-        onClick={decrement}
-        disabled={value <= min}
-        aria-label="Decrease workers"
-      >
-        -
-      </button>
-      <span className="workers-stepper__value">{value}</span>
-      <button
-        type="button"
-        className="workers-stepper__btn"
-        onClick={increment}
-        disabled={value >= max}
-        aria-label="Increase workers"
-      >
-        +
-      </button>
+    <div className={`workers-stepper workers-stepper--${size}`}>
+      {size === 'large' && (
+        <>
+          <PeopleIcon className="workers-stepper__icon" aria-hidden={true} />
+          <span className="workers-stepper__label">Personnel</span>
+          <span className="workers-stepper__count">{value}</span>
+        </>
+      )}
+      <StepperPill
+        value={value}
+        min={MIN}
+        max={MAX}
+        onChange={onChange}
+        variant={size === 'compact' ? 'with-value' : 'with-divider'}
+        size={size}
+        decrementLabel="Decrease personnel"
+        incrementLabel="Increase personnel"
+        ariaLabel="Personnel count"
+      />
     </div>
   );
 }

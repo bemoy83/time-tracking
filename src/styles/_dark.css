@@ -159,18 +159,12 @@
     background: rgba(37, 99, 235, 0.15);
   }
 
-  /* --- Workers Stepper --- */
-  .workers-stepper {
-    border-color: #555;
-  }
-  .workers-stepper__btn {
+  /* --- Stepper Pill --- */
+  .stepper-pill {
     background: #404040;
   }
-  .workers-stepper__btn:hover:not(:disabled) {
+  .stepper-pill__btn:hover:not(:disabled) {
     background: #505050;
-  }
-  .workers-stepper__value {
-    background: #333;
   }
 
   /* --- Timer Bar Workers Badge --- */

@@ -37,6 +37,7 @@
 @import './styles/components/install-prompt.css';
 @import './styles/components/modal.css';
 @import './styles/components/alert-dialog.css';
+@import './styles/components/stepper-pill.css';
 @import './styles/components/entry-modal.css';
 @import './styles/components/project.css';
 @import './styles/components/project-color-picker.css';

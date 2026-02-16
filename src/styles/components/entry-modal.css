@@ -153,76 +153,43 @@
 }
 
 /* ============================================================
-   Workers Stepper
+   Workers Stepper (wraps StepperPill with icon + label + count)
    ============================================================ */
 
 .workers-stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-}
-
-.workers-stepper__btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  background: var(--color-border);
-  color: var(--color-text);
-  font-size: var(--font-large);
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  -webkit-tap-highlight-color: transparent;
+  gap: var(--space-sm);
 }
 
-.workers-stepper__btn:hover:not(:disabled) {
-  background: var(--color-surface-hover);
+.workers-stepper__icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
-.workers-stepper__btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+.workers-stepper__label {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
-.workers-stepper__value {
+.workers-stepper__count {
+  font-size: var(--font-body);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  text-align: center;
   color: var(--color-text);
-  background: var(--color-bg);
+  flex-shrink: 0;
 }
 
-/* Compact size (inline pill for TimerBar) */
-.workers-stepper--compact .workers-stepper__btn {
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-}
-
-.workers-stepper--compact .workers-stepper__value {
-  min-width: 32px;
-  padding: 0 var(--space-xs);
-  font-size: var(--font-body);
-  line-height: 36px;
-}
-
-/* Large size (for modals) */
+/* Large size: pill aligned right */
 .workers-stepper--large {
   width: 100%;
 }
 
-.workers-stepper--large .workers-stepper__btn {
-  width: 64px;
-  min-height: 48px;
-  font-size: var(--font-large);
+.workers-stepper--large .stepper-pill {
+  margin-left: auto;
 }
 
-.workers-stepper--large .workers-stepper__value {
-  flex: 1;
-  font-size: var(--font-large);
-  padding: var(--space-sm);
-}

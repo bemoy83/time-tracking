@@ -1,0 +1,73 @@
+/* ============================================================
+   StepperPill — Reusable pill-shaped increment/decrement control
+   ============================================================ */
+
+.stepper-pill {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.stepper-pill__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-large);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stepper-pill__btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.stepper-pill__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.stepper-pill__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.stepper-pill__divider {
+  width: 1px;
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: 8px 0;
+  background: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+/* Compact size */
+.stepper-pill--compact .stepper-pill__btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+
+.stepper-pill--compact .stepper-pill__value {
+  min-width: 32px;
+  padding: 0 var(--space-xs);
+  font-size: var(--font-body);
+  line-height: 36px;
+}
+
+/* Large size */
+.stepper-pill--large .stepper-pill__btn {
+  width: 54px;
+  min-height: 48px;
+  font-size: var(--font-large);
+}

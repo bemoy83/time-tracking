@@ -149,7 +149,6 @@ export function DurationEditorModal({
         {/* Workers stepper */}
         {showWorkers && (
           <div className="entry-modal__field">
-            <label className="entry-modal__label">Workers</label>
             <WorkersStepper value={workers} onChange={setWorkers} size="large" />
           </div>
         )}
