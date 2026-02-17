@@ -2,7 +2,7 @@
  * TaskTimeTracking component.
  * Displays time tracking summary for a task with breakdown,
  * person-hours display, and collapsible entry list.
- * Uses ExpandableSection for outer toggle.
+ * Uses ActionSheet for Set Estimate and Log Time flows.
  */
 
 import { useState, useEffect } from 'react';
@@ -15,8 +15,8 @@ import { addManualEntry, updateEntry, deleteEntry } from '../lib/stores/entry-ac
 import { TimeEntry, formatDurationShort, calculateBudgetStatus } from '../lib/types';
 import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
-import { AddEntryModal } from './AddEntryModal';
-import { EstimateInput } from './EstimateInput';
+import { ActionSheet } from './ActionSheet';
+import { DurationEditorContent } from './DurationEditorContent';
 import { ExpandableSection } from './ExpandableSection';
 import { TrackedVsEstimateBadge } from './TrackedVsEstimateBadge';
 import { ClockIcon, PencilIcon } from './icons';
@@ -40,8 +40,8 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [showEntries, setShowEntries] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEstimateModal, setShowEstimateModal] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+  const [showEstimateSheet, setShowEstimateSheet] = useState(false);
 
   const budgetStatus = calculateBudgetStatus(breakdown.totalMs, task?.estimatedMinutes ?? null);
 
@@ -88,17 +88,33 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     refresh();
   };
 
-  const handleAddEntry = async (durationMs: number, workers: number) => {
-    await addManualEntry(taskId, durationMs, workers);
-    setShowAddModal(false);
+  const handleAddEntry = async (hours: number, minutes: number, workers?: number) => {
+    const totalMs = hours * 3600000 + minutes * 60000;
+    await addManualEntry(taskId, totalMs, workers ?? 1);
+    setShowAddSheet(false);
     await loadEntries();
     refresh();
   };
 
-  const handleSaveEstimate = async (estimateMinutes: number | null) => {
-    await updateTaskEstimate(taskId, estimateMinutes);
-    setShowEstimateModal(false);
+  const handleSaveEstimate = async (hours: number, minutes: number) => {
+    const totalMinutes = hours * 60 + minutes;
+    await updateTaskEstimate(taskId, totalMinutes > 0 ? totalMinutes : null);
+    setShowEstimateSheet(false);
   };
+
+  const handleClearEstimate = async () => {
+    await updateTaskEstimate(taskId, null);
+    setShowEstimateSheet(false);
+  };
+
+  // Estimate initial values
+  const currentEstimate = task?.estimatedMinutes ?? null;
+  const estimateInitialHours = currentEstimate !== null && currentEstimate > 0
+    ? Math.floor(currentEstimate / 60)
+    : 0;
+  const estimateInitialMinutes = currentEstimate !== null && currentEstimate > 0
+    ? currentEstimate % 60
+    : 0;
 
   const liveBadge = isTimerActive ? (
     <span className="task-time-tracking__live-indicator" aria-label="Timer running">
@@ -187,7 +203,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                     <button
                       type="button"
                       className="task-time-tracking__estimate-btn"
-                      onClick={() => setShowEstimateModal(true)}
+                      onClick={() => setShowEstimateSheet(true)}
                       aria-label={`Edit estimate (${formatDurationShort((task?.estimatedMinutes ?? 0) * 60_000)})`}
                     >
                       <PencilIcon className="task-time-tracking__icon" />
@@ -204,7 +220,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                 <button
                   type="button"
                   className="task-time-tracking__set-estimate"
-                  onClick={() => setShowEstimateModal(true)}
+                  onClick={() => setShowEstimateSheet(true)}
                 >
                   + Set estimate
                 </button>
@@ -247,7 +263,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
             <button
               type="button"
               className="task-time-tracking__add-entry"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowAddSheet(true)}
             >
               + Log time
             </button>
@@ -256,7 +272,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         )}
       </ExpandableSection>
 
-      {/* Edit entry modal */}
+      {/* Edit entry modal (kept as centered modal) */}
       {editingEntry && (
         <EditEntryModal
           isOpen={!!editingEntry}
@@ -267,21 +283,40 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         />
       )}
 
-      {/* Add entry modal */}
-      <AddEntryModal
-        isOpen={showAddModal}
-        initialWorkers={task?.defaultWorkers ?? 1}
-        onSave={handleAddEntry}
-        onClose={() => setShowAddModal(false)}
-      />
+      {/* Log time action sheet */}
+      <ActionSheet
+        isOpen={showAddSheet}
+        title="Log Time"
+        onClose={() => setShowAddSheet(false)}
+      >
+        <DurationEditorContent
+          initialHours={0}
+          initialMinutes={0}
+          showWorkers
+          initialWorkers={task?.defaultWorkers ?? 1}
+          onSave={handleAddEntry}
+          onCancel={() => setShowAddSheet(false)}
+          resetKey={showAddSheet ? 1 : 0}
+        />
+      </ActionSheet>
 
-      {/* Estimate modal */}
-      <EstimateInput
-        isOpen={showEstimateModal}
-        currentEstimate={task?.estimatedMinutes ?? null}
-        onSave={handleSaveEstimate}
-        onClose={() => setShowEstimateModal(false)}
-      />
+      {/* Estimate action sheet */}
+      <ActionSheet
+        isOpen={showEstimateSheet}
+        title="Set Estimate"
+        onClose={() => setShowEstimateSheet(false)}
+      >
+        <DurationEditorContent
+          initialHours={estimateInitialHours}
+          initialMinutes={estimateInitialMinutes}
+          durationLabel="Time Budget"
+          showClear={currentEstimate !== null}
+          onSave={handleSaveEstimate}
+          onClear={handleClearEstimate}
+          onCancel={() => setShowEstimateSheet(false)}
+          resetKey={showEstimateSheet ? 1 : 0}
+        />
+      </ActionSheet>
     </>
   );
 }

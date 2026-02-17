@@ -91,11 +91,6 @@
   width: 80px;
 }
 
-.task-work-quantity__actions {
-  display: flex;
-  gap: var(--space-sm);
-}
-
 /* Collapsed badge in section summary */
 .task-work-quantity__badge {
   font-size: var(--font-small);

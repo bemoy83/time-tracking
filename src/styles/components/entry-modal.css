@@ -128,25 +128,6 @@
   margin-bottom: var(--space-lg);
 }
 
-/* Actions */
-.entry-modal__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding-top: var(--space-md);
-  border-top: 1px solid var(--color-border);
-}
-
-.entry-modal__actions-right {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.entry-modal__actions-right--full {
-  margin-left: auto;
-}
-
 .entry-modal__btn-icon {
   width: 18px;
   height: 18px;

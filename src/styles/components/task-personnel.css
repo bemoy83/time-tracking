@@ -18,16 +18,33 @@
   color: var(--color-text-muted);
 }
 
-/* Summary row: stepper + clear button */
+/* Summary row: value + edit button */
 .task-personnel__summary {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-md);
   padding: var(--space-sm) 0;
 }
 
-.task-personnel__clear-btn {
-  flex-shrink: 0;
+.task-personnel__value {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.task-personnel__edit-btn {
+  background: none;
+  border: none;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.task-personnel__edit-btn:hover {
+  color: var(--color-primary-hover);
 }
 
 /* Set button — matches task-work-quantity__set-btn */
