@@ -72,7 +72,7 @@ export function TaskRow({
     >
       {/* Status indicator */}
       <div className="task-row__status" aria-hidden="true">
-        {isTimerActive && <span className="task-row__recording-dot" />}
+        {isTimerActive && <span className="task-item__recording-dot" />}
         {isBlocked && <BlockedIcon className="task-row__icon task-row__icon--blocked" />}
         {isCompleted && <CheckIcon className="task-row__icon task-row__icon--check" />}
         {!isTimerActive && !isBlocked && !isCompleted && (
@@ -94,8 +94,8 @@ export function TaskRow({
           </span>
         )}
         {totalMs > 0 && (
-          <span className="task-row__time-badge">
-            <ClockIcon className="task-row__time-badge-icon" />
+          <span className="task-item__time-badge">
+            <ClockIcon className="task-item__time-badge-icon" />
             {formatDurationShort(totalMs)}
           </span>
         )}
@@ -105,7 +105,7 @@ export function TaskRow({
       {!isSubtask && hasSubtasks && onExpandToggle ? (
         <button
           type="button"
-          className={`task-row__expand-btn ${isExpanded ? 'task-row__expand-btn--expanded' : ''}`}
+          className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
           onClick={(e) => {
             e.stopPropagation();
             onExpandToggle(e);
@@ -114,7 +114,7 @@ export function TaskRow({
           aria-controls={`subtasks-${task.id}`}
           aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
         >
-          <ExpandChevronIcon className="task-row__expand-icon" />
+          <ExpandChevronIcon className="task-item__expand-icon" />
         </button>
       ) : (
         <ChevronIcon className="task-row__chevron" />

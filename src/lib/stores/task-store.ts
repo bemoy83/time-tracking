@@ -16,7 +16,7 @@ import {
   deleteTask as dbDeleteTask,
   getAllActiveTimers,
 } from '../db';
-import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs } from '../types';
+import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs, WorkUnit } from '../types';
 import { stopTimer } from './timer-store';
 
 // ============================================================
@@ -107,6 +107,9 @@ export interface CreateTaskInput {
   projectId?: string | null;
   parentId?: string | null;
   estimatedMinutes?: number | null;
+  workQuantity?: number | null;
+  workUnit?: WorkUnit | null;
+  defaultWorkers?: number | null;
 }
 
 /**
@@ -122,6 +125,9 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     parentId: input.parentId ?? null,
     blockedReason: null,
     estimatedMinutes: input.estimatedMinutes ?? null,
+    workQuantity: input.workQuantity ?? null,
+    workUnit: input.workUnit ?? null,
+    defaultWorkers: input.defaultWorkers ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -153,6 +159,45 @@ export async function updateTaskEstimate(id: string, estimatedMinutes: number | 
   if (!task) return;
 
   const updated = { ...task, estimatedMinutes, updatedAt: nowUtc() };
+  await dbUpdateTask(updated);
+  setState({
+    tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
+  });
+}
+
+/**
+ * Update a task's work quantity and unit.
+ */
+export async function updateTaskWork(
+  id: string,
+  workQuantity: number | null,
+  workUnit: WorkUnit | null
+): Promise<void> {
+  const task = state.tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  const updated = { ...task, workQuantity, workUnit, updatedAt: nowUtc() };
+  await dbUpdateTask(updated);
+  setState({
+    tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
+  });
+}
+
+/**
+ * Update a task's default workers (crew count).
+ */
+export async function updateTaskDefaultWorkers(
+  id: string,
+  defaultWorkers: number | null
+): Promise<void> {
+  const task = state.tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  const clamped = defaultWorkers != null
+    ? Math.max(1, Math.min(20, Math.round(defaultWorkers)))
+    : null;
+
+  const updated = { ...task, defaultWorkers: clamped, updatedAt: nowUtc() };
   await dbUpdateTask(updated);
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),

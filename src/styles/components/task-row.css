@@ -8,10 +8,8 @@
   gap: var(--space-sm);
   padding: var(--space-md);
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.15s;
   -webkit-tap-highlight-color: transparent;
   min-height: var(--touch-min);
 }
@@ -25,13 +23,11 @@
 }
 
 .task-row--active {
-  border-color: var(--color-recording-border);
   background: var(--color-recording-bg);
 }
 
 .task-row--blocked {
   opacity: 0.8;
-  border-color: #fbbf24;
   background: #fffbeb;
 }
 
@@ -54,14 +50,6 @@
   height: 8px;
   border-radius: 50%;
   background: var(--color-border);
-}
-
-.task-row__recording-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-recording);
-  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .task-row__icon {
@@ -108,22 +96,6 @@
   color: var(--color-text-muted);
 }
 
-.task-row__time-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--font-small);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-primary);
-}
-
-.task-row__time-badge-icon {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
-
 /* Chevron */
 .task-row__chevron {
   width: 20px;
@@ -132,39 +104,15 @@
   flex-shrink: 0;
 }
 
-/* Expand button (replaces chevron for parents with subtasks) */
-.task-row__expand-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Expand button — row-specific sizing */
+.task-row .task-item__expand-btn {
   width: var(--touch-min);
   height: var(--touch-min);
-  background: none;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition: transform 0.2s ease, color 0.15s;
-}
-
-.task-row__expand-btn:hover {
-  color: var(--color-primary);
-}
-
-.task-row__expand-btn--expanded {
-  transform: rotate(180deg);
-}
-
-.task-row__expand-icon {
-  width: 20px;
-  height: 20px;
 }
 
 /* Subtask variant – flat rows inside a shared container */
 .task-row--subtask {
   padding-left: calc(var(--space-md) + var(--space-lg));
-  border-radius: 0;
-  border: none;
   background: rgba(0, 0, 0, 0.02);
 }
 

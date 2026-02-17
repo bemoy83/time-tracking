@@ -8,7 +8,7 @@ import type { ActiveTimer, TimeEntry, Task, Project, TaskNote } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 7;
+const DB_VERSION = 9;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -183,6 +183,35 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               const t = task as unknown as Record<string, unknown>;
               if (t.estimatedMinutes === undefined) {
                 t.estimatedMinutes = null;
+                taskStore.put(task);
+              }
+            });
+          });
+        }
+
+        // Version 8: Add workQuantity and workUnit fields to tasks
+        if (oldVersion < 8 && oldVersion >= 1) {
+          const taskStore = transaction.objectStore('tasks');
+          taskStore.getAll().then((tasks) => {
+            tasks.forEach((task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (t.workQuantity === undefined) {
+                t.workQuantity = null;
+                t.workUnit = null;
+                taskStore.put(task);
+              }
+            });
+          });
+        }
+
+        // Version 9: Add defaultWorkers field to tasks
+        if (oldVersion < 9 && oldVersion >= 1) {
+          const taskStore = transaction.objectStore('tasks');
+          taskStore.getAll().then((tasks) => {
+            tasks.forEach((task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (t.defaultWorkers === undefined) {
+                t.defaultWorkers = null;
                 taskStore.put(task);
               }
             });

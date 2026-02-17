@@ -1,0 +1,55 @@
+/* ============================================================
+   Task Productivity Component
+   Content styles only — container/toggle provided by ExpandableSection
+   ============================================================ */
+
+.task-productivity__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.task-productivity__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Row: label + value */
+.task-productivity__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+}
+
+.task-productivity__label {
+  color: var(--color-text-muted);
+}
+
+.task-productivity__value {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Comparison pill */
+.task-productivity__comparison {
+  display: inline-block;
+  font-size: var(--font-small);
+  font-weight: 600;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-full, 9999px);
+  width: fit-content;
+}
+
+.task-productivity__comparison--met {
+  color: var(--color-budget-under, #16a34a);
+  background: var(--color-budget-under-bg, rgba(22, 163, 74, 0.1));
+}
+
+.task-productivity__comparison--under {
+  color: var(--color-budget-approaching, #d97706);
+  background: var(--color-budget-approaching-bg, rgba(217, 119, 6, 0.1));
+}

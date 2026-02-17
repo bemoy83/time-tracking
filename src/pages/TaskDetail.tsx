@@ -12,6 +12,9 @@ import { TaskStatusBanner } from '../components/TaskStatusBanner';
 import { TaskActionBar } from '../components/TaskActionBar';
 import { TaskTimeTracking } from '../components/TaskTimeTracking';
 import { TaskNotes } from '../components/TaskNotes';
+import { TaskWorkQuantity } from '../components/TaskWorkQuantity';
+import { TaskPersonnel } from '../components/TaskPersonnel';
+import { TaskProductivity } from '../components/TaskProductivity';
 import { TaskDetailSubtasks } from '../components/TaskDetailSubtasks';
 import { DeleteTaskConfirm } from '../components/DeleteTaskConfirm';
 import { ProjectPicker } from '../components/ProjectPicker';
@@ -76,10 +79,19 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       {/* 4. Time Tracking (expandable, default open) */}
       <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
 
-      {/* 5. Notes (expandable, default closed) */}
+      {/* 5. Work quantity (expandable, default closed) */}
+      <TaskWorkQuantity taskId={task.id} />
+
+      {/* 6. Personnel (default crew count) */}
+      <TaskPersonnel taskId={task.id} />
+
+      {/* 7. Productivity (when quantity + estimate or time) */}
+      <TaskProductivity taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+
+      {/* 8. Notes (expandable, default closed) */}
       <TaskNotes taskId={task.id} />
 
-      {/* 6. Subtasks (expandable, default open, parent tasks only) */}
+      {/* 7. Subtasks (expandable, default open, parent tasks only) */}
       {!detail.isSubtask && (
         <TaskDetailSubtasks
           task={task}

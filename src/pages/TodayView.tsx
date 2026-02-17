@@ -27,6 +27,7 @@ import { TaskCard } from '../components/TaskCard';
 import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
+import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
 import { BlockedIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { InlineCreateForm } from '../components/InlineCreateForm';
@@ -231,18 +232,13 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
           </h2>
           <div className="today-view__task-list">
             {blockedTasks.map((task) => (
-              <div
+              <SwipeableTaskRow
                 key={task.id}
-                className="today-view__blocked-task"
-                onClick={() => onSelectTask(task)}
-              >
-                <span className="today-view__blocked-task-title">
-                  {task.title}
-                </span>
-                <span className="today-view__blocked-reason">
-                  {task.blockedReason}
-                </span>
-              </div>
+                task={task}
+                totalMs={taskTimes.get(task.id)}
+                onSelect={onSelectTask}
+                onComplete={() => handleComplete(task)}
+              />
             ))}
           </div>
         </section>

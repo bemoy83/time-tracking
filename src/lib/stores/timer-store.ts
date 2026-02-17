@@ -161,7 +161,9 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       taskId,
       startUtc: nowUtc(),
       source: 'manual',
-      workers: 1,
+      workers: task.defaultWorkers != null
+        ? Math.max(1, Math.min(20, Math.round(task.defaultWorkers)))
+        : 1,
     };
 
     await addActiveTimer(timer);

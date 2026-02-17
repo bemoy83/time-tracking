@@ -64,13 +64,13 @@ export function ExpandableSection({
         </span>
         {!isOpen && timeBadgeMs != null && timeBadgeMs > 0 && (
           <span
-            className={`expandable-section__time-badge task-card__time-badge${
+            className={`expandable-section__time-badge task-item__time-badge${
               timeBadgeStatus && timeBadgeStatus !== 'none'
                 ? ` expandable-section__time-badge--${timeBadgeStatus}`
                 : ''
             }`}
           >
-            <ClockIcon className="task-card__time-badge-icon" />
+            <ClockIcon className="task-item__time-badge-icon" />
             {estimatedMinutes != null
               ? formatTrackedVsEstimate(timeBadgeMs, estimatedMinutes)
               : formatDurationShort(timeBadgeMs)}

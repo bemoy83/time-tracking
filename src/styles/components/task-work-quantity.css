@@ -1,0 +1,104 @@
+/* ============================================================
+   Task Work Quantity Component
+   Content styles only — container/toggle provided by ExpandableSection
+   ============================================================ */
+
+.task-work-quantity__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.task-work-quantity__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.task-work-quantity__section-label {
+  color: var(--color-text-muted);
+}
+
+/* Summary row: value + edit button */
+.task-work-quantity__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+.task-work-quantity__value {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-work-quantity__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.task-work-quantity__edit-btn:hover {
+  color: var(--color-primary);
+}
+
+/* Set button — matches task-time-tracking__set-estimate */
+.task-work-quantity__set-btn {
+  background: none;
+  border: none;
+  padding: var(--space-xs) 0;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-work-quantity__set-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+/* Inline edit form */
+.task-work-quantity__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+}
+
+.task-work-quantity__inputs {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.task-work-quantity__number-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-work-quantity__unit-select {
+  flex: 0 0 auto;
+  width: 80px;
+}
+
+.task-work-quantity__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Collapsed badge in section summary */
+.task-work-quantity__badge {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-primary);
+}

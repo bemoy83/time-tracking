@@ -21,6 +21,7 @@
 @import './styles/components/count-badge.css';
 @import './styles/components/tracked-vs-estimate-badge.css';
 @import './styles/components/timer.css';
+@import './styles/components/_task-shared.css';
 @import './styles/components/task-row.css';
 @import './styles/components/task-card.css';
 @import './styles/components/status-progress.css';
@@ -29,6 +30,9 @@
 @import './styles/components/task-action-bar.css';
 @import './styles/components/task-detail.css';
 @import './styles/components/task-time-tracking.css';
+@import './styles/components/task-work-quantity.css';
+@import './styles/components/task-personnel.css';
+@import './styles/components/task-productivity.css';
 @import './styles/components/task-notes.css';
 @import './styles/components/today-view.css';
 @import './styles/components/section-heading.css';

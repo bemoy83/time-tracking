@@ -270,6 +270,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
       {/* Add entry modal */}
       <AddEntryModal
         isOpen={showAddModal}
+        initialWorkers={task?.defaultWorkers ?? 1}
         onSave={handleAddEntry}
         onClose={() => setShowAddModal(false)}
       />

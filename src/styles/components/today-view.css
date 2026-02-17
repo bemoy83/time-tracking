@@ -60,7 +60,7 @@
 .today-view__task-list {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface-subtle);
+  background: transparent;
   border-radius: var(--radius-xl);
   overflow: hidden;
 }
@@ -79,7 +79,7 @@
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
-  background: var(--color-surface-subtle);
+  background: transparent;
   overflow: hidden;
 }
 
@@ -111,33 +111,6 @@
 /* Card after a drawer: divider only (no special rounding) */
 .today-view__task-list > .today-view__subtasks + .swipeable-row {
   border-top: 1px solid var(--color-border);
-}
-
-/* Blocked Tasks — flat rows inside grouped container */
-.today-view__blocked-task {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-sm) var(--space-md);
-  background: #fffbeb;
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  min-height: var(--touch-min);
-  justify-content: center;
-}
-
-.today-view__blocked-task:last-child {
-  border-bottom: none;
-}
-
-.today-view__blocked-task-title {
-  font-weight: 500;
-}
-
-.today-view__blocked-reason {
-  font-size: var(--font-small);
-  color: #b45309;
 }
 
 /* Empty State */

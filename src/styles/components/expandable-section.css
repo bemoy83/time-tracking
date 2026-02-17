@@ -13,11 +13,12 @@
   padding-bottom: var(--space-xs);
 }
 
-/* Flush variant — border instead of background fill, content edge-to-edge */
+/* Flush variant — flat look matching today-view__task-list (no border, subtle fill) */
 .expandable-section--flush {
   padding: 0;
-  background: none;
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  border: none;
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 

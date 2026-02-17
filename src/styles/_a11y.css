@@ -78,7 +78,7 @@ input[type="radio"] {
     border: 2px solid var(--color-text);
   }
 
-  .task-card__recording-dot {
+  .task-item__recording-dot {
     border: 2px solid var(--color-text);
   }
 }

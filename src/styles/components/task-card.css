@@ -22,15 +22,6 @@
   gap: var(--space-sm);
 }
 
-.task-card__recording-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-recording);
-  animation: pulse 1.5s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
 .task-card__title {
   flex: 1;
   font-weight: 500;
@@ -40,57 +31,23 @@
   text-overflow: ellipsis;
 }
 
-.task-card__time-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  font-size: var(--font-small);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-primary);
-}
-
-.task-card__time-badge--under {
+.task-item__time-badge--under {
   color: var(--color-ready);
 }
 
-.task-card__time-badge--approaching {
+.task-item__time-badge--approaching {
   color: var(--color-amber);
 }
 
-.task-card__time-badge--over {
+.task-item__time-badge--over {
   color: var(--color-recording);
 }
 
-.task-card__time-badge-icon {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
-
-/* Expand button */
-.task-card__expand-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Expand button — card-specific sizing */
+.task-card .task-item__expand-btn {
   width: 28px;
   height: 28px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition: transform 0.2s ease, color 0.15s;
   margin-left: auto;
-}
-
-.task-card__expand-btn:hover {
-  color: var(--color-primary);
-}
-
-.task-card__expand-btn--expanded {
-  transform: rotate(180deg);
 }
 
 /* Progress bar — StatusProgressBar needs flex to fill horizontal space */

@@ -246,7 +246,7 @@
   gap: 2px;
 }
 
-/* Section summary — matches expandable-section__time-badge (task-card__time-badge) */
+/* Section summary — matches expandable-section__time-badge (task-item__time-badge) */
 .task-time-tracking__entries-count {
   display: inline-flex;
   align-items: center;

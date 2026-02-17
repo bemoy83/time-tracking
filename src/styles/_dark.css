@@ -28,12 +28,16 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
+  .task-row--blocked {
+    background: rgba(245, 158, 11, 0.1);
+  }
+
   .today-view__task-list {
-    background: #252525;
+    background: transparent;
   }
 
   .today-view__subtasks {
-    background: #252525;
+    background: transparent;
   }
 
   .task-row--subtask:hover {

@@ -1,0 +1,56 @@
+/* ============================================================
+   Task Shared — patterns used by both TaskCard and TaskRow
+   ============================================================ */
+
+/* Recording dot */
+.task-item__recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-recording);
+  animation: pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Time badge */
+.task-item__time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+.task-item__time-badge-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Expand button */
+.task-item__expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease, color 0.15s;
+}
+
+.task-item__expand-btn:hover {
+  color: var(--color-primary);
+}
+
+.task-item__expand-btn--expanded {
+  transform: rotate(180deg);
+}
+
+.task-item__expand-icon {
+  width: 20px;
+  height: 20px;
+}

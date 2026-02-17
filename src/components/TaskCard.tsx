@@ -89,7 +89,7 @@ export function TaskCard({
           <div className="task-card__main">
             {/* Timer indicator */}
             {isTimerActive && (
-              <span className="task-card__recording-dot" aria-label="Timer running" />
+              <span className="task-item__recording-dot" aria-label="Timer running" />
             )}
 
             {/* Title */}
@@ -98,11 +98,11 @@ export function TaskCard({
             {/* Time badge */}
             {(totalMs > 0 || hasBudget) && (
               <span
-                className={`task-card__time-badge${
-                  hasBudget ? ` task-card__time-badge--${budgetStatus.status}` : ''
+                className={`task-item__time-badge${
+                  hasBudget ? ` task-item__time-badge--${budgetStatus.status}` : ''
                 }`}
               >
-                <ClockIcon className="task-card__time-badge-icon" />
+                <ClockIcon className="task-item__time-badge-icon" />
                 {timeBadgeText}
               </span>
             )}
@@ -118,7 +118,7 @@ export function TaskCard({
               />
               {progress && (
                 <button
-                  className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}
+                  className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onExpandToggle();
@@ -141,7 +141,7 @@ export function TaskCard({
                 label={`${progress!.completed}/${progress!.total}`}
               />
               <button
-                className={`task-card__expand-btn ${isExpanded ? 'task-card__expand-btn--expanded' : ''}`}
+                className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onExpandToggle();

@@ -1,0 +1,47 @@
+/* ============================================================
+   Task Personnel Component
+   Content styles only — container/toggle provided by ExpandableSection
+   ============================================================ */
+
+.task-personnel__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.task-personnel__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.task-personnel__section-label {
+  color: var(--color-text-muted);
+}
+
+/* Summary row: stepper + clear button */
+.task-personnel__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+.task-personnel__clear-btn {
+  flex-shrink: 0;
+}
+
+/* Set button — matches task-work-quantity__set-btn */
+.task-personnel__set-btn {
+  background: none;
+  border: none;
+  padding: var(--space-xs) 0;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.task-personnel__set-btn:hover {
+  color: var(--color-primary-hover);
+}

@@ -13,6 +13,27 @@ export type TimerSource = 'manual' | 'resumed' | 'logged';
 // Task status
 export type TaskStatus = 'active' | 'completed' | 'blocked';
 
+// Work unit types for quantity tracking
+export type WorkUnit = 'm2' | 'm' | 'pcs' | 'kg' | 'L';
+
+export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
+  m2: 'm\u00B2',
+  m: 'm',
+  pcs: 'pcs',
+  kg: 'kg',
+  L: 'L',
+};
+
+export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {
+  return `${quantity} ${WORK_UNIT_LABELS[unit]}`;
+}
+
+export function formatProductivity(rate: number, unit: WorkUnit): string {
+  const label = WORK_UNIT_LABELS[unit];
+  const rounded = rate >= 10 ? Math.round(rate).toString() : rate.toFixed(1);
+  return `${rounded} ${label}/person-hr`;
+}
+
 /**
  * Active timer state.
  * One per task max; multiple tasks can each have a timer.
@@ -56,6 +77,9 @@ export interface Task {
   parentId: string | null; // For one-level subtasks
   blockedReason: string | null; // Why the task is blocked
   estimatedMinutes: number | null; // Optional time budget
+  workQuantity: number | null; // e.g. 120 for "120 m²"
+  workUnit: WorkUnit | null; // e.g. 'm2'
+  defaultWorkers: number | null; // Expected crew count; null = use 1
   createdAt: string;
   updatedAt: string;
 }
