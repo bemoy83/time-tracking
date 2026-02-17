@@ -53,7 +53,7 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
   const badgeText = actualRate != null
     ? formatProductivity(actualRate, unit)
     : requiredRate != null
-      ? `Target: ${formatProductivity(requiredRate, unit)}`
+      ? formatProductivity(requiredRate, unit)
       : undefined;
 
   return (
