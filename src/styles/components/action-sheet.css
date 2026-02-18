@@ -21,7 +21,7 @@
 
 .action-sheet {
   position: absolute;
-  bottom: 0;
+  bottom: var(--kb-offset, 0px);
   left: 0;
   right: 0;
   margin: 0 auto;
@@ -31,6 +31,8 @@
   padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
   width: 100%;
   max-width: 600px;
+  max-height: calc(100dvh - var(--kb-offset, 0px) - var(--space-md));
+  overflow-y: auto;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   animation: actionSheetSlideUp 0.25s ease-out;
 }

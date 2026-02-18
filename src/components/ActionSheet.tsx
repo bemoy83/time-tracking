@@ -50,9 +50,10 @@ export function ActionSheet({ isOpen, onClose, title, children }: ActionSheetPro
 
   if (!isOpen) return null;
 
-  const sheetStyle = keyboardOffset > 0
-    ? { bottom: keyboardOffset, paddingBottom: 'var(--space-lg)' } as React.CSSProperties
-    : undefined;
+  const sheetStyle: React.CSSProperties = {
+    '--kb-offset': `${keyboardOffset}px`,
+    ...(keyboardOffset > 0 && { paddingBottom: 'var(--space-lg)' }),
+  } as React.CSSProperties;
 
   return (
     <div className="action-sheet-backdrop" onClick={onClose} aria-hidden="true">
