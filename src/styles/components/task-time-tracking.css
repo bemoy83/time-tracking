@@ -267,78 +267,56 @@
   padding-top: var(--space-sm);
 }
 
-/* Time entry row - small dot by source */
+/* Time entry row — two-line layout */
 .time-entry-row {
-  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  flex-direction: column;
+    gap: 2px;
   width: 100%;
-  padding: var(--space-sm) var(--space-sm);
-  padding-left: 20px;
+  padding: var(--space-sm) var(--space-md);
+    min-height: 52px;
   background: none;
   border: none;
-  border-radius: 6px;
-  font-size: var(--font-body);
+  border-radius: var(--radius-md);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
   transition: background-color 0.15s;
 }
 
-.time-entry-row[data-source="manual"]::before,
-.time-entry-row[data-source="resumed"]::before,
-.time-entry-row[data-source="logged"]::before {
-  content: '';
-  position: absolute;
-  left: var(--space-sm);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.time-entry-row[data-source="manual"]::before,
-.time-entry-row[data-source="resumed"]::before {
-  background: rgba(37, 99, 235, 0.6);
-}
-
-.time-entry-row[data-source="logged"]::before {
-  background: var(--color-amber);
-}
-
 .time-entry-row:hover {
   background: rgba(0, 0, 0, 0.04);
 }
 
+.time-entry-row__line1,
+.time-entry-row__line2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.time-entry-row__line1 {
+  font-size: var(--font-body);
+}
+
+.time-entry-row__line2 {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 .time-entry-row__date {
   color: var(--color-text-muted);
-  min-width: 52px;
-  font-size: var(--font-small);
 }
 
 .time-entry-row__duration {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.time-entry-row__workers {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 5px;
-  background: var(--color-primary);
-  color: white;
-  border-radius: 4px;
-  font-size: var(--font-small);
   font-weight: 700;
-  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .time-entry-row__person-hours {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
 }
 
 /* Add entry button — matches set-estimate for unified add-button style */

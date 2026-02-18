@@ -5,11 +5,11 @@
  */
 
 import { useState } from 'react';
+import { pluralize } from '../lib/utils/pluralize';
 import { useTask, updateTaskDefaultWorkers } from '../lib/stores/task-store';
 import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
-import { PeopleIcon } from './icons';
-import { WorkersStepper } from './WorkersStepper';
+import { PeopleIcon, ChevronUpIcon, ExpandChevronIcon } from './icons';
 
 interface TaskPersonnelProps {
   taskId: string;
@@ -44,14 +44,14 @@ export function TaskPersonnel({ taskId }: TaskPersonnelProps) {
         label="PERSONNEL"
         icon={<PeopleIcon className="task-personnel__icon" />}
         defaultOpen={false}
-        sectionSummary={hasValue ? `${currentValue} crew` : undefined}
+        sectionSummary={hasValue ? pluralize(currentValue, 'worker', 'workers') : undefined}
       >
         <div className="task-personnel__content">
           <span className="task-personnel__section-label section-heading">DEFAULT CREW</span>
 
           {hasValue ? (
             <div className="task-personnel__summary">
-              <span className="task-personnel__value">{currentValue} crew</span>
+              <span className="task-personnel__value">{pluralize(currentValue, 'worker', 'workers')}</span>
               <button
                 type="button"
                 className="task-personnel__edit-btn"
@@ -78,11 +78,28 @@ export function TaskPersonnel({ taskId }: TaskPersonnelProps) {
         title="Set Personnel"
         onClose={() => setShowSheet(false)}
       >
-        <WorkersStepper
-          value={tempWorkers}
-          onChange={setTempWorkers}
-          size="large"
-        />
+        <div className="task-personnel__picker">
+          <button
+            type="button"
+            className="entry-modal__stepper-btn"
+            onClick={() => setTempWorkers(Math.min(20, tempWorkers + 1))}
+            disabled={tempWorkers >= 20}
+            aria-label="Increase personnel"
+          >
+            <ChevronUpIcon className="entry-modal__stepper-chevron" />
+          </button>
+          <span className="task-personnel__big-value">{tempWorkers}</span>
+          <span className="task-personnel__big-unit">{tempWorkers === 1 ? 'worker' : 'workers'}</span>
+          <button
+            type="button"
+            className="entry-modal__stepper-btn"
+            onClick={() => setTempWorkers(Math.max(1, tempWorkers - 1))}
+            disabled={tempWorkers <= 1}
+            aria-label="Decrease personnel"
+          >
+            <ExpandChevronIcon className="entry-modal__stepper-chevron" />
+          </button>
+        </div>
         <div className="action-sheet__actions">
           {hasValue && (
             <button

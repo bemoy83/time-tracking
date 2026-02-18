@@ -42,8 +42,6 @@ m (linear work)
 
 pcs (countable items)
 
-kg / L (weight or volume where applicable)
-
 Assign estimated duration and expected personnel count.
 
 b. Time & Crew Tracking

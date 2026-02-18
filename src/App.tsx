@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
-import { initializeSyncQueue, useSyncState } from './lib/sync/sync-queue';
+import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { Task, Project } from './lib/types';
-import { NetworkStatus } from './components/NetworkStatus';
+// import { NetworkStatus } from './components/NetworkStatus';
 import { InstallPrompt } from './components/InstallPrompt';
 import { TodayView } from './pages/TodayView';
 import { TaskDetail } from './pages/TaskDetail';
@@ -24,7 +24,8 @@ function App() {
   const [initialized, setInitialized] = useState(false);
   const { isLoading: timerLoading } = useTimerStore();
   const { isLoading: tasksLoading } = useTaskStore();
-  const { isOnline, pendingCount, isSyncing, lastError } = useSyncState();
+  // Sync status disabled until sync is implemented
+  // const { isOnline, pendingCount, isSyncing, lastError } = useSyncState();
   const [view, setView] = useState<View>({ type: 'tab', tab: 'today' });
 
   // Initialize stores and sync queue on mount
@@ -36,8 +37,8 @@ function App() {
     ]).then(() => setInitialized(true));
   }, []);
 
-  // Show network status bar when offline or has pending/errors
-  const showNetworkStatus = !isOnline || pendingCount > 0 || isSyncing || !!lastError;
+  // Show network status bar when offline or has pending/errors (disabled until sync implemented)
+  const showNetworkStatus = false;
 
   const isLoading = !initialized || timerLoading || tasksLoading;
 
@@ -87,8 +88,8 @@ function App() {
 
   return (
     <div className={rootClass || undefined}>
-      {/* Network status bar */}
-      <NetworkStatus />
+      {/* Network status bar - disabled until sync is implemented */}
+      {/* <NetworkStatus /> */}
 
       <main id="main-content" role="main" aria-label="Main content">
         {view.type === 'tab' && view.tab === 'today' && (

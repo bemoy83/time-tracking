@@ -11,7 +11,7 @@ import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
 import { RulerIcon, PencilIcon } from './icons';
 
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'kg', 'L'];
+const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 
 interface TaskWorkQuantityProps {
   taskId: string;
@@ -91,28 +91,39 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
         onClose={() => setShowSheet(false)}
       >
         <div className="task-work-quantity__form">
-          <div className="task-work-quantity__inputs">
+          <div className="task-work-quantity__input-wrap">
             <input
-              type="number"
-              className="input task-work-quantity__number-input"
+              inputMode="decimal"
+              className="task-work-quantity__number-input"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="0"
-              min="0"
-              step="any"
               autoFocus
+              style={{
+                width: `${Math.max(String(quantity || '0').length, 1)}ch`,
+              }}
             />
-            <select
-              className="input task-work-quantity__unit-select"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value as WorkUnit)}
-            >
-              {WORK_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {WORK_UNIT_LABELS[u]}
-                </option>
-              ))}
-            </select>
+            <span className="task-work-quantity__input-unit" aria-hidden="true">
+              {WORK_UNIT_LABELS[unit]}
+            </span>
+          </div>
+          <div
+            className="task-work-quantity__unit-pills"
+            role="group"
+            aria-label="Unit"
+          >
+            {WORK_UNITS.map((u) => (
+              <button
+                key={u}
+                type="button"
+                role="radio"
+                aria-checked={unit === u}
+                className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
+                onClick={() => setUnit(u)}
+              >
+                {WORK_UNIT_LABELS[u]}
+              </button>
+            ))}
           </div>
           <div className="action-sheet__actions">
             {hasWork && (

@@ -62,3 +62,30 @@
 .task-personnel__set-btn:hover {
   color: var(--color-primary-hover);
 }
+
+/* Big number picker inside ActionSheet */
+.task-personnel__picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.task-personnel__big-value {
+  font-size: 3.5rem;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  padding: var(--space-xs) 0;
+}
+
+.task-personnel__big-unit {
+  font-size: var(--font-small);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  padding-bottom: var(--space-xs);
+}

@@ -14,22 +14,22 @@ export type TimerSource = 'manual' | 'resumed' | 'logged';
 export type TaskStatus = 'active' | 'completed' | 'blocked';
 
 // Work unit types for quantity tracking
-export type WorkUnit = 'm2' | 'm' | 'pcs' | 'kg' | 'L';
+export type WorkUnit = 'm2' | 'm' | 'pcs' | 'orders';
 
 export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
   m2: 'm\u00B2',
   m: 'm',
   pcs: 'pcs',
-  kg: 'kg',
-  L: 'L',
+  orders: 'orders',
 };
 
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {
-  return `${quantity} ${WORK_UNIT_LABELS[unit]}`;
+  const label = WORK_UNIT_LABELS[unit] ?? unit;
+  return `${quantity} ${label}`;
 }
 
 export function formatProductivity(rate: number, unit: WorkUnit): string {
-  const label = WORK_UNIT_LABELS[unit];
+  const label = WORK_UNIT_LABELS[unit] ?? unit;
   const rounded = rate >= 10 ? Math.round(rate).toString() : rate.toFixed(1);
   return `${rounded} ${label}/person-hr`;
 }

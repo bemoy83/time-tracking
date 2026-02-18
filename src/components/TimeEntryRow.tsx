@@ -1,11 +1,18 @@
 /**
  * TimeEntryRow component.
- * Compact row displaying a single time entry.
- * Shows: date, duration, workers badge (if > 1), person-hours (if > 1).
+ * Two-line row displaying a single time entry.
+ * Line 1: date + time of day (left), duration (right).
+ * Line 2: source label + optional workers (left), person-hours (right).
  */
 
-import { TimeEntry, durationMs, formatDurationShort, formatPersonHours } from '../lib/types';
+import { TimeEntry, TimerSource, durationMs, formatDurationShort, formatPersonHours } from '../lib/types';
 import { formatUiDate } from '../lib/utils/formatUiDate';
+
+const SOURCE_LABELS: Record<TimerSource, string> = {
+  manual: 'Timer',
+  resumed: 'Timer',
+  logged: 'Logged',
+};
 
 interface TimeEntryRowProps {
   entry: TimeEntry;
@@ -16,6 +23,7 @@ export function TimeEntryRow({ entry, onTap }: TimeEntryRowProps) {
   const dur = durationMs(entry.startUtc, entry.endUtc);
   const workers = entry.workers ?? 1;
   const dateStr = formatUiDate(entry.startUtc, 'short');
+  const timeStr = formatUiDate(entry.startUtc, 'time');
 
   return (
     <button
@@ -24,16 +32,21 @@ export function TimeEntryRow({ entry, onTap }: TimeEntryRowProps) {
       data-source={entry.source}
       onClick={() => onTap(entry)}
     >
-      <span className="time-entry-row__date">{dateStr}</span>
-      <span className="time-entry-row__duration">{formatDurationShort(dur)}</span>
-      {workers > 1 && (
-        <>
-          <span className="time-entry-row__workers">&times;{workers}</span>
+      <span className="time-entry-row__line1">
+        <span className="time-entry-row__date">{dateStr} · {timeStr}</span>
+        <span className="time-entry-row__duration">{formatDurationShort(dur)}</span>
+      </span>
+      <span className="time-entry-row__line2">
+        <span className="time-entry-row__source">
+          {SOURCE_LABELS[entry.source]}
+          {workers > 1 && <> · {workers} workers</>}
+        </span>
+        {workers > 1 && (
           <span className="time-entry-row__person-hours">
-            {formatPersonHours(dur, workers)} person-hrs
+            {formatPersonHours(dur, workers)} p-h
           </span>
-        </>
-      )}
+        )}
+      </span>
     </button>
   );
 }

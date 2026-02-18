@@ -11,7 +11,6 @@ import { ProjectColorDot } from '../components/ProjectColorDot';
 import {
   useTaskStore,
   useProjectTasks,
-  createTask,
   updateProjectName,
   updateProjectColor,
   getDeleteProjectPreview,
@@ -19,7 +18,7 @@ import {
   DeleteProjectPreview,
 } from '../lib/stores/task-store';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
-import { InlineCreateForm } from '../components/InlineCreateForm';
+import { CreateTaskSheet } from '../components/CreateTaskSheet';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -32,7 +31,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
 
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -54,12 +53,6 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
   const activeTasks = projectTasks.filter((t) => t.status === 'active');
   const completedTasks = projectTasks.filter((t) => t.status === 'completed');
   const blockedTasks = projectTasks.filter((t) => t.status === 'blocked');
-
-  const handleAddTask = async () => {
-    if (!newTaskTitle.trim()) return;
-    await createTask({ title: newTaskTitle.trim(), projectId });
-    setNewTaskTitle('');
-  };
 
   const handleSaveName = async () => {
     if (!editName.trim()) return;
@@ -153,14 +146,12 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
         {blockedTasks.length > 0 && <span>{blockedTasks.length} blocked</span>}
       </div>
 
-      {/* Add task form */}
-      <InlineCreateForm
-        className="project-detail__add-task"
-        placeholder="Add task to project..."
-        submitLabel="Add"
-        value={newTaskTitle}
-        onChange={setNewTaskTitle}
-        onSubmit={handleAddTask}
+      {/* FAB + Create Sheet */}
+      <button className="fab" onClick={() => setShowCreateSheet(true)} aria-label="New task">+</button>
+      <CreateTaskSheet
+        isOpen={showCreateSheet}
+        onClose={() => setShowCreateSheet(false)}
+        projectId={projectId}
       />
 
       {/* Active tasks */}

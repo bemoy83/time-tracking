@@ -1,0 +1,47 @@
+/* CreateTaskSheet — FAB + section spacing */
+
+.fab {
+  position: fixed;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-md));
+  right: var(--space-md);
+  z-index: 200;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  font-size: 1.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.create-task-sheet__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+.create-task-sheet__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Ghost button for subtask add */
+.create-task-sheet__ghost-btn {
+  background: none;
+  border: none;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.create-task-sheet__ghost-btn:hover {
+  color: var(--color-primary-hover);
+}

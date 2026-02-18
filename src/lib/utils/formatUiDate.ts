@@ -3,10 +3,17 @@
  */
 export function formatUiDate(
   isoDate: string,
-  mode: 'relative' | 'short',
+  mode: 'relative' | 'short' | 'time',
   locale = 'en-US'
 ): string {
   const date = new Date(isoDate);
+
+  if (mode === 'time') {
+    return date.toLocaleTimeString(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
 
   if (mode === 'short') {
     return date.toLocaleDateString(locale, {

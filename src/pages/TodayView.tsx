@@ -14,7 +14,6 @@ import { useState, useMemo } from 'react';
 import { Task, Project } from '../lib/types';
 import {
   useTaskStore,
-  createTask,
 } from '../lib/stores/task-store';
 import {
   useTimerStore,
@@ -30,7 +29,7 @@ import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
 import { BlockedIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
-import { InlineCreateForm } from '../components/InlineCreateForm';
+import { CreateTaskSheet } from '../components/CreateTaskSheet';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -39,8 +38,7 @@ interface TodayViewProps {
 export function TodayView({ onSelectTask }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
   const { activeTimers } = useTimerStore();
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const taskTimes = useTaskTimes(tasks, activeTimers);
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
@@ -103,17 +101,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     await startTimer(task.id);
   };
 
-  const handleAddTask = async () => {
-    if (!newTaskTitle.trim()) return;
-    setIsAdding(true);
-    try {
-      await createTask({ title: newTaskTitle.trim() });
-      setNewTaskTitle('');
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
   // Count subtasks for progress
   const getSubtaskProgress = (parentId: string) => {
     const subtasks = tasks.filter((t) => t.parentId === parentId);
@@ -142,15 +129,11 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   return (
     <div className="today-view">
-      {/* Quick Add */}
-      <InlineCreateForm
-        className="today-view__quick-add"
-        placeholder="Quick add task..."
-        submitLabel="Add"
-        value={newTaskTitle}
-        onChange={setNewTaskTitle}
-        onSubmit={handleAddTask}
-        disabled={isAdding}
+      {/* FAB + Create Sheet */}
+      <button className="fab" onClick={() => setShowCreateSheet(true)} aria-label="New task">+</button>
+      <CreateTaskSheet
+        isOpen={showCreateSheet}
+        onClose={() => setShowCreateSheet(false)}
       />
 
       {/* Ungrouped Tasks */}
