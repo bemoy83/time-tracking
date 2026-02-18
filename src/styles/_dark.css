@@ -139,26 +139,6 @@
     background: #252525;
   }
 
-  .entry-modal__duration-input {
-    background: #333;
-    border-color: #555;
-    color: var(--color-text);
-  }
-
-  .entry-modal__stepper-btn {
-    background: #404040;
-  }
-  .entry-modal__stepper-btn:hover:not(:disabled) {
-    background: #505050;
-  }
-
-  .entry-modal__btn--cancel {
-    background: #404040;
-  }
-  .entry-modal__btn--cancel:hover {
-    background: #505050;
-  }
-
   .entry-modal__person-hours {
     background: rgba(37, 99, 235, 0.15);
   }

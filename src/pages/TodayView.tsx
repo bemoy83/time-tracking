@@ -48,7 +48,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     confirmTarget,
     promptParent,
     handleComplete,
-    handleConfirmCompleteOnly,
     handleConfirmCompleteAll,
     handlePromptYes,
     dismissConfirm,
@@ -265,7 +264,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
               ).length
             : 0
         }
-        onCompleteOnly={handleConfirmCompleteOnly}
         onCompleteAll={handleConfirmCompleteAll}
         onCancel={dismissConfirm}
       />

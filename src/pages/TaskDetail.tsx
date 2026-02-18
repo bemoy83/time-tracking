@@ -180,7 +180,6 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         isOpen={detail.completionFlow.showConfirm}
         taskTitle={task.title}
         incompleteCount={detail.completionFlow.incompleteCount}
-        onCompleteOnly={detail.completionFlow.handleConfirmCompleteOnly}
         onCompleteAll={detail.completionFlow.handleConfirmCompleteAll}
         onCancel={detail.completionFlow.dismissConfirm}
       />

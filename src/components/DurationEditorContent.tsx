@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect, useRef, ReactNode } from 'react';
+import { formatDurationShort, formatPersonHours } from '../lib/types';
 import { WorkersStepper } from './WorkersStepper';
-import { TrashIcon } from './icons';
+import { TrashIcon, ChevronUpIcon, ExpandChevronIcon } from './icons';
 
 interface DurationEditorContentProps {
   initialHours: number;
@@ -79,6 +80,22 @@ export function DurationEditorContent({
       {/* Duration input */}
       <div className="entry-modal__field">
         <label className="entry-modal__label">{durationLabel}</label>
+        <div className="entry-modal__duration-summary" aria-live="polite">
+          <span
+            className={`entry-modal__duration-summary__direct${totalMs > 0 ? ' entry-modal__duration-summary__direct--active' : ''}`}
+            aria-label={`Duration: ${hours} hours ${minutes} minutes`}
+          >
+            {totalMs > 0 ? formatDurationShort(totalMs) : '—'}
+          </span>
+          {showWorkers && workers > 1 && totalMs > 0 && (
+            <span
+              className="entry-modal__duration-summary__ph"
+              aria-label={`Person-hours: ${formatPersonHours(totalMs, workers)}`}
+            >
+              × {workers} = {formatPersonHours(totalMs, workers)} person-hrs
+            </span>
+          )}
+        </div>
         <div className="entry-modal__duration-grid">
           <div className="entry-modal__duration-col">
             <button
@@ -86,22 +103,27 @@ export function DurationEditorContent({
               className="entry-modal__stepper-btn"
               onClick={() => setHours(clampHours(hours + 1))}
               aria-label="Increase hours"
-            >+</button>
+            >
+              <ChevronUpIcon className="entry-modal__stepper-chevron" />
+            </button>
             <input
               type="number"
               className="entry-modal__duration-input"
               value={hours}
-              onChange={(e) => setHours(clampHours(parseInt(e.target.value) || 0))}
+              readOnly
               min={0}
               max={99}
               aria-label="Hours"
+              tabIndex={-1}
             />
             <button
               type="button"
               className="entry-modal__stepper-btn"
               onClick={() => setHours(clampHours(hours - 1))}
               aria-label="Decrease hours"
-            >-</button>
+            >
+              <ExpandChevronIcon className="entry-modal__stepper-chevron" />
+            </button>
             <span className="entry-modal__duration-unit">hrs</span>
           </div>
           <div className="entry-modal__duration-col">
@@ -110,22 +132,27 @@ export function DurationEditorContent({
               className="entry-modal__stepper-btn"
               onClick={() => setMinutes(clampMinutes(minutes + 5))}
               aria-label="Increase minutes"
-            >+</button>
+            >
+              <ChevronUpIcon className="entry-modal__stepper-chevron" />
+            </button>
             <input
               type="number"
               className="entry-modal__duration-input"
               value={minutes}
-              onChange={(e) => setMinutes(clampMinutes(parseInt(e.target.value) || 0))}
+              readOnly
               min={0}
               max={59}
               aria-label="Minutes"
+              tabIndex={-1}
             />
             <button
               type="button"
               className="entry-modal__stepper-btn"
               onClick={() => setMinutes(clampMinutes(minutes - 5))}
               aria-label="Decrease minutes"
-            >-</button>
+            >
+              <ExpandChevronIcon className="entry-modal__stepper-chevron" />
+            </button>
             <span className="entry-modal__duration-unit">min</span>
           </div>
         </div>

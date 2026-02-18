@@ -33,7 +33,6 @@ interface CompletionFlow {
   incompleteCount: number;
   promptParentTitle: string;
   handleComplete: () => Promise<void>;
-  handleConfirmCompleteOnly: () => Promise<void>;
   handleConfirmCompleteAll: () => Promise<void>;
   handlePromptYes: () => Promise<void>;
   handlePromptNo: () => void;
@@ -219,10 +218,6 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
       ? (tasks.find((t) => t.id === completePromptParentId)?.title ?? 'parent task')
       : '',
     handleComplete,
-    handleConfirmCompleteOnly: async () => {
-      if (task) await completeTask(task.id);
-      setShowCompleteConfirm(false);
-    },
     handleConfirmCompleteAll: async () => {
       if (task) await completeTaskAndChildren(task.id);
       setShowCompleteConfirm(false);

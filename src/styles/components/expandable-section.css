@@ -64,7 +64,10 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  flex-shrink: 0;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
   font-size: var(--font-small);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

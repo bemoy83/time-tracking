@@ -4,7 +4,7 @@
  * Supports delete with two-step confirmation (handled inside DurationEditorModal).
  */
 
-import { TimeEntry, durationMs, formatDurationShort } from '../lib/types';
+import { TimeEntry, durationMs } from '../lib/types';
 import { DurationEditorModal } from './DurationEditorModal';
 
 interface EditEntryModalProps {
@@ -31,8 +31,6 @@ export function EditEntryModal({
     onSave({ durationMs: totalMs, workers: workers ?? 1 });
   };
 
-  const personMs = dur * (entry.workers ?? 1);
-
   return (
     <DurationEditorModal
       isOpen={isOpen}
@@ -45,13 +43,6 @@ export function EditEntryModal({
       onSave={handleSave}
       onDelete={() => onDelete(entry.id)}
       onClose={onClose}
-      preview={
-        (entry.workers ?? 1) > 1 ? (
-          <div className="entry-modal__person-hours">
-            Person-hours: {formatDurationShort(personMs)}
-          </div>
-        ) : undefined
-      }
     />
   );
 }

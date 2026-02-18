@@ -68,12 +68,6 @@ export function useCompletionFlow(
     }
   };
 
-  const handleConfirmCompleteOnly = async () => {
-    if (!state.confirmTarget) return;
-    await completeTask(state.confirmTarget.id);
-    setState((s) => ({ ...s, confirmTarget: null }));
-  };
-
   const handleConfirmCompleteAll = async () => {
     if (!state.confirmTarget) return;
     await completeTaskAndChildren(state.confirmTarget.id);
@@ -112,7 +106,6 @@ export function useCompletionFlow(
     confirmTarget: state.confirmTarget,
     promptParent: state.promptParent,
     handleComplete,
-    handleConfirmCompleteOnly,
     handleConfirmCompleteAll,
     handlePromptYes,
     dismissConfirm,
