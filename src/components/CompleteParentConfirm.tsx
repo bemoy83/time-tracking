@@ -27,7 +27,7 @@ export function CompleteParentConfirm({
     <AlertDialog
       isOpen={isOpen}
       title="Complete task?"
-      description={`Completing this task will also complete ${pluralize(incompleteCount, 'subtask')}.`}
+      description={`Completing "${taskTitle}" will also complete ${pluralize(incompleteCount, 'subtask')}.`}
       onClose={onCancel}
       ariaLabelledBy="complete-confirm-title"
       ariaDescribedBy="complete-confirm-desc"
