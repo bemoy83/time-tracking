@@ -16,11 +16,14 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   animation: fadeIn 0.15s ease-out;
 }
 
 .action-sheet {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -33,7 +36,10 @@
   max-width: 600px;
   max-height: calc(100dvh - var(--space-md));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 301;
   animation: actionSheetSlideUp 0.25s ease-out;
 }
 

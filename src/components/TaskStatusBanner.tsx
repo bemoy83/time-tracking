@@ -4,37 +4,29 @@
  * No action buttons — those live in TaskActionBar.
  */
 
-import { ActiveTimer } from '../lib/types';
 import { TimerDisplay } from './TimerDisplay';
-import { WorkersStepper } from './WorkersStepper';
+import { ClockIcon, WarningIcon, CheckIcon } from './icons';
 
 interface TaskStatusBannerProps {
   status: 'active' | 'completed' | 'blocked';
   blockedReason?: string | null;
   isTimerActive: boolean;
-  activeTimer?: ActiveTimer | null;
   taskId?: string;
-  onSetWorkers?: (n: number) => void;
 }
 
 export function TaskStatusBanner({
   status,
   blockedReason,
   isTimerActive,
-  activeTimer,
   taskId,
-  onSetWorkers,
 }: TaskStatusBannerProps) {
   if (status === 'blocked') {
     return (
       <div className="task-detail__status-control task-detail__status-control--blocked">
-        <span className="task-detail__status-dot" />
-        <div className="task-detail__status-info">
-          <span className="task-detail__status-label">Blocked</span>
-          {blockedReason && (
-            <span className="task-detail__blocked-reason">{blockedReason}</span>
-          )}
-        </div>
+        <WarningIcon className="task-detail__status-icon" />
+        <span className="task-detail__status-label">
+          Blocked{blockedReason ? ` · ${blockedReason}` : ''}
+        </span>
       </div>
     );
   }
@@ -42,7 +34,7 @@ export function TaskStatusBanner({
   if (status === 'completed') {
     return (
       <div className="task-detail__status-control task-detail__status-control--completed">
-        <span className="task-detail__status-dot" />
+        <CheckIcon className="task-detail__status-icon" />
         <span className="task-detail__status-label">Completed</span>
       </div>
     );
@@ -50,18 +42,10 @@ export function TaskStatusBanner({
 
   if (isTimerActive) {
     return (
-      <div className="task-detail__status-control task-detail__status-control--recording-group">
-        <div className="task-detail__status-control task-detail__status-control--recording">
-          <span className="task-detail__status-label">Recording</span>
-          <TimerDisplay size="large" taskId={taskId} />
-        </div>
-        <div className="task-detail__workers-row">
-          <WorkersStepper
-            value={activeTimer?.workers ?? 1}
-            onChange={(n) => onSetWorkers?.(n)}
-            size="large"
-          />
-        </div>
+      <div className="task-detail__status-control task-detail__status-control--recording">
+        <ClockIcon className="task-detail__status-icon" />
+        <span className="task-detail__status-label">Recording</span>
+        <TimerDisplay size="large" taskId={taskId} />
       </div>
     );
   }

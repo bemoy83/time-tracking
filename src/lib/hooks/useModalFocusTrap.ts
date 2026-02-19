@@ -49,15 +49,33 @@ export function useModalFocusTrap(
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
+  // Prevent body scroll when open (iOS-safe: fixed-position lock with scrollY restore)
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isOpen) return;
+
+    const scrollY = window.scrollY;
+    const { body } = document;
+    const prevStyles = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.overflow = '';
+      body.style.position = prevStyles.position;
+      body.style.top = prevStyles.top;
+      body.style.left = prevStyles.left;
+      body.style.right = prevStyles.right;
+      body.style.overflow = prevStyles.overflow;
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen]);
 

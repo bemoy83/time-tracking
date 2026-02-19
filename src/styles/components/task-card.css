@@ -10,6 +10,15 @@
   background: var(--color-surface-subtle);
   cursor: pointer;
   min-height: var(--touch-min);
+  transition: background-color 0.15s;
+}
+
+.task-card:hover:not(.task-card--active) {
+  background: #f5f5f5;
+}
+
+.task-card:active:not(.task-card--active) {
+  background: #f0f0f0;
 }
 
 .task-card--active {

@@ -153,18 +153,20 @@
    Unified Status + Timer Control
    ============================================================ */
 
+/* Unified status banner — same dimensions and layout for all states */
 .task-detail__status-control {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
   width: 100%;
-  min-height: 56px;
-  padding: var(--space-md) var(--space-lg);
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-lg);
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   font-size: var(--font-large);
   font-weight: 600;
+  color: white;
   cursor: default;
   transition: background-color 0.15s, transform 0.1s;
 }
@@ -172,7 +174,6 @@
 /* Active - tappable start button */
 .task-detail__status-control--active {
   background: var(--color-ready);
-  color: white;
   cursor: pointer;
 }
 
@@ -184,65 +185,25 @@
   transform: scale(0.98);
 }
 
-/* Recording - tappable stop button */
+/* Recording */
 .task-detail__status-control--recording {
   background: var(--color-recording);
-  color: white;
-  cursor: pointer;
 }
 
-.task-detail__status-control--recording:hover {
-  background: var(--color-danger-hover);
-}
-
-.task-detail__status-control--recording:active {
-  transform: scale(0.98);
-}
-
-/* Recording group wrapper (stop button + workers stepper) */
-.task-detail__status-control--recording-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: 0;
-  min-height: auto;
-  background: none;
-  border: none;
-}
-
-.task-detail__status-control--recording-group .task-detail__status-control--recording {
-  border-radius: var(--radius-xl);
-}
-
-.task-detail__workers-row {
-  width: 100%;
-}
-
-/* Blocked - static display */
+/* Blocked */
 .task-detail__status-control--blocked {
-  background: #fffbeb;
-  color: #92400e;
-  flex-direction: column;
-  gap: var(--space-xs);
+  background: var(--color-amber);
 }
 
-/* Completed - static display */
+/* Completed */
 .task-detail__status-control--completed {
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
+  background: var(--color-ready);
 }
 
-.task-detail__status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
-.task-detail__status-icon {
+.task-detail__status-control .task-detail__status-icon {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
 }
 
 /* Override TimerDisplay colors when inside the status control */
@@ -252,7 +213,7 @@
 }
 
 .task-detail__status-control .timer-display__indicator {
-  background: white;
+  display: none;
 }
 
 .task-detail__status-label {
@@ -260,17 +221,11 @@
   font-weight: 600;
 }
 
-.task-detail__status-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.task-detail__blocked-reason {
-  font-size: var(--font-small);
-  font-weight: 400;
-  opacity: 0.8;
+.task-detail__status-control--blocked .task-detail__status-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ============================================================

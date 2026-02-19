@@ -113,6 +113,10 @@
 /* Subtask variant – flat rows inside a shared container */
 .task-row--subtask {
   padding-left: calc(var(--space-md) + var(--space-lg));
-  background: rgba(0, 0, 0, 0.02);
+  background: #e8e8e8;
+}
+
+.task-row--subtask:hover {
+  background: #e0e0e0;
 }
 

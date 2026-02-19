@@ -8,20 +8,6 @@
   height: 18px;
 }
 
-.task-time-tracking__live-indicator {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  background: var(--color-recording);
-  color: white;
-  border-radius: 4px;
-  font-size: var(--font-small);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
 .task-time-tracking__loading {
   color: var(--color-text-muted);
   font-size: var(--font-body);
@@ -63,7 +49,9 @@
 }
 
 .task-time-tracking__breakdown-line {
-  display: block;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   font-size: var(--font-small);
   font-weight: 400;
   color: var(--color-text-muted);
@@ -109,23 +97,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.task-time-tracking__live-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: var(--color-recording);
-  border-radius: 50%;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
 /* Person-hours row */
 .task-time-tracking__total--person {
   padding-bottom: var(--space-sm);
 }
 
-.task-time-tracking__value--person {
-  color: var(--color-primary);
-}
 
 /* Estimate section */
 .task-time-tracking__estimate-section {

@@ -6,10 +6,11 @@
 @media (prefers-color-scheme: dark) {
   /* --- Design tokens --- */
   :root {
-    --color-bg: #1a1a1a;
+    --color-bg: #121212;
     --color-text: #f5f5f5;
     --color-text-muted: #a0a0a0;
     --color-border: #333333;
+    --color-surface-hover: #4a4a4a;
     --color-recording-bg: #2d1f1f;
     --color-recording-border: #5c2929;
     --color-ready-bg: #1f2d1f;
@@ -46,12 +47,11 @@
 
   /* --- Task Detail --- */
   .task-detail__status-control--blocked {
-    background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
+    background: #d97706;
   }
 
   .task-detail__status-control--completed {
-    background: rgba(34, 197, 94, 0.1);
+    background: #16a34a;
   }
 
   /* --- Shared Input --- */
@@ -73,6 +73,14 @@
     background: #252525;
   }
 
+  .task-card:hover:not(.task-card--active) {
+    background: #2a2a2a;
+  }
+
+  .task-card:active:not(.task-card--active) {
+    background: #2f2f2f;
+  }
+
   /* --- Task Action Bar --- */
   .task-action-bar {
     background: var(--color-bg);
@@ -88,6 +96,10 @@
   }
 
   /* --- Modals / Dialogs --- */
+  .alert-dialog {
+    background: #2a2a2a;
+  }
+
   .project-picker {
     background: #252525;
   }

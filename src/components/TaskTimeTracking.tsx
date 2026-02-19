@@ -48,11 +48,6 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
   const hasSubtasks = subtaskIds.length > 0;
   const hasTime = breakdown.totalMs > 0;
 
-  // Check if timer is running on this task or any subtask
-  const isTimerOnTask = activeTimers.some((t) => t.taskId === taskId);
-  const isTimerOnSubtask = activeTimers.some((t) => subtaskIds.includes(t.taskId));
-  const isTimerActive = isTimerOnTask || isTimerOnSubtask;
-
   // Reset entry list when navigating to a different task
   useEffect(() => {
     setEntries([]);
@@ -116,19 +111,12 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     ? currentEstimate % 60
     : 0;
 
-  const liveBadge = isTimerActive ? (
-    <span className="task-time-tracking__live-indicator" aria-label="Timer running">
-      Live
-    </span>
-  ) : undefined;
-
   return (
     <>
       <ExpandableSection
         label="TIME"
         icon={<ClockIcon className="task-time-tracking__icon" />}
         defaultOpen={true}
-        badge={liveBadge}
         timeBadgeMs={breakdown.totalMs}
         estimatedMinutes={task?.estimatedMinutes ?? null}
         timeBadgeStatus={budgetStatus.status}
@@ -146,11 +134,11 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                   {(hasTime || hasSubtasks) && (
                     <span className="task-time-tracking__breakdown-line">
                       {breakdown.directMs > 0 && (
-                        <>{formatDurationShort(breakdown.directMs)} direct{isTimerOnTask && <LiveDot />}</>
+                        <>{formatDurationShort(breakdown.directMs)} direct</>
                       )}
                       {breakdown.directMs > 0 && hasSubtasks && ' + '}
                       {hasSubtasks && (
-                        <>{formatDurationShort(breakdown.subtaskMs)} from subtasks{isTimerOnSubtask && <LiveDot />}</>
+                        <>{formatDurationShort(breakdown.subtaskMs)} from subtasks</>
                       )}
                     </span>
                   )}
@@ -168,11 +156,11 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
                     {(hasTime || hasSubtasks) && (
                       <span className="task-time-tracking__breakdown-line">
                         {breakdown.directPersonMs > 0 && (
-                          <>{formatDurationShort(breakdown.directPersonMs)} direct{isTimerOnTask && <LiveDot />}</>
+                          <>{formatDurationShort(breakdown.directPersonMs)} direct</>
                         )}
                         {breakdown.directPersonMs > 0 && hasSubtasks && ' + '}
                         {hasSubtasks && (
-                          <>{formatDurationShort(breakdown.subtaskPersonMs)} from subtasks{isTimerOnSubtask && <LiveDot />}</>
+                          <>{formatDurationShort(breakdown.subtaskPersonMs)} from subtasks</>
                         )}
                       </span>
                     )}
@@ -318,14 +306,5 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
         />
       </ActionSheet>
     </>
-  );
-}
-
-function LiveDot() {
-  return (
-    <span
-      className="task-time-tracking__live-dot"
-      aria-label="Timer active"
-    />
   );
 }

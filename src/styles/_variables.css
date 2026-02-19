@@ -4,7 +4,7 @@
 
 :root {
   /* Colors - designed for high contrast and visibility */
-  --color-bg: #ffffff;
+  --color-bg: #f0f0f0;
   --color-text: #1a1a1a;
   --color-text-muted: #666666;
   --color-border: #e0e0e0;
@@ -23,7 +23,7 @@
 
   /* Interaction surfaces */
   --color-surface-hover: #d1d5db;
-  --color-surface-subtle: #f9fafb;
+  --color-surface-subtle: #ffffff;
   --color-danger-hover: #b91c1c;
   --color-success-hover: #15803d;
   --color-danger-bg-hover: #fecaca;

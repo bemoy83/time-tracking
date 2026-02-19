@@ -62,7 +62,12 @@
 .alert-dialog__actions {
   display: flex;
   gap: var(--space-sm);
-  justify-content: flex-end;
+  justify-content: center;
+}
+
+.alert-dialog__actions > button {
+  flex: 1;
+  min-width: 0;
 }
 
 .alert-dialog__btn-icon {
