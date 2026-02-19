@@ -125,3 +125,13 @@
   gap: 2px;
   min-width: 0;
 }
+
+/* KPI row (non-interactive) */
+.settings-view__kpi-row {
+  cursor: default;
+}
+
+.settings-view__kpi-stats {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}

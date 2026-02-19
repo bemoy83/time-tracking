@@ -15,6 +15,7 @@ import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { TemplateFormSheet } from '../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../components/DeleteTemplateConfirm';
+import { KpiSection } from '../components/KpiSection';
 import { pluralize } from '../lib/utils/pluralize';
 
 export function SettingsView() {
@@ -125,6 +126,11 @@ export function SettingsView() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="settings-view__section">
+        <h2 className="settings-view__section-title section-heading">Productivity</h2>
+        <KpiSection tasks={tasks} />
       </section>
 
       <section className="settings-view__section">
