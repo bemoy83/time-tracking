@@ -49,6 +49,7 @@
 @import './styles/components/project-color-picker.css';
 @import './styles/components/settings.css';
 @import './styles/components/template-picker.css';
+@import './styles/components/calculator.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

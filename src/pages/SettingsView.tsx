@@ -16,6 +16,7 @@ import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { TemplateFormSheet } from '../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../components/DeleteTemplateConfirm';
 import { KpiSection } from '../components/KpiSection';
+import { CalculatorSheet } from '../components/CalculatorSheet';
 import { pluralize } from '../lib/utils/pluralize';
 
 export function SettingsView() {
@@ -25,6 +26,9 @@ export function SettingsView() {
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
+
+  // Calculator state
+  const [showCalculator, setShowCalculator] = useState(false);
 
   // Template form state
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -129,7 +133,16 @@ export function SettingsView() {
       </section>
 
       <section className="settings-view__section">
-        <h2 className="settings-view__section-title section-heading">Productivity</h2>
+        <div className="settings-view__section-header">
+          <h2 className="settings-view__section-title section-heading">Productivity</h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => setShowCalculator(true)}
+          >
+            Calculator
+          </button>
+        </div>
         <KpiSection tasks={tasks} />
       </section>
 
@@ -187,6 +200,12 @@ export function SettingsView() {
         templateTitle={deletingTemplate?.title ?? ''}
         onConfirm={handleDeleteTemplate}
         onCancel={() => setDeletingTemplate(null)}
+      />
+
+      <CalculatorSheet
+        isOpen={showCalculator}
+        onClose={() => setShowCalculator(false)}
+        tasks={tasks}
       />
     </div>
   );

@@ -21,8 +21,13 @@ export interface WorkTypeKpi {
   totalPersonHours: number;
 }
 
-function workTypeKeyString(key: WorkTypeKey): string {
+export function workTypeKeyString(key: WorkTypeKey): string {
   return `${key.workCategory}:${key.workUnit}:${key.buildPhase ?? '_'}`;
+}
+
+export function findKpiByKey(kpis: WorkTypeKpi[], key: WorkTypeKey): WorkTypeKpi | undefined {
+  const target = workTypeKeyString(key);
+  return kpis.find((k) => workTypeKeyString(k.key) === target);
 }
 
 /**
