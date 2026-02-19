@@ -1,0 +1,48 @@
+/* ============================================================
+   Template Picker Sheet
+   ============================================================ */
+
+.template-picker {
+  display: flex;
+  flex-direction: column;
+}
+
+.template-picker__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-height: var(--touch-min);
+  padding: var(--space-md);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-body);
+  width: 100%;
+  transition: background-color 0.15s;
+}
+
+.template-picker__row:last-child {
+  border-bottom: none;
+}
+
+.template-picker__row:active {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.template-picker__title {
+  font-weight: 500;
+}
+
+.template-picker__detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.template-picker__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-xs) 0;
+}

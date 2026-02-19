@@ -11,10 +11,11 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Task, Project } from '../lib/types';
+import { Task, Project, TaskTemplate } from '../lib/types';
 import {
   useTaskStore,
 } from '../lib/stores/task-store';
+import { useTemplateStore } from '../lib/stores/template-store';
 import {
   useTimerStore,
   startTimer,
@@ -30,6 +31,7 @@ import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
 import { WarningIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
+import { TemplatePickerSheet } from '../components/TemplatePickerSheet';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -37,8 +39,11 @@ interface TodayViewProps {
 
 export function TodayView({ onSelectTask }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
+  const { templates } = useTemplateStore();
   const { activeTimers } = useTimerStore();
   const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const taskTimes = useTaskTimes(tasks, activeTimers);
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
@@ -129,11 +134,28 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   return (
     <div className="today-view">
-      {/* FAB + Create Sheet */}
-      <button className="fab" onClick={() => setShowCreateSheet(true)} aria-label="New task">+</button>
+      {/* FAB + Create Flow */}
+      <button className="fab" onClick={() => {
+        if (templates.length > 0) {
+          setShowTemplatePicker(true);
+        } else {
+          setSelectedTemplate(null);
+          setShowCreateSheet(true);
+        }
+      }} aria-label="New task">+</button>
+      <TemplatePickerSheet
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onSelect={(template) => {
+          setSelectedTemplate(template);
+          setShowTemplatePicker(false);
+          setShowCreateSheet(true);
+        }}
+      />
       <CreateTaskSheet
         isOpen={showCreateSheet}
-        onClose={() => setShowCreateSheet(false)}
+        onClose={() => { setShowCreateSheet(false); setSelectedTemplate(null); }}
+        template={selectedTemplate}
       />
 
       {/* Ungrouped Tasks */}

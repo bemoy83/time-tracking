@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { WorkUnit, WORK_UNIT_LABELS } from '../lib/types';
+import { WorkUnit, WORK_UNIT_LABELS, TaskTemplate } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
@@ -23,6 +23,7 @@ interface CreateTaskSheetProps {
   showWork?: boolean;
   showEstimate?: boolean;
   showWorkers?: boolean;
+  template?: TaskTemplate | null;
 }
 
 export function CreateTaskSheet({
@@ -35,6 +36,7 @@ export function CreateTaskSheet({
   showWork = true,
   showEstimate = true,
   showWorkers = true,
+  template = null,
 }: CreateTaskSheetProps) {
   const [title, setTitle] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -44,17 +46,27 @@ export function CreateTaskSheet({
   const [workers, setWorkers] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset form when sheet opens
+  // Reset form when sheet opens; pre-fill from template if provided
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
-      setQuantity('');
-      setUnit('m2');
-      setEstHours(0);
-      setEstMinutes(0);
-      setWorkers(1);
+      if (template) {
+        setTitle(template.title);
+        setUnit(template.workUnit);
+        setQuantity(template.workQuantity != null ? String(template.workQuantity) : '');
+        const totalMin = template.estimatedMinutes ?? 0;
+        setEstHours(Math.floor(totalMin / 60));
+        setEstMinutes(totalMin % 60);
+        setWorkers(template.defaultWorkers ?? 1);
+      } else {
+        setTitle('');
+        setQuantity('');
+        setUnit('m2');
+        setEstHours(0);
+        setEstMinutes(0);
+        setWorkers(1);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, template]);
 
   const canCreate = title.trim().length > 0 && !isSaving;
 

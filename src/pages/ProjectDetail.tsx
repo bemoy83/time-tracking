@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Task } from '../lib/types';
+import { Task, TaskTemplate } from '../lib/types';
 import { BackIcon, TrashIcon, ChevronIcon } from '../components/icons';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import { ProjectColorDot } from '../components/ProjectColorDot';
@@ -17,8 +17,10 @@ import {
   deleteProjectWithMode,
   DeleteProjectPreview,
 } from '../lib/stores/task-store';
+import { useTemplateStore } from '../lib/stores/template-store';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
+import { TemplatePickerSheet } from '../components/TemplatePickerSheet';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -28,10 +30,13 @@ interface ProjectDetailProps {
 
 export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetailProps) {
   const { projects } = useTaskStore();
+  const { templates } = useTemplateStore();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
 
   const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -146,12 +151,29 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
         {blockedTasks.length > 0 && <span>{blockedTasks.length} blocked</span>}
       </div>
 
-      {/* FAB + Create Sheet */}
-      <button className="fab" onClick={() => setShowCreateSheet(true)} aria-label="New task">+</button>
+      {/* FAB + Create Flow */}
+      <button className="fab" onClick={() => {
+        if (templates.length > 0) {
+          setShowTemplatePicker(true);
+        } else {
+          setSelectedTemplate(null);
+          setShowCreateSheet(true);
+        }
+      }} aria-label="New task">+</button>
+      <TemplatePickerSheet
+        isOpen={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onSelect={(template) => {
+          setSelectedTemplate(template);
+          setShowTemplatePicker(false);
+          setShowCreateSheet(true);
+        }}
+      />
       <CreateTaskSheet
         isOpen={showCreateSheet}
-        onClose={() => setShowCreateSheet(false)}
+        onClose={() => { setShowCreateSheet(false); setSelectedTemplate(null); }}
         projectId={projectId}
+        template={selectedTemplate}
       />
 
       {/* Active tasks */}
