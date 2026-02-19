@@ -118,6 +118,7 @@ export interface Task {
   workQuantity: number | null; // e.g. 120 for "120 m²"
   workUnit: WorkUnit | null; // e.g. 'm2'
   defaultWorkers: number | null; // Expected crew count; null = use 1
+  targetProductivity: number | null; // units/person-hr from template
   createdAt: string;
   updatedAt: string;
 }

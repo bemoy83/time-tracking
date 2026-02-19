@@ -110,6 +110,7 @@ export interface CreateTaskInput {
   workQuantity?: number | null;
   workUnit?: WorkUnit | null;
   defaultWorkers?: number | null;
+  targetProductivity?: number | null;
 }
 
 /**
@@ -128,6 +129,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     workQuantity: input.workQuantity ?? null,
     workUnit: input.workUnit ?? null,
     defaultWorkers: input.defaultWorkers ?? null,
+    targetProductivity: input.targetProductivity ?? null,
     createdAt: now,
     updatedAt: now,
   };

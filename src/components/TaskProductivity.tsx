@@ -1,7 +1,8 @@
 /**
  * TaskProductivity component.
- * Read-only display of required and actual productivity rates.
- * Required = workQuantity / estimated person-hours
+ * Read-only display of target, required, and actual productivity rates.
+ * Target   = from template (stored on task)
+ * Required = workQuantity / estimated person-hours (calculated)
  * Actual   = workQuantity / actual person-hours (from tracked time)
  */
 
@@ -30,7 +31,10 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
   const unit = task.workUnit;
   const workers = task.defaultWorkers ?? 1;
 
-  // Required rate: quantity / estimated person-hours
+  // Target rate: from template (stored on task)
+  const targetRate = task.targetProductivity;
+
+  // Required rate: quantity / estimated person-hours (calculated)
   const hasEstimate = task.estimatedMinutes != null && task.estimatedMinutes > 0;
   const estimatedPersonHours = hasEstimate
     ? (task.estimatedMinutes! / 60) * workers
@@ -43,18 +47,23 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
   const actualRate = hasTime ? quantity / actualPersonHours : null;
 
   // Nothing to show
-  if (requiredRate == null && actualRate == null) {
+  if (targetRate == null && requiredRate == null && actualRate == null) {
     return null;
   }
 
   const isCompleted = task.status === 'completed';
 
+  // Use target for comparison when available, otherwise fall back to required
+  const comparisonRate = targetRate ?? requiredRate;
+
   // Badge for collapsed state
   const badgeText = actualRate != null
     ? formatProductivity(actualRate, unit)
-    : requiredRate != null
-      ? formatProductivity(requiredRate, unit)
-      : undefined;
+    : targetRate != null
+      ? formatProductivity(targetRate, unit)
+      : requiredRate != null
+        ? formatProductivity(requiredRate, unit)
+        : undefined;
 
   return (
     <ExpandableSection
@@ -64,6 +73,15 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
       sectionSummary={badgeText}
     >
       <div className="task-productivity__content">
+        {targetRate != null && (
+          <div className="task-productivity__row">
+            <span className="task-productivity__label section-heading">TARGET</span>
+            <span className="task-productivity__value">
+              {formatProductivity(targetRate, unit)}
+            </span>
+          </div>
+        )}
+
         {requiredRate != null && (
           <div className="task-productivity__row">
             <span className="task-productivity__label section-heading">REQUIRED</span>
@@ -84,8 +102,8 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
           </div>
         )}
 
-        {requiredRate != null && actualRate != null && (
-          <ProductivityComparison required={requiredRate} actual={actualRate} />
+        {comparisonRate != null && actualRate != null && (
+          <ProductivityComparison required={comparisonRate} actual={actualRate} />
         )}
       </div>
     </ExpandableSection>
