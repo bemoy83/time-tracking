@@ -11,7 +11,7 @@
 }
 
 .section-heading--blocked {
-  color: var(--color-recording);
+  color: var(--color-amber);
 }
 
 .section-heading--completed {

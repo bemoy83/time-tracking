@@ -30,7 +30,11 @@
   }
 
   .task-row--blocked {
-    background: rgba(245, 158, 11, 0.1);
+    background: #1e1e1e;
+  }
+
+  .task-row--blocked:hover {
+    background: #252525;
   }
 
   .today-view__task-list {

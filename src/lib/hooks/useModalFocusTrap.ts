@@ -50,32 +50,41 @@ export function useModalFocusTrap(
   }, [isOpen, onClose]);
 
   // Prevent body scroll when open (iOS-safe: fixed-position lock with scrollY restore)
+  // Deferred by one frame so autoFocus keyboard activation isn't suppressed by
+  // the fixed-position body change happening in the same render cycle.
   useEffect(() => {
     if (!isOpen) return;
 
     const scrollY = window.scrollY;
     const { body } = document;
-    const prevStyles = {
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      overflow: body.style.overflow,
-    };
+    let prevStyles: Record<string, string> | null = null;
 
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.overflow = 'hidden';
+    const lockId = requestAnimationFrame(() => {
+      prevStyles = {
+        position: body.style.position,
+        top: body.style.top,
+        left: body.style.left,
+        right: body.style.right,
+        overflow: body.style.overflow,
+      };
+
+      body.style.position = 'fixed';
+      body.style.top = `-${scrollY}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.overflow = 'hidden';
+    });
 
     return () => {
-      body.style.position = prevStyles.position;
-      body.style.top = prevStyles.top;
-      body.style.left = prevStyles.left;
-      body.style.right = prevStyles.right;
-      body.style.overflow = prevStyles.overflow;
-      window.scrollTo(0, scrollY);
+      cancelAnimationFrame(lockId);
+      if (prevStyles) {
+        body.style.position = prevStyles.position;
+        body.style.top = prevStyles.top;
+        body.style.left = prevStyles.left;
+        body.style.right = prevStyles.right;
+        body.style.overflow = prevStyles.overflow;
+        window.scrollTo(0, scrollY);
+      }
     };
   }, [isOpen]);
 

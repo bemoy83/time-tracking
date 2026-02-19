@@ -27,7 +27,7 @@ import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
-import { BlockedIcon } from '../components/icons';
+import { WarningIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 
@@ -208,7 +208,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       {blockedTasks.length > 0 && (
         <section className="today-view__section today-view__section--blocked">
           <h2 className="today-view__section-title section-heading section-heading--blocked">
-            <BlockedIcon className="today-view__icon" />
+            <WarningIcon className="today-view__icon" />
             Blocked
             <CountBadge count={blockedTasks.length} variant="muted" />
           </h2>

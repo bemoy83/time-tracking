@@ -52,7 +52,7 @@ export function ActionSheet({ isOpen, onClose, title, children }: ActionSheetPro
 
     let rafId: number | null = null;
     const onViewportChange = () => {
-      if (rafId !== null) return;
+      if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         rafId = null;
         syncViewport();

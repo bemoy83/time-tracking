@@ -15,7 +15,7 @@ import { useTimerStore } from '../lib/stores/timer-store';
 import { pluralize } from '../lib/utils/pluralize';
 import {
   CheckIcon,
-  BlockedIcon,
+  WarningIcon,
   ChevronIcon,
   ExpandChevronIcon,
   ClockIcon,
@@ -73,7 +73,6 @@ export function TaskRow({
       {/* Status indicator */}
       <div className="task-row__status" aria-hidden="true">
         {isTimerActive && <span className="task-item__recording-dot" />}
-        {isBlocked && <BlockedIcon className="task-row__icon task-row__icon--blocked" />}
         {isCompleted && <CheckIcon className="task-row__icon task-row__icon--check" />}
         {!isTimerActive && !isBlocked && !isCompleted && (
           <span className="task-row__status-dot" />
@@ -82,11 +81,17 @@ export function TaskRow({
 
       {/* Task content */}
       <div className="task-row__content">
-        <span className="task-row__title">{task.title}</span>
+        <div className="task-row__title-row">
+          <span className="task-row__title">{task.title}</span>
+          {isBlocked && (
+            <span className="task-row__blocked-chip">
+              <WarningIcon className="task-row__blocked-chip-icon" />
+              Blocked
+            </span>
+          )}
+        </div>
         {isBlocked && task.blockedReason && (
-          <span className="task-row__blocked-reason">
-            {task.blockedReason}
-          </span>
+          <span className="task-row__blocked-reason">{task.blockedReason}</span>
         )}
         {!isSubtask && subtaskCount > 0 && (
           <span className="task-row__subtask-count">
