@@ -8,7 +8,7 @@ import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate } fr
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -244,6 +244,21 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               const t = task as unknown as Record<string, unknown>;
               if (t.targetProductivity === undefined) {
                 t.targetProductivity = null;
+                taskStore.put(task);
+              }
+            });
+          });
+        }
+
+        // Version 12: Add buildPhase and workCategory fields to tasks
+        if (oldVersion < 12 && oldVersion >= 1) {
+          const taskStore = transaction.objectStore('tasks');
+          taskStore.getAll().then((tasks) => {
+            tasks.forEach((task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (t.buildPhase === undefined) {
+                t.buildPhase = null;
+                t.workCategory = null;
                 taskStore.put(task);
               }
             });

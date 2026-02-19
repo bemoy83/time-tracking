@@ -119,6 +119,8 @@ export interface Task {
   workUnit: WorkUnit | null; // e.g. 'm2'
   defaultWorkers: number | null; // Expected crew count; null = use 1
   targetProductivity: number | null; // units/person-hr from template
+  buildPhase: BuildPhase | null; // from template, read-only
+  workCategory: WorkCategory | null; // from template, read-only
   createdAt: string;
   updatedAt: string;
 }

@@ -16,7 +16,7 @@ import {
   deleteTask as dbDeleteTask,
   getAllActiveTimers,
 } from '../db';
-import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs, WorkUnit } from '../types';
+import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs, WorkUnit, BuildPhase, WorkCategory } from '../types';
 import { stopTimer } from './timer-store';
 
 // ============================================================
@@ -111,6 +111,8 @@ export interface CreateTaskInput {
   workUnit?: WorkUnit | null;
   defaultWorkers?: number | null;
   targetProductivity?: number | null;
+  buildPhase?: BuildPhase | null;
+  workCategory?: WorkCategory | null;
 }
 
 /**
@@ -130,6 +132,8 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     workUnit: input.workUnit ?? null,
     defaultWorkers: input.defaultWorkers ?? null,
     targetProductivity: input.targetProductivity ?? null,
+    buildPhase: input.buildPhase ?? null,
+    workCategory: input.workCategory ?? null,
     createdAt: now,
     updatedAt: now,
   };

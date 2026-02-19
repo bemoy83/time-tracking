@@ -85,6 +85,8 @@ export function CreateTaskSheet({
         workUnit: showWork && !isNaN(parsedQty) && parsedQty > 0 ? unit : undefined,
         defaultWorkers: showWorkers && workers > 1 ? workers : undefined,
         targetProductivity: template?.targetProductivity ?? undefined,
+        buildPhase: template?.buildPhase ?? undefined,
+        workCategory: template?.workCategory ?? undefined,
       });
       onClose();
       onCreated?.();
