@@ -39,6 +39,19 @@
   color: var(--color-text-muted);
 }
 
+/* Remove indent from empty status column — blocked rows have no status dot */
+.task-row--blocked .task-row__status {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.task-row--blocked .task-row__content {
+  margin-left: calc(-1 * var(--space-sm));
+}
+
 .task-row--completed {
   opacity: 0.6;
 }

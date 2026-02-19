@@ -94,3 +94,34 @@
 .settings-view__toggle:checked::after {
   transform: translateX(20px);
 }
+
+/* Section header with title + action button */
+.settings-view__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Empty state text */
+.settings-view__empty {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  padding: var(--space-md);
+  text-align: center;
+  margin: 0;
+}
+
+/* Template list */
+.settings-view__template-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Template row info (two-line) */
+.settings-view__template-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}

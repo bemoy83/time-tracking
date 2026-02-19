@@ -23,6 +23,44 @@ export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
   orders: 'orders',
 };
 
+// Build phases for task templates
+export type BuildPhase = 'build-up' | 'tear-down';
+
+export const BUILD_PHASE_LABELS: Record<BuildPhase, string> = {
+  'build-up': 'Build-up',
+  'tear-down': 'Tear-down',
+};
+
+export const BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
+
+// Work categories for task templates
+export type WorkCategory = 'carpet-tiles' | 'partition-walls' | 'furniture';
+
+export const WORK_CATEGORY_LABELS: Record<WorkCategory, string> = {
+  'carpet-tiles': 'Carpet Tiles',
+  'partition-walls': 'Partition Walls',
+  'furniture': 'Furniture',
+};
+
+export const WORK_CATEGORIES: WorkCategory[] = ['carpet-tiles', 'partition-walls', 'furniture'];
+
+/**
+ * Reusable task template for recurring tasks.
+ */
+export interface TaskTemplate {
+  id: string;
+  title: string;
+  workUnit: WorkUnit;
+  workQuantity: number | null;
+  estimatedMinutes: number | null;
+  defaultWorkers: number | null;
+  targetProductivity: number | null; // units/person-hr
+  buildPhase: BuildPhase;
+  workCategory: WorkCategory;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {
   const label = WORK_UNIT_LABELS[unit] ?? unit;
   return `${quantity} ${label}`;

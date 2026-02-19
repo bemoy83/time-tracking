@@ -1,18 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '../lib/stores/task-store';
+import { useTemplateStore } from '../lib/stores/template-store';
+import { deleteTemplate } from '../lib/stores/template-store';
 import { purgeTimeEntries, resetAllData } from '../lib/stores/purge-store';
 import { getParallelSubtaskTimers, setParallelSubtaskTimers } from '../lib/stores/timer-store';
 import { getAllTimeEntries } from '../lib/db';
+import {
+  TaskTemplate,
+  WORK_UNIT_LABELS,
+  WORK_CATEGORY_LABELS,
+  BUILD_PHASE_LABELS,
+} from '../lib/types';
 import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
+import { TemplateFormSheet } from '../components/TemplateFormSheet';
+import { DeleteTemplateConfirm } from '../components/DeleteTemplateConfirm';
 import { pluralize } from '../lib/utils/pluralize';
 
 export function SettingsView() {
   const { tasks, projects } = useTaskStore();
+  const { templates } = useTemplateStore();
   const [entryCount, setEntryCount] = useState(0);
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
+
+  // Template form state
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<TaskTemplate | null>(null);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -28,6 +44,29 @@ export function SettingsView() {
     await resetAllData();
     setEntryCount(0);
     setShowResetAll(false);
+  };
+
+  const handleEditTemplate = (template: TaskTemplate) => {
+    setEditingTemplate(template);
+    setShowTemplateForm(true);
+  };
+
+  const handleAddTemplate = () => {
+    setEditingTemplate(null);
+    setShowTemplateForm(true);
+  };
+
+  const handleCloseTemplateForm = () => {
+    setShowTemplateForm(false);
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!deletingTemplate) return;
+    await deleteTemplate(deletingTemplate.id);
+    setDeletingTemplate(null);
+    setShowTemplateForm(false);
+    setEditingTemplate(null);
   };
 
   return (
@@ -52,6 +91,40 @@ export function SettingsView() {
             }}
           />
         </label>
+      </section>
+
+      <section className="settings-view__section">
+        <div className="settings-view__section-header">
+          <h2 className="settings-view__section-title section-heading">Templates</h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={handleAddTemplate}
+          >
+            + Add
+          </button>
+        </div>
+
+        {templates.length === 0 ? (
+          <p className="settings-view__empty">No templates yet. Add one to speed up task creation.</p>
+        ) : (
+          <div className="settings-view__template-list">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                className="settings-view__row"
+                onClick={() => handleEditTemplate(t)}
+              >
+                <div className="settings-view__template-info">
+                  <span className="settings-view__row-label">{t.title}</span>
+                  <span className="settings-view__row-detail">
+                    {WORK_CATEGORY_LABELS[t.workCategory]} · {BUILD_PHASE_LABELS[t.buildPhase]} · {WORK_UNIT_LABELS[t.workUnit]}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="settings-view__section">
@@ -94,6 +167,20 @@ export function SettingsView() {
         entryCount={entryCount}
         onConfirm={handleResetAll}
         onCancel={() => setShowResetAll(false)}
+      />
+
+      <TemplateFormSheet
+        isOpen={showTemplateForm}
+        onClose={handleCloseTemplateForm}
+        template={editingTemplate}
+        onDelete={editingTemplate ? () => setDeletingTemplate(editingTemplate) : undefined}
+      />
+
+      <DeleteTemplateConfirm
+        isOpen={!!deletingTemplate}
+        templateTitle={deletingTemplate?.title ?? ''}
+        onConfirm={handleDeleteTemplate}
+        onCancel={() => setDeletingTemplate(null)}
       />
     </div>
   );

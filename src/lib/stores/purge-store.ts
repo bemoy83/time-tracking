@@ -7,11 +7,13 @@ import {
   deleteAllTimeEntries,
   deleteAllTasks,
   deleteAllProjects,
+  deleteAllTaskTemplates,
   getAllActiveTimers,
   removeActiveTimer,
 } from '../db';
 import { getPendingCount } from '../sync/sync-queue';
 import { setState as setTaskState } from './task-store';
+import { resetTemplateState } from './template-store';
 
 /**
  * Delete all time entries and refresh sync count.
@@ -34,8 +36,10 @@ export async function resetAllData(): Promise<void> {
   await deleteAllTimeEntries();
   await deleteAllTasks();
   await deleteAllProjects();
+  await deleteAllTaskTemplates();
 
   // Refresh in-memory stores
   setTaskState({ tasks: [], projects: [] });
+  resetTemplateState();
   await getPendingCount();
 }

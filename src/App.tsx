@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
+import { initializeTemplateStore } from './lib/stores/template-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { Task, Project } from './lib/types';
 // import { NetworkStatus } from './components/NetworkStatus';
@@ -33,6 +34,7 @@ function App() {
     Promise.all([
       initializeTimerStore(),
       initializeTaskStore(),
+      initializeTemplateStore(),
       initializeSyncQueue(),
     ]).then(() => setInitialized(true));
   }, []);
