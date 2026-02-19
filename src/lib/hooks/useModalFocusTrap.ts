@@ -50,24 +50,37 @@ export function useModalFocusTrap(
   }, [isOpen, onClose]);
 
   // Prevent body scroll when open.
-  // Uses overflow hidden on html+body instead of position:fixed to avoid
-  // iOS keyboard-induced layout shifts on the background content.
-  // The ActionSheet's own overscroll-behavior:contain + backdrop touch handler
-  // prevents scroll-through on iOS.
+  // iOS-safe pattern: fixed position with scrollY restore to lock background
+  // more reliably than overflow:hidden on iOS. Restore scroll position on close.
   useEffect(() => {
     if (!isOpen) return;
 
     const html = document.documentElement;
     const { body } = document;
+    const scrollY = window.scrollY;
+
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
+    const prevBodyPosition = body.style.position;
+    const prevBodyTop = body.style.top;
+    const prevBodyLeft = body.style.left;
+    const prevBodyRight = body.style.right;
 
     html.style.overflow = 'hidden';
     body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
 
     return () => {
       html.style.overflow = prevHtmlOverflow;
       body.style.overflow = prevBodyOverflow;
+      body.style.position = prevBodyPosition;
+      body.style.top = prevBodyTop;
+      body.style.left = prevBodyLeft;
+      body.style.right = prevBodyRight;
+      window.scrollTo(0, scrollY);
     };
   }, [isOpen]);
 

@@ -96,9 +96,8 @@ export function CreateTaskSheet({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onFocus={(e) => {
-            e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
           }}
-          autoFocus
         />
 
         {/* Work Quantity */}

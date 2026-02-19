@@ -1,64 +1,78 @@
 ---
 name: ios-keyboard-actionsheet-fix
-overview: Rework ActionSheet keyboard handling on iOS by anchoring to the visual viewport (not just changing max-height), and harden modal scroll-lock behavior so focused inputs remain visible.
+overview: Rework ActionSheet keyboard handling on iOS by (1) separating sheet open from keyboard call, and (2) anchoring sheet to the visual viewport. User taps input to summon keyboard; sheet opens first without auto-focus.
 todos:
-  - id: audit-actionsheet-viewport-logic
-    content: Refactor ActionSheet runtime viewport math to handle visualViewport height and offset with RAF throttling + cleanup
+  - id: separate-sheet-and-keyboard
+    content: Remove auto-focus from CreateTaskSheet title input so sheet opens first; user taps to summon keyboard
     status: pending
-  - id: stabilize-actionsheet-css
-    content: Update action-sheet CSS anchoring/scroll behavior for iOS keyboard resilience
+  - id: anchor-sheet-to-visual-viewport
+    content: Change sheet from position fixed to absolute inside backdrop; backdrop already sized to visual viewport
     status: pending
-  - id: upgrade-modal-scroll-lock
-    content: Implement iOS-safe body scroll lock in shared modal focus-trap hook
+  - id: harden-viewport-sync
+    content: Add fallback for unreliable visualViewport.offsetTop on iOS; ensure cleanup on close
+    status: pending
+  - id: optional-scroll-lock
+    content: (Optional) Upgrade modal scroll lock to iOS-safe pattern if needed
     status: pending
   - id: cross-sheet-regression-check
-    content: Verify New Task and other ActionSheet consumers under keyboard open/close cycles
+    content: Verify CreateTaskSheet and other ActionSheet consumers under keyboard open/close cycles
     status: pending
 isProject: false
 ---
 
 # Stabilize ActionSheet With iOS Keyboard
 
-## What appears to be failing now
+## Strategy: Separate Sheet Open From Keyboard Call
 
-- Current code in `[/Users/bemoy/Developer/time-tracking/src/components/ActionSheet.tsx](/Users/bemoy/Developer/time-tracking/src/components/ActionSheet.tsx)` only updates `maxHeight` from `visualViewport.height`.
-- It does **not** account for `visualViewport.offsetTop/offsetLeft`, so when iOS shifts the visual viewport during keyboard open, sheet/backdrop can still be visually displaced.
-- The sheet is `position: absolute` inside a fixed backdrop in `[/Users/bemoy/Developer/time-tracking/src/styles/components/action-sheet.css](/Users/bemoy/Developer/time-tracking/src/styles/components/action-sheet.css)`, which is fragile under iOS keyboard viewport shifts.
-- Scroll lock in `[/Users/bemoy/Developer/time-tracking/src/lib/hooks/useModalFocusTrap.ts](/Users/bemoy/Developer/time-tracking/src/lib/hooks/useModalFocusTrap.ts)` uses `body { overflow: hidden; }` only; on iOS this often still allows viewport/position oddities when inputs focus.
+**Phase 1 (primary):** Decouple the action sheet open from the keyboard. The sheet opens and renders fully; the user manually taps the title input to focus it and summon the keyboard. This avoids:
+- The race between sheet animation and keyboard appearance
+- Complex viewport handling during the opening animation
 
-## Revised strategy
+**Phase 2:** When the user does tap and the keyboard appears, anchor the sheet to the visual viewport so it stays above the keyboard.
 
-- Anchor overlay behavior to **visual viewport geometry** (height + offset), not layout viewport assumptions.
-- Keep ActionSheet independently scrollable and prevent body/background scroll using iOS-safe lock behavior.
-- Keep the existing viewport meta fallback in `[/Users/bemoy/Developer/time-tracking/index.html](/Users/bemoy/Developer/time-tracking/index.html)`, but treat it as non-authoritative for iOS.
+**Constraint:** The title input must be visible without scrolling when the sheet opens (it is, as the first form field).
+
+---
+
+## Current Problems
+
+- `CreateTaskSheet` uses `autoFocus` on the title input, so the keyboard opens immediately when the sheet opens. This creates a race with the sheet animation and viewport changes.
+- The sheet uses `position: fixed; bottom: 0`, which anchors to the layout viewport. With `interactive-widget=overlays-content`, the keyboard overlays content and the layout viewport does not shrink—so the sheet sits behind the keyboard.
+- `ActionSheet` syncs backdrop `top/height` to visual viewport, but the sheet itself remains layout-viewport-anchored.
+
+---
 
 ## Implementation steps
 
-1. Refactor `ActionSheet` viewport handling:
-  - In `[/Users/bemoy/Developer/time-tracking/src/components/ActionSheet.tsx](/Users/bemoy/Developer/time-tracking/src/components/ActionSheet.tsx)`, compute and apply runtime styles from `visualViewport`:
-    - `maxHeight` based on `visualViewport.height`
-    - vertical offset compensation using `visualViewport.offsetTop`
-    - optional backdrop `top/height` sync to visual viewport
-  - Guard for missing `window.visualViewport`.
-  - Use `requestAnimationFrame` throttling for `resize/scroll` handlers.
-  - Cleanly reset all inline styles on close/unmount.
-2. Make sheet positioning robust in CSS:
-  - In `[/Users/bemoy/Developer/time-tracking/src/styles/components/action-sheet.css](/Users/bemoy/Developer/time-tracking/src/styles/components/action-sheet.css)`, switch sheet anchoring from `absolute`-inside-backdrop to viewport-stable positioning (`fixed`), while preserving width/max-width and animations.
-  - Keep `overflow-y: auto`, add iOS-friendly scrolling/overscroll containment for the sheet.
-3. Harden iOS scroll lock behavior:
-  - Update `[/Users/bemoy/Developer/time-tracking/src/lib/hooks/useModalFocusTrap.ts](/Users/bemoy/Developer/time-tracking/src/lib/hooks/useModalFocusTrap.ts)` from plain `overflow: hidden` to fixed-position lock with stored scrollY restore (iOS-safe pattern), while preserving current focus-trap behavior.
-  - Ensure this does not regress other modals using the same hook.
-4. Keep input focus behavior additive, not primary:
-  - Retain title-input `scrollIntoView` in `[/Users/bemoy/Developer/time-tracking/src/components/CreateTaskSheet.tsx](/Users/bemoy/Developer/time-tracking/src/components/CreateTaskSheet.tsx)` as a fallback only; main stability comes from viewport anchoring.
-5. Validate behavior on real iOS keyboard flows:
-  - Open New Task sheet, focus title input, verify top of sheet and input remain visible.
-  - Dismiss keyboard and reopen to confirm no stuck offset state.
-  - Verify background page does not scroll while sheet is open.
+### 1. Separate sheet open from keyboard call
+
+- In [CreateTaskSheet.tsx](src/components/CreateTaskSheet.tsx): remove `autoFocus` from the title input.
+- User flow: tap "+" or "Add task" → sheet opens → user taps title input → keyboard appears.
+- The title input remains at the top of the sheet, visible without scrolling.
+
+### 2. Anchor sheet to visual viewport
+
+- In [action-sheet.css](src/styles/components/action-sheet.css): change the sheet from `position: fixed` to `position: absolute`.
+- The backdrop is already `position: fixed` and is sized to the visible viewport by `syncViewport()` (top, height). With `position: absolute`, the sheet anchors to the backdrop; its `bottom: 0` aligns with the bottom of the visible area (above the keyboard).
+
+### 3. Harden viewport sync
+
+- In [ActionSheet.tsx](src/components/ActionSheet.tsx): add fallback when `visualViewport.offsetTop` is 0 or unreliable (common on iOS). Keep RAF throttling and full cleanup on close.
+
+### 4. (Optional) Scroll lock
+
+- In [useModalFocusTrap.ts](src/lib/hooks/useModalFocusTrap.ts): consider iOS-safe scroll lock (fixed + scrollY restore) if `overflow: hidden` proves insufficient. Validate against other modal consumers.
+
+### 5. Input focus fallback
+
+- Keep `scrollIntoView` in CreateTaskSheet `onFocus` as a fallback when the user taps and the keyboard opens. Use `block: 'center'` if desired.
+
+---
 
 ## Acceptance criteria
 
-- Focusing title input on iOS no longer pushes ActionSheet content off-screen.
-- Keyboard overlays lower sheet area while title input remains visible.
-- Sheet remains scrollable internally; background remains locked.
+- Sheet opens without keyboard; title input is visible without scrolling.
+- User taps input → keyboard appears; sheet and input remain above keyboard.
+- Dismiss keyboard → sheet and viewport return to normal.
 - No regressions in other ActionSheet usages (`TaskNotes`, `TaskWorkQuantity`, `TaskPersonnel`, `TaskTimeTracking`).
 

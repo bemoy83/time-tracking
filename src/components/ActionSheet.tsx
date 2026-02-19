@@ -32,8 +32,9 @@ export function ActionSheet({ isOpen, onClose, title, children }: ActionSheetPro
     const vv = window.visualViewport;
     if (!sheet || !backdrop || !vv) return;
 
-    const offsetTop = vv.offsetTop;
     const vpHeight = vv.height;
+    // offsetTop can be 0 or unreliable on iOS (WebKit bug 237851)
+    const offsetTop = vv.offsetTop;
 
     // Position backdrop to cover only the visible viewport
     backdrop.style.top = `${offsetTop}px`;
