@@ -44,6 +44,20 @@ export function ActionSheet({ isOpen, onClose, title, children }: ActionSheetPro
     sheet.style.maxHeight = `${maxH}px`;
   }, [dialogRef]);
 
+  // Block touchmove on backdrop to prevent iOS scroll-through to body
+  useEffect(() => {
+    const backdrop = backdropRef.current;
+    if (!isOpen || !backdrop) return;
+
+    const blockTouch = (e: TouchEvent) => {
+      // Allow scrolling inside the sheet itself
+      if (dialogRef.current?.contains(e.target as Node)) return;
+      e.preventDefault();
+    };
+    backdrop.addEventListener('touchmove', blockTouch, { passive: false });
+    return () => backdrop.removeEventListener('touchmove', blockTouch);
+  }, [isOpen, dialogRef]);
+
   useEffect(() => {
     if (!isOpen || !dialogRef.current) return;
 
