@@ -58,6 +58,11 @@
   color: var(--color-text);
 }
 
+/* Pill-shaped inputs inside action sheets */
+.action-sheet .input {
+  border-radius: 9999px;
+}
+
 /* Shared action bar for all sheets: [destructive] ... [Cancel] [Save] */
 .action-sheet__actions {
   display: flex;
@@ -72,5 +77,10 @@
 .action-sheet__actions-right {
   display: flex;
   gap: var(--space-sm);
-  margin-left: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.action-sheet__actions-right .btn {
+  flex: 1;
 }

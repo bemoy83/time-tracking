@@ -79,15 +79,9 @@
 .task-work-quantity__input-wrap {
   display: flex;
   align-items: center;
-    justify-content: center;
-    gap: var(--space-xs);
-    border-bottom: 2px solid var(--color-border);
-    padding-bottom: var(--space-sm);
-    transition: border-color 0.15s;
-  }
-  
-  .task-work-quantity__input-wrap:focus-within {
-    border-bottom-color: var(--color-primary);
+  justify-content: center;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-sm);
 }
 
 .task-work-quantity__number-input {
@@ -115,11 +109,11 @@
   }
   
   .task-work-quantity__input-unit {
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    flex-shrink: 0;
-  }
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
   
   /* iOS-style segmented control */
   .task-work-quantity__unit-pills {

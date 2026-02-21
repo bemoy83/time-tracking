@@ -72,6 +72,12 @@
   margin-bottom: var(--space-sm);
 }
 
+/* Stepper buttons match StepperPill sizing (54×48) for centered chevrons */
+.task-personnel__picker .entry-modal__stepper-btn {
+  width: 54px;
+  min-height: 48px;
+}
+
 .task-personnel__big-value {
   font-size: 3.5rem;
   line-height: 1;

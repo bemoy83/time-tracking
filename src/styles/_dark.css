@@ -65,6 +65,14 @@
     color: var(--color-text);
   }
 
+  select.input {
+    background-color: #333;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-md) center;
+    background-size: 20px 20px;
+  }
+
   /* --- Task Time Tracking --- */
   /* (outer background now provided by .expandable-section dark override) */
 

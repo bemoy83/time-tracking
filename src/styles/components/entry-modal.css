@@ -104,6 +104,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Duration grid: compact pill-sized buttons (match StepperPill) */
+.entry-modal__duration-col .entry-modal__stepper-btn {
+  width: 54px;
+  min-height: 48px;
+}
+
 .entry-modal__stepper-btn:hover:not(:disabled) {
   opacity: 0.65;
 }
@@ -121,6 +127,8 @@
 .entry-modal__stepper-chevron {
   width: 28px;
   height: 28px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .entry-modal__duration-input {
