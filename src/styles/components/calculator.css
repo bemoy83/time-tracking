@@ -36,3 +36,96 @@
   font-size: var(--font-small);
   color: var(--color-text-muted);
 }
+
+.calculator__advisory {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Provenance breakdown */
+.calculator__provenance {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.calculator__provenance-item {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.calculator__provenance-warning {
+  color: #d97706;
+  font-weight: 500;
+}
+
+/* Side-by-side comparison */
+.calculator__compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.calculator__compare-label {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.calculator__compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.calculator__compare-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.calculator__compare-card--active {
+  border-color: var(--color-primary);
+}
+
+.calculator__compare-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.calculator__compare-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.calculator__compare-card-rate {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Save to task */
+.calculator__save-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.calculator__save-select {
+  flex: 1;
+  min-width: 0;
+}

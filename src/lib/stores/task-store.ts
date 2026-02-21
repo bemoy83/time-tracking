@@ -136,6 +136,8 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     workCategory: input.workCategory ?? null,
     createdAt: now,
     updatedAt: now,
+    archivedAt: null,
+    archiveVersion: null,
   };
 
   await dbAddTask(task);

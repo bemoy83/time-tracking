@@ -135,3 +135,64 @@
   font-size: var(--font-small);
   color: var(--color-text-muted);
 }
+
+/* KPI confidence badge */
+.kpi-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.kpi-badge--high {
+  background: rgba(22, 163, 74, 0.15);
+  color: #16a34a;
+}
+
+.kpi-badge--medium {
+  background: rgba(217, 119, 6, 0.15);
+  color: #d97706;
+}
+
+.kpi-badge--low {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+.kpi-badge--insufficient {
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+}
+
+/* KPI trend indicators */
+.kpi-trend {
+  font-weight: 600;
+}
+
+.kpi-trend--improving {
+  color: #16a34a;
+}
+
+.kpi-trend--stable {
+  color: #6b7280;
+}
+
+.kpi-trend--declining {
+  color: #dc2626;
+}
+
+/* Inline select for settings rows */
+.settings-view__select {
+  font-size: var(--font-small);
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  flex-shrink: 0;
+}

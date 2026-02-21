@@ -123,6 +123,10 @@ export interface Task {
   workCategory: WorkCategory | null; // from template, read-only
   createdAt: string;
   updatedAt: string;
+  /** ISO 8601 UTC timestamp when task was archived. null = not yet archived. */
+  archivedAt: string | null;
+  /** Engine version used when archiving (e.g. 'v1'). null = not yet archived. */
+  archiveVersion: string | null;
 }
 
 /**

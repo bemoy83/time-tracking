@@ -20,6 +20,8 @@ import { AttributionQualitySection } from '../components/AttributionQualitySecti
 import { recomputeAttribution } from '../lib/attribution/cache';
 import { CalculatorSheet } from '../components/CalculatorSheet';
 import { pluralize } from '../lib/utils/pluralize';
+import { getAttributionPolicy, setAttributionPolicy } from '../lib/stores/attribution-settings';
+import type { AttributionPolicy } from '../lib/types';
 
 export function SettingsView() {
   const { tasks, projects } = useTaskStore();
@@ -31,6 +33,12 @@ export function SettingsView() {
 
   // Calculator state
   const [showCalculator, setShowCalculator] = useState(false);
+
+  // Attribution refresh key — bumped by Recompute to trigger re-render
+  const [attributionKey, setAttributionKey] = useState(0);
+
+  // Attribution policy
+  const [policy, setPolicy] = useState<AttributionPolicy>(getAttributionPolicy);
 
   // Template form state
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -154,12 +162,32 @@ export function SettingsView() {
           <button
             type="button"
             className="btn btn--primary btn--sm"
-            onClick={() => recomputeAttribution()}
+            onClick={async () => {
+              await recomputeAttribution();
+              setAttributionKey((k) => k + 1);
+            }}
           >
             Recompute
           </button>
         </div>
-        <AttributionQualitySection tasks={tasks} />
+        <label className="settings-view__row">
+          <span className="settings-view__row-label">Policy</span>
+          <select
+            className="settings-view__select"
+            value={policy}
+            onChange={(e) => {
+              const next = e.target.value as AttributionPolicy;
+              setPolicy(next);
+              setAttributionPolicy(next);
+              setAttributionKey((k) => k + 1);
+            }}
+          >
+            <option value="soft_allow_flag">Suggest only (default)</option>
+            <option value="strict_block">Strict block</option>
+            <option value="soft_allow_pick_nearest">Auto-apply nearest</option>
+          </select>
+        </label>
+        <AttributionQualitySection key={attributionKey} tasks={tasks} policy={policy} />
       </section>
 
       <section className="settings-view__section">
