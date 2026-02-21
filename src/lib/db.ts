@@ -5,10 +5,11 @@
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate, AttributionSnapshot } from './types';
+import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 14;
+const DB_VERSION = 15;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -71,6 +72,11 @@ interface TimeTrackingDBSchema extends DBSchema {
   attributionSnapshots: {
     key: string;
     value: AttributionSnapshot;
+  };
+  // Planning workspace plans
+  plans: {
+    key: string;
+    value: Plan;
   };
 }
 
@@ -290,6 +296,11 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               }
             });
           });
+        }
+
+        // Version 15: Add plans store for planning workspace
+        if (oldVersion < 15) {
+          db.createObjectStore('plans', { keyPath: 'id' });
         }
       },
     });
@@ -718,4 +729,34 @@ export async function clearAttributionSnapshots(): Promise<void> {
   const tx = db.transaction('attributionSnapshots', 'readwrite');
   await tx.store.clear();
   await tx.done;
+}
+
+// ============================================================
+// Plans (Planning Workspace)
+// ============================================================
+
+export async function addPlan(plan: Plan): Promise<void> {
+  const db = await getDB();
+  await db.add('plans', plan);
+}
+
+export async function getPlan(id: string): Promise<Plan | null> {
+  const db = await getDB();
+  const plan = await db.get('plans', id);
+  return plan ?? null;
+}
+
+export async function getAllPlans(): Promise<Plan[]> {
+  const db = await getDB();
+  return db.getAll('plans');
+}
+
+export async function updatePlan(plan: Plan): Promise<void> {
+  const db = await getDB();
+  await db.put('plans', plan);
+}
+
+export async function deletePlan(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('plans', id);
 }
