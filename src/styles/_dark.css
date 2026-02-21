@@ -190,9 +190,24 @@
   }
 
   /* --- Settings --- */
-  .settings-view__row {
+  .settings-view__card {
     background: #252525;
-    border-color: #444;
+  }
+
+  button.settings-view__row:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  button.settings-view__row:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .kpi-badge--medium {
+    background: rgba(217, 119, 6, 0.2);
+  }
+
+  .kpi-badge--insufficient {
+    background: rgba(160, 160, 160, 0.15);
   }
 
   /* --- Template Picker --- */

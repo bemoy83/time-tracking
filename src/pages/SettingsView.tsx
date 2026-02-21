@@ -86,135 +86,153 @@ export function SettingsView() {
 
   return (
     <div className="settings-view">
-      <section className="settings-view__section">
-        <h2 className="settings-view__section-title section-heading">Timers</h2>
+      <h1 className="settings-view__title">Settings</h1>
 
-        <label className="settings-view__row settings-view__row--toggle">
-          <div className="settings-view__toggle-text">
-            <span className="settings-view__row-label">Parallel subtask timers</span>
-            <span className="settings-view__row-detail">
-              Allow multiple subtasks to run timers simultaneously
-            </span>
+      {/* Timers */}
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Timers</h2>
           </div>
-          <input
-            type="checkbox"
-            className="settings-view__toggle"
-            checked={parallelTimers}
-            onChange={(e) => {
-              setParallelTimers(e.target.checked);
-              setParallelSubtaskTimers(e.target.checked);
-            }}
-          />
-        </label>
+
+          <label className="settings-view__row settings-view__row--toggle">
+            <div className="settings-view__toggle-text">
+              <span className="settings-view__row-label">Parallel subtask timers</span>
+              <span className="settings-view__row-detail">
+                Allow multiple subtasks to run timers simultaneously
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={parallelTimers}
+              onChange={(e) => {
+                setParallelTimers(e.target.checked);
+                setParallelSubtaskTimers(e.target.checked);
+              }}
+            />
+          </label>
+        </div>
       </section>
 
+      {/* Templates */}
       <section className="settings-view__section">
-        <div className="settings-view__section-header">
-          <h2 className="settings-view__section-title section-heading">Templates</h2>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={handleAddTemplate}
-          >
-            + Add
-          </button>
-        </div>
-
-        {templates.length === 0 ? (
-          <p className="settings-view__empty">No templates yet. Add one to speed up task creation.</p>
-        ) : (
-          <div className="settings-view__template-list">
-            {templates.map((t) => (
-              <button
-                key={t.id}
-                className="settings-view__row"
-                onClick={() => handleEditTemplate(t)}
-              >
-                <div className="settings-view__template-info">
-                  <span className="settings-view__row-label">{t.title}</span>
-                  <span className="settings-view__row-detail">
-                    {WORK_CATEGORY_LABELS[t.workCategory]} · {BUILD_PHASE_LABELS[t.buildPhase]} · {WORK_UNIT_LABELS[t.workUnit]}
-                  </span>
-                </div>
-              </button>
-            ))}
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Templates</h2>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={handleAddTemplate}
+            >
+              + Add
+            </button>
           </div>
-        )}
+
+          {templates.length === 0 ? (
+            <p className="settings-view__empty">No templates yet. Add one to speed up task creation.</p>
+          ) : (
+            <div className="settings-view__template-list">
+              {templates.map((t) => (
+                <button
+                  key={t.id}
+                  className="settings-view__row"
+                  onClick={() => handleEditTemplate(t)}
+                >
+                  <div className="settings-view__template-info">
+                    <span className="settings-view__row-label">{t.title}</span>
+                    <span className="settings-view__row-detail">
+                      {WORK_CATEGORY_LABELS[t.workCategory]} · {BUILD_PHASE_LABELS[t.buildPhase]} · {WORK_UNIT_LABELS[t.workUnit]}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
+      {/* Productivity */}
       <section className="settings-view__section">
-        <div className="settings-view__section-header">
-          <h2 className="settings-view__section-title section-heading">Productivity</h2>
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Productivity</h2>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={() => setShowCalculator(true)}
+            >
+              Calculator
+            </button>
+          </div>
+          <KpiSection tasks={tasks} />
+        </div>
+      </section>
+
+      {/* Attribution Quality */}
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Attribution Quality</h2>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={async () => {
+                await recomputeAttribution();
+                setAttributionKey((k) => k + 1);
+              }}
+            >
+              Recompute
+            </button>
+          </div>
+          <label className="settings-view__row">
+            <span className="settings-view__row-label">Policy</span>
+            <select
+              className="input"
+              value={policy}
+              onChange={(e) => {
+                const next = e.target.value as AttributionPolicy;
+                setPolicy(next);
+                setAttributionPolicy(next);
+                setAttributionKey((k) => k + 1);
+              }}
+            >
+              <option value="soft_allow_flag">Suggest only (default)</option>
+              <option value="strict_block">Strict block</option>
+              <option value="soft_allow_pick_nearest">Auto-apply nearest</option>
+            </select>
+          </label>
+          <AttributionQualitySection key={attributionKey} tasks={tasks} policy={policy} />
+        </div>
+      </section>
+
+      {/* Data */}
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Data</h2>
+          </div>
+
           <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => setShowCalculator(true)}
+            className="settings-view__danger-link"
+            onClick={() => setShowPurgeEntries(true)}
+            disabled={entryCount === 0}
           >
-            Calculator
+            Clear time entries
+            {entryCount > 0 && (
+              <span className="settings-view__danger-meta">
+                ({pluralize(entryCount, 'entry', 'entries')})
+              </span>
+            )}
+          </button>
+
+          <button
+            className="settings-view__danger-link"
+            onClick={() => setShowResetAll(true)}
+          >
+            Reset all data
           </button>
         </div>
-        <KpiSection tasks={tasks} />
-      </section>
-
-      <section className="settings-view__section">
-        <div className="settings-view__section-header">
-          <h2 className="settings-view__section-title section-heading">Attribution Quality</h2>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={async () => {
-              await recomputeAttribution();
-              setAttributionKey((k) => k + 1);
-            }}
-          >
-            Recompute
-          </button>
-        </div>
-        <label className="settings-view__row">
-          <span className="settings-view__row-label">Policy</span>
-          <select
-            className="settings-view__select"
-            value={policy}
-            onChange={(e) => {
-              const next = e.target.value as AttributionPolicy;
-              setPolicy(next);
-              setAttributionPolicy(next);
-              setAttributionKey((k) => k + 1);
-            }}
-          >
-            <option value="soft_allow_flag">Suggest only (default)</option>
-            <option value="strict_block">Strict block</option>
-            <option value="soft_allow_pick_nearest">Auto-apply nearest</option>
-          </select>
-        </label>
-        <AttributionQualitySection key={attributionKey} tasks={tasks} policy={policy} />
-      </section>
-
-      <section className="settings-view__section">
-        <h2 className="settings-view__section-title section-heading">Data</h2>
-
-        <button
-          className="settings-view__row settings-view__row--danger"
-          onClick={() => setShowPurgeEntries(true)}
-          disabled={entryCount === 0}
-        >
-          <span className="settings-view__row-label">Clear time entries</span>
-          <span className="settings-view__row-detail">
-            {entryCount === 0
-              ? 'No time entries'
-              : pluralize(entryCount, 'entry', 'entries')}
-          </span>
-        </button>
-
-        <button
-          className="settings-view__row settings-view__row--danger"
-          onClick={() => setShowResetAll(true)}
-        >
-          <span className="settings-view__row-label">Reset all data</span>
-          <span className="settings-view__row-detail">
-            Tasks, projects, and time entries
-          </span>
-        </button>
       </section>
 
       <PurgeEntriesConfirm

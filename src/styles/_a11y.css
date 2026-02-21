@@ -45,7 +45,7 @@ input:focus-visible,
 button,
 a,
 [role="button"],
-input[type="checkbox"],
+input[type="checkbox"]:not(.settings-view__toggle),
 input[type="radio"] {
   min-height: 44px;
   min-width: 44px;

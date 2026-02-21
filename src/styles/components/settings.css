@@ -5,33 +5,87 @@
 .settings-view {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
+
+/* Page title */
+.settings-view__title {
+  font-size: var(--font-large);
+  font-weight: 700;
+  margin: 0 0 var(--space-xs);
+}
+
+/* ============================================================
+   Section — no longer uses its own gap; card handles spacing
+   ============================================================ */
 
 .settings-view__section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
 }
 
 .settings-view__section-title {
   margin: 0;
 }
 
+/* ============================================================
+   Card shell — mirrors .expandable-section
+   ============================================================ */
+
+.settings-view__card {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xs) var(--space-md) var(--space-md);
+}
+
+/* Card header — mirrors .expandable-section__toggle layout */
+.settings-view__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+}
+
+/* ============================================================
+   Rows — flat divider pattern inside cards
+   ============================================================ */
+
 .settings-view__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: var(--touch-min);
-  padding: var(--space-md);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  padding: var(--space-md) var(--space-sm);
+  margin: 0 calc(-1 * var(--space-sm));
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
   font-size: var(--font-body);
+  color: var(--color-text);
+  width: calc(100% + var(--space-md));
   transition: background-color 0.15s;
-  width: 100%;
+}
+
+.settings-view__row:first-child {
+  border-top: none;
+}
+
+/* Hover / active / focus-visible affordances */
+button.settings-view__row:hover {
+  background: var(--color-surface-hover);
+}
+
+button.settings-view__row:active {
+  background: var(--color-border);
+}
+
+.settings-view__row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .settings-view__row:disabled {
@@ -39,9 +93,13 @@
   cursor: not-allowed;
 }
 
-.settings-view__row--danger .settings-view__row-label {
-  color: var(--color-recording);
-  font-weight: 600;
+.settings-view__row:disabled:hover {
+  background: transparent;
+}
+
+.settings-view__row-label {
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 .settings-view__row-detail {
@@ -65,13 +123,18 @@
 .settings-view__toggle {
   width: 44px;
   height: 24px;
+  min-width: 44px;
+  max-width: 44px;
+  min-height: 24px;
+  max-height: 24px;
+  flex: 0 0 auto;
+  align-self: center;
   appearance: none;
   -webkit-appearance: none;
   background: var(--color-border);
   border-radius: 12px;
   position: relative;
   cursor: pointer;
-  flex-shrink: 0;
   transition: background-color 0.2s;
 }
 
@@ -95,11 +158,67 @@
   transform: translateX(20px);
 }
 
-/* Section header with title + action button */
-.settings-view__section-header {
+.settings-view__toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Policy select — compact .input inside a row
+   ============================================================ */
+
+.settings-view__row .input {
+  width: auto;
+  min-height: 36px;
+  max-width: 200px;
+  font-size: var(--font-small);
+  padding: var(--space-xs) var(--space-xl) var(--space-xs) var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Danger links — mirrors task-detail__delete-link
+   ============================================================ */
+
+.settings-view__danger-link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-recording);
+  font-size: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.settings-view__danger-link:hover {
+  opacity: 1;
+}
+
+.settings-view__danger-link:focus-visible {
+  outline: 2px solid var(--color-recording);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+.settings-view__danger-link:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Danger link count meta */
+.settings-view__danger-meta {
+  font-size: var(--font-small);
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 /* Empty state text */
@@ -115,7 +234,6 @@
 .settings-view__template-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
 }
 
 /* Template row info (two-line) */
@@ -131,12 +249,19 @@
   cursor: default;
 }
 
+.settings-view__kpi-row:hover {
+  background: transparent;
+}
+
 .settings-view__kpi-stats {
   font-size: var(--font-small);
   color: var(--color-text-muted);
 }
 
-/* KPI confidence badge */
+/* ============================================================
+   KPI badges — design tokens
+   ============================================================ */
+
 .kpi-badge {
   display: inline-block;
   font-size: 0.65rem;
@@ -150,23 +275,23 @@
 }
 
 .kpi-badge--high {
-  background: rgba(22, 163, 74, 0.15);
-  color: #16a34a;
+  background: var(--color-ready-bg);
+  color: var(--color-ready);
 }
 
 .kpi-badge--medium {
   background: rgba(217, 119, 6, 0.15);
-  color: #d97706;
+  color: var(--color-amber);
 }
 
 .kpi-badge--low {
-  background: rgba(220, 38, 38, 0.15);
-  color: #dc2626;
+  background: var(--color-recording-bg);
+  color: var(--color-recording);
 }
 
 .kpi-badge--insufficient {
   background: rgba(107, 114, 128, 0.15);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 /* KPI trend indicators */
@@ -175,24 +300,13 @@
 }
 
 .kpi-trend--improving {
-  color: #16a34a;
+  color: var(--color-ready);
 }
 
 .kpi-trend--stable {
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .kpi-trend--declining {
-  color: #dc2626;
-}
-
-/* Inline select for settings rows */
-.settings-view__select {
-  font-size: var(--font-small);
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  color: var(--color-text);
-  flex-shrink: 0;
+  color: var(--color-recording);
 }
