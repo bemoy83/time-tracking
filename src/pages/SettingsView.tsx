@@ -16,6 +16,8 @@ import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { TemplateFormSheet } from '../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../components/DeleteTemplateConfirm';
 import { KpiSection } from '../components/KpiSection';
+import { AttributionQualitySection } from '../components/AttributionQualitySection';
+import { recomputeAttribution } from '../lib/attribution/cache';
 import { CalculatorSheet } from '../components/CalculatorSheet';
 import { pluralize } from '../lib/utils/pluralize';
 
@@ -144,6 +146,20 @@ export function SettingsView() {
           </button>
         </div>
         <KpiSection tasks={tasks} />
+      </section>
+
+      <section className="settings-view__section">
+        <div className="settings-view__section-header">
+          <h2 className="settings-view__section-title section-heading">Attribution Quality</h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => recomputeAttribution()}
+          >
+            Recompute
+          </button>
+        </div>
+        <AttributionQualitySection tasks={tasks} />
       </section>
 
       <section className="settings-view__section">

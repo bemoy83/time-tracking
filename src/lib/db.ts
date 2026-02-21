@@ -4,11 +4,11 @@
  */
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate } from './types';
+import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate, AttributionSnapshot } from './types';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 12;
+const DB_VERSION = 13;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -66,6 +66,11 @@ interface TimeTrackingDBSchema extends DBSchema {
       'by-category': string;
       'by-phase': string;
     };
+  };
+  // Attribution snapshots cache
+  attributionSnapshots: {
+    key: string;
+    value: AttributionSnapshot;
   };
 }
 
@@ -248,6 +253,13 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               }
             });
           });
+        }
+
+        // Version 13: Add attributionSnapshots store
+        if (oldVersion < 13) {
+          if (!db.objectStoreNames.contains('attributionSnapshots')) {
+            db.createObjectStore('attributionSnapshots', { keyPath: 'id' });
+          }
         }
 
         // Version 12: Add buildPhase and workCategory fields to tasks
@@ -658,6 +670,37 @@ export async function deleteAllTasks(): Promise<void> {
 export async function deleteAllProjects(): Promise<void> {
   const db = await getDB();
   const tx = db.transaction('projects', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
+// ============================================================
+// Attribution Snapshot Operations
+// ============================================================
+
+/**
+ * Get an attribution snapshot by policy (used as key).
+ */
+export async function getAttributionSnapshot(policy: string): Promise<AttributionSnapshot | null> {
+  const db = await getDB();
+  const snapshot = await db.get('attributionSnapshots', policy);
+  return snapshot ?? null;
+}
+
+/**
+ * Save an attribution snapshot (upsert by policy key).
+ */
+export async function setAttributionSnapshot(snapshot: AttributionSnapshot): Promise<void> {
+  const db = await getDB();
+  await db.put('attributionSnapshots', snapshot);
+}
+
+/**
+ * Clear all attribution snapshots.
+ */
+export async function clearAttributionSnapshots(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('attributionSnapshots', 'readwrite');
   await tx.store.clear();
   await tx.done;
 }

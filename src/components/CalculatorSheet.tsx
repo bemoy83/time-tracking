@@ -13,14 +13,13 @@ import {
   WORK_CATEGORY_LABELS,
   BUILD_PHASES,
   BUILD_PHASE_LABELS,
-  TimeEntry,
   Task,
   formatProductivity,
   formatDurationShort,
 } from '../lib/types';
 import { useTemplateStore } from '../lib/stores/template-store';
 import { computeWorkTypeKpis, findKpiByKey, WorkTypeKpi, WorkTypeKey } from '../lib/kpi';
-import { getTimeEntriesByTask } from '../lib/db';
+import { buildAttributedRollup } from '../lib/attributed-rollup';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
 
@@ -63,11 +62,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
           t.workQuantity != null &&
           t.workQuantity > 0
       );
-      const entriesByTask = new Map<string, TimeEntry[]>();
-      for (const task of qualifying) {
-        const entries = await getTimeEntriesByTask(task.id);
-        entriesByTask.set(task.id, entries);
-      }
+      const { entriesByTask } = await buildAttributedRollup(qualifying, tasks);
       if (cancelled) return;
       setKpis(computeWorkTypeKpis(tasks, entriesByTask));
     }

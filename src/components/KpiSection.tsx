@@ -6,14 +6,13 @@
 import { useState, useEffect } from 'react';
 import {
   Task,
-  TimeEntry,
   WORK_CATEGORY_LABELS,
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
   formatProductivity,
 } from '../lib/types';
-import { getTimeEntriesByTask } from '../lib/db';
 import { computeWorkTypeKpis, WorkTypeKpi } from '../lib/kpi';
+import { buildAttributedRollup } from '../lib/attributed-rollup';
 import { pluralize } from '../lib/utils/pluralize';
 
 interface KpiSectionProps {
@@ -38,11 +37,7 @@ export function KpiSection({ tasks }: KpiSectionProps) {
           t.workQuantity > 0
       );
 
-      const entriesByTask = new Map<string, TimeEntry[]>();
-      for (const task of qualifying) {
-        const entries = await getTimeEntriesByTask(task.id);
-        entriesByTask.set(task.id, entries);
-      }
+      const { entriesByTask } = await buildAttributedRollup(qualifying, tasks);
 
       if (cancelled) return;
 

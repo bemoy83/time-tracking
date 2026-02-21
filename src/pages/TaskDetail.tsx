@@ -15,6 +15,7 @@ import { TaskNotes } from '../components/TaskNotes';
 import { TaskWorkQuantity } from '../components/TaskWorkQuantity';
 import { TaskPersonnel } from '../components/TaskPersonnel';
 import { TaskProductivity } from '../components/TaskProductivity';
+import { TaskAttributionBreakdown } from '../components/TaskAttributionBreakdown';
 import { TaskDetailSubtasks } from '../components/TaskDetailSubtasks';
 import { DeleteTaskConfirm } from '../components/DeleteTaskConfirm';
 import { ProjectPicker } from '../components/ProjectPicker';
@@ -85,6 +86,9 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
 
       {/* 7. Productivity (when quantity + estimate or time) */}
       <TaskProductivity taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+
+      {/* 7b. Attribution breakdown (expandable, default closed) */}
+      <TaskAttributionBreakdown taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
 
       {/* 8. Notes (expandable, default closed) */}
       <TaskNotes taskId={task.id} />

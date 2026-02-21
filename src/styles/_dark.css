@@ -186,4 +186,21 @@
     background: #252525;
     border-color: #444;
   }
+
+  /* --- Template Picker --- */
+  .template-picker__row {
+    background: #252525;
+  }
+
+  .template-picker__row:active {
+    background: #2f2f2f;
+  }
+
+  .template-picker__row--selected {
+    background: rgba(37, 99, 235, 0.15);
+  }
+
+  .template-picker__row--selected:active {
+    background: rgba(37, 99, 235, 0.25);
+  }
 }

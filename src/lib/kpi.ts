@@ -4,8 +4,7 @@
  * and calculates average achieved productivity.
  */
 
-import type { Task, TimeEntry, WorkCategory, WorkUnit, BuildPhase } from './types';
-import { durationMs } from './types';
+import type { Task, WorkCategory, WorkUnit, BuildPhase, AttributedEntry } from './types';
 
 export interface WorkTypeKey {
   workCategory: WorkCategory;
@@ -31,13 +30,13 @@ export function findKpiByKey(kpis: WorkTypeKpi[], key: WorkTypeKey): WorkTypeKpi
 }
 
 /**
- * Compute KPIs grouped by Work Type from completed tasks and their time entries.
+ * Compute KPIs grouped by Work Type from completed tasks and their attributed entries.
  * @param tasks All tasks (will be filtered to completed with work data)
- * @param entriesByTask Map of taskId → TimeEntry[] for qualifying tasks
+ * @param entriesByTask Map of taskId → AttributedEntry[] for qualifying tasks
  */
 export function computeWorkTypeKpis(
   tasks: Task[],
-  entriesByTask: Map<string, TimeEntry[]>
+  entriesByTask: Map<string, AttributedEntry[]>
 ): WorkTypeKpi[] {
   // Filter to completed tasks with required work data
   const qualifying = tasks.filter(
@@ -58,14 +57,14 @@ export function computeWorkTypeKpis(
   for (const task of qualifying) {
     const entries = entriesByTask.get(task.id) ?? [];
 
-    // Compute person-hours from time entries
-    let personMs = 0;
+    // Sum person-hours from attributed entries (precomputed)
+    let personHours = 0;
     for (const entry of entries) {
-      personMs += durationMs(entry.startUtc, entry.endUtc) * entry.workers;
+      personHours += entry.personHours;
     }
 
     // Skip tasks with no tracked time
-    if (personMs <= 0) continue;
+    if (personHours <= 0) continue;
 
     const key: WorkTypeKey = {
       workCategory: task.workCategory!,
@@ -77,13 +76,13 @@ export function computeWorkTypeKpis(
     const existing = groups.get(keyStr);
     if (existing) {
       existing.totalQuantity += task.workQuantity!;
-      existing.totalPersonHours += personMs / 3_600_000;
+      existing.totalPersonHours += personHours;
       existing.sampleCount += 1;
     } else {
       groups.set(keyStr, {
         key,
         totalQuantity: task.workQuantity!,
-        totalPersonHours: personMs / 3_600_000,
+        totalPersonHours: personHours,
         sampleCount: 1,
       });
     }

@@ -286,6 +286,62 @@ export function formatTrackedVsEstimateBadge(
 /**
  * Budget status for comparing tracked vs estimated time.
  */
+// Attribution policy controls how heuristic suggestions are applied
+export type AttributionPolicy = 'soft_allow_flag' | 'strict_block' | 'soft_allow_pick_nearest';
+export const DEFAULT_ATTRIBUTION_POLICY: AttributionPolicy = 'soft_allow_flag';
+
+// Attribution statuses
+export type AttributionStatus = 'attributed' | 'unattributed' | 'ambiguous';
+
+// Reasons for each status
+export type AttributionReason =
+  | 'self'                    // logged task is measurable
+  | 'ancestor'                // nearest measurable ancestor used
+  | 'noMeasurableOwner'       // no measurable task in branch
+  | 'multipleOwners';         // ambiguous: multiple valid measurable owners
+
+// Result of attributing a single time entry
+export interface AttributedEntry {
+  entryId: string;
+  taskId: string;              // original logged task
+  ownerTaskId: string | null;  // measurable task that "owns" this entry (null if unattributed)
+  status: AttributionStatus;
+  reason: AttributionReason;
+  personHours: number;         // precomputed: durationHrs * workers
+  suggestedOwnerTaskId: string | null;  // heuristic suggestion (may differ from ownerTaskId)
+  heuristicUsed: string | null;         // which heuristic produced the suggestion
+}
+
+// Summary counters for a batch attribution run
+export interface AttributionSummary {
+  engineVersion: string;       // e.g. 'v1'
+  totalEntries: number;
+  attributed: number;
+  unattributed: number;
+  ambiguous: number;
+  totalPersonHours: number;
+  attributedPersonHours: number;
+  excludedPersonHours: number;
+  ambiguousSuggestedResolutions: number;  // heuristic produced a suggestion for ambiguous entries
+  ambiguousResolvedByPolicy: number;      // suggestion was auto-applied by policy
+}
+
+// Cached attribution snapshot (Phase 6)
+export interface AttributionSnapshot {
+  id: string;
+  results: AttributedEntry[];
+  summary: AttributionSummary;
+  policy: AttributionPolicy;
+  computedAt: string;  // ISO 8601 UTC
+}
+
+// Audit note helpers for reassignment trail
+export const AUDIT_NOTE_PREFIX = '[AUDIT]';
+
+export function createAuditNote(action: string, details: string): string {
+  return `${AUDIT_NOTE_PREFIX} ${action}: ${details}`;
+}
+
 export type BudgetLevel = 'under' | 'approaching' | 'over' | 'none';
 
 export interface BudgetStatus {
