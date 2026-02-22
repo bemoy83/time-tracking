@@ -13,6 +13,7 @@
 import type { WorkTypeKpi } from '../kpi';
 import { workTypeKeyString } from '../kpi';
 import { WORK_UNIT_LABELS, WORK_CATEGORY_LABELS } from '../types';
+import { findWorkTypeByCompositeKey } from '../stores/work-type-store';
 
 export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary';
 
@@ -41,21 +42,26 @@ function csvRow(fields: (string | number | null)[]): string {
  */
 export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workCategory', 'workUnit', 'buildPhase',
+    'mappingKey', 'workCategory', 'workUnit', 'buildPhase', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
-  const rows = kpis.map((kpi) =>
-    csvRow([
+  const rows = kpis.map((kpi) => {
+    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
+    const wt = kpi.key.buildPhase
+      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      : null;
+    return csvRow([
       workTypeKeyString(kpi.key),
-      WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory,
+      categoryLabel,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
+      wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
       round(kpi.totalPersonHours, 2),
-    ]),
-  );
+    ]);
+  });
   return [csvRow(headers), ...rows].join('\n');
 }
 
@@ -65,16 +71,21 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
  */
 export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workCategory', 'workUnit', 'buildPhase',
+    'mappingKey', 'workCategory', 'workUnit', 'buildPhase', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
     'confidence', 'cv', 'outlierCount',
   ];
-  const rows = kpis.map((kpi) =>
-    csvRow([
+  const rows = kpis.map((kpi) => {
+    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
+    const wt = kpi.key.buildPhase
+      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      : null;
+    return csvRow([
       workTypeKeyString(kpi.key),
-      WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory,
+      categoryLabel,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
+      wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
@@ -82,8 +93,8 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
       kpi.confidence,
       kpi.cv != null ? round(kpi.cv, 3) : null,
       kpi.outlierCount,
-    ]),
-  );
+    ]);
+  });
   return [csvRow(headers), ...rows].join('\n');
 }
 
@@ -93,7 +104,7 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
  */
 export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'buildPhase', 'mappingKey', 'workCategory', 'workUnit',
+    'buildPhase', 'mappingKey', 'workCategory', 'workUnit', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
 
@@ -105,18 +116,23 @@ export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
     return a.key.workCategory.localeCompare(b.key.workCategory);
   });
 
-  const rows = sorted.map((kpi) =>
-    csvRow([
+  const rows = sorted.map((kpi) => {
+    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
+    const wt = kpi.key.buildPhase
+      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      : null;
+    return csvRow([
       kpi.key.buildPhase ?? '',
       workTypeKeyString(kpi.key),
-      WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory,
+      categoryLabel,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
+      wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
       round(kpi.totalPersonHours, 2),
-    ]),
-  );
+    ]);
+  });
   return [csvRow(headers), ...rows].join('\n');
 }
 

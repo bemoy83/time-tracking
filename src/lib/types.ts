@@ -45,18 +45,34 @@ export const WORK_CATEGORY_LABELS: Record<WorkCategory, string> = {
 export const WORK_CATEGORIES: WorkCategory[] = ['carpet-tiles', 'partition-walls', 'furniture'];
 
 /**
+ * Reusable Work Type definition.
+ * Represents a unique combination of title + unit + build phase → expected productivity.
+ * The composite key (title, workUnit, buildPhase) must be unique.
+ */
+export interface WorkType {
+  id: string;
+  title: string;                   // e.g. "Carpet Tiles"
+  workUnit: WorkUnit;              // m2 | m | pcs | orders
+  buildPhase: BuildPhase;          // build-up | tear-down
+  expectedProductivity: number;    // units/person-hr (required)
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Reusable task template for recurring tasks.
  */
 export interface TaskTemplate {
   id: string;
   title: string;
+  workTypeId: string | null;        // references WorkType
   workUnit: WorkUnit;
   workQuantity: number | null;
   estimatedMinutes: number | null;
   defaultWorkers: number | null;
-  targetProductivity: number | null; // units/person-hr
+  targetProductivity: number | null; // units/person-hr (legacy, sourced from WorkType)
   buildPhase: BuildPhase;
-  workCategory: WorkCategory;
+  workCategory: WorkCategory;       // legacy, sourced from WorkType
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +137,7 @@ export interface Task {
   targetProductivity: number | null; // units/person-hr from template
   buildPhase: BuildPhase | null; // from template, read-only
   workCategory: WorkCategory | null; // from template, read-only
+  workTypeId: string | null; // references WorkType
   createdAt: string;
   updatedAt: string;
   /** ISO 8601 UTC timestamp when task was archived. null = not yet archived. */

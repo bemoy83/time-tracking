@@ -2,35 +2,27 @@
  * CalculatorSheet — advisory productivity calculator for planning.
  * Solves for crew size or time given work quantity and a productivity rate.
  *
- * Phase 3: Shows provenance for every recommendation, side-by-side
- * source comparison, and confidence-aware output messaging.
+ * Uses WorkType selector for expected rate. Historical rate from KPIs.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import {
   WorkUnit,
-  WorkCategory,
-  BuildPhase,
   WORK_UNIT_LABELS,
-  WORK_CATEGORIES,
-  WORK_CATEGORY_LABELS,
-  BUILD_PHASES,
   BUILD_PHASE_LABELS,
   Task,
   formatProductivity,
   formatDurationShort,
 } from '../lib/types';
-import { useTemplateStore } from '../lib/stores/template-store';
+import { useWorkTypeStore } from '../lib/stores/work-type-store';
 import { computeWorkTypeKpis, findKpiByKey, WorkTypeKpi, WorkTypeKey, ConfidenceLevel } from '../lib/kpi';
 import { buildAttributedRollup } from '../lib/attributed-rollup';
+import { computeProductivityResult, type SolveFor } from '../lib/calculator';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
 import { saveRecommendationToTask } from '../lib/calculator-save';
 
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
-
 type ProductivitySource = 'template' | 'historical';
-type SolveFor = 'crew' | 'time';
 
 interface RateInfo {
   rate: number;
@@ -43,13 +35,10 @@ interface RateInfo {
 
 interface CalcResult {
   type: SolveFor;
-  // crew mode
   crewValue?: number;
   crewExact?: number;
-  // time mode
   timeFormatted?: string;
   timeHours?: number;
-  // provenance
   rateUsed: number;
   rateSource: ProductivitySource;
   quantityUsed: number;
@@ -69,20 +58,16 @@ function computeResult(
   confidence: ConfidenceLevel | null,
   sampleCount: number | null,
 ): CalcResult | null {
-  if (rate <= 0 || qty <= 0) return null;
+  const raw = computeProductivityResult(solveFor, qty, rate, timeHours, crew);
+  if (!raw) return null;
 
   const base = { rateUsed: rate, rateSource, quantityUsed: qty, unitUsed: workUnit, confidence, sampleCount };
 
   if (solveFor === 'crew') {
-    if (timeHours <= 0) return null;
-    const crewExact = qty / (timeHours * rate);
-    return { type: 'crew', crewValue: Math.ceil(crewExact), crewExact, ...base };
-  } else {
-    if (crew <= 0) return null;
-    const hours = qty / (crew * rate);
-    const ms = hours * 3_600_000;
-    return { type: 'time', timeFormatted: formatDurationShort(ms), timeHours: hours, ...base };
+    return { type: 'crew', crewValue: raw.crew, crewExact: raw.crewExact, ...base };
   }
+  const ms = (raw.timeHours ?? 0) * 3_600_000;
+  return { type: 'time', timeFormatted: formatDurationShort(ms), timeHours: raw.timeHours, ...base };
 }
 
 interface CalculatorSheetProps {
@@ -92,24 +77,28 @@ interface CalculatorSheetProps {
 }
 
 export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps) {
-  const { templates } = useTemplateStore();
+  const { workTypes } = useWorkTypeStore();
 
-  const [workCategory, setWorkCategory] = useState<WorkCategory>('carpet-tiles');
-  const [workUnit, setWorkUnit] = useState<WorkUnit>('m2');
-  const [buildPhase, setBuildPhase] = useState<BuildPhase | null>(null);
+  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>('');
   const [source, setSource] = useState<ProductivitySource>('template');
   const [quantity, setQuantity] = useState('');
   const [solveFor, setSolveFor] = useState<SolveFor>('crew');
   const [timeHours, setTimeHours] = useState('');
   const [crew, setCrew] = useState(2);
 
-  // Save-to-task state
   const [saveTaskId, setSaveTaskId] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // Load KPIs
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
 
+  // Default selection when opening
+  useEffect(() => {
+    if (isOpen && workTypes.length > 0 && !selectedWorkTypeId) {
+      setSelectedWorkTypeId(workTypes[0].id);
+    }
+  }, [isOpen, workTypes]);
+
+  // Load KPIs
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -132,32 +121,33 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
     return () => { cancelled = true; };
   }, [isOpen, tasks]);
 
-  // Resolve both rate sources
+  const selectedWorkType = workTypes.find((wt) => wt.id === selectedWorkTypeId);
+  const workUnit = selectedWorkType?.workUnit ?? 'm2';
+
+  // Template rate from WorkType expected productivity
   const templateRate = useMemo((): RateInfo | null => {
-    const match = templates.find(
-      (t) =>
-        t.workCategory === workCategory &&
-        t.workUnit === workUnit &&
-        (buildPhase == null || t.buildPhase === buildPhase) &&
-        t.targetProductivity != null &&
-        t.targetProductivity > 0
-    );
-    if (!match?.targetProductivity) return null;
+    if (!selectedWorkType) return null;
     return {
-      rate: match.targetProductivity,
+      rate: selectedWorkType.expectedProductivity,
       source: 'template',
       confidence: null,
       sampleCount: null,
       cv: null,
-      templateName: match.title,
+      templateName: selectedWorkType.title,
     };
-  }, [templates, workCategory, workUnit, buildPhase]);
+  }, [selectedWorkType]);
 
+  // Historical rate from KPI data
   const historicalRate = useMemo((): RateInfo | null => {
-    const key: WorkTypeKey = { workCategory, workUnit, buildPhase };
+    if (!selectedWorkType) return null;
+    const key: WorkTypeKey = {
+      workCategory: selectedWorkType.title.toLowerCase().replace(/\s+/g, '-') as never,
+      workUnit: selectedWorkType.workUnit,
+      buildPhase: selectedWorkType.buildPhase,
+    };
     let kpi = findKpiByKey(kpis, key);
-    if (!kpi && buildPhase != null) {
-      kpi = findKpiByKey(kpis, { workCategory, workUnit, buildPhase: null });
+    if (!kpi) {
+      kpi = findKpiByKey(kpis, { ...key, buildPhase: null });
     }
     if (!kpi) return null;
     return {
@@ -168,13 +158,12 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
       cv: kpi.cv,
       templateName: null,
     };
-  }, [kpis, workCategory, workUnit, buildPhase]);
+  }, [kpis, selectedWorkType]);
 
   const activeRate = source === 'template' ? templateRate : historicalRate;
   const resolvedRate = activeRate?.rate ?? null;
   const isInsufficient = activeRate?.confidence === 'insufficient';
 
-  // Compute primary result
   const qty = parseFloat(quantity);
   const timeH = parseFloat(timeHours);
 
@@ -186,7 +175,6 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
     );
   }, [activeRate, qty, solveFor, timeH, crew, workUnit, isInsufficient]);
 
-  // Compute comparison result (other source)
   const altRate = source === 'template' ? historicalRate : templateRate;
   const altResult = useMemo(() => {
     if (!altRate || isNaN(qty) || qty <= 0) return null;
@@ -199,15 +187,14 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
 
   const hasBothSources = templateRate != null && historicalRate != null && historicalRate.confidence !== 'insufficient';
 
-  // Tasks eligible for saving (active, matching work type)
   const eligibleTasks = useMemo(() => {
+    if (!selectedWorkType) return [];
     return tasks.filter(
       (t) =>
         t.status === 'active' &&
-        t.workCategory === workCategory &&
-        t.workUnit === workUnit
+        t.workTypeId === selectedWorkTypeId
     );
-  }, [tasks, workCategory, workUnit]);
+  }, [tasks, selectedWorkTypeId, selectedWorkType]);
 
   const handleSave = async () => {
     if (!result || !saveTaskId || !activeRate) return;
@@ -236,65 +223,24 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
   return (
     <ActionSheet isOpen={isOpen} title="Productivity Calculator" onClose={onClose}>
       <div className="create-task-sheet__form">
-        {/* Work Category */}
+        {/* Work Type Selector */}
         <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Work Category</label>
-          <select
-            className="input"
-            value={workCategory}
-            onChange={(e) => setWorkCategory(e.target.value as WorkCategory)}
-          >
-            {WORK_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{WORK_CATEGORY_LABELS[c]}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Work Unit */}
-        <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Work Unit</label>
-          <div className="task-work-quantity__unit-pills" role="group" aria-label="Unit">
-            {WORK_UNITS.map((u) => (
-              <button
-                key={u}
-                type="button"
-                role="radio"
-                aria-checked={workUnit === u}
-                className={`task-work-quantity__unit-pill${workUnit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                onClick={() => setWorkUnit(u)}
-              >
-                {WORK_UNIT_LABELS[u]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Build Phase */}
-        <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Build Phase</label>
-          <div className="task-work-quantity__unit-pills" role="group" aria-label="Build phase">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={buildPhase === null}
-              className={`task-work-quantity__unit-pill${buildPhase === null ? ' task-work-quantity__unit-pill--active' : ''}`}
-              onClick={() => setBuildPhase(null)}
+          <label className="entry-modal__label">Work Type</label>
+          {workTypes.length === 0 ? (
+            <p className="settings-view__empty">No work types defined.</p>
+          ) : (
+            <select
+              className="input"
+              value={selectedWorkTypeId}
+              onChange={(e) => setSelectedWorkTypeId(e.target.value)}
             >
-              Any
-            </button>
-            {BUILD_PHASES.map((p) => (
-              <button
-                key={p}
-                type="button"
-                role="radio"
-                aria-checked={buildPhase === p}
-                className={`task-work-quantity__unit-pill${buildPhase === p ? ' task-work-quantity__unit-pill--active' : ''}`}
-                onClick={() => setBuildPhase(p)}
-              >
-                {BUILD_PHASE_LABELS[p]}
-              </button>
-            ))}
-          </div>
+              {workTypes.map((wt) => (
+                <option key={wt.id} value={wt.id}>
+                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Productivity Source */}
@@ -308,7 +254,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
               className={`task-work-quantity__unit-pill${source === 'template' ? ' task-work-quantity__unit-pill--active' : ''}`}
               onClick={() => setSource('template')}
             >
-              Template Target
+              Expected Rate
             </button>
             <button
               type="button"
@@ -405,7 +351,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
           {result == null ? (
             <span className="calculator__result-empty">
               {resolvedRate == null
-                ? 'Select a productivity source with data'
+                ? 'Select a work type with data'
                 : isInsufficient
                   ? 'Insufficient data — need 3+ completed tasks for this work type'
                   : 'Enter values to calculate'}
@@ -424,14 +370,14 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
             <span className="calculator__compare-label">Compare sources</span>
             <div className="calculator__compare-grid">
               <CompareCard
-                label={source === 'template' ? 'Template Target' : 'Historical Avg'}
+                label={source === 'template' ? 'Expected Rate' : 'Historical Avg'}
                 rate={activeRate!}
                 result={result}
                 workUnit={workUnit}
                 isActive
               />
               <CompareCard
-                label={source === 'template' ? 'Historical Avg' : 'Template Target'}
+                label={source === 'template' ? 'Historical Avg' : 'Expected Rate'}
                 rate={altRate!}
                 result={altResult}
                 workUnit={workUnit}
@@ -514,7 +460,7 @@ function ProvenanceDisplay({
   workUnit: WorkUnit;
 }) {
   const sourceLabel = result.rateSource === 'template'
-    ? `Template${activeRate.templateName ? `: ${activeRate.templateName}` : ''}`
+    ? `Expected${activeRate.templateName ? `: ${activeRate.templateName}` : ''}`
     : `Historical avg (${activeRate.sampleCount} tasks)`;
 
   const equation = result.type === 'crew'

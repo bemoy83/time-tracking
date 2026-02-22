@@ -10,6 +10,7 @@ function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedW
     workCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
+    workTypeId: null,
     workQuantity: 100,
     estimatedMinutes: 60,
     defaultWorkers: 2,
@@ -29,6 +30,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     targetProductivity: 10,
     buildPhase: 'build-up',
     workCategory: 'carpet-tiles',
+    workTypeId: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -54,6 +56,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
+    workTypeId: null,
     ...overrides,
   };
 }

@@ -2,7 +2,7 @@
  * CreateTaskSheet — ActionSheet for creating tasks and subtasks.
  *
  * Full mode (default): title + work quantity + estimate + workers.
- * Template mode: additionally shows buildPhase, workCategory, targetProductivity (all editable).
+ * Template mode: additionally shows WorkType info (read-only) from template.
  * Subtask mode: title only (showWork/showEstimate/showWorkers = false).
  */
 
@@ -11,16 +11,15 @@ import {
   WorkUnit,
   WORK_UNIT_LABELS,
   TaskTemplate,
-  BuildPhase,
   BUILD_PHASE_LABELS,
-  BUILD_PHASES,
-  WorkCategory,
-  WORK_CATEGORY_LABELS,
-  WORK_CATEGORIES,
+  formatProductivity,
 } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
+import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
+import { computeProductivityResult } from '../lib/calculator';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
+import { CalculatorIcon } from './icons';
 
 const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 
@@ -55,29 +54,27 @@ export function CreateTaskSheet({
   const [estHours, setEstHours] = useState(0);
   const [estMinutes, setEstMinutes] = useState(0);
   const [workers, setWorkers] = useState(1);
-  const [buildPhase, setBuildPhase] = useState<BuildPhase | null>(null);
-  const [workCategory, setWorkCategory] = useState<WorkCategory | null>(null);
-  const [targetProductivity, setTargetProductivity] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string | null>(null);
+
+  const { workTypes } = useWorkTypeStore();
 
   const hasTemplate = !!template;
+  const workType = hasTemplate
+    ? (template.workTypeId ? getWorkTypeById(template.workTypeId) : null)
+    : (selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null);
 
   // Reset form when sheet opens; pre-fill from template if provided
   useEffect(() => {
     if (isOpen) {
       if (template) {
         setTitle(template.title);
-        setUnit(template.workUnit);
+        setUnit(workType?.workUnit ?? template.workUnit);
         setQuantity(template.workQuantity != null ? String(template.workQuantity) : '');
         const totalMin = template.estimatedMinutes ?? 0;
         setEstHours(Math.floor(totalMin / 60));
         setEstMinutes(totalMin % 60);
         setWorkers(template.defaultWorkers ?? 1);
-        setBuildPhase(template.buildPhase);
-        setWorkCategory(template.workCategory);
-        setTargetProductivity(
-          template.targetProductivity != null ? String(template.targetProductivity) : ''
-        );
       } else {
         setTitle('');
         setQuantity('');
@@ -85,22 +82,19 @@ export function CreateTaskSheet({
         setEstHours(0);
         setEstMinutes(0);
         setWorkers(1);
-        setBuildPhase(null);
-        setWorkCategory(null);
-        setTargetProductivity('');
+        setSelectedWorkTypeId(null);
       }
     }
   }, [isOpen, template]);
 
-  const canCreate = title.trim().length > 0 && !isSaving;
+  const noWorkTypes = showWork && !hasTemplate && workTypes.length === 0;
+  const canCreate = title.trim().length > 0 && !isSaving && !noWorkTypes;
 
   const handleCreate = async () => {
     if (!canCreate) return;
     setIsSaving(true);
     try {
       const totalMinutes = estHours * 60 + estMinutes;
-      const parsedQty = parseFloat(quantity);
-      const parsedProductivity = parseFloat(targetProductivity);
       await createTask({
         title: title.trim(),
         projectId: projectId ?? undefined,
@@ -109,9 +103,10 @@ export function CreateTaskSheet({
         workQuantity: showWork && !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : undefined,
         workUnit: showWork && !isNaN(parsedQty) && parsedQty > 0 ? unit : undefined,
         defaultWorkers: showWorkers && workers > 1 ? workers : undefined,
-        targetProductivity: !isNaN(parsedProductivity) && parsedProductivity > 0 ? parsedProductivity : undefined,
-        buildPhase: buildPhase ?? undefined,
-        workCategory: workCategory ?? undefined,
+        targetProductivity: workType?.expectedProductivity ?? (template?.targetProductivity ?? undefined),
+        buildPhase: workType?.buildPhase ?? (template?.buildPhase ?? undefined),
+        workCategory: template?.workCategory ?? undefined,
+        workTypeId: workType?.id ?? (template?.workTypeId ?? undefined),
       });
       onClose();
       onCreated?.();
@@ -124,6 +119,34 @@ export function CreateTaskSheet({
   const decrementHours = () => setEstHours((h) => Math.max(h - 1, 0));
   const incrementMinutes = () => setEstMinutes((m) => (m >= 55 ? 0 : m + 5));
   const decrementMinutes = () => setEstMinutes((m) => (m <= 0 ? 55 : m - 5));
+
+  // Calculator suggest logic
+  const rate = workType?.expectedProductivity ?? 0;
+  const parsedQty = parseFloat(quantity);
+  const qtyValid = !isNaN(parsedQty) && parsedQty > 0;
+  const totalEstMinutes = estHours * 60 + estMinutes;
+
+  const canSuggestEstimate = showWork && showEstimate && rate > 0 && qtyValid && workers > 0;
+  const canSuggestWorkers = showWork && showWorkers && rate > 0 && qtyValid && totalEstMinutes > 0;
+
+  const handleSuggestEstimate = () => {
+    if (!canSuggestEstimate) return;
+    const result = computeProductivityResult('time', parsedQty, rate, 0, workers);
+    if (result?.estimatedMinutes != null) {
+      setEstHours(Math.floor(result.estimatedMinutes / 60));
+      // Round minutes to nearest 5 to match stepper increments
+      setEstMinutes(Math.round((result.estimatedMinutes % 60) / 5) * 5);
+    }
+  };
+
+  const handleSuggestWorkers = () => {
+    if (!canSuggestWorkers) return;
+    const timeH = totalEstMinutes / 60;
+    const result = computeProductivityResult('crew', parsedQty, rate, timeH, 0);
+    if (result?.crew != null) {
+      setWorkers(result.crew);
+    }
+  };
 
   return (
     <ActionSheet isOpen={isOpen} title={sheetTitle} onClose={onClose}>
@@ -140,40 +163,50 @@ export function CreateTaskSheet({
           }}
         />
 
-        {/* Build Phase (shown when template provided) */}
-        {hasTemplate && (
+        {/* Work Type info (read-only, shown when template provided) */}
+        {hasTemplate && workType && (
           <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Build Phase</label>
-            <div className="task-work-quantity__unit-pills" role="group" aria-label="Build phase">
-              {BUILD_PHASES.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  role="radio"
-                  aria-checked={buildPhase === p}
-                  className={`task-work-quantity__unit-pill${buildPhase === p ? ' task-work-quantity__unit-pill--active' : ''}`}
-                  onClick={() => setBuildPhase(p)}
-                >
-                  {BUILD_PHASE_LABELS[p]}
-                </button>
-              ))}
+            <label className="entry-modal__label">Work Type</label>
+            <div className="settings-view__row-detail">
+              {workType.title} · {BUILD_PHASE_LABELS[workType.buildPhase]} · {WORK_UNIT_LABELS[workType.workUnit]}
+            </div>
+            <div className="settings-view__row-detail">
+              Expected: {workType.expectedProductivity} {WORK_UNIT_LABELS[workType.workUnit]}/person-hr
             </div>
           </div>
         )}
 
-        {/* Work Category (shown when template provided) */}
-        {hasTemplate && (
+        {/* Work Type picker (blank mode only) */}
+        {showWork && !hasTemplate && (
           <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Work Category</label>
-            <select
-              className="input"
-              value={workCategory ?? ''}
-              onChange={(e) => setWorkCategory(e.target.value as WorkCategory)}
-            >
-              {WORK_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{WORK_CATEGORY_LABELS[c]}</option>
-              ))}
-            </select>
+            <label className="entry-modal__label">Work Type</label>
+            {workTypes.length === 0 ? (
+              <div className="settings-view__row-detail">
+                No work types yet. Create one in Settings.
+              </div>
+            ) : (
+              <select
+                className="input"
+                value={selectedWorkTypeId ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  setSelectedWorkTypeId(id);
+                  const wt = id ? workTypes.find((w) => w.id === id) : null;
+                  if (wt) {
+                    setUnit(wt.workUnit);
+                    if (!title.trim()) setTitle(wt.title);
+                  }
+                }}
+                aria-label="Work Type"
+              >
+                <option value="">Select work type...</option>
+                {workTypes.map((wt) => (
+                  <option key={wt.id} value={wt.id}>
+                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
@@ -194,27 +227,42 @@ export function CreateTaskSheet({
                 {WORK_UNIT_LABELS[unit]}
               </span>
             </div>
-            <div className="task-work-quantity__unit-pills" role="group" aria-label="Unit">
-              {WORK_UNITS.map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  role="radio"
-                  aria-checked={unit === u}
-                  className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                  onClick={() => setUnit(u)}
-                >
-                  {WORK_UNIT_LABELS[u]}
-                </button>
-              ))}
-            </div>
+            {/* Unit pills only when no template and no WorkType selected (both lock unit) */}
+            {!hasTemplate && !workType && (
+              <div className="task-work-quantity__unit-pills" role="group" aria-label="Unit">
+                {WORK_UNITS.map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    role="radio"
+                    aria-checked={unit === u}
+                    className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
+                    onClick={() => setUnit(u)}
+                  >
+                    {WORK_UNIT_LABELS[u]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Estimate */}
         {showEstimate && (
           <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Estimate</label>
+            <div className="create-task-sheet__label-row">
+              <label className="entry-modal__label">Estimate</label>
+              {canSuggestEstimate && (
+                <button
+                  type="button"
+                  className="create-task-sheet__suggest-btn"
+                  onClick={handleSuggestEstimate}
+                  aria-label="Suggest estimate from productivity"
+                >
+                  <CalculatorIcon className="create-task-sheet__suggest-icon" />
+                </button>
+              )}
+            </div>
             <div className="entry-modal__duration-grid">
               <div className="entry-modal__duration-col">
                 <button
@@ -277,28 +325,27 @@ export function CreateTaskSheet({
         {/* Workers */}
         {showWorkers && (
           <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Workers</label>
+            <div className="create-task-sheet__label-row">
+              <label className="entry-modal__label">Workers</label>
+              {canSuggestWorkers && (
+                <button
+                  type="button"
+                  className="create-task-sheet__suggest-btn"
+                  onClick={handleSuggestWorkers}
+                  aria-label="Suggest workers from productivity"
+                >
+                  <CalculatorIcon className="create-task-sheet__suggest-icon" />
+                </button>
+              )}
+            </div>
             <WorkersStepper value={workers} onChange={setWorkers} size="large" />
           </div>
         )}
 
-        {/* Target Productivity (shown when template provided) */}
-        {hasTemplate && (
-          <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Target Productivity</label>
-            <div className="task-work-quantity__input-wrap">
-              <input
-                inputMode="decimal"
-                className="task-work-quantity__number-input"
-                value={targetProductivity}
-                onChange={(e) => setTargetProductivity(e.target.value)}
-                placeholder="0"
-                style={{ width: `${Math.max(String(targetProductivity || '0').length, 1)}ch` }}
-              />
-              <span className="task-work-quantity__input-unit" aria-hidden="true">
-                {WORK_UNIT_LABELS[unit]}/person-hr
-              </span>
-            </div>
+        {/* Rate hint */}
+        {showWork && rate > 0 && qtyValid && (
+          <div className="create-task-sheet__hint">
+            Based on {formatProductivity(rate, unit)}
           </div>
         )}
 

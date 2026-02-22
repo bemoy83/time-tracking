@@ -21,6 +21,8 @@ export interface PlanLineItem {
   workCategory: WorkCategory;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
+  /** Reference to WorkType entity. null for legacy line items. */
+  workTypeId: string | null;
   /** Editable assumptions. */
   workQuantity: number;
   crew: number;
@@ -89,6 +91,7 @@ export function createLineItem(
   workQuantity: number,
   productivityRate: number,
   rateSource: 'template' | 'historical' | 'manual' = 'manual',
+  workTypeId: string | null = null,
 ): PlanLineItem {
   const timeHours = productivityRate > 0 ? workQuantity / productivityRate : 0;
   return {
@@ -97,6 +100,7 @@ export function createLineItem(
     workCategory,
     workUnit,
     buildPhase,
+    workTypeId,
     workQuantity,
     crew: 1,
     timeHours,

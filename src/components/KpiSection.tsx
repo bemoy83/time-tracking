@@ -6,9 +6,9 @@
 import { useState, useEffect } from 'react';
 import {
   Task,
-  WORK_CATEGORY_LABELS,
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
+  WORK_CATEGORY_LABELS,
   formatProductivity,
 } from '../lib/types';
 import {

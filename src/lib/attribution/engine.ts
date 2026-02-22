@@ -85,6 +85,14 @@ export function resolveWithHeuristics(
     return { suggestedOwnerTaskId: null, heuristicUsed: 'none' };
   }
 
+  // Heuristic 0: workTypeId match (strongest signal)
+  if (
+    task.workTypeId != null &&
+    parent.workTypeId === task.workTypeId
+  ) {
+    return { suggestedOwnerTaskId: parent.id, heuristicUsed: 'exact-match' };
+  }
+
   // Heuristic 1: exact match on category + unit + phase
   if (
     parent.workCategory === task.workCategory &&

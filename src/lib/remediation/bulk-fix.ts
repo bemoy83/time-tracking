@@ -88,6 +88,7 @@ export interface WorkContextPatch {
   workUnit: WorkUnit;
   workQuantity: number;
   buildPhase: BuildPhase | null;
+  workTypeId: string | null;
 }
 
 /**
@@ -115,6 +116,7 @@ export async function bulkSetWorkContext(
         workUnit: patch.workUnit,
         workQuantity: patch.workQuantity,
         buildPhase: patch.buildPhase,
+        workTypeId: patch.workTypeId,
         updatedAt: now,
       };
       await updateTask(updated);

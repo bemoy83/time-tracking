@@ -21,7 +21,7 @@ describe('exportOpsSummary', () => {
     const csv = exportOpsSummary([]);
     const headers = csv.split('\n')[0];
     expect(headers).toBe(
-      'mappingKey,workCategory,workUnit,buildPhase,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
+      'mappingKey,workCategory,workUnit,buildPhase,workTypeId,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
     );
   });
 
@@ -124,6 +124,6 @@ describe('CSV escaping', () => {
     // Should be valid CSV (no unescaped commas in field values)
     const row = csv.split('\n')[1];
     const fields = row.split(',');
-    expect(fields.length).toBe(8); // exact column count
+    expect(fields.length).toBe(9); // exact column count
   });
 });

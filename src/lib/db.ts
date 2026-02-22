@@ -4,12 +4,13 @@
  */
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate, AttributionSnapshot } from './types';
+import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate, AttributionSnapshot, WorkType } from './types';
 import type { Plan } from './planning/plan-model';
-import { PROJECT_COLORS } from './types';
+import { PROJECT_COLORS, WORK_CATEGORY_LABELS, WORK_CATEGORIES, BUILD_PHASES, generateId, nowUtc } from './types';
+import type { WorkCategory } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 15;
+const DB_VERSION = 16;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -77,6 +78,14 @@ interface TimeTrackingDBSchema extends DBSchema {
   plans: {
     key: string;
     value: Plan;
+  };
+  // Work type definitions
+  workTypes: {
+    key: string;
+    value: WorkType;
+    indexes: {
+      'by-title-unit-phase': [string, string, string];
+    };
   };
 }
 
@@ -301,6 +310,73 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
         // Version 15: Add plans store for planning workspace
         if (oldVersion < 15) {
           db.createObjectStore('plans', { keyPath: 'id' });
+        }
+
+        // Version 16: Add workTypes store, seed from WORK_CATEGORIES, backfill workTypeId
+        if (oldVersion < 16) {
+          const workTypeStore = db.createObjectStore('workTypes', { keyPath: 'id' });
+          workTypeStore.createIndex('by-title-unit-phase', ['title', 'workUnit', 'buildPhase']);
+
+          // Seed default WorkTypes from existing enum × phases
+          const now = nowUtc();
+          const defaultUnit: Record<WorkCategory, 'm2' | 'm' | 'pcs'> = {
+            'carpet-tiles': 'm2',
+            'partition-walls': 'm',
+            'furniture': 'pcs',
+          };
+          const seeded = new Map<string, string>(); // "category:unit:phase" → workTypeId
+
+          for (const cat of WORK_CATEGORIES) {
+            for (const phase of BUILD_PHASES) {
+              const unit = defaultUnit[cat];
+              const id = generateId();
+              const wt: WorkType = {
+                id,
+                title: WORK_CATEGORY_LABELS[cat],
+                workUnit: unit,
+                buildPhase: phase,
+                expectedProductivity: 10,
+                createdAt: now,
+                updatedAt: now,
+              };
+              workTypeStore.add(wt);
+              seeded.set(`${cat}:${unit}:${phase}`, id);
+            }
+          }
+
+          // Backfill workTypeId on existing templates
+          if (db.objectStoreNames.contains('taskTemplates')) {
+            const tplStore = transaction.objectStore('taskTemplates');
+            tplStore.getAll().then((templates) => {
+              for (const tpl of templates) {
+                const t = tpl as unknown as Record<string, unknown>;
+                if (t.workTypeId === undefined) {
+                  const key = `${t.workCategory}:${t.workUnit}:${t.buildPhase}`;
+                  t.workTypeId = seeded.get(key) ?? null;
+                  tplStore.put(tpl);
+                }
+              }
+            });
+          }
+
+          // Backfill workTypeId on existing tasks
+          if (oldVersion >= 1) {
+            const taskStore = transaction.objectStore('tasks');
+            taskStore.getAll().then((tasks) => {
+              for (const task of tasks) {
+                const t = task as unknown as Record<string, unknown>;
+                if (t.workTypeId === undefined) {
+                  if (t.workCategory && t.workUnit && t.buildPhase) {
+                    const key = `${t.workCategory}:${t.workUnit}:${t.buildPhase}`;
+                    t.workTypeId = seeded.get(key) ?? null;
+                  } else {
+                    t.workTypeId = null;
+                  }
+                  taskStore.put(task);
+                }
+              }
+            });
+          }
         }
       },
     });
@@ -759,4 +835,44 @@ export async function updatePlan(plan: Plan): Promise<void> {
 export async function deletePlan(id: string): Promise<void> {
   const db = await getDB();
   await db.delete('plans', id);
+}
+
+// ============================================================
+// Work Type Operations
+// ============================================================
+
+export async function addWorkType(workType: WorkType): Promise<void> {
+  const db = await getDB();
+  await db.add('workTypes', workType);
+}
+
+export async function getWorkType(id: string): Promise<WorkType | null> {
+  const db = await getDB();
+  const wt = await db.get('workTypes', id);
+  return wt ?? null;
+}
+
+export async function getAllWorkTypes(): Promise<WorkType[]> {
+  const db = await getDB();
+  return db.getAll('workTypes');
+}
+
+export async function updateWorkType(workType: WorkType): Promise<void> {
+  const db = await getDB();
+  await db.put('workTypes', workType);
+}
+
+export async function deleteWorkType(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('workTypes', id);
+}
+
+export async function findWorkTypeByKey(
+  title: string,
+  workUnit: string,
+  buildPhase: string,
+): Promise<WorkType | null> {
+  const db = await getDB();
+  const result = await db.getFromIndex('workTypes', 'by-title-unit-phase', [title, workUnit, buildPhase]);
+  return result ?? null;
 }

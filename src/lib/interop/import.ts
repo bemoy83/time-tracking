@@ -11,10 +11,12 @@
 
 import {
   WORK_CATEGORIES,
+  WORK_CATEGORY_LABELS,
   type WorkCategory,
   type WorkUnit,
   type BuildPhase,
 } from '../types';
+import { findWorkTypeByCompositeKey } from '../stores/work-type-store';
 
 const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 const VALID_BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
@@ -26,6 +28,8 @@ export interface ImportedWorkPackage {
   workCategory: WorkCategory;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
+  /** Resolved workTypeId from (workCategory→title, workUnit, buildPhase). null if no match found. */
+  workTypeId: string | null;
   workQuantity: number | null;
   estimatedMinutes: number | null;
   defaultWorkers: number | null;
@@ -137,12 +141,21 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       continue;
     }
 
+    // Resolve WorkType by mapping workCategory label → WorkType title
+    const categoryLabel = WORK_CATEGORY_LABELS[workCategory as WorkCategory] ?? workCategory;
+    const resolvedWorkType = findWorkTypeByCompositeKey(
+      categoryLabel,
+      workUnit as WorkUnit,
+      buildPhase as BuildPhase,
+    );
+
     items.push({
       mappingKey: workPackageMappingKey(title, workCategory, workUnit, buildPhase),
       title,
       workCategory: workCategory as WorkCategory,
       workUnit: workUnit as WorkUnit,
       buildPhase: buildPhase as BuildPhase,
+      workTypeId: resolvedWorkType?.id ?? null,
       workQuantity,
       estimatedMinutes,
       defaultWorkers,

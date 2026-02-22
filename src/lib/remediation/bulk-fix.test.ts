@@ -52,6 +52,7 @@ const baseTask = {
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
   archiveVersion: null,
+  workTypeId: null,
 };
 
 describe('bulkReassignToSuggested', () => {
@@ -146,7 +147,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['task-old'],
-      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: 'build-up' },
+      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: 'build-up', workTypeId: null },
     );
 
     expect(result.succeeded).toBe(1);
@@ -167,7 +168,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['missing'],
-      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: null },
+      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: null, workTypeId: null },
     );
 
     expect(result.failed).toHaveLength(1);
@@ -181,7 +182,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['t1', 't2', 't3'],
-      { workCategory: 'furniture', workUnit: 'pcs', workQuantity: 50, buildPhase: null },
+      { workCategory: 'furniture', workUnit: 'pcs', workQuantity: 50, buildPhase: null, workTypeId: null },
     );
 
     expect(result.attempted).toBe(3);

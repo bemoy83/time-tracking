@@ -8,9 +8,10 @@ import { getAllTimeEntries } from '../lib/db';
 import {
   TaskTemplate,
   WORK_UNIT_LABELS,
-  WORK_CATEGORY_LABELS,
   BUILD_PHASE_LABELS,
 } from '../lib/types';
+import { useWorkTypeStore, getWorkTypeById, removeWorkType } from '../lib/stores/work-type-store';
+import type { WorkType } from '../lib/types';
 import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { TemplateFormSheet } from '../components/TemplateFormSheet';
@@ -19,6 +20,7 @@ import { KpiSection } from '../components/KpiSection';
 import { AttributionQualitySection } from '../components/AttributionQualitySection';
 import { recomputeAttribution } from '../lib/attribution/cache';
 import { CalculatorSheet } from '../components/CalculatorSheet';
+import { WorkTypeFormSheet } from '../components/WorkTypeFormSheet';
 import { pluralize } from '../lib/utils/pluralize';
 import { getAttributionPolicy, setAttributionPolicy } from '../lib/stores/attribution-settings';
 import type { AttributionPolicy } from '../lib/types';
@@ -26,6 +28,7 @@ import type { AttributionPolicy } from '../lib/types';
 export function SettingsView() {
   const { tasks, projects } = useTaskStore();
   const { templates } = useTemplateStore();
+  const { workTypes } = useWorkTypeStore();
   const [entryCount, setEntryCount] = useState(0);
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
@@ -44,6 +47,10 @@ export function SettingsView() {
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<TaskTemplate | null>(null);
+
+  // Work Type form state
+  const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
+  const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -84,6 +91,28 @@ export function SettingsView() {
     setEditingTemplate(null);
   };
 
+  const handleAddWorkType = () => {
+    setEditingWorkType(null);
+    setShowWorkTypeForm(true);
+  };
+
+  const handleEditWorkType = (wt: WorkType) => {
+    setEditingWorkType(wt);
+    setShowWorkTypeForm(true);
+  };
+
+  const handleCloseWorkTypeForm = () => {
+    setShowWorkTypeForm(false);
+    setEditingWorkType(null);
+  };
+
+  const handleDeleteWorkType = async () => {
+    if (!editingWorkType) return;
+    await removeWorkType(editingWorkType.id);
+    setShowWorkTypeForm(false);
+    setEditingWorkType(null);
+  };
+
   return (
     <div className="settings-view">
       <h1 className="settings-view__title">Settings</h1>
@@ -115,6 +144,43 @@ export function SettingsView() {
         </div>
       </section>
 
+      {/* Work Types */}
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__section-title section-heading">Work Types</h2>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={handleAddWorkType}
+            >
+              + Add
+            </button>
+          </div>
+
+          {workTypes.length === 0 ? (
+            <p className="settings-view__empty">No work types yet. Add one to categorise tasks.</p>
+          ) : (
+            <div className="settings-view__template-list">
+              {workTypes.map((wt) => (
+                <button
+                  key={wt.id}
+                  className="settings-view__row"
+                  onClick={() => handleEditWorkType(wt)}
+                >
+                  <div className="settings-view__template-info">
+                    <span className="settings-view__row-label">{wt.title}</span>
+                    <span className="settings-view__row-detail">
+                      {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]} · {wt.expectedProductivity} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Templates */}
       <section className="settings-view__section">
         <div className="settings-view__card">
@@ -142,7 +208,12 @@ export function SettingsView() {
                   <div className="settings-view__template-info">
                     <span className="settings-view__row-label">{t.title}</span>
                     <span className="settings-view__row-detail">
-                      {WORK_CATEGORY_LABELS[t.workCategory]} · {BUILD_PHASE_LABELS[t.buildPhase]} · {WORK_UNIT_LABELS[t.workUnit]}
+                      {(() => {
+                        const wt = t.workTypeId ? getWorkTypeById(t.workTypeId) : null;
+                        return wt
+                          ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+                          : `${BUILD_PHASE_LABELS[t.buildPhase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
+                      })()}
                     </span>
                   </div>
                 </button>
@@ -268,6 +339,13 @@ export function SettingsView() {
         isOpen={showCalculator}
         onClose={() => setShowCalculator(false)}
         tasks={tasks}
+      />
+
+      <WorkTypeFormSheet
+        isOpen={showWorkTypeForm}
+        onClose={handleCloseWorkTypeForm}
+        workType={editingWorkType}
+        onDelete={editingWorkType ? handleDeleteWorkType : undefined}
       />
     </div>
   );

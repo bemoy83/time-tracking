@@ -10,6 +10,7 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     workCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
+    workTypeId: null,
     workQuantity: 100,
     crew: 2,
     timeHours: 5,

@@ -84,6 +84,12 @@
 
 /* ---- Sizes ---- */
 
+.btn--xs {
+  min-height: 28px;
+  padding: 2px var(--space-sm);
+  font-size: var(--font-caption);
+}
+
 .btn--sm {
   min-height: 36px;
   padding: var(--space-xs) var(--space-sm);

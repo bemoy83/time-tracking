@@ -6,15 +6,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  WORK_CATEGORIES,
   WORK_CATEGORY_LABELS,
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
   formatDurationShort,
   type WorkCategory,
-  type WorkUnit,
-  type BuildPhase,
 } from '../lib/types';
+import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { getAllPlans, addPlan, updatePlan, deletePlan } from '../lib/db';
 import {
   type Plan,
@@ -35,12 +33,10 @@ import { computeWorkTypeKpis } from '../lib/kpi';
 import { useTaskStore } from '../lib/stores/task-store';
 import { buildAttributedRollup } from '../lib/attributed-rollup';
 
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
-const BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
-
 type PlanningSubView = 'list' | 'edit' | 'compare';
 
 export function PlanningView() {
+  useWorkTypeStore();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subView, setSubView] = useState<PlanningSubView>('list');
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
@@ -362,7 +358,12 @@ function LineItemCard({
       <div className="planning-view__line-item-header">
         <span className="planning-view__line-item-title">{item.title}</span>
         <span className="planning-view__line-item-type">
-          {WORK_CATEGORY_LABELS[item.workCategory]} / {WORK_UNIT_LABELS[item.workUnit]} / {BUILD_PHASE_LABELS[item.buildPhase]}
+          {(() => {
+            const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
+            return wt
+              ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+              : `${WORK_CATEGORY_LABELS[item.workCategory]} / ${WORK_UNIT_LABELS[item.workUnit]} / ${BUILD_PHASE_LABELS[item.buildPhase]}`;
+          })()}
         </span>
         {!isLocked && (
           <button className="btn btn--secondary btn--sm" onClick={onRemove}>Remove</button>
@@ -474,16 +475,41 @@ function AddLineItemForm({
   onAdd: (item: PlanLineItem) => void;
   onCancel: () => void;
 }) {
+  const { workTypes } = useWorkTypeStore();
   const [title, setTitle] = useState('');
-  const [workCategory, setWorkCategory] = useState<WorkCategory>('carpet-tiles');
-  const [workUnit, setWorkUnit] = useState<WorkUnit>('m2');
-  const [buildPhase, setBuildPhase] = useState<BuildPhase>('build-up');
+  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>(workTypes[0]?.id ?? '');
   const [workQuantity, setWorkQuantity] = useState(100);
-  const [rate, setRate] = useState(10);
+  const [rate, setRate] = useState(workTypes[0]?.expectedProductivity ?? 10);
+
+  const selectedWorkType = selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null;
+
+  const handleWorkTypeChange = (wtId: string) => {
+    setSelectedWorkTypeId(wtId);
+    const wt = getWorkTypeById(wtId);
+    if (wt) {
+      setRate(wt.expectedProductivity);
+    }
+  };
 
   const handleSubmit = () => {
-    if (!title.trim()) return;
-    const item = createLineItem(title.trim(), workCategory, workUnit, buildPhase, workQuantity, rate);
+    if (!title.trim() || !selectedWorkType) return;
+    // Derive workCategory from title for backward compatibility
+    const lowerTitle = selectedWorkType.title.toLowerCase();
+    const workCategory: WorkCategory = lowerTitle.includes('carpet')
+      ? 'carpet-tiles'
+      : lowerTitle.includes('partition') || lowerTitle.includes('wall')
+        ? 'partition-walls'
+        : 'furniture';
+    const item = createLineItem(
+      title.trim(),
+      workCategory,
+      selectedWorkType.workUnit,
+      selectedWorkType.buildPhase,
+      workQuantity,
+      rate,
+      'template',
+      selectedWorkType.id,
+    );
     onAdd(item);
   };
 
@@ -496,41 +522,32 @@ function AddLineItemForm({
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label>
-          Category
-          <select className="input" value={workCategory} onChange={(e) => setWorkCategory(e.target.value as WorkCategory)}>
-            {WORK_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{WORK_CATEGORY_LABELS[c]}</option>
+          Work Type
+          <select
+            className="input"
+            value={selectedWorkTypeId}
+            onChange={(e) => handleWorkTypeChange(e.target.value)}
+          >
+            {workTypes.length === 0 && <option value="">No work types available</option>}
+            {workTypes.map((wt) => (
+              <option key={wt.id} value={wt.id}>
+                {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
+              </option>
             ))}
           </select>
         </label>
         <label>
-          Unit
-          <select className="input" value={workUnit} onChange={(e) => setWorkUnit(e.target.value as WorkUnit)}>
-            {WORK_UNITS.map((u) => (
-              <option key={u} value={u}>{WORK_UNIT_LABELS[u]}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Phase
-          <select className="input" value={buildPhase} onChange={(e) => setBuildPhase(e.target.value as BuildPhase)}>
-            {BUILD_PHASES.map((p) => (
-              <option key={p} value={p}>{BUILD_PHASE_LABELS[p]}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Quantity
+          Quantity{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
           <input className="input" type="number" value={workQuantity} onChange={(e) => setWorkQuantity(Number(e.target.value))} />
         </label>
         <label>
-          Rate
+          Rate{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr)` : ''}
           <input className="input" type="number" value={rate} step={0.1} onChange={(e) => setRate(Number(e.target.value))} />
         </label>
       </div>
       <div className="planning-view__add-actions">
         <button className="btn btn--secondary" onClick={onCancel}>Cancel</button>
-        <button className="btn btn--primary" onClick={handleSubmit} disabled={!title.trim()}>Add</button>
+        <button className="btn btn--primary" onClick={handleSubmit} disabled={!title.trim() || !selectedWorkType}>Add</button>
       </div>
     </div>
   );

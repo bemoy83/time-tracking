@@ -111,6 +111,7 @@ export function buildIssueQueues(
     if (isMeasurable(task)) continue;
 
     const missing: string[] = [];
+    if (task.workTypeId == null) missing.push('work type');
     if (task.workCategory == null) missing.push('work category');
     if (task.workUnit == null) missing.push('work unit');
     if (task.workQuantity == null || task.workQuantity <= 0) missing.push('work quantity');
@@ -175,7 +176,19 @@ export function findNearestMeasurable(
     }
   }
 
-  // 3. Check any measurable task with matching work category
+  // 3. Check any measurable task with matching workTypeId (preferred) or workCategory
+  if (task.workTypeId) {
+    const match = tasks.find(
+      (t) =>
+        t.id !== taskId &&
+        t.parentId == null &&
+        isMeasurable(t) &&
+        t.workTypeId === task.workTypeId,
+    );
+    if (match) {
+      return { targetId: match.id, targetTitle: match.title, matchType: 'work_type_match' };
+    }
+  }
   if (task.workCategory) {
     const match = tasks.find(
       (t) =>

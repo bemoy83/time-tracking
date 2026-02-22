@@ -10,10 +10,10 @@ import { useState, useEffect } from 'react';
 import {
   TaskTemplate,
   WORK_UNIT_LABELS,
-  WORK_CATEGORY_LABELS,
   BUILD_PHASE_LABELS,
 } from '../lib/types';
 import { useTemplateStore } from '../lib/stores/template-store';
+import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { ActionSheet } from './ActionSheet';
 
 type Mode = 'blank' | 'template';
@@ -30,6 +30,7 @@ export function TemplatePickerSheet({
   onSelect,
 }: TemplatePickerSheetProps) {
   const { templates } = useTemplateStore();
+  useWorkTypeStore(); // subscribe to work type updates
   const [mode, setMode] = useState<Mode>('blank');
   const [selected, setSelected] = useState<TaskTemplate | null>(null);
 
@@ -93,20 +94,24 @@ export function TemplatePickerSheet({
               No templates yet. Create one in Settings.
             </p>
           ) : (
-            templates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={`template-picker__row${selected?.id === t.id ? ' template-picker__row--selected' : ''}`}
-                aria-pressed={selected?.id === t.id}
-                onClick={() => setSelected(t)}
-              >
-                <span className="template-picker__title">{t.title}</span>
-                <span className="template-picker__detail">
-                  {WORK_CATEGORY_LABELS[t.workCategory]} · {BUILD_PHASE_LABELS[t.buildPhase]} · {WORK_UNIT_LABELS[t.workUnit]}
-                </span>
-              </button>
-            ))
+            templates.map((t) => {
+              const wt = t.workTypeId ? getWorkTypeById(t.workTypeId) : null;
+              const detail = wt
+                ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+                : `${BUILD_PHASE_LABELS[t.buildPhase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`template-picker__row${selected?.id === t.id ? ' template-picker__row--selected' : ''}`}
+                  aria-pressed={selected?.id === t.id}
+                  onClick={() => setSelected(t)}
+                >
+                  <span className="template-picker__title">{t.title}</span>
+                  <span className="template-picker__detail">{detail}</span>
+                </button>
+              );
+            })
           )}
         </div>
       )}

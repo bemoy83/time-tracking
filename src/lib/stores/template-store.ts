@@ -70,6 +70,7 @@ export interface CreateTemplateInput {
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
   workCategory: WorkCategory;
+  workTypeId?: string | null;
   workQuantity?: number | null;
   estimatedMinutes?: number | null;
   defaultWorkers?: number | null;
@@ -81,6 +82,7 @@ export async function createTemplate(input: CreateTemplateInput): Promise<TaskTe
   const template: TaskTemplate = {
     id: generateId(),
     title: input.title,
+    workTypeId: input.workTypeId ?? null,
     workUnit: input.workUnit,
     workQuantity: input.workQuantity ?? null,
     estimatedMinutes: input.estimatedMinutes ?? null,
