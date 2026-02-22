@@ -8,7 +8,7 @@
  */
 
 import type { WorkCategory, WorkUnit, BuildPhase } from '../types';
-import { generateId, nowUtc } from '../types';
+import { WORK_CATEGORY_LABELS, generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 
 export type PlanStatus = 'draft' | 'locked';
@@ -18,7 +18,8 @@ export interface PlanLineItem {
   /** Display name for the work package. */
   title: string;
   /** Work type fields — used for KPI lookup. */
-  workCategory: WorkCategory;
+  workCategory: WorkCategory | null; // legacy compatibility only
+  workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
   /** Reference to WorkType entity. null for legacy line items. */
@@ -45,12 +46,31 @@ export interface Plan {
   lockedAt: string | null;
 }
 
+/**
+ * Resolve a canonical WorkType title for line-item keying.
+ * Falls back for legacy plans that only stored workCategory.
+ */
+export function resolveLineItemWorkTypeTitle(
+  item: Pick<PlanLineItem, 'workTypeTitle' | 'workCategory' | 'title'>,
+): string {
+  if (item.workTypeTitle && item.workTypeTitle.trim().length > 0) {
+    return item.workTypeTitle;
+  }
+  if (item.workCategory) {
+    return WORK_CATEGORY_LABELS[item.workCategory];
+  }
+  return item.title;
+}
+
 /** Get the WorkTypeKey for a line item (for KPI lookups). */
 export function lineItemWorkTypeKey(item: PlanLineItem): WorkTypeKey {
   return {
-    workCategory: item.workCategory,
+    workTypeId: item.workTypeId,
+    workTypeTitle: resolveLineItemWorkTypeTitle(item),
     workUnit: item.workUnit,
     buildPhase: item.buildPhase,
+    legacyWorkCategory: item.workCategory,
+    workCategory: item.workCategory,
   };
 }
 
@@ -85,7 +105,8 @@ export function createPlan(title: string): Plan {
 /** Create a new line item with defaults. */
 export function createLineItem(
   title: string,
-  workCategory: WorkCategory,
+  workTypeTitle: string,
+  workCategory: WorkCategory | null,
   workUnit: WorkUnit,
   buildPhase: BuildPhase,
   workQuantity: number,
@@ -97,6 +118,7 @@ export function createLineItem(
   return {
     id: generateId(),
     title,
+    workTypeTitle,
     workCategory,
     workUnit,
     buildPhase,

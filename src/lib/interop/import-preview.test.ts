@@ -5,9 +5,10 @@ import { generateImportPreview } from './import-preview';
 
 function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedWorkPackage {
   return {
-    mappingKey: 'Install carpet::carpet-tiles:m2:build-up',
+    mappingKey: 'Install carpet::Carpet Tiles:m2:build-up',
     title: 'Install carpet',
-    workCategory: 'carpet-tiles',
+    workTypeTitle: 'Carpet Tiles',
+    legacyWorkCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
     workTypeId: null,
@@ -130,21 +131,23 @@ describe('generateImportPreview', () => {
 
     const preview = generateImportPreview([item1, item2], [], []);
 
-    expect(preview.duplicateKeys).toContain('Install carpet::carpet-tiles:m2:build-up');
+    expect(preview.duplicateKeys).toContain('Install carpet::Carpet Tiles:m2:build-up');
   });
 
   it('handles mixed actions', () => {
     const create = makeImportItem({
-      mappingKey: 'New task::furniture:pcs:build-up',
+      mappingKey: 'New task::Furniture:pcs:build-up',
       title: 'New task',
-      workCategory: 'furniture',
+      workTypeTitle: 'Furniture',
+      legacyWorkCategory: 'furniture',
       workUnit: 'pcs',
     });
     const skip = makeImportItem();
     const update = makeImportItem({
-      mappingKey: 'Walls::partition-walls:m2:build-up',
+      mappingKey: 'Walls::Partition Walls:m2:build-up',
       title: 'Walls',
-      workCategory: 'partition-walls',
+      workTypeTitle: 'Partition Walls',
+      legacyWorkCategory: 'partition-walls',
       workQuantity: 300,
     });
 

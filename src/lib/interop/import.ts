@@ -3,10 +3,10 @@
  * creation inputs with validation.
  *
  * Expected CSV columns:
- *   title, workCategory, workUnit, buildPhase, workQuantity,
+ *   title, workTypeTitle, workUnit, buildPhase, workQuantity,
  *   estimatedMinutes, defaultWorkers, targetProductivity
  *
- * Stable mapping key for round-trip: title + workCategory + workUnit + buildPhase
+ * Stable mapping key for round-trip: title + workTypeTitle + workUnit + buildPhase
  */
 
 import {
@@ -16,7 +16,7 @@ import {
   type WorkUnit,
   type BuildPhase,
 } from '../types';
-import { findWorkTypeByCompositeKey } from '../stores/work-type-store';
+import { findWorkTypeByKey } from '../stores/work-type-store';
 
 const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 const VALID_BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
@@ -25,10 +25,11 @@ export interface ImportedWorkPackage {
   /** Stable mapping key for round-trip reliability. */
   mappingKey: string;
   title: string;
-  workCategory: WorkCategory;
+  workTypeTitle: string;
+  legacyWorkCategory: WorkCategory | null;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
-  /** Resolved workTypeId from (workCategory→title, workUnit, buildPhase). null if no match found. */
+  /** Resolved workTypeId from (title, workUnit, buildPhase). null if no match found. */
   workTypeId: string | null;
   workQuantity: number | null;
   estimatedMinutes: number | null;
@@ -52,11 +53,11 @@ export interface ImportParseResult {
 /** Generate a stable mapping key from work package fields. */
 export function workPackageMappingKey(
   title: string,
-  workCategory: string,
+  workTypeTitle: string,
   workUnit: string,
   buildPhase: string,
 ): string {
-  return `${title}::${workCategory}:${workUnit}:${buildPhase}`;
+  return `${title}::${workTypeTitle}:${workUnit}:${buildPhase}`;
 }
 
 /**
@@ -70,8 +71,13 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
   }
 
   const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
-  const requiredHeaders = ['title', 'workcategory', 'workunit', 'buildphase'];
+  const requiredHeaders = ['title', 'workunit', 'buildphase'];
   const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
+  const hasWorkTypeTitle = headers.includes('worktypetitle');
+  const hasLegacyCategory = headers.includes('workcategory');
+  if (!hasWorkTypeTitle && !hasLegacyCategory) {
+    missingHeaders.push('workTypeTitle');
+  }
   if (missingHeaders.length > 0) {
     return {
       items: [],
@@ -102,11 +108,22 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       rowErrors.push({ row: rowNum, field: 'title', message: 'Title is required' });
     }
 
-    const workCategory = row['workcategory'];
-    if (!workCategory) {
-      rowErrors.push({ row: rowNum, field: 'workCategory', message: 'Work category is required' });
-    } else if (!WORK_CATEGORIES.includes(workCategory as WorkCategory)) {
-      rowErrors.push({ row: rowNum, field: 'workCategory', message: `Invalid work category: "${workCategory}". Valid: ${WORK_CATEGORIES.join(', ')}` });
+    const legacyCategoryRaw = row['workcategory'];
+    let legacyWorkCategory: WorkCategory | null = null;
+    if (legacyCategoryRaw) {
+      if (!WORK_CATEGORIES.includes(legacyCategoryRaw as WorkCategory)) {
+        rowErrors.push({ row: rowNum, field: 'workCategory', message: `Invalid work category: "${legacyCategoryRaw}". Valid: ${WORK_CATEGORIES.join(', ')}` });
+      } else {
+        legacyWorkCategory = legacyCategoryRaw as WorkCategory;
+      }
+    }
+
+    const workTypeTitleRaw = row['worktypetitle'];
+    const workTypeTitle = workTypeTitleRaw
+      ? workTypeTitleRaw
+      : (legacyWorkCategory ? (WORK_CATEGORY_LABELS[legacyWorkCategory] ?? '') : '');
+    if (!workTypeTitle) {
+      rowErrors.push({ row: rowNum, field: 'workTypeTitle', message: 'Work type title is required' });
     }
 
     const workUnit = row['workunit'];
@@ -141,18 +158,18 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       continue;
     }
 
-    // Resolve WorkType by mapping workCategory label → WorkType title
-    const categoryLabel = WORK_CATEGORY_LABELS[workCategory as WorkCategory] ?? workCategory;
-    const resolvedWorkType = findWorkTypeByCompositeKey(
-      categoryLabel,
+    // Resolve WorkType by key (title + unit + phase)
+    const resolvedWorkType = findWorkTypeByKey(
+      workTypeTitle,
       workUnit as WorkUnit,
       buildPhase as BuildPhase,
     );
 
     items.push({
-      mappingKey: workPackageMappingKey(title, workCategory, workUnit, buildPhase),
+      mappingKey: workPackageMappingKey(title, workTypeTitle, workUnit, buildPhase),
       title,
-      workCategory: workCategory as WorkCategory,
+      workTypeTitle,
+      legacyWorkCategory,
       workUnit: workUnit as WorkUnit,
       buildPhase: buildPhase as BuildPhase,
       workTypeId: resolvedWorkType?.id ?? null,

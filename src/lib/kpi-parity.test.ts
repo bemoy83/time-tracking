@@ -99,7 +99,8 @@ describe('KPI ↔ Calculator parity', () => {
 
     // Step 4: Calculator lookup (CalculatorSheet path)
     const key: WorkTypeKey = {
-      workCategory: 'carpet-tiles',
+      workTypeId: null,
+      workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
       buildPhase: 'build-up',
     };
@@ -181,7 +182,8 @@ describe('KPI ↔ Calculator parity', () => {
 
     // Calculator fallback: search without buildPhase
     const fallbackKey: WorkTypeKey = {
-      workCategory: 'furniture',
+      workTypeId: null,
+      workTypeTitle: 'Furniture',
       workUnit: 'pcs',
       buildPhase: null,
     };

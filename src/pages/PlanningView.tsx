@@ -6,11 +6,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  WORK_CATEGORY_LABELS,
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
   formatDurationShort,
-  type WorkCategory,
 } from '../lib/types';
 import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { getAllPlans, addPlan, updatePlan, deletePlan } from '../lib/db';
@@ -25,6 +23,7 @@ import {
   removeLineItemFromPlan,
   updatePlanLineItem,
   planTotalPersonHours,
+  resolveLineItemWorkTypeTitle,
 } from '../lib/planning/plan-model';
 import { generatePlanSuggestions, type LineItemSuggestion } from '../lib/planning/plan-suggestions';
 import { comparePlans, type PlanComparison } from '../lib/planning/plan-compare';
@@ -36,13 +35,13 @@ import { buildAttributedRollup } from '../lib/attributed-rollup';
 type PlanningSubView = 'list' | 'edit' | 'compare';
 
 export function PlanningView() {
-  useWorkTypeStore();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subView, setSubView] = useState<PlanningSubView>('list');
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [comparePlanId, setComparePlanId] = useState<string | null>(null);
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
   const { tasks } = useTaskStore();
+  const { workTypes } = useWorkTypeStore();
 
   // Load plans from DB
   useEffect(() => {
@@ -58,11 +57,14 @@ export function PlanningView() {
         return;
       }
       const rollup = await buildAttributedRollup(completedTasks, tasks);
-      const computed = computeWorkTypeKpis(completedTasks, rollup.entriesByTask);
+      const computed = computeWorkTypeKpis(completedTasks, rollup.entriesByTask, {
+        workTypes,
+        archiveOnly: true,
+      });
       setKpis(computed);
     }
     loadKpis();
-  }, [tasks]);
+  }, [tasks, workTypes]);
 
   const handleCreatePlan = useCallback(async () => {
     const plan = createPlan('New Plan');
@@ -362,7 +364,7 @@ function LineItemCard({
             const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
             return wt
               ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-              : `${WORK_CATEGORY_LABELS[item.workCategory]} / ${WORK_UNIT_LABELS[item.workUnit]} / ${BUILD_PHASE_LABELS[item.buildPhase]}`;
+              : `${resolveLineItemWorkTypeTitle(item)} · ${BUILD_PHASE_LABELS[item.buildPhase]} · ${WORK_UNIT_LABELS[item.workUnit]}`;
           })()}
         </span>
         {!isLocked && (
@@ -493,16 +495,10 @@ function AddLineItemForm({
 
   const handleSubmit = () => {
     if (!title.trim() || !selectedWorkType) return;
-    // Derive workCategory from title for backward compatibility
-    const lowerTitle = selectedWorkType.title.toLowerCase();
-    const workCategory: WorkCategory = lowerTitle.includes('carpet')
-      ? 'carpet-tiles'
-      : lowerTitle.includes('partition') || lowerTitle.includes('wall')
-        ? 'partition-walls'
-        : 'furniture';
     const item = createLineItem(
       title.trim(),
-      workCategory,
+      selectedWorkType.title,
+      null,
       selectedWorkType.workUnit,
       selectedWorkType.buildPhase,
       workQuantity,

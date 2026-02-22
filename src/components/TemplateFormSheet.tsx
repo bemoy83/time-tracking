@@ -83,7 +83,7 @@ export function TemplateFormSheet({
         workTypeId,
         workUnit: selectedWorkType.workUnit,
         buildPhase: selectedWorkType.buildPhase,
-        workCategory: selectedWorkType.title.toLowerCase().replace(/\s+/g, '-') as never,
+        workCategory: isEdit ? (template?.workCategory ?? null) : null,
         workQuantity: !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : null,
         estimatedMinutes: totalMinutes > 0 ? totalMinutes : null,
         defaultWorkers: workers > 1 ? workers : null,

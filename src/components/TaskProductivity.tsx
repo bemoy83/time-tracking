@@ -10,6 +10,7 @@ import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
 import { useTimerStore } from '../lib/stores/timer-store';
 import { useTask } from '../lib/stores/task-store';
 import { formatProductivity, WORK_CATEGORY_LABELS, BUILD_PHASE_LABELS } from '../lib/types';
+import { getWorkTypeById } from '../lib/stores/work-type-store';
 import { ExpandableSection } from './ExpandableSection';
 import { SpeedIcon } from './icons';
 
@@ -30,6 +31,7 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
   const quantity = task.workQuantity;
   const unit = task.workUnit;
   const workers = task.defaultWorkers ?? 1;
+  const workTypeTitle = task.workTypeId ? getWorkTypeById(task.workTypeId)?.title : null;
 
   // Target rate: from template (stored on task)
   const targetRate = task.targetProductivity;
@@ -73,11 +75,11 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
       sectionSummary={badgeText}
     >
       <div className="task-productivity__content">
-        {task.workCategory != null && (
+        {(workTypeTitle != null || task.workCategory != null) && (
           <div className="task-productivity__row task-productivity__row--meta">
             <span className="task-productivity__label section-heading">WORK TYPE</span>
             <span className="task-productivity__value">
-              {WORK_CATEGORY_LABELS[task.workCategory]}
+              {workTypeTitle ?? WORK_CATEGORY_LABELS[task.workCategory!]}
               {task.buildPhase != null && ` · ${BUILD_PHASE_LABELS[task.buildPhase]}`}
             </span>
           </div>

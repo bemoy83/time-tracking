@@ -85,11 +85,11 @@ describe('computeWorkTypeKpis', () => {
 
     expect(kpis).toHaveLength(2);
     // carpet-tiles group: (100+200) / (10+20) = 10
-    const carpetKpi = kpis.find((k) => k.key.workCategory === 'carpet-tiles')!;
+    const carpetKpi = kpis.find((k) => k.key.workTypeTitle === 'Carpet Tiles')!;
     expect(carpetKpi.sampleCount).toBe(2);
     expect(carpetKpi.avgProductivity).toBe(10);
     // furniture group: 50 / 5 = 10
-    const furnitureKpi = kpis.find((k) => k.key.workCategory === 'furniture')!;
+    const furnitureKpi = kpis.find((k) => k.key.workTypeTitle === 'Furniture')!;
     expect(furnitureKpi.sampleCount).toBe(1);
     expect(furnitureKpi.avgProductivity).toBe(10);
   });
@@ -254,7 +254,7 @@ describe('splitByPeriod', () => {
 describe('computeTrendDirection', () => {
   function makeKpi(overrides: Partial<WorkTypeKpi>): WorkTypeKpi {
     return {
-      key: { workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
       sampleCount: 5,
       avgProductivity: 10,
       totalQuantity: 100,

@@ -87,8 +87,7 @@ export function CreateTaskSheet({
     }
   }, [isOpen, template]);
 
-  const noWorkTypes = showWork && !hasTemplate && workTypes.length === 0;
-  const canCreate = title.trim().length > 0 && !isSaving && !noWorkTypes;
+  const canCreate = title.trim().length > 0 && !isSaving;
 
   const handleCreate = async () => {
     if (!canCreate) return;
@@ -182,7 +181,7 @@ export function CreateTaskSheet({
             <label className="entry-modal__label">Work Type</label>
             {workTypes.length === 0 ? (
               <div className="settings-view__row-detail">
-                No work types yet. Create one in Settings.
+                No work types yet. You can still create this task without one.
               </div>
             ) : (
               <select

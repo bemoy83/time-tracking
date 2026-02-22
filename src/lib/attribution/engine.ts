@@ -30,13 +30,13 @@ interface HeuristicResult {
   heuristicUsed: HeuristicName;
 }
 
-/** A task is measurable when it has quantity, unit, and category. */
+/** A task is measurable when it has quantity, unit, and a WorkType (or legacy category). */
 export function isMeasurable(task: Task): boolean {
   return (
     task.workQuantity != null &&
     task.workQuantity > 0 &&
     task.workUnit != null &&
-    task.workCategory != null
+    (task.workTypeId != null || task.workCategory != null)
   );
 }
 
@@ -68,46 +68,58 @@ export function findMeasurableOwner(
 
 /**
  * Deterministic heuristic resolver chain for unattributed/ambiguous entries.
- * Heuristic 1: parent has exact workCategory + workUnit + buildPhase match → 'exact-match'
- * Heuristic 2: parent has workCategory + workUnit match → 'category-match'
+ * Heuristic 1: measurable task with exact WorkType/legacy key match → 'exact-match'
+ * Heuristic 2: measurable task with legacy category + unit match → 'category-match'
  * Otherwise: no suggestion.
  */
 export function resolveWithHeuristics(
   task: Task,
   allTasks: Task[],
 ): HeuristicResult {
-  if (!task.parentId) {
+  const measurable = allTasks
+    .filter((t) => t.id !== task.id && isMeasurable(t))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (measurable.length === 0) {
     return { suggestedOwnerTaskId: null, heuristicUsed: 'none' };
   }
 
-  const parent = allTasks.find((t) => t.id === task.parentId);
-  if (!parent || !isMeasurable(parent)) {
-    return { suggestedOwnerTaskId: null, heuristicUsed: 'none' };
-  }
+  const sameProject = task.projectId != null
+    ? measurable.filter((t) => t.projectId === task.projectId)
+    : [];
+  const pool = sameProject.length > 0 ? sameProject : measurable;
 
   // Heuristic 0: workTypeId match (strongest signal)
-  if (
-    task.workTypeId != null &&
-    parent.workTypeId === task.workTypeId
-  ) {
-    return { suggestedOwnerTaskId: parent.id, heuristicUsed: 'exact-match' };
+  if (task.workTypeId != null) {
+    const byWorkType = pool.find((t) => t.workTypeId === task.workTypeId);
+    if (byWorkType) {
+      return { suggestedOwnerTaskId: byWorkType.id, heuristicUsed: 'exact-match' };
+    }
   }
 
-  // Heuristic 1: exact match on category + unit + phase
-  if (
-    parent.workCategory === task.workCategory &&
-    parent.workUnit === task.workUnit &&
-    parent.buildPhase === task.buildPhase
-  ) {
-    return { suggestedOwnerTaskId: parent.id, heuristicUsed: 'exact-match' };
+  // Heuristic 1: exact legacy match on category + unit + phase
+  if (task.workCategory != null && task.workUnit != null && task.buildPhase != null) {
+    const byLegacyExact = pool.find(
+      (t) =>
+        t.workCategory === task.workCategory &&
+        t.workUnit === task.workUnit &&
+        t.buildPhase === task.buildPhase,
+    );
+    if (byLegacyExact) {
+      return { suggestedOwnerTaskId: byLegacyExact.id, heuristicUsed: 'exact-match' };
+    }
   }
 
   // Heuristic 2: category + unit match (phase may differ)
-  if (
-    parent.workCategory === task.workCategory &&
-    parent.workUnit === task.workUnit
-  ) {
-    return { suggestedOwnerTaskId: parent.id, heuristicUsed: 'category-match' };
+  if (task.workCategory != null && task.workUnit != null) {
+    const byLegacyCategory = pool.find(
+      (t) =>
+        t.workCategory === task.workCategory &&
+        t.workUnit === task.workUnit,
+    );
+    if (byLegacyCategory) {
+      return { suggestedOwnerTaskId: byLegacyCategory.id, heuristicUsed: 'category-match' };
+    }
   }
 
   return { suggestedOwnerTaskId: null, heuristicUsed: 'none' };

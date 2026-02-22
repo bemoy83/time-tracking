@@ -2,7 +2,7 @@
  * Import validation preview — diffs parsed import data against existing
  * tasks and templates. Shows what would be created, updated, or skipped.
  *
- * Matches by mapping key (title::workCategory:workUnit:buildPhase).
+ * Matches by mapping key (title::workTypeTitle:workUnit:buildPhase).
  * Detects duplicates within the import set and conflicts with existing data.
  */
 
@@ -10,6 +10,7 @@ import type { Task } from '../types';
 import type { TaskTemplate } from '../types';
 import type { ImportedWorkPackage } from './import';
 import { workPackageMappingKey } from './import';
+import { WORK_CATEGORY_LABELS } from '../types';
 
 export type ImportAction = 'create' | 'update' | 'skip';
 
@@ -20,6 +21,8 @@ export interface ImportPreviewItem {
   reason: string | null;
   /** ID of existing entity that matches (for updates). */
   existingId: string | null;
+  /** Existing entity type (for updates/skips). */
+  existingType: 'task' | 'template' | null;
   /** Fields that differ from existing (for updates). */
   changedFields: string[];
 }
@@ -36,16 +39,23 @@ export interface ImportPreview {
 }
 
 /** Build a mapping key for an existing task. */
-function taskMappingKey(task: Task): string | null {
-  if (!task.workCategory || !task.workUnit || !task.buildPhase) return null;
-  return workPackageMappingKey(task.title, task.workCategory, task.workUnit, task.buildPhase);
+function taskMappingKey(task: Task, workTypeTitleById: Map<string, string>): string | null {
+  if (!task.workUnit || !task.buildPhase) return null;
+  if (!task.workTypeId && !task.workCategory) return null;
+  const workTypeTitle = task.workTypeId
+    ? (workTypeTitleById.get(task.workTypeId) ?? (task.workCategory ? WORK_CATEGORY_LABELS[task.workCategory] : task.title))
+    : WORK_CATEGORY_LABELS[task.workCategory!];
+  return workPackageMappingKey(task.title, workTypeTitle, task.workUnit, task.buildPhase);
 }
 
 /** Build a mapping key for an existing template. */
-function templateMappingKey(template: TaskTemplate): string {
+function templateMappingKey(template: TaskTemplate, workTypeTitleById: Map<string, string>): string {
+  const workTypeTitle = template.workTypeId
+    ? (workTypeTitleById.get(template.workTypeId) ?? (template.workCategory ? WORK_CATEGORY_LABELS[template.workCategory] : template.title))
+    : (template.workCategory ? WORK_CATEGORY_LABELS[template.workCategory] : template.title);
   return workPackageMappingKey(
     template.title,
-    template.workCategory,
+    workTypeTitle,
     template.workUnit,
     template.buildPhase,
   );
@@ -84,16 +94,17 @@ export function generateImportPreview(
   items: ImportedWorkPackage[],
   existingTasks: Task[],
   existingTemplates: TaskTemplate[],
+  workTypeTitleById: Map<string, string> = new Map(),
 ): ImportPreview {
   // Build lookup maps by mapping key
   const templatesByKey = new Map<string, TaskTemplate>();
   for (const t of existingTemplates) {
-    templatesByKey.set(templateMappingKey(t), t);
+    templatesByKey.set(templateMappingKey(t, workTypeTitleById), t);
   }
 
   const tasksByKey = new Map<string, Task>();
   for (const t of existingTasks) {
-    const key = taskMappingKey(t);
+    const key = taskMappingKey(t, workTypeTitleById);
     if (key) tasksByKey.set(key, t);
   }
 
@@ -119,6 +130,7 @@ export function generateImportPreview(
           item,
           reason: 'Identical template already exists',
           existingId: existingTemplate.id,
+          existingType: 'template',
           changedFields: [],
         });
       } else {
@@ -127,6 +139,7 @@ export function generateImportPreview(
           item,
           reason: `Template differs: ${changed.join(', ')}`,
           existingId: existingTemplate.id,
+          existingType: 'template',
           changedFields: changed,
         });
       }
@@ -143,6 +156,7 @@ export function generateImportPreview(
           item,
           reason: 'Identical task already exists',
           existingId: existingTask.id,
+          existingType: 'task',
           changedFields: [],
         });
       } else {
@@ -151,6 +165,7 @@ export function generateImportPreview(
           item,
           reason: `Task differs: ${changed.join(', ')}`,
           existingId: existingTask.id,
+          existingType: 'task',
           changedFields: changed,
         });
       }
@@ -163,6 +178,7 @@ export function generateImportPreview(
       item,
       reason: null,
       existingId: null,
+      existingType: null,
       changedFields: [],
     });
   }

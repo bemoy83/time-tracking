@@ -26,6 +26,10 @@ export interface IssueQueueItem {
   /** Suggested fix target (taskId to reassign to, or null). */
   suggestedTargetId: string | null;
   suggestedTargetTitle: string | null;
+  /** Suggested WorkType classification target. */
+  recommendedWorkTypeId: string | null;
+  /** Where the suggestion came from. */
+  suggestionSource: 'engine' | 'nearest' | null;
   /** Person-hours affected by this issue (0 for task-level issues). */
   personHours: number;
 }
@@ -51,6 +55,11 @@ export function buildIssueQueues(
 ): IssueQueueResult {
   const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
+  const getRecommendedWorkTypeId = (
+    sourceTask: Task | undefined,
+    suggestedTask: Task | undefined,
+  ): string | null => sourceTask?.workTypeId ?? suggestedTask?.workTypeId ?? null;
+
   const needsMeasurableOwner: IssueQueueItem[] = [];
   const ambiguousOwner: IssueQueueItem[] = [];
   const noWorkContext: IssueQueueItem[] = [];
@@ -72,18 +81,26 @@ export function buildIssueQueues(
           description: `Entry has a suggested owner but was not auto-applied`,
           suggestedTargetId: entry.suggestedOwnerTaskId,
           suggestedTargetTitle: suggestedTask?.title ?? entry.suggestedOwnerTaskId,
+          recommendedWorkTypeId: getRecommendedWorkTypeId(task, suggestedTask),
+          suggestionSource: 'engine',
           personHours: entry.personHours,
         });
       } else {
-        // No suggestion at all → needs measurable owner
+        // No engine suggestion → needs measurable owner (try nearest measurable fallback)
+        const nearest = findNearestMeasurable(entry.taskId, tasks);
+        const nearestTask = nearest ? taskMap.get(nearest.targetId) : undefined;
         needsMeasurableOwner.push({
           category: 'needs_measurable_owner',
           taskId: entry.taskId,
           entryId: entry.entryId,
           taskTitle,
-          description: `No measurable task found in hierarchy`,
-          suggestedTargetId: null,
-          suggestedTargetTitle: null,
+          description: nearest
+            ? `No measurable owner. Suggested nearest measurable task (${nearest.matchType}).`
+            : `No measurable task found in hierarchy`,
+          suggestedTargetId: nearest?.targetId ?? null,
+          suggestedTargetTitle: nearest?.targetTitle ?? null,
+          recommendedWorkTypeId: getRecommendedWorkTypeId(task, nearestTask),
+          suggestionSource: nearest ? 'nearest' : null,
           personHours: entry.personHours,
         });
       }
@@ -99,6 +116,8 @@ export function buildIssueQueues(
         description: `Multiple valid measurable owners`,
         suggestedTargetId: entry.suggestedOwnerTaskId,
         suggestedTargetTitle: suggestedTask?.title ?? null,
+        recommendedWorkTypeId: getRecommendedWorkTypeId(task, suggestedTask ?? undefined),
+        suggestionSource: entry.suggestedOwnerTaskId ? 'engine' : null,
         personHours: entry.personHours,
       });
     }
@@ -124,9 +143,22 @@ export function buildIssueQueues(
       description: `Missing: ${missing.join(', ')}`,
       suggestedTargetId: null,
       suggestedTargetTitle: null,
+      recommendedWorkTypeId: task.workTypeId ?? null,
+      suggestionSource: null,
       personHours: 0,
     });
   }
+
+  const sortQueue = (items: IssueQueueItem[]) =>
+    items.sort((a, b) => {
+      const taskCmp = a.taskId.localeCompare(b.taskId);
+      if (taskCmp !== 0) return taskCmp;
+      return (a.entryId ?? '\uffff').localeCompare(b.entryId ?? '\uffff');
+    });
+
+  sortQueue(needsMeasurableOwner);
+  sortQueue(ambiguousOwner);
+  sortQueue(noWorkContext);
 
   const totalAffectedHours = [
     ...needsMeasurableOwner,
@@ -164,13 +196,16 @@ export function findNearestMeasurable(
 
   // 2. Check project peers (same project, measurable, not self)
   if (task.projectId) {
-    const peer = tasks.find(
-      (t) =>
-        t.id !== taskId &&
-        t.projectId === task.projectId &&
-        t.parentId == null &&
-        isMeasurable(t),
-    );
+    const peers = tasks
+      .filter(
+        (t) =>
+          t.id !== taskId &&
+          t.projectId === task.projectId &&
+          t.parentId == null &&
+          isMeasurable(t),
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const peer = peers[0];
     if (peer) {
       return { targetId: peer.id, targetTitle: peer.title, matchType: 'project_peer' };
     }
@@ -178,25 +213,31 @@ export function findNearestMeasurable(
 
   // 3. Check any measurable task with matching workTypeId (preferred) or workCategory
   if (task.workTypeId) {
-    const match = tasks.find(
-      (t) =>
-        t.id !== taskId &&
-        t.parentId == null &&
-        isMeasurable(t) &&
-        t.workTypeId === task.workTypeId,
-    );
+    const matches = tasks
+      .filter(
+        (t) =>
+          t.id !== taskId &&
+          t.parentId == null &&
+          isMeasurable(t) &&
+          t.workTypeId === task.workTypeId,
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const match = matches[0];
     if (match) {
       return { targetId: match.id, targetTitle: match.title, matchType: 'work_type_match' };
     }
   }
   if (task.workCategory) {
-    const match = tasks.find(
-      (t) =>
-        t.id !== taskId &&
-        t.parentId == null &&
-        isMeasurable(t) &&
-        t.workCategory === task.workCategory,
-    );
+    const matches = tasks
+      .filter(
+        (t) =>
+          t.id !== taskId &&
+          t.parentId == null &&
+          isMeasurable(t) &&
+          t.workCategory === task.workCategory,
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const match = matches[0];
     if (match) {
       return { targetId: match.id, targetTitle: match.title, matchType: 'work_type_match' };
     }

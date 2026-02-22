@@ -8,7 +8,13 @@ import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { ChevronRightIcon } from '../components/icons';
 import { pluralize } from '../lib/utils/pluralize';
 
-type SettingsSection = 'workTypes' | 'templates' | 'productivity' | 'attribution';
+type SettingsSection =
+  | 'workTypes'
+  | 'templates'
+  | 'productivity'
+  | 'attribution'
+  | 'remediation'
+  | 'interop';
 
 interface SettingsViewProps {
   onNavigateToSection?: (section: SettingsSection) => void;
@@ -38,10 +44,12 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   };
 
   const drillDownSections: { key: SettingsSection; label: string; helper: string }[] = [
-    { key: 'workTypes', label: 'Work Types', helper: 'Add and manage work categories for estimates' },
+    { key: 'workTypes', label: 'Work Types', helper: 'Add and manage reusable work-type definitions' },
     { key: 'templates', label: 'Templates', helper: 'Create reusable presets for faster task creation' },
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
+    { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
+    { key: 'interop', label: 'Interop', helper: 'Export KPI profiles and import work packages' },
   ];
 
   return (

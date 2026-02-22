@@ -8,12 +8,12 @@ import {
   Task,
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
-  WORK_CATEGORY_LABELS,
   formatProductivity,
 } from '../lib/types';
 import {
   computeWorkTypeKpis,
   computeWorkTypeTrends,
+  RECENT_PERIOD_DAYS,
   WorkTypeKpi,
   WorkTypeTrend,
   ConfidenceLevel,
@@ -22,6 +22,7 @@ import {
 } from '../lib/kpi';
 import { buildAttributedRollup } from '../lib/attributed-rollup';
 import { pluralize } from '../lib/utils/pluralize';
+import { useWorkTypeStore } from '../lib/stores/work-type-store';
 
 const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
   high: 'High',
@@ -41,6 +42,7 @@ interface KpiSectionProps {
 }
 
 export function KpiSection({ tasks }: KpiSectionProps) {
+  const { workTypes } = useWorkTypeStore();
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
   const [trends, setTrends] = useState<Map<string, WorkTypeTrend>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
@@ -53,18 +55,24 @@ export function KpiSection({ tasks }: KpiSectionProps) {
       const qualifying = tasks.filter(
         (t) =>
           t.status === 'completed' &&
-          t.workCategory != null &&
           t.workUnit != null &&
           t.workQuantity != null &&
-          t.workQuantity > 0
+          t.workQuantity > 0 &&
+          (t.workTypeId != null || t.workCategory != null)
       );
 
       const { entriesByTask } = await buildAttributedRollup(qualifying, tasks);
 
       if (cancelled) return;
 
-      const results = computeWorkTypeKpis(tasks, entriesByTask);
-      const trendResults = computeWorkTypeTrends(tasks, entriesByTask);
+      const results = computeWorkTypeKpis(tasks, entriesByTask, { workTypes, archiveOnly: true });
+      const trendResults = computeWorkTypeTrends(
+        tasks,
+        entriesByTask,
+        RECENT_PERIOD_DAYS,
+        undefined,
+        { workTypes, archiveOnly: true },
+      );
       const trendMap = new Map(trendResults.map((t) => [workTypeKeyString(t.key), t]));
 
       setKpis(results);
@@ -78,7 +86,7 @@ export function KpiSection({ tasks }: KpiSectionProps) {
     return () => {
       cancelled = true;
     };
-  }, [tasks]);
+  }, [tasks, workTypes]);
 
   if (isLoading) {
     return <p className="settings-view__empty">Loading...</p>;
@@ -97,7 +105,7 @@ export function KpiSection({ tasks }: KpiSectionProps) {
       {kpis.map((kpi) => {
         const { key } = kpi;
         const label = [
-          WORK_CATEGORY_LABELS[key.workCategory],
+          key.workTypeTitle,
           WORK_UNIT_LABELS[key.workUnit],
           key.buildPhase != null ? BUILD_PHASE_LABELS[key.buildPhase] : null,
         ]
@@ -105,11 +113,11 @@ export function KpiSection({ tasks }: KpiSectionProps) {
           .join(' · ');
 
         const isInsufficient = kpi.confidence === 'insufficient';
-        const trend = trends.get(`${key.workCategory}:${key.workUnit}:${key.buildPhase ?? '_'}`);
+        const trend = trends.get(workTypeKeyString(key));
 
         return (
           <div
-            key={`${key.workCategory}:${key.workUnit}:${key.buildPhase ?? ''}`}
+            key={workTypeKeyString(key)}
             className="settings-view__row settings-view__kpi-row"
           >
             <div className="settings-view__template-info">

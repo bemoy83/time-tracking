@@ -72,9 +72,26 @@ export interface TaskTemplate {
   defaultWorkers: number | null;
   targetProductivity: number | null; // units/person-hr (legacy, sourced from WorkType)
   buildPhase: BuildPhase;
-  workCategory: WorkCategory;       // legacy, sourced from WorkType
+  workCategory: WorkCategory | null; // legacy compatibility only
   createdAt: string;
   updatedAt: string;
+}
+
+export function normalizeWorkTypeTitle(title: string | null | undefined): string {
+  if (!title) return '';
+  return title.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function workTypeKeyString(title: string, workUnit: WorkUnit, buildPhase: BuildPhase): string {
+  return `${normalizeWorkTypeTitle(title)}:${workUnit}:${buildPhase}`;
+}
+
+export function legacyWorkCategoryFromTitle(title: string): WorkCategory | null {
+  const normalized = normalizeWorkTypeTitle(title);
+  if (normalized.includes('carpet')) return 'carpet-tiles';
+  if (normalized.includes('partition') || normalized.includes('wall')) return 'partition-walls';
+  if (normalized.includes('furniture')) return 'furniture';
+  return null;
 }
 
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {

@@ -69,12 +69,13 @@ describe('buildIssueQueues', () => {
     expect(result.needsMeasurableOwner).toHaveLength(1);
     expect(result.needsMeasurableOwner[0].entryId).toBe('entry-1');
     expect(result.needsMeasurableOwner[0].personHours).toBe(3);
+    expect(result.needsMeasurableOwner[0].suggestionSource).toBeNull();
     expect(result.totalAffectedHours).toBe(3);
   });
 
   it('categorizes unattributed entries with suggestions as ambiguous_owner', () => {
     const task = makeTask({ id: 't1', workCategory: null });
-    const parent = makeTask({ id: 'parent' });
+    const parent = makeTask({ id: 'parent', workTypeId: 'wt-parent' });
     const entry = makeAttributed({
       taskId: 't1',
       status: 'unattributed',
@@ -90,6 +91,8 @@ describe('buildIssueQueues', () => {
     expect(result.ambiguousOwner).toHaveLength(1);
     expect(result.ambiguousOwner[0].suggestedTargetId).toBe('parent');
     expect(result.ambiguousOwner[0].suggestedTargetTitle).toBe('Test Task');
+    expect(result.ambiguousOwner[0].recommendedWorkTypeId).toBe('wt-parent');
+    expect(result.ambiguousOwner[0].suggestionSource).toBe('engine');
   });
 
   it('categorizes ambiguous entries into ambiguous_owner queue', () => {
@@ -105,6 +108,56 @@ describe('buildIssueQueues', () => {
 
     expect(result.ambiguousOwner).toHaveLength(1);
     expect(result.ambiguousOwner[0].personHours).toBe(4);
+    expect(result.ambiguousOwner[0].suggestionSource).toBeNull();
+  });
+
+  it('adds nearest measurable suggestion for needs_measurable_owner', () => {
+    const owner = makeTask({ id: 'owner', title: 'Owner Task', workTypeId: 'wt-owner' });
+    const task = makeTask({
+      id: 't1',
+      workCategory: null,
+      workUnit: null,
+      workQuantity: null,
+      projectId: 'p1',
+    });
+    const ownerInProject = { ...owner, projectId: 'p1' as const };
+    const entry = makeAttributed({
+      taskId: 't1',
+      status: 'unattributed',
+      ownerTaskId: null,
+      reason: 'noMeasurableOwner',
+      suggestedOwnerTaskId: null,
+      personHours: 2,
+    });
+
+    const result = buildIssueQueues([entry], [task, ownerInProject]);
+    expect(result.needsMeasurableOwner).toHaveLength(1);
+    expect(result.needsMeasurableOwner[0].suggestedTargetId).toBe('owner');
+    expect(result.needsMeasurableOwner[0].recommendedWorkTypeId).toBe('wt-owner');
+    expect(result.needsMeasurableOwner[0].suggestionSource).toBe('nearest');
+  });
+
+  it('leaves needs_measurable_owner without suggestion when no target exists', () => {
+    const task = makeTask({
+      id: 't1',
+      workCategory: null,
+      workUnit: null,
+      workQuantity: null,
+    });
+    const entry = makeAttributed({
+      taskId: 't1',
+      status: 'unattributed',
+      ownerTaskId: null,
+      reason: 'noMeasurableOwner',
+      suggestedOwnerTaskId: null,
+      personHours: 2,
+    });
+
+    const result = buildIssueQueues([entry], [task]);
+    expect(result.needsMeasurableOwner).toHaveLength(1);
+    expect(result.needsMeasurableOwner[0].suggestedTargetId).toBeNull();
+    expect(result.needsMeasurableOwner[0].recommendedWorkTypeId).toBeNull();
+    expect(result.needsMeasurableOwner[0].suggestionSource).toBeNull();
   });
 
   it('detects completed tasks missing work context', () => {

@@ -10,7 +10,7 @@ import {
   deleteWorkType as dbDeleteWorkType,
 } from '../db';
 import type { WorkType, WorkUnit, BuildPhase } from '../types';
-import { generateId, nowUtc } from '../types';
+import { generateId, nowUtc, normalizeWorkTypeTitle } from '../types';
 import { useSyncExternalStore } from 'react';
 
 // ============================================================
@@ -75,7 +75,7 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
   // Check uniqueness in local state first
   const existing = state.workTypes.find(
     (wt) =>
-      wt.title.toLowerCase() === input.title.trim().toLowerCase() &&
+      normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(input.title) &&
       wt.workUnit === input.workUnit &&
       wt.buildPhase === input.buildPhase,
   );
@@ -114,7 +114,7 @@ export async function updateWorkTypeFields(
   const duplicate = state.workTypes.find(
     (wt) =>
       wt.id !== id &&
-      wt.title.toLowerCase() === newTitle.trim().toLowerCase() &&
+      normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(newTitle) &&
       wt.workUnit === newUnit &&
       wt.buildPhase === newPhase,
   );
@@ -151,10 +151,18 @@ export function findWorkTypeByCompositeKey(
 ): WorkType | undefined {
   return state.workTypes.find(
     (wt) =>
-      wt.title.toLowerCase() === title.toLowerCase() &&
+      normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(title) &&
       wt.workUnit === workUnit &&
       wt.buildPhase === buildPhase,
   );
+}
+
+export function findWorkTypeByKey(
+  title: string,
+  workUnit: WorkUnit,
+  buildPhase: BuildPhase,
+): WorkType | undefined {
+  return findWorkTypeByCompositeKey(title, workUnit, buildPhase);
 }
 
 // ============================================================

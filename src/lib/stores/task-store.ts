@@ -15,10 +15,12 @@ import {
   deleteTimeEntriesByTask,
   deleteTask as dbDeleteTask,
   getAllActiveTimers,
+  getTask as dbGetTask,
 } from '../db';
 import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs } from '../types';
 import type { WorkUnit, BuildPhase, WorkCategory } from '../types';
 import { stopTimer } from './timer-store';
+import { archiveTask } from '../archive/archive-action';
 
 // ============================================================
 // Store State
@@ -177,6 +179,30 @@ export async function updateTaskEstimate(id: string, estimatedMinutes: number | 
 }
 
 /**
+ * Update arbitrary task fields in one write.
+ * Used by import/remediation flows where multiple fields change together.
+ */
+export async function updateTaskFields(
+  id: string,
+  updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>,
+): Promise<void> {
+  const task = state.tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  const updated: Task = {
+    ...task,
+    ...updates,
+    id: task.id,
+    createdAt: task.createdAt,
+    updatedAt: nowUtc(),
+  };
+  await dbUpdateTask(updated);
+  setState({
+    tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
+  });
+}
+
+/**
  * Update a task's work quantity and unit.
  */
 export async function updateTaskWork(
@@ -227,6 +253,21 @@ export async function completeTask(id: string): Promise<void> {
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
   });
+
+  // Archive-grade completion is best-effort and must never block execution UX.
+  try {
+    const result = await archiveTask(id);
+    if (result.success) {
+      const archived = await dbGetTask(id);
+      if (archived) {
+        setState({
+          tasks: state.tasks.map((t) => (t.id === id ? archived : t)),
+        });
+      }
+    }
+  } catch {
+    // Intentionally ignore archive errors here.
+  }
 }
 
 /**
@@ -270,6 +311,23 @@ export async function completeTaskAndChildren(parentId: string): Promise<void> {
   setState({
     tasks: state.tasks.map((t) => updatedMap.get(t.id) ?? t),
   });
+
+  // Archive each completed task best-effort after status transition.
+  for (const id of updates.map((u) => u.id)) {
+    try {
+      const result = await archiveTask(id);
+      if (result.success) {
+        const archived = await dbGetTask(id);
+        if (archived) {
+          setState({
+            tasks: state.tasks.map((t) => (t.id === id ? archived : t)),
+          });
+        }
+      }
+    } catch {
+      // Intentionally ignore archive errors here.
+    }
+  }
 }
 
 /**

@@ -65,6 +65,8 @@ describe('bulkReassignToSuggested', () => {
       description: 'test',
       suggestedTargetId: 'task-new',
       suggestedTargetTitle: 'New Task',
+      recommendedWorkTypeId: 'wt-1',
+      suggestionSource: 'engine',
       personHours: 2,
     }];
 
@@ -96,6 +98,8 @@ describe('bulkReassignToSuggested', () => {
       description: 'test',
       suggestedTargetId: null,
       suggestedTargetTitle: null,
+      recommendedWorkTypeId: null,
+      suggestionSource: null,
       personHours: 2,
     }];
 
@@ -112,6 +116,8 @@ describe('bulkReassignToSuggested', () => {
       description: 'test',
       suggestedTargetId: 'task-2',
       suggestedTargetTitle: 'Other',
+      recommendedWorkTypeId: null,
+      suggestionSource: 'nearest',
       personHours: 0,
     }];
 
@@ -128,6 +134,8 @@ describe('bulkReassignToSuggested', () => {
       description: 'test',
       suggestedTargetId: 'task-new',
       suggestedTargetTitle: 'New',
+      recommendedWorkTypeId: null,
+      suggestionSource: 'engine',
       personHours: 1,
     }];
 

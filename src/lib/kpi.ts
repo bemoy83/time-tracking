@@ -1,12 +1,13 @@
 /**
  * KPI computation for completed tasks.
- * Groups by Work Type (workCategory + workUnit + buildPhase)
+ * Groups by Work Type (title + workUnit + buildPhase)
  * and calculates average achieved productivity.
  *
  * Phase 2: Adds confidence classification and stability indicator.
  */
 
-import type { Task, WorkCategory, WorkUnit, BuildPhase, AttributedEntry } from './types';
+import type { Task, WorkCategory, WorkUnit, BuildPhase, AttributedEntry, WorkType } from './types';
+import { WORK_CATEGORY_LABELS, normalizeWorkTypeTitle } from './types';
 
 // --- Sample thresholds ---
 export const MIN_SAMPLE_COUNT = 3;    // Below this: insufficient data
@@ -16,9 +17,14 @@ export const HIGH_SAMPLE_COUNT = 10;  // At or above: high confidence
 export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'insufficient';
 
 export interface WorkTypeKey {
-  workCategory: WorkCategory;
+  workTypeId: string | null;
+  workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase | null;
+  // Legacy fallback while migrating off WorkCategory.
+  legacyWorkCategory?: WorkCategory | null;
+  /** @deprecated Use workTypeTitle + workTypeId instead. */
+  workCategory?: WorkCategory | null;
 }
 
 export interface WorkTypeKpi {
@@ -76,7 +82,11 @@ export function computeCV(rates: number[]): number | null {
 }
 
 export function workTypeKeyString(key: WorkTypeKey): string {
-  return `${key.workCategory}:${key.workUnit}:${key.buildPhase ?? '_'}`;
+  const resolvedTitle =
+    key.workTypeTitle ||
+    (key.legacyWorkCategory ? WORK_CATEGORY_LABELS[key.legacyWorkCategory] : '') ||
+    (key.workCategory ? WORK_CATEGORY_LABELS[key.workCategory] : '');
+  return `${normalizeWorkTypeTitle(resolvedTitle)}:${key.workUnit}:${key.buildPhase ?? '_'}`;
 }
 
 export function findKpiByKey(kpis: WorkTypeKpi[], key: WorkTypeKey): WorkTypeKpi | undefined {
@@ -87,6 +97,8 @@ export function findKpiByKey(kpis: WorkTypeKpi[], key: WorkTypeKey): WorkTypeKpi
 export interface KpiOptions {
   /** When true, only include archive-grade tasks (archivedAt != null). Default: false. */
   archiveOnly?: boolean;
+  /** Optional work type definitions for canonical title resolution. */
+  workTypes?: WorkType[];
 }
 
 /**
@@ -100,16 +112,17 @@ export function computeWorkTypeKpis(
   entriesByTask: Map<string, AttributedEntry[]>,
   options: KpiOptions = {},
 ): WorkTypeKpi[] {
-  const { archiveOnly = false } = options;
+  const { archiveOnly = false, workTypes = [] } = options;
+  const workTypesById = new Map(workTypes.map((wt) => [wt.id, wt]));
 
   // Filter to completed tasks with required work data
   const qualifying = tasks.filter(
     (t) =>
       t.status === 'completed' &&
-      t.workCategory != null &&
       t.workUnit != null &&
       t.workQuantity != null &&
       t.workQuantity > 0 &&
+      (t.workTypeId != null || t.workCategory != null) &&
       (!archiveOnly || t.archivedAt != null)
   );
 
@@ -131,10 +144,18 @@ export function computeWorkTypeKpis(
     // Skip tasks with no tracked time
     if (personHours <= 0) continue;
 
+    const linkedWorkType = task.workTypeId ? workTypesById.get(task.workTypeId) : undefined;
+    const legacyTitle = task.workCategory != null ? WORK_CATEGORY_LABELS[task.workCategory] : null;
+    const workTypeTitle = linkedWorkType?.title ?? legacyTitle;
+    if (!workTypeTitle) continue;
+
     const key: WorkTypeKey = {
-      workCategory: task.workCategory!,
+      workTypeId: task.workTypeId ?? null,
+      workTypeTitle,
       workUnit: task.workUnit!,
       buildPhase: task.buildPhase,
+      legacyWorkCategory: task.workCategory,
+      workCategory: task.workCategory,
     };
     const keyStr = workTypeKeyString(key);
     const taskRate = task.workQuantity! / personHours;
@@ -173,7 +194,7 @@ export function computeWorkTypeKpis(
 
   // Sort by category, then unit, then phase
   results.sort((a, b) => {
-    const cmp = a.key.workCategory.localeCompare(b.key.workCategory);
+    const cmp = a.key.workTypeTitle.localeCompare(b.key.workTypeTitle);
     if (cmp !== 0) return cmp;
     const cmp2 = a.key.workUnit.localeCompare(b.key.workUnit);
     if (cmp2 !== 0) return cmp2;

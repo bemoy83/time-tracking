@@ -69,7 +69,7 @@ export interface CreateTemplateInput {
   title: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
-  workCategory: WorkCategory;
+  workCategory: WorkCategory | null;
   workTypeId?: string | null;
   workQuantity?: number | null;
   estimatedMinutes?: number | null;

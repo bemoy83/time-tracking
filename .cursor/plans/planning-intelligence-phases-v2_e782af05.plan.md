@@ -4,25 +4,25 @@ overview: Create a fresh phased roadmap (starting from Phase 1) that moves from 
 todos:
   - id: phase1-data-trust
     content: Complete attribution baseline, shared KPI/calculator dataset, counters, and policy tests.
-    status: pending
+    status: partial
   - id: phase2-kpi-reliability
     content: Add sample/confidence guardrails and deterministic KPI quality behavior.
-    status: pending
+    status: done
   - id: phase3-calculator-v1
     content: Ship advisory calculator with provenance and override-safe workflow.
-    status: pending
+    status: done
   - id: phase4-archive-loop
     content: Establish explicit archive boundary and versioned historical computation.
-    status: pending
+    status: partial
   - id: phase5-remediation
     content: Implement issue queues and reassignment workflows with audit trail.
-    status: pending
+    status: partial
   - id: phase6-interop
     content: Deliver export/import contracts with stable mapping and validation preview.
-    status: pending
+    status: partial
   - id: phase7-desktop-planning
     content: Create dedicated planning workspace separated from mobile execution UX.
-    status: pending
+    status: done
 isProject: false
 ---
 
@@ -31,6 +31,13 @@ isProject: false
 ## Framing
 
 Phases 1-4 of the original mission are considered shipped. This roadmap restarts at **Phase 1 (new)** focused on planning intelligence maturity, while preserving fast execution UX.
+
+## Migration Directive (Current)
+
+- `WorkCategory` is legacy compatibility only.
+- Canonical Work Type identity is the composite key: `(title, workUnit, buildPhase)`.
+- Composite lookups must use `findWorkTypeByKey(title, workUnit, buildPhase)`.
+- KPI/planning/calculator/import-export keying should prefer `workTypeId` + canonical WorkType title/unit/phase.
 
 ## Phase 1 — Data Trust Baseline
 
@@ -56,7 +63,7 @@ Phases 1-4 of the original mission are considered shipped. This roadmap restarts
 
 ### Must Have
 
-- Formalize KPI metrics by Work Type (`workCategory + workUnit + buildPhase`).
+- Formalize KPI metrics by Work Type (`workTypeTitle + workUnit + buildPhase`, resolved from `workTypeId` when available).
 - Add minimum-sample guardrails (e.g., insufficient-data state).
 - Add confidence signals (sample count + stability indicator).
 - Enforce that excluded/ambiguous time is never silently included in productivity.
@@ -192,4 +199,3 @@ Phases 1-4 of the original mission are considered shipped. This roadmap restarts
 5. Phase 5 (Remediation)
 6. Phase 6 (Interop)
 7. Phase 7 (Desktop Workspace)
-

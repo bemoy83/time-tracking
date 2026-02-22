@@ -17,9 +17,17 @@ import { SettingsWorkTypesView } from './pages/settings/SettingsWorkTypesView';
 import { SettingsTemplatesView } from './pages/settings/SettingsTemplatesView';
 import { SettingsProductivityView } from './pages/settings/SettingsProductivityView';
 import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
+import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
+import { SettingsInteropView } from './pages/settings/SettingsInteropView';
 
 type Tab = 'today' | 'projects' | 'planning' | 'settings';
-type SettingsSection = 'workTypes' | 'templates' | 'productivity' | 'attribution';
+type SettingsSection =
+  | 'workTypes'
+  | 'templates'
+  | 'productivity'
+  | 'attribution'
+  | 'remediation'
+  | 'interop';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab };
@@ -148,6 +156,12 @@ function App() {
         )}
         {view.type === 'settingsDetail' && view.section === 'attribution' && (
           <SettingsAttributionView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'remediation' && (
+          <SettingsRemediationView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'interop' && (
+          <SettingsInteropView onBack={handleBack} />
         )}
       </main>
 

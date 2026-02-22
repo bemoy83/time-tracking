@@ -7,6 +7,7 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
   return {
     id: 'li-1',
     title: 'Install carpet',
+    workTypeTitle: 'Carpet Tiles',
     workCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
@@ -23,7 +24,7 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
 
 function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
   return {
-    key: { workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'build-up' },
+    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
     sampleCount: 10,
     avgProductivity: 12,
     totalQuantity: 1200,
@@ -91,7 +92,7 @@ describe('generatePlanSuggestions', () => {
   it('counts high risk items', () => {
     const items = [
       makeLineItem({ id: 'li-1' }),
-      makeLineItem({ id: 'li-2', workCategory: 'furniture', workUnit: 'pcs' }),
+      makeLineItem({ id: 'li-2', workTypeTitle: 'Furniture', workCategory: 'furniture', workUnit: 'pcs' }),
     ];
     // Only one KPI matches li-1
     const result = generatePlanSuggestions(items, [makeKpi()]);

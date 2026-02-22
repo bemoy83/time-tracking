@@ -6,14 +6,14 @@
  * 2. estimator_summary — includes confidence, CV, outliers
  * 3. phase_summary — grouped by buildPhase
  *
- * Stable mapping key: workCategory:workUnit:buildPhase
+ * Stable mapping key: workTypeTitle:workUnit:buildPhase
  * Used for round-trip import/export reliability.
  */
 
 import type { WorkTypeKpi } from '../kpi';
 import { workTypeKeyString } from '../kpi';
-import { WORK_UNIT_LABELS, WORK_CATEGORY_LABELS } from '../types';
-import { findWorkTypeByCompositeKey } from '../stores/work-type-store';
+import { WORK_UNIT_LABELS } from '../types';
+import { findWorkTypeByKey } from '../stores/work-type-store';
 
 export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary';
 
@@ -37,25 +37,24 @@ function csvRow(fields: (string | number | null)[]): string {
 
 /**
  * Export KPIs using the ops_summary profile.
- * Columns: mappingKey, workCategory, workUnit, buildPhase, sampleCount,
+ * Columns: mappingKey, workTypeTitle, workUnit, buildPhase, sampleCount,
  *          avgProductivity, totalQuantity, totalPersonHours
  */
 export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workCategory', 'workUnit', 'buildPhase', 'workTypeId',
+    'mappingKey', 'workTypeTitle', 'workUnit', 'buildPhase', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
   const rows = kpis.map((kpi) => {
-    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
     const wt = kpi.key.buildPhase
-      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
       : null;
     return csvRow([
       workTypeKeyString(kpi.key),
-      categoryLabel,
+      kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
-      wt?.id ?? '',
+      kpi.key.workTypeId ?? wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
@@ -71,21 +70,20 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
  */
 export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workCategory', 'workUnit', 'buildPhase', 'workTypeId',
+    'mappingKey', 'workTypeTitle', 'workUnit', 'buildPhase', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
     'confidence', 'cv', 'outlierCount',
   ];
   const rows = kpis.map((kpi) => {
-    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
     const wt = kpi.key.buildPhase
-      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
       : null;
     return csvRow([
       workTypeKeyString(kpi.key),
-      categoryLabel,
+      kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
-      wt?.id ?? '',
+      kpi.key.workTypeId ?? wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
@@ -104,7 +102,7 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
  */
 export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'buildPhase', 'mappingKey', 'workCategory', 'workUnit', 'workTypeId',
+    'buildPhase', 'mappingKey', 'workTypeTitle', 'workUnit', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
 
@@ -113,20 +111,19 @@ export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
     const pa = a.key.buildPhase ?? '';
     const pb = b.key.buildPhase ?? '';
     if (pa !== pb) return pa.localeCompare(pb);
-    return a.key.workCategory.localeCompare(b.key.workCategory);
+    return a.key.workTypeTitle.localeCompare(b.key.workTypeTitle);
   });
 
   const rows = sorted.map((kpi) => {
-    const categoryLabel = WORK_CATEGORY_LABELS[kpi.key.workCategory] ?? kpi.key.workCategory;
     const wt = kpi.key.buildPhase
-      ? findWorkTypeByCompositeKey(categoryLabel, kpi.key.workUnit, kpi.key.buildPhase)
+      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
       : null;
     return csvRow([
       kpi.key.buildPhase ?? '',
       workTypeKeyString(kpi.key),
-      categoryLabel,
+      kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
-      wt?.id ?? '',
+      kpi.key.workTypeId ?? wt?.id ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),

@@ -4,7 +4,7 @@
  */
 
 import type { Plan, PlanLineItem } from './plan-model';
-import { planTotalPersonHours } from './plan-model';
+import { planTotalPersonHours, resolveLineItemWorkTypeTitle } from './plan-model';
 
 export interface LineItemDelta {
   lineItemId: string;
@@ -67,11 +67,11 @@ function diffLineItems(a: PlanLineItem, b: PlanLineItem): FieldDelta[] {
 
 /**
  * Compare two plans and produce a side-by-side diff.
- * Matches line items by title + workCategory + workUnit + buildPhase.
+ * Matches line items by title + workTypeTitle + workUnit + buildPhase.
  */
 export function comparePlans(planA: Plan, planB: Plan): PlanComparison {
   const keyFn = (item: PlanLineItem): string =>
-    `${item.title}::${item.workCategory}:${item.workUnit}:${item.buildPhase}`;
+    `${item.title}::${resolveLineItemWorkTypeTitle(item)}:${item.workUnit}:${item.buildPhase}`;
 
   const mapA = new Map(planA.lineItems.map((i) => [keyFn(i), i]));
   const mapB = new Map(planB.lineItems.map((i) => [keyFn(i), i]));

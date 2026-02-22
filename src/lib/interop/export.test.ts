@@ -4,7 +4,7 @@ import { exportOpsSummary, exportEstimatorSummary, exportPhaseSummary, exportKpi
 
 function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
   return {
-    key: { workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'build-up' },
+    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
     sampleCount: 5,
     avgProductivity: 12.345,
     totalQuantity: 500,
@@ -21,7 +21,7 @@ describe('exportOpsSummary', () => {
     const csv = exportOpsSummary([]);
     const headers = csv.split('\n')[0];
     expect(headers).toBe(
-      'mappingKey,workCategory,workUnit,buildPhase,workTypeId,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
+      'mappingKey,workTypeTitle,workUnit,buildPhase,workTypeId,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
     );
   });
 
@@ -32,7 +32,7 @@ describe('exportOpsSummary', () => {
 
     expect(lines).toHaveLength(2);
     const row = lines[1];
-    expect(row).toContain('carpet-tiles:m2:build-up');
+    expect(row).toContain('carpet tiles:m2:build-up');
     expect(row).toContain('Carpet Tiles');
     expect(row).toContain('12.35'); // rounded to 2 decimals
     expect(row).toContain('40.5');
@@ -40,7 +40,7 @@ describe('exportOpsSummary', () => {
 
   it('handles null buildPhase', () => {
     const kpi = makeKpi({
-      key: { workCategory: 'furniture', workUnit: 'pcs', buildPhase: null },
+      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: null },
     });
     const csv = exportOpsSummary([kpi]);
     expect(csv).toContain('furniture:pcs:_');
@@ -49,7 +49,7 @@ describe('exportOpsSummary', () => {
   it('handles multiple KPIs', () => {
     const k1 = makeKpi();
     const k2 = makeKpi({
-      key: { workCategory: 'furniture', workUnit: 'pcs', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: 'build-up' },
       sampleCount: 3,
     });
     const csv = exportOpsSummary([k1, k2]);
@@ -83,10 +83,10 @@ describe('exportEstimatorSummary', () => {
 describe('exportPhaseSummary', () => {
   it('sorts by buildPhase first', () => {
     const k1 = makeKpi({
-      key: { workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'tear-down' },
+      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'tear-down' },
     });
     const k2 = makeKpi({
-      key: { workCategory: 'furniture', workUnit: 'pcs', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: 'build-up' },
     });
     const csv = exportPhaseSummary([k1, k2]);
     const lines = csv.split('\n');

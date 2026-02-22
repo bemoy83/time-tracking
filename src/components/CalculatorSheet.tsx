@@ -107,19 +107,19 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
       const qualifying = tasks.filter(
         (t) =>
           t.status === 'completed' &&
-          t.workCategory != null &&
           t.workUnit != null &&
           t.workQuantity != null &&
-          t.workQuantity > 0
+          t.workQuantity > 0 &&
+          (t.workTypeId != null || t.workCategory != null)
       );
       const { entriesByTask } = await buildAttributedRollup(qualifying, tasks);
       if (cancelled) return;
-      setKpis(computeWorkTypeKpis(tasks, entriesByTask));
+      setKpis(computeWorkTypeKpis(tasks, entriesByTask, { workTypes, archiveOnly: true }));
     }
 
     load();
     return () => { cancelled = true; };
-  }, [isOpen, tasks]);
+  }, [isOpen, tasks, workTypes]);
 
   const selectedWorkType = workTypes.find((wt) => wt.id === selectedWorkTypeId);
   const workUnit = selectedWorkType?.workUnit ?? 'm2';
@@ -141,7 +141,8 @@ export function CalculatorSheet({ isOpen, onClose, tasks }: CalculatorSheetProps
   const historicalRate = useMemo((): RateInfo | null => {
     if (!selectedWorkType) return null;
     const key: WorkTypeKey = {
-      workCategory: selectedWorkType.title.toLowerCase().replace(/\s+/g, '-') as never,
+      workTypeId: selectedWorkType.id,
+      workTypeTitle: selectedWorkType.title,
       workUnit: selectedWorkType.workUnit,
       buildPhase: selectedWorkType.buildPhase,
     };

@@ -19,6 +19,7 @@ function makeItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
   return {
     id: 'li-1',
     title: 'Install carpet',
+    workTypeTitle: 'Carpet Tiles',
     workCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
