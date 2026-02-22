@@ -8,9 +8,25 @@ import { computeWorkTypeKpis } from '../../lib/kpi';
 import { exportKpis, type ExportProfile } from '../../lib/interop/export';
 import { parseWorkPackageCsv } from '../../lib/interop/import';
 import { generateImportPreview, type ImportPreview } from '../../lib/interop/import-preview';
+import { getOutlierHandlingMode } from '../../lib/stores/kpi-settings';
+import { runMaintenanceScanFromDb, type MaintenanceReport } from '../../lib/archive/maintenance';
+import { recomputeArchivedKpisByVersion, type RecomputedArchiveKpiGroup } from '../../lib/archive/recompute';
+import { createRecomputeChangeReport, type RecomputeChangeReport } from '../../lib/archive/recompute-report';
+import { getAttributionPolicy } from '../../lib/stores/attribution-settings';
+import { getFeatureFlag } from '../../lib/flags/feature-flags';
+import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 
 interface SettingsInteropViewProps {
   onBack: () => void;
+}
+
+function previewItemSignature(item: ImportPreview['items'][number]): string {
+  return [
+    item.action,
+    item.existingId ?? '',
+    item.existingType ?? '',
+    item.changedFields.join('|'),
+  ].join('::');
 }
 
 function downloadCsv(filename: string, content: string): void {
@@ -36,20 +52,30 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [applySummary, setApplySummary] = useState<string | null>(null);
+  const [maintenanceReport, setMaintenanceReport] = useState<MaintenanceReport | null>(null);
+  const [isRunningMaintenance, setIsRunningMaintenance] = useState(false);
+  const [archiveGroups, setArchiveGroups] = useState<RecomputedArchiveKpiGroup[] | null>(null);
+  const [recomputeReport, setRecomputeReport] = useState<RecomputeChangeReport | null>(null);
+  const [isRecomputingArchive, setIsRecomputingArchive] = useState(false);
 
   const workTypeTitleById = useMemo(
     () => new Map(workTypes.map((wt) => [wt.id, wt.title])),
     [workTypes],
   );
+  const staleGuardEnabled = getFeatureFlag('interopStaleImportGuard');
+  const archiveToolsEnabled = getFeatureFlag('archiveMaintenanceTools');
+  const archiveRecomputeEnabled = getFeatureFlag('archiveKpiRecompute');
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const completedTasks = tasks.filter((t) => t.status === 'completed');
       const rollup = await buildAttributedRollup(completedTasks, tasks);
+      const outlierMode = getOutlierHandlingMode();
       const kpis = computeWorkTypeKpis(completedTasks, rollup.entriesByTask, {
         archiveOnly: true,
         workTypes,
+        outlierMode,
       });
       const csv = exportKpis(kpis, exportProfile);
       const stamp = new Date().toISOString().slice(0, 10);
@@ -78,11 +104,34 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
     let created = 0;
     let updated = 0;
     let skipped = 0;
+    let conflicts = 0;
 
     try {
-      for (const item of preview.items) {
+      // Re-validate against current data to catch stale imports since preview.
+      const revalidated = generateImportPreview(
+        preview.items.map((i) => i.item),
+        tasks,
+        templates,
+        workTypeTitleById,
+      );
+      const staleItems = preview.items.filter((item, index) => {
+        const latest = revalidated.items[index];
+        if (!latest) return true;
+        return previewItemSignature(item) !== previewItemSignature(latest);
+      });
+
+      if (revalidated.duplicateKeys.length > 0 || (staleGuardEnabled && staleItems.length > 0)) {
+        setPreview(revalidated);
+        conflicts = (staleGuardEnabled ? staleItems.length : 0) + revalidated.duplicateKeys.length;
+        setApplySummary(
+          `Import conflicts detected: ${staleGuardEnabled ? staleItems.length : 0} stale item(s), ${revalidated.duplicateKeys.length} duplicate key issue(s). Re-review preview before apply.`,
+        );
+        trackTelemetryEvent('interop_import_conflict');
+        return;
+      }
+
+      for (const item of revalidated.items) {
         const payload = item.item;
-        const workCategory = payload.legacyWorkCategory;
 
         if (item.action === 'skip') {
           skipped += 1;
@@ -93,7 +142,6 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
           await updateTemplate(item.existingId, {
             title: payload.title,
             workTypeId: payload.workTypeId,
-            workCategory,
             workUnit: payload.workUnit,
             buildPhase: payload.buildPhase,
             workQuantity: payload.workQuantity,
@@ -109,7 +157,6 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
           await updateTaskFields(item.existingId, {
             title: payload.title,
             workTypeId: payload.workTypeId,
-            workCategory,
             workUnit: payload.workUnit,
             buildPhase: payload.buildPhase,
             workQuantity: payload.workQuantity,
@@ -124,7 +171,6 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
         await createTemplate({
           title: payload.title,
           workTypeId: payload.workTypeId,
-          workCategory,
           workUnit: payload.workUnit,
           buildPhase: payload.buildPhase,
           workQuantity: payload.workQuantity,
@@ -135,12 +181,48 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
         created += 1;
       }
 
-      setApplySummary(`Applied import: ${created} created, ${updated} updated, ${skipped} skipped.`);
+      setApplySummary(`Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${conflicts} conflicts.`);
+      trackTelemetryEvent('interop_import_apply');
       setPreview(null);
       setCsvInput('');
       setParseErrors([]);
     } finally {
       setIsApplying(false);
+    }
+  };
+
+  const handleRunMaintenance = async () => {
+    setIsRunningMaintenance(true);
+    try {
+      const report = await runMaintenanceScanFromDb();
+      setMaintenanceReport(report);
+      trackTelemetryEvent('archive_maintenance_scan');
+    } finally {
+      setIsRunningMaintenance(false);
+    }
+  };
+
+  const handleRecomputeArchivedKpis = async () => {
+    setIsRecomputingArchive(true);
+    try {
+      const policy = getAttributionPolicy();
+      const outlierMode = getOutlierHandlingMode();
+      const result = await recomputeArchivedKpisByVersion({
+        policy,
+        outlierMode,
+      });
+      if (archiveGroups) {
+        setRecomputeReport(createRecomputeChangeReport(archiveGroups, result.groups));
+      } else {
+        setRecomputeReport(null);
+      }
+      setArchiveGroups(result.groups);
+      setApplySummary(
+        `Recomputed archived KPIs across ${result.groups.length} archive version group(s) and ${result.totalArchivedTasks} archived tasks.`,
+      );
+      trackTelemetryEvent('archive_kpi_recompute');
+    } finally {
+      setIsRecomputingArchive(false);
     }
   };
 
@@ -224,6 +306,78 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
           </p>
         )}
       </div>
+
+      {archiveToolsEnabled && (
+        <div className="settings-view__card">
+        <div className="settings-view__card-header">
+          <h2 className="settings-view__sub-header">Archive Maintenance</h2>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => {
+              void handleRunMaintenance();
+            }}
+            disabled={isRunningMaintenance}
+          >
+            {isRunningMaintenance ? 'Running...' : 'Run Integrity Scan'}
+          </button>
+        </div>
+        <p className="settings-view__helper">Scan archived records and pending archival tasks for integrity issues.</p>
+
+        {maintenanceReport && (
+          <div className="settings-view__list" style={{ marginTop: 12 }}>
+            <div className="settings-view__row-detail">
+              Archived scanned: {maintenanceReport.archivedCount} · Pending: {maintenanceReport.pendingCount}
+            </div>
+            <div className="settings-view__row-detail">
+              Archived issues: {maintenanceReport.archivedIssues.length} · Archive-ready: {maintenanceReport.archiveCandidates.length} · Blocked: {maintenanceReport.blockedFromArchival.length}
+            </div>
+            {maintenanceReport.archivedIssues.slice(0, 3).map((issue) => (
+              <div key={`${issue.taskId}-${issue.issue.type}`} className="settings-view__row-detail">
+                {issue.taskId}: {issue.description}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="settings-view__card-header" style={{ marginTop: 12 }}>
+          <h3 className="settings-view__sub-header" style={{ fontSize: '1rem' }}>Archived KPI Recompute</h3>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => {
+              void handleRecomputeArchivedKpis();
+            }}
+            disabled={isRecomputingArchive || !archiveRecomputeEnabled}
+          >
+            {isRecomputingArchive ? 'Recomputing...' : archiveRecomputeEnabled ? 'Recompute KPIs' : 'Disabled by flag'}
+          </button>
+        </div>
+        <p className="settings-view__helper">Recompute archive-grade KPIs by archive engine version and report what changed.</p>
+
+        {archiveGroups && (
+          <div className="settings-view__list" style={{ marginTop: 12 }}>
+            {archiveGroups.map((group) => (
+              <div key={group.archiveVersion} className="settings-view__row-detail">
+                {group.archiveVersion}: {group.taskCount} tasks · {group.kpis.length} KPI rows
+              </div>
+            ))}
+          </div>
+        )}
+        {recomputeReport && (
+          <div className="settings-view__list" style={{ marginTop: 8 }}>
+            <div className="settings-view__row-detail">
+              Changes: {recomputeReport.totalChanges} total ({recomputeReport.totalAdded} added · {recomputeReport.totalChanged} changed · {recomputeReport.totalRemoved} removed)
+            </div>
+            {recomputeReport.changes.slice(0, 5).map((change) => (
+              <div key={`${change.archiveVersion}-${change.key}-${change.status}`} className="settings-view__row-detail">
+                {change.archiveVersion} · {change.key} · {change.status}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      )}
     </SettingsDetailLayout>
   );
 }

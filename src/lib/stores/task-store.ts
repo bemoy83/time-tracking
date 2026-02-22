@@ -18,7 +18,7 @@ import {
   getTask as dbGetTask,
 } from '../db';
 import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs } from '../types';
-import type { WorkUnit, BuildPhase, WorkCategory } from '../types';
+import type { WorkUnit, BuildPhase } from '../types';
 import { stopTimer } from './timer-store';
 import { archiveTask } from '../archive/archive-action';
 
@@ -115,7 +115,6 @@ export interface CreateTaskInput {
   defaultWorkers?: number | null;
   targetProductivity?: number | null;
   buildPhase?: BuildPhase | null;
-  workCategory?: WorkCategory | null;
   workTypeId?: string | null;
 }
 
@@ -137,7 +136,6 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     defaultWorkers: input.defaultWorkers ?? null,
     targetProductivity: input.targetProductivity ?? null,
     buildPhase: input.buildPhase ?? null,
-    workCategory: input.workCategory ?? null,
     workTypeId: input.workTypeId ?? null,
     createdAt: now,
     updatedAt: now,
@@ -266,7 +264,8 @@ export async function completeTask(id: string): Promise<void> {
       }
     }
   } catch {
-    // Intentionally ignore archive errors here.
+    // Intentionally non-blocking; completion UX must continue.
+    console.warn(`[archive] Failed to archive completed task ${id}`);
   }
 }
 
@@ -325,7 +324,8 @@ export async function completeTaskAndChildren(parentId: string): Promise<void> {
         }
       }
     } catch {
-      // Intentionally ignore archive errors here.
+      // Intentionally non-blocking; completion UX must continue.
+      console.warn(`[archive] Failed to archive completed task ${id}`);
     }
   }
 }

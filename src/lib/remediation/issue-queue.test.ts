@@ -16,12 +16,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
-    workTypeId: null,
+    workTypeId: 'wt-default',
     ...overrides,
   };
 }
@@ -54,7 +53,7 @@ describe('buildIssueQueues', () => {
   });
 
   it('categorizes unattributed entries without suggestions as needs_measurable_owner', () => {
-    const task = makeTask({ id: 't1', workCategory: null, workUnit: null, workQuantity: null });
+    const task = makeTask({ id: 't1', workTypeId: null, workUnit: null, workQuantity: null });
     const entry = makeAttributed({
       taskId: 't1',
       status: 'unattributed',
@@ -74,7 +73,7 @@ describe('buildIssueQueues', () => {
   });
 
   it('categorizes unattributed entries with suggestions as ambiguous_owner', () => {
-    const task = makeTask({ id: 't1', workCategory: null });
+    const task = makeTask({ id: 't1', workTypeId: null });
     const parent = makeTask({ id: 'parent', workTypeId: 'wt-parent' });
     const entry = makeAttributed({
       taskId: 't1',
@@ -115,7 +114,7 @@ describe('buildIssueQueues', () => {
     const owner = makeTask({ id: 'owner', title: 'Owner Task', workTypeId: 'wt-owner' });
     const task = makeTask({
       id: 't1',
-      workCategory: null,
+      workTypeId: null,
       workUnit: null,
       workQuantity: null,
       projectId: 'p1',
@@ -140,7 +139,7 @@ describe('buildIssueQueues', () => {
   it('leaves needs_measurable_owner without suggestion when no target exists', () => {
     const task = makeTask({
       id: 't1',
-      workCategory: null,
+      workTypeId: null,
       workUnit: null,
       workQuantity: null,
     });
@@ -164,7 +163,7 @@ describe('buildIssueQueues', () => {
     const task = makeTask({
       id: 't1',
       status: 'completed',
-      workCategory: null,
+      workTypeId: null,
       workUnit: null,
       workQuantity: null,
     });
@@ -172,13 +171,13 @@ describe('buildIssueQueues', () => {
     const result = buildIssueQueues([], [task]);
 
     expect(result.noWorkContext).toHaveLength(1);
-    expect(result.noWorkContext[0].description).toContain('work category');
+    expect(result.noWorkContext[0].description).toContain('work type');
     expect(result.noWorkContext[0].description).toContain('work unit');
     expect(result.noWorkContext[0].description).toContain('work quantity');
   });
 
   it('skips active tasks for no_work_context check', () => {
-    const task = makeTask({ id: 't1', status: 'active', workCategory: null });
+    const task = makeTask({ id: 't1', status: 'active', workTypeId: null });
 
     const result = buildIssueQueues([], [task]);
     expect(result.noWorkContext).toHaveLength(0);
@@ -188,7 +187,7 @@ describe('buildIssueQueues', () => {
     const subtask = makeTask({
       id: 't1',
       parentId: 'parent',
-      workCategory: null,
+      workTypeId: null,
       workUnit: null,
       workQuantity: null,
     });
@@ -205,7 +204,7 @@ describe('buildIssueQueues', () => {
   });
 
   it('computes total affected hours across all queues', () => {
-    const task = makeTask({ id: 't1', workCategory: null, workUnit: null, workQuantity: null });
+    const task = makeTask({ id: 't1', workTypeId: null, workUnit: null, workQuantity: null });
     const entries = [
       makeAttributed({
         entryId: 'e1', taskId: 't1', status: 'unattributed',
@@ -220,12 +219,125 @@ describe('buildIssueQueues', () => {
     const result = buildIssueQueues(entries, [task]);
     expect(result.totalAffectedHours).toBe(8);
   });
+
+  it('groups multiple needs-owner entries by classification scope', () => {
+    const task = makeTask({
+      id: 't1',
+      workTypeId: null,
+      workUnit: null,
+      workQuantity: null,
+    });
+    const entries = [
+      makeAttributed({
+        entryId: 'e1',
+        taskId: 't1',
+        status: 'unattributed',
+        ownerTaskId: null,
+        reason: 'noMeasurableOwner',
+        suggestedOwnerTaskId: null,
+        personHours: 2,
+      }),
+      makeAttributed({
+        entryId: 'e2',
+        taskId: 't1',
+        status: 'unattributed',
+        ownerTaskId: null,
+        reason: 'noMeasurableOwner',
+        suggestedOwnerTaskId: null,
+        personHours: 3,
+      }),
+    ];
+
+    const result = buildIssueQueues(entries, [task]);
+
+    expect(result.needsMeasurableOwner).toHaveLength(1);
+    expect(result.needsMeasurableOwner[0].entryId).toBeNull();
+    expect(result.needsMeasurableOwner[0].entryIds).toEqual(['e1', 'e2']);
+    expect(result.needsMeasurableOwner[0].entryCount).toBe(2);
+    expect(result.needsMeasurableOwner[0].personHours).toBe(5);
+  });
+
+  it('uses measurable parent as classification scope for grouped issues', () => {
+    const parent = makeTask({
+      id: 'parent',
+      title: 'Parent Scope',
+      workTypeId: 'wt-parent',
+      workQuantity: 50,
+      workUnit: 'm2',
+      buildPhase: 'build-up',
+    });
+    const child = makeTask({
+      id: 'child',
+      title: 'Child Task',
+      parentId: 'parent',
+      workTypeId: null,
+      workQuantity: null,
+      workUnit: null,
+      buildPhase: null,
+    });
+    const entry = makeAttributed({
+      entryId: 'e1',
+      taskId: 'child',
+      status: 'unattributed',
+      ownerTaskId: null,
+      reason: 'noMeasurableOwner',
+      suggestedOwnerTaskId: null,
+      personHours: 2,
+    });
+
+    const result = buildIssueQueues([entry], [parent, child]);
+
+    expect(result.needsMeasurableOwner).toHaveLength(1);
+    expect(result.needsMeasurableOwner[0].taskId).toBe('parent');
+    expect(result.needsMeasurableOwner[0].scopeTaskId).toBe('parent');
+    expect(result.needsMeasurableOwner[0].taskTitle).toBe('Parent Scope');
+    expect(result.needsMeasurableOwner[0].recommendedWorkTypeId).toBe('wt-parent');
+  });
+
+  it('marks grouped recommendation conflicts for manual resolution', () => {
+    const source = makeTask({
+      id: 't1',
+      title: 'Source',
+      workTypeId: null,
+      workUnit: null,
+      workQuantity: null,
+    });
+    const targetA = makeTask({ id: 'target-a', workTypeId: 'wt-a' });
+    const targetB = makeTask({ id: 'target-b', workTypeId: 'wt-b' });
+    const entries = [
+      makeAttributed({
+        entryId: 'e1',
+        taskId: 't1',
+        status: 'unattributed',
+        ownerTaskId: null,
+        reason: 'noMeasurableOwner',
+        suggestedOwnerTaskId: 'target-a',
+        personHours: 1,
+      }),
+      makeAttributed({
+        entryId: 'e2',
+        taskId: 't1',
+        status: 'unattributed',
+        ownerTaskId: null,
+        reason: 'noMeasurableOwner',
+        suggestedOwnerTaskId: 'target-b',
+        personHours: 1.5,
+      }),
+    ];
+
+    const result = buildIssueQueues(entries, [source, targetA, targetB]);
+
+    expect(result.ambiguousOwner).toHaveLength(1);
+    expect(result.ambiguousOwner[0].recommendedWorkTypeId).toBeNull();
+    expect(result.ambiguousOwner[0].conflictingRecommendedWorkTypeIds).toEqual(['wt-a', 'wt-b']);
+    expect(result.ambiguousOwner[0].entryCount).toBe(2);
+  });
 });
 
 describe('findNearestMeasurable', () => {
   it('returns parent if measurable', () => {
     const parent = makeTask({ id: 'parent' });
-    const child = makeTask({ id: 'child', parentId: 'parent', workCategory: null });
+    const child = makeTask({ id: 'child', parentId: 'parent', workTypeId: null });
 
     const result = findNearestMeasurable('child', [parent, child]);
 
@@ -238,7 +350,7 @@ describe('findNearestMeasurable', () => {
     const peer = makeTask({ id: 'peer', projectId: 'proj-1' });
     const task = makeTask({
       id: 't1', projectId: 'proj-1',
-      workCategory: null, workUnit: null, workQuantity: null,
+      workTypeId: null, workUnit: null, workQuantity: null,
     });
 
     const result = findNearestMeasurable('t1', [peer, task]);
@@ -249,10 +361,10 @@ describe('findNearestMeasurable', () => {
   });
 
   it('returns work type match as fallback', () => {
-    const match = makeTask({ id: 'match', workCategory: 'carpet-tiles' });
+    const match = makeTask({ id: 'match', workTypeId: 'wt-match' });
     const task = makeTask({
       id: 't1',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-match',
       workUnit: null, workQuantity: null,
     });
 
@@ -266,7 +378,7 @@ describe('findNearestMeasurable', () => {
   it('returns null when no measurable task found', () => {
     const task = makeTask({
       id: 't1',
-      workCategory: null, workUnit: null, workQuantity: null,
+      workTypeId: null, workUnit: null, workQuantity: null,
     });
 
     const result = findNearestMeasurable('t1', [task]);

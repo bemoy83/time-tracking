@@ -16,12 +16,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
-    workTypeId: null,
+    workTypeId: 'wt-1',
     ...overrides,
   };
 }
@@ -49,17 +48,17 @@ describe('checkIntegrity', () => {
   });
 
   it('detects missing work data on completed tasks', () => {
-    const task = makeTask({ workCategory: null, workUnit: null });
+    const task = makeTask({ workTypeId: null, workUnit: null });
     const issues = checkIntegrity([task], []);
 
     expect(issues).toHaveLength(1);
     expect(issues[0].type).toBe('missing_work_data');
-    expect(issues[0].message).toContain('workCategory');
+    expect(issues[0].message).toContain('workTypeId');
     expect(issues[0].message).toContain('workUnit');
   });
 
   it('skips work data check for non-completed tasks', () => {
-    const task = makeTask({ status: 'active', workCategory: null });
+    const task = makeTask({ status: 'active', workTypeId: null });
     expect(checkIntegrity([task], [])).toEqual([]);
   });
 
@@ -120,7 +119,7 @@ describe('checkIntegrity', () => {
   });
 
   it('returns multiple issues', () => {
-    const task = makeTask({ workCategory: null, parentId: 'ghost' });
+    const task = makeTask({ workTypeId: null, parentId: 'ghost' });
     const entry = makeEntry({ taskId: 'orphan-ref' });
 
     const issues = checkIntegrity([task], [entry]);
@@ -150,7 +149,7 @@ describe('isArchiveReady', () => {
   });
 
   it('returns ready with warnings only (missing work data)', () => {
-    const task = makeTask({ workCategory: null });
+    const task = makeTask({ workTypeId: null });
     const { ready, issues } = isArchiveReady(task, [], []);
 
     // missing_work_data is a warning, not an error

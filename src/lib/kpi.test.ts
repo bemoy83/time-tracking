@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Task, AttributedEntry } from './types';
+import type { Task, AttributedEntry, WorkType } from './types';
 import {
   computeWorkTypeKpis,
   classifyConfidence,
@@ -13,6 +13,27 @@ import {
   RECENT_PERIOD_DAYS,
   type WorkTypeKpi,
 } from './kpi';
+
+const WORK_TYPES: WorkType[] = [
+  {
+    id: 'wt-carpet',
+    title: 'Carpet Tiles',
+    workUnit: 'm2',
+    buildPhase: 'build-up',
+    expectedProductivity: 55,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wt-furniture',
+    title: 'Furniture',
+    workUnit: 'pcs',
+    buildPhase: 'build-up',
+    expectedProductivity: 20,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+];
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -28,12 +49,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
-    archivedAt: null,
-    archiveVersion: null,
-    workTypeId: null,
+    archivedAt: '2024-01-05T00:00:00.000Z',
+    archiveVersion: 'v1',
+    workTypeId: 'wt-carpet',
     ...overrides,
   };
 }
@@ -61,7 +81,7 @@ describe('computeWorkTypeKpis', () => {
     ];
 
     const entriesByTask = new Map([['t1', entries]]);
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
 
     expect(kpis).toHaveLength(1);
     expect(kpis[0].avgProductivity).toBe(10); // 100 / 10 person-hrs
@@ -71,9 +91,9 @@ describe('computeWorkTypeKpis', () => {
   });
 
   it('groups tasks by work type key', () => {
-    const t1 = makeTask({ id: 't1', workQuantity: 100, workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'build-up' });
-    const t2 = makeTask({ id: 't2', workQuantity: 200, workCategory: 'carpet-tiles', workUnit: 'm2', buildPhase: 'build-up' });
-    const t3 = makeTask({ id: 't3', workQuantity: 50, workCategory: 'furniture', workUnit: 'pcs', buildPhase: 'build-up' });
+    const t1 = makeTask({ id: 't1', workQuantity: 100, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'build-up' });
+    const t2 = makeTask({ id: 't2', workQuantity: 200, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'build-up' });
+    const t3 = makeTask({ id: 't3', workQuantity: 50, workTypeId: 'wt-furniture', workUnit: 'pcs', buildPhase: 'build-up' });
 
     const entriesByTask = new Map([
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
@@ -81,7 +101,7 @@ describe('computeWorkTypeKpis', () => {
       ['t3', [makeAttributedEntry({ entryId: 'e3', taskId: 't3', ownerTaskId: 't3', personHours: 5 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([t1, t2, t3], entriesByTask);
+    const kpis = computeWorkTypeKpis([t1, t2, t3], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
 
     expect(kpis).toHaveLength(2);
     // carpet-tiles group: (100+200) / (10+20) = 10
@@ -100,14 +120,14 @@ describe('computeWorkTypeKpis', () => {
       ['t1', [makeAttributedEntry({ personHours: 5 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis).toHaveLength(0);
   });
 
   it('skips tasks with no entries', () => {
     const task = makeTask({ id: 't1' });
     const entriesByTask = new Map<string, AttributedEntry[]>();
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis).toHaveLength(0);
   });
 
@@ -117,7 +137,7 @@ describe('computeWorkTypeKpis', () => {
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis[0].confidence).toBe('insufficient'); // 1 sample < MIN_SAMPLE_COUNT
   });
 
@@ -131,7 +151,7 @@ describe('computeWorkTypeKpis', () => {
       ['t2', [makeAttributedEntry({ entryId: 'e2', taskId: 't2', ownerTaskId: 't2', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([t1, t2], entriesByTask);
+    const kpis = computeWorkTypeKpis([t1, t2], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis[0].cv).toBe(0); // identical rates → no variation
   });
 
@@ -141,8 +161,64 @@ describe('computeWorkTypeKpis', () => {
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis[0].cv).toBeNull();
+  });
+
+  it('keeps outliers in aggregates when outlierMode is report_only', () => {
+    const tasks = [
+      makeTask({ id: 't1', workQuantity: 100 }),
+      makeTask({ id: 't2', workQuantity: 100 }),
+      makeTask({ id: 't3', workQuantity: 100 }),
+      makeTask({ id: 't4', workQuantity: 100 }),
+      makeTask({ id: 't5', workQuantity: 100 }),
+    ];
+    const entriesByTask = new Map([
+      ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
+      ['t2', [makeAttributedEntry({ entryId: 'e2', taskId: 't2', ownerTaskId: 't2', personHours: 10 })]],
+      ['t3', [makeAttributedEntry({ entryId: 'e3', taskId: 't3', ownerTaskId: 't3', personHours: 10 })]],
+      ['t4', [makeAttributedEntry({ entryId: 'e4', taskId: 't4', ownerTaskId: 't4', personHours: 10 })]],
+      ['t5', [makeAttributedEntry({ entryId: 'e5', taskId: 't5', ownerTaskId: 't5', personHours: 1 })]], // outlier rate 100
+    ]);
+
+    const kpis = computeWorkTypeKpis(tasks, entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+      outlierMode: 'report_only',
+    });
+
+    expect(kpis).toHaveLength(1);
+    expect(kpis[0].outlierCount).toBe(1);
+    expect(kpis[0].sampleCount).toBe(5);
+    expect(kpis[0].avgProductivity).toBeCloseTo(500 / 41, 4);
+  });
+
+  it('excludes outliers from aggregates when outlierMode is exclude_from_rate', () => {
+    const tasks = [
+      makeTask({ id: 't1', workQuantity: 100 }),
+      makeTask({ id: 't2', workQuantity: 100 }),
+      makeTask({ id: 't3', workQuantity: 100 }),
+      makeTask({ id: 't4', workQuantity: 100 }),
+      makeTask({ id: 't5', workQuantity: 100 }),
+    ];
+    const entriesByTask = new Map([
+      ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
+      ['t2', [makeAttributedEntry({ entryId: 'e2', taskId: 't2', ownerTaskId: 't2', personHours: 10 })]],
+      ['t3', [makeAttributedEntry({ entryId: 'e3', taskId: 't3', ownerTaskId: 't3', personHours: 10 })]],
+      ['t4', [makeAttributedEntry({ entryId: 'e4', taskId: 't4', ownerTaskId: 't4', personHours: 10 })]],
+      ['t5', [makeAttributedEntry({ entryId: 'e5', taskId: 't5', ownerTaskId: 't5', personHours: 1 })]], // outlier rate 100
+    ]);
+
+    const kpis = computeWorkTypeKpis(tasks, entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+      outlierMode: 'exclude_from_rate',
+    });
+
+    expect(kpis).toHaveLength(1);
+    expect(kpis[0].outlierCount).toBe(1);
+    expect(kpis[0].sampleCount).toBe(4);
+    expect(kpis[0].avgProductivity).toBe(10);
   });
 });
 
@@ -314,7 +390,7 @@ describe('archiveOnly filtering', () => {
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: false });
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: false, workTypes: WORK_TYPES });
     expect(kpis).toHaveLength(1);
   });
 
@@ -324,7 +400,7 @@ describe('archiveOnly filtering', () => {
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: true });
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: true, workTypes: WORK_TYPES });
     expect(kpis).toHaveLength(0);
   });
 
@@ -339,7 +415,7 @@ describe('archiveOnly filtering', () => {
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
     ]);
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: true });
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { archiveOnly: true, workTypes: WORK_TYPES });
     expect(kpis).toHaveLength(1);
     expect(kpis[0].avgProductivity).toBe(10);
   });
@@ -357,12 +433,12 @@ describe('archiveOnly filtering', () => {
       ['t2', [makeAttributedEntry({ entryId: 'e2', taskId: 't2', ownerTaskId: 't2', personHours: 20 })]],
     ]);
 
-    // Default: both included
-    const all = computeWorkTypeKpis([archived, notArchived], entriesByTask);
-    expect(all[0].sampleCount).toBe(2);
+    // Default: archive-only
+    const all = computeWorkTypeKpis([archived, notArchived], entriesByTask, { workTypes: WORK_TYPES });
+    expect(all[0].sampleCount).toBe(1);
 
     // Archive-only: only t1
-    const archiveOnly = computeWorkTypeKpis([archived, notArchived], entriesByTask, { archiveOnly: true });
+    const archiveOnly = computeWorkTypeKpis([archived, notArchived], entriesByTask, { archiveOnly: true, workTypes: WORK_TYPES });
     expect(archiveOnly[0].sampleCount).toBe(1);
     expect(archiveOnly[0].totalQuantity).toBe(100);
   });

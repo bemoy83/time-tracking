@@ -8,6 +8,7 @@ import {
   deleteAllTasks,
   deleteAllProjects,
   deleteAllTaskTemplates,
+  deleteAllTemplateNotes,
   getAllActiveTimers,
   removeActiveTimer,
 } from '../db';
@@ -37,6 +38,7 @@ export async function resetAllData(): Promise<void> {
   await deleteAllTasks();
   await deleteAllProjects();
   await deleteAllTaskTemplates();
+  await deleteAllTemplateNotes();
 
   // Refresh in-memory stores
   setTaskState({ tasks: [], projects: [] });

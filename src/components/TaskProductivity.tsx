@@ -9,7 +9,7 @@
 import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
 import { useTimerStore } from '../lib/stores/timer-store';
 import { useTask } from '../lib/stores/task-store';
-import { formatProductivity, WORK_CATEGORY_LABELS, BUILD_PHASE_LABELS } from '../lib/types';
+import { formatProductivity, BUILD_PHASE_LABELS } from '../lib/types';
 import { getWorkTypeById } from '../lib/stores/work-type-store';
 import { ExpandableSection } from './ExpandableSection';
 import { SpeedIcon } from './icons';
@@ -75,11 +75,11 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
       sectionSummary={badgeText}
     >
       <div className="task-productivity__content">
-        {(workTypeTitle != null || task.workCategory != null) && (
+        {workTypeTitle != null && (
           <div className="task-productivity__row task-productivity__row--meta">
             <span className="task-productivity__label section-heading">WORK TYPE</span>
             <span className="task-productivity__value">
-              {workTypeTitle ?? WORK_CATEGORY_LABELS[task.workCategory!]}
+              {workTypeTitle}
               {task.buildPhase != null && ` · ${BUILD_PHASE_LABELS[task.buildPhase]}`}
             </span>
           </div>

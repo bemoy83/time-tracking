@@ -8,7 +8,7 @@
 
 import { getTimeEntry, updateTimeEntry, getTask, updateTask, addTaskNote } from '../db';
 import { generateId, nowUtc, createAuditNote } from '../types';
-import type { Task, TaskNote, WorkCategory, WorkUnit, BuildPhase } from '../types';
+import type { Task, TaskNote, WorkUnit, BuildPhase } from '../types';
 import type { IssueQueueItem } from './issue-queue';
 
 export interface BulkFixResult {
@@ -84,7 +84,6 @@ export async function bulkReassignToSuggested(
 }
 
 export interface WorkContextPatch {
-  workCategory: WorkCategory;
   workUnit: WorkUnit;
   workQuantity: number;
   buildPhase: BuildPhase | null;
@@ -112,7 +111,6 @@ export async function bulkSetWorkContext(
       const now = nowUtc();
       const updated: Task = {
         ...task,
-        workCategory: patch.workCategory,
         workUnit: patch.workUnit,
         workQuantity: patch.workQuantity,
         buildPhase: patch.buildPhase,
@@ -126,7 +124,7 @@ export async function bulkSetWorkContext(
         taskId,
         text: createAuditNote(
           'Bulk work context set',
-          `Set ${patch.workCategory} / ${patch.workUnit} / ${patch.workQuantity}`,
+          `Set ${patch.workTypeId ?? 'unlinked-work-type'} / ${patch.workUnit} / ${patch.workQuantity}`,
         ),
         createdAt: now,
       };

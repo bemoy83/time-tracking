@@ -118,7 +118,7 @@ describe('exportKpis', () => {
 
 describe('CSV escaping', () => {
   it('escapes fields with commas', () => {
-    // WorkCategory labels don't have commas currently, but test the mechanism
+    // Titles don't have commas in current fixtures, but test escaping anyway.
     const kpi = makeKpi();
     const csv = exportOpsSummary([kpi]);
     // Should be valid CSV (no unescaped commas in field values)

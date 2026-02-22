@@ -104,7 +104,6 @@ export function CreateTaskSheet({
         defaultWorkers: showWorkers && workers > 1 ? workers : undefined,
         targetProductivity: workType?.expectedProductivity ?? (template?.targetProductivity ?? undefined),
         buildPhase: workType?.buildPhase ?? (template?.buildPhase ?? undefined),
-        workCategory: template?.workCategory ?? undefined,
         workTypeId: workType?.id ?? (template?.workTypeId ?? undefined),
       });
       onClose();

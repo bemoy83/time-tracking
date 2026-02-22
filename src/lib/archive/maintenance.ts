@@ -44,7 +44,7 @@ const ISSUE_TO_ACTION: Record<IntegrityIssue['type'], RepairAction> = {
 };
 
 const ACTION_DESCRIPTIONS: Record<RepairAction, string> = {
-  add_work_data: 'Add missing work category, unit, or quantity',
+  add_work_data: 'Add missing work type, unit, or quantity',
   fix_parent_link: 'Fix or clear broken parent task reference',
   remove_duplicate: 'Remove duplicate time entry',
   remove_zero_entry: 'Remove zero-duration time entry',

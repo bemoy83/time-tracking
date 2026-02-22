@@ -8,7 +8,6 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     id: 'li-1',
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
-    workCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
     workTypeId: null,
@@ -92,7 +91,7 @@ describe('generatePlanSuggestions', () => {
   it('counts high risk items', () => {
     const items = [
       makeLineItem({ id: 'li-1' }),
-      makeLineItem({ id: 'li-2', workTypeTitle: 'Furniture', workCategory: 'furniture', workUnit: 'pcs' }),
+      makeLineItem({ id: 'li-2', workTypeTitle: 'Furniture', workUnit: 'pcs' }),
     ];
     // Only one KPI matches li-1
     const result = generatePlanSuggestions(items, [makeKpi()]);

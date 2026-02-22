@@ -14,6 +14,7 @@ import {
   computeWorkTypeKpis,
   computeWorkTypeTrends,
   RECENT_PERIOD_DAYS,
+  type OutlierHandlingMode,
   WorkTypeKpi,
   WorkTypeTrend,
   ConfidenceLevel,
@@ -39,9 +40,10 @@ const TREND_ARROWS: Record<TrendDirection, string> = {
 
 interface KpiSectionProps {
   tasks: Task[];
+  outlierMode: OutlierHandlingMode;
 }
 
-export function KpiSection({ tasks }: KpiSectionProps) {
+export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
   const { workTypes } = useWorkTypeStore();
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
   const [trends, setTrends] = useState<Map<string, WorkTypeTrend>>(new Map());
@@ -58,20 +60,24 @@ export function KpiSection({ tasks }: KpiSectionProps) {
           t.workUnit != null &&
           t.workQuantity != null &&
           t.workQuantity > 0 &&
-          (t.workTypeId != null || t.workCategory != null)
+          t.workTypeId != null
       );
 
       const { entriesByTask } = await buildAttributedRollup(qualifying, tasks);
 
       if (cancelled) return;
 
-      const results = computeWorkTypeKpis(tasks, entriesByTask, { workTypes, archiveOnly: true });
+      const results = computeWorkTypeKpis(tasks, entriesByTask, {
+        workTypes,
+        archiveOnly: true,
+        outlierMode,
+      });
       const trendResults = computeWorkTypeTrends(
         tasks,
         entriesByTask,
         RECENT_PERIOD_DAYS,
         undefined,
-        { workTypes, archiveOnly: true },
+        { workTypes, archiveOnly: true, outlierMode },
       );
       const trendMap = new Map(trendResults.map((t) => [workTypeKeyString(t.key), t]));
 
@@ -86,7 +92,7 @@ export function KpiSection({ tasks }: KpiSectionProps) {
     return () => {
       cancelled = true;
     };
-  }, [tasks, workTypes]);
+  }, [tasks, workTypes, outlierMode]);
 
   if (isLoading) {
     return <p className="settings-view__empty">Loading...</p>;

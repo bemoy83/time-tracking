@@ -25,10 +25,22 @@ import type {
   WorkType,
   WorkUnit,
 } from '../types';
-import type { IssueQueueItem } from './issue-queue';
+import {
+  resolveClassificationScopeTask,
+  type IssueQueueItem,
+} from './issue-queue';
 
 export interface ClassifyEntryToWorkTypeResult {
   entryId: string;
+  sourceTaskId: string;
+  taskId: string;
+  taskTitle: string;
+  workTypeId: string;
+  workTypeTitle: string;
+  warning: 'missing_quantity' | null;
+}
+
+export interface ClassifyTaskToWorkTypeResult {
   taskId: string;
   taskTitle: string;
   workTypeId: string;
@@ -44,6 +56,10 @@ export interface CreateAndClassifyInput {
 }
 
 export interface CreateAndClassifyResult extends ClassifyEntryToWorkTypeResult {
+  createdWorkTypeId: string;
+}
+
+export interface CreateAndClassifyTaskResult extends ClassifyTaskToWorkTypeResult {
   createdWorkTypeId: string;
 }
 
@@ -121,7 +137,7 @@ function resolveTaskUpdates(task: Task, workType: WorkType): Pick<Task, 'workTyp
 
 async function addClassificationAuditNote(
   taskId: string,
-  entryId: string,
+  details: string,
   workType: WorkType,
   reason: string,
 ): Promise<void> {
@@ -130,11 +146,41 @@ async function addClassificationAuditNote(
     taskId,
     text: createAuditNote(
       'Remediation WorkType assigned',
-      `Entry ${entryId} classified as "${workType.title}" (${workType.workUnit}, ${workType.buildPhase}). Reason: ${reason}`,
+      `${details} classified as "${workType.title}" (${workType.workUnit}, ${workType.buildPhase}). Reason: ${reason}`,
     ),
     createdAt: nowUtc(),
   };
   await addTaskNote(note);
+}
+
+export async function classifyTaskToWorkType(
+  taskId: string,
+  workTypeId: string,
+  reason: string,
+  auditDetails: string = 'Task',
+): Promise<ClassifyTaskToWorkTypeResult> {
+  const normalizedReason = requireReason(reason);
+  const task = await getTask(taskId);
+  if (!task) {
+    throw new Error(`Task ${taskId} not found.`);
+  }
+
+  const workType = await getWorkType(workTypeId);
+  if (!workType) {
+    throw new Error(`WorkType ${workTypeId} not found.`);
+  }
+
+  const taskUpdates = resolveTaskUpdates(task, workType);
+  await persistTaskClassification(task, taskUpdates);
+  await addClassificationAuditNote(task.id, auditDetails, workType, normalizedReason);
+
+  return {
+    taskId: task.id,
+    taskTitle: task.title,
+    workTypeId: workType.id,
+    workTypeTitle: workType.title,
+    warning: getMissingQuantityWarning(task),
+  };
 }
 
 export async function classifyEntryToWorkType(
@@ -149,27 +195,35 @@ export async function classifyEntryToWorkType(
     throw new Error(`Time entry ${entryId} not found.`);
   }
 
-  const task = await getTask(entry.taskId);
-  if (!task) {
+  const sourceTask = await getTask(entry.taskId);
+  if (!sourceTask) {
     throw new Error(`Task ${entry.taskId} not found.`);
   }
 
-  const workType = await getWorkType(workTypeId);
-  if (!workType) {
-    throw new Error(`WorkType ${workTypeId} not found.`);
+  const taskMap = new Map<string, Task>([[sourceTask.id, sourceTask]]);
+  if (sourceTask.parentId) {
+    const parent = await getTask(sourceTask.parentId);
+    if (parent) {
+      taskMap.set(parent.id, parent);
+    }
   }
+  const scopeTask = resolveClassificationScopeTask(sourceTask, taskMap);
 
-  const taskUpdates = resolveTaskUpdates(task, workType);
-  await persistTaskClassification(task, taskUpdates);
-  await addClassificationAuditNote(task.id, entry.id, workType, normalizedReason);
+  const scoped = await classifyTaskToWorkType(
+    scopeTask.id,
+    workTypeId,
+    normalizedReason,
+    `Entry ${entry.id} (source "${sourceTask.title}")`,
+  );
 
   return {
     entryId: entry.id,
-    taskId: task.id,
-    taskTitle: task.title,
-    workTypeId: workType.id,
-    workTypeTitle: workType.title,
-    warning: getMissingQuantityWarning(task),
+    sourceTaskId: sourceTask.id,
+    taskId: scoped.taskId,
+    taskTitle: scoped.taskTitle,
+    workTypeId: scoped.workTypeId,
+    workTypeTitle: scoped.workTypeTitle,
+    warning: scoped.warning,
   };
 }
 
@@ -222,24 +276,104 @@ export async function createAndClassifyFromEntry(
   };
 }
 
+export async function createAndClassifyFromTask(
+  taskId: string,
+  input: CreateAndClassifyInput,
+  reason: string,
+): Promise<CreateAndClassifyTaskResult> {
+  const normalizedReason = requireReason(reason);
+  const task = await getTask(taskId);
+  if (!task) {
+    throw new Error(`Task ${taskId} not found.`);
+  }
+
+  const title = (input.title ?? task.title ?? '').trim();
+  if (!title) {
+    throw new Error('WorkType title is required.');
+  }
+  const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
+  const buildPhase = input.buildPhase ?? task.buildPhase ?? 'build-up';
+  const expectedProductivity = input.expectedProductivity
+    ?? (task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10);
+  if (!Number.isFinite(expectedProductivity) || expectedProductivity <= 0) {
+    throw new Error('Expected productivity must be greater than 0.');
+  }
+
+  const existing = findWorkTypeByCompositeKey(title, workUnit, buildPhase)
+    ?? await dbFindWorkTypeByKey(title, workUnit, buildPhase);
+  if (existing) {
+    throw new WorkTypeConflictError(existing);
+  }
+
+  const created = await createWorkType({
+    title,
+    workUnit,
+    buildPhase,
+    expectedProductivity,
+  });
+
+  const classified = await classifyTaskToWorkType(taskId, created.id, normalizedReason);
+  return {
+    ...classified,
+    createdWorkTypeId: created.id,
+  };
+}
+
 export async function bulkClassifyToRecommendedWorkType(
   items: IssueQueueItem[],
   reason: string,
 ): Promise<BulkClassifyResult> {
-  const eligible = items.filter((item) => item.entryId != null && item.recommendedWorkTypeId != null);
+  const grouped = new Map<
+    string,
+    { recommendationIds: Set<string>; hasConflictFlag: boolean }
+  >();
+
+  for (const item of items) {
+    if (!item.recommendedWorkTypeId && item.conflictingRecommendedWorkTypeIds.length === 0) {
+      continue;
+    }
+    const current = grouped.get(item.taskId);
+    if (current) {
+      if (item.recommendedWorkTypeId) {
+        current.recommendationIds.add(item.recommendedWorkTypeId);
+      }
+      if (item.conflictingRecommendedWorkTypeIds.length > 0) {
+        current.hasConflictFlag = true;
+      }
+    } else {
+      const recommendationIds = new Set<string>();
+      if (item.recommendedWorkTypeId) {
+        recommendationIds.add(item.recommendedWorkTypeId);
+      }
+      grouped.set(item.taskId, {
+        recommendationIds,
+        hasConflictFlag: item.conflictingRecommendedWorkTypeIds.length > 0,
+      });
+    }
+  }
+
   const result: BulkClassifyResult = {
-    attempted: eligible.length,
+    attempted: grouped.size,
     succeeded: 0,
     failed: [],
   };
 
-  for (const item of eligible) {
+  for (const [taskId, group] of grouped.entries()) {
+    const recommendationIds = Array.from(group.recommendationIds);
+    if (group.hasConflictFlag || recommendationIds.length !== 1) {
+      result.failed.push({
+        itemId: taskId,
+        error: 'Conflicting WorkType recommendations in grouped scope. Manual assignment required.',
+      });
+      continue;
+    }
+
     try {
-      await classifyEntryToWorkType(item.entryId!, item.recommendedWorkTypeId!, reason);
+      await classifyTaskToWorkType(taskId, recommendationIds[0], reason);
       result.succeeded += 1;
     } catch (err) {
       result.failed.push({
-        itemId: item.entryId!,
+        itemId: taskId,
         error: err instanceof Error ? err.message : 'Unknown error',
       });
     }

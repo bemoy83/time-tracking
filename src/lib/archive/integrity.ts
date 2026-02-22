@@ -3,7 +3,7 @@
  * before marking as archive-grade. Pure functions, deterministic.
  *
  * Checks:
- * 1. Missing work data (category, unit, quantity) on completed tasks
+ * 1. Missing work data (workTypeId, unit, quantity) on completed tasks
  * 2. Broken parent links (parentId references non-existent task)
  * 3. Duplicate entries (same taskId + startUtc + endUtc)
  * 4. Zero or negative duration entries
@@ -45,7 +45,7 @@ export function checkIntegrity(
   for (const task of tasks) {
     if (task.status !== 'completed') continue;
     const missing: string[] = [];
-    if (task.workCategory == null) missing.push('workCategory');
+    if (task.workTypeId == null) missing.push('workTypeId');
     if (task.workUnit == null) missing.push('workUnit');
     if (task.workQuantity == null || task.workQuantity <= 0) missing.push('workQuantity');
 

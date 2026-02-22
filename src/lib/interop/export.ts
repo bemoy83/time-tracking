@@ -13,7 +13,6 @@
 import type { WorkTypeKpi } from '../kpi';
 import { workTypeKeyString } from '../kpi';
 import { WORK_UNIT_LABELS } from '../types';
-import { findWorkTypeByKey } from '../stores/work-type-store';
 
 export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary';
 
@@ -45,22 +44,19 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
     'mappingKey', 'workTypeTitle', 'workUnit', 'buildPhase', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
-  const rows = kpis.map((kpi) => {
-    const wt = kpi.key.buildPhase
-      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
-      : null;
-    return csvRow([
+  const rows = kpis.map((kpi) =>
+    csvRow([
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
-      kpi.key.workTypeId ?? wt?.id ?? '',
+      kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
       round(kpi.totalPersonHours, 2),
-    ]);
-  });
+    ]),
+  );
   return [csvRow(headers), ...rows].join('\n');
 }
 
@@ -74,16 +70,13 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
     'confidence', 'cv', 'outlierCount',
   ];
-  const rows = kpis.map((kpi) => {
-    const wt = kpi.key.buildPhase
-      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
-      : null;
-    return csvRow([
+  const rows = kpis.map((kpi) =>
+    csvRow([
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
       kpi.key.buildPhase ?? '',
-      kpi.key.workTypeId ?? wt?.id ?? '',
+      kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
@@ -91,8 +84,8 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
       kpi.confidence,
       kpi.cv != null ? round(kpi.cv, 3) : null,
       kpi.outlierCount,
-    ]);
-  });
+    ]),
+  );
   return [csvRow(headers), ...rows].join('\n');
 }
 
@@ -114,22 +107,19 @@ export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
     return a.key.workTypeTitle.localeCompare(b.key.workTypeTitle);
   });
 
-  const rows = sorted.map((kpi) => {
-    const wt = kpi.key.buildPhase
-      ? findWorkTypeByKey(kpi.key.workTypeTitle, kpi.key.workUnit, kpi.key.buildPhase)
-      : null;
-    return csvRow([
+  const rows = sorted.map((kpi) =>
+    csvRow([
       kpi.key.buildPhase ?? '',
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
-      kpi.key.workTypeId ?? wt?.id ?? '',
+      kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
       round(kpi.totalQuantity, 1),
       round(kpi.totalPersonHours, 2),
-    ]);
-  });
+    ]),
+  );
   return [csvRow(headers), ...rows].join('\n');
 }
 

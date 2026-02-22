@@ -129,3 +129,95 @@
   flex: 1;
   min-width: 0;
 }
+
+.calculator__save-warning {
+  margin-top: var(--space-xs);
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.calculator__scenario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+}
+
+.calculator__scenario-grid {
+  display: grid;
+  gap: var(--space-sm);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 860px) {
+  .calculator__scenario-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.calculator__scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-sm);
+  background: var(--color-bg);
+}
+
+.calculator__scenario-card--selected {
+  border-color: var(--color-primary);
+}
+
+.calculator__scenario-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.calculator__scenario-select {
+  font-size: var(--font-small);
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calculator__scenario-select--active {
+  color: var(--color-primary);
+}
+
+.calculator__scenario-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.calculator__scenario-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-border);
+}
+
+.calculator__scenario-provenance {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.calculator__scenario-warning {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.calculator__scenario-invalid {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

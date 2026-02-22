@@ -10,9 +10,6 @@
  */
 
 import {
-  WORK_CATEGORIES,
-  WORK_CATEGORY_LABELS,
-  type WorkCategory,
   type WorkUnit,
   type BuildPhase,
 } from '../types';
@@ -26,7 +23,6 @@ export interface ImportedWorkPackage {
   mappingKey: string;
   title: string;
   workTypeTitle: string;
-  legacyWorkCategory: WorkCategory | null;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
   /** Resolved workTypeId from (title, workUnit, buildPhase). null if no match found. */
@@ -71,13 +67,8 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
   }
 
   const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
-  const requiredHeaders = ['title', 'workunit', 'buildphase'];
+  const requiredHeaders = ['title', 'worktypetitle', 'workunit', 'buildphase'];
   const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
-  const hasWorkTypeTitle = headers.includes('worktypetitle');
-  const hasLegacyCategory = headers.includes('workcategory');
-  if (!hasWorkTypeTitle && !hasLegacyCategory) {
-    missingHeaders.push('workTypeTitle');
-  }
   if (missingHeaders.length > 0) {
     return {
       items: [],
@@ -108,20 +99,7 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       rowErrors.push({ row: rowNum, field: 'title', message: 'Title is required' });
     }
 
-    const legacyCategoryRaw = row['workcategory'];
-    let legacyWorkCategory: WorkCategory | null = null;
-    if (legacyCategoryRaw) {
-      if (!WORK_CATEGORIES.includes(legacyCategoryRaw as WorkCategory)) {
-        rowErrors.push({ row: rowNum, field: 'workCategory', message: `Invalid work category: "${legacyCategoryRaw}". Valid: ${WORK_CATEGORIES.join(', ')}` });
-      } else {
-        legacyWorkCategory = legacyCategoryRaw as WorkCategory;
-      }
-    }
-
-    const workTypeTitleRaw = row['worktypetitle'];
-    const workTypeTitle = workTypeTitleRaw
-      ? workTypeTitleRaw
-      : (legacyWorkCategory ? (WORK_CATEGORY_LABELS[legacyWorkCategory] ?? '') : '');
+    const workTypeTitle = row['worktypetitle'];
     if (!workTypeTitle) {
       rowErrors.push({ row: rowNum, field: 'workTypeTitle', message: 'Work type title is required' });
     }
@@ -169,7 +147,6 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       mappingKey: workPackageMappingKey(title, workTypeTitle, workUnit, buildPhase),
       title,
       workTypeTitle,
-      legacyWorkCategory,
       workUnit: workUnit as WorkUnit,
       buildPhase: buildPhase as BuildPhase,
       workTypeId: resolvedWorkType?.id ?? null,

@@ -18,6 +18,14 @@ Analytics require structure, not user effort
 
 Desktop planning ≠ mobile execution
 
+Canonical Data Guardrail
+
+WorkType is the only classification model.
+
+Do not introduce or restore `workCategory` fields, enums, indexes, or migration fallbacks.
+
+WorkType identity is keyed by `(title, workUnit, buildPhase)`, and lookups use `findWorkTypeByKey(title, unit, phase)`.
+
 Current State (Baseline)
 Task (existing)
 
@@ -101,7 +109,7 @@ Metadata
 
 Build phase (Build-up | Tear-down)
 
-Work category (predefined)
+WorkType reference (optional at creation, canonical for KPI attribution)
 
 Rules:
 
@@ -163,26 +171,26 @@ Task detail only
 
 No changes to Today task rows
 
-Phase 4 — Work Structure for Analytics
+Phase 4 — WorkType Structure for Analytics
 Goal
 
 Enable meaningful KPI aggregation without execution friction.
 
-New Concept: Work Category
+New Concept: WorkType (Canonical)
 
-Predefined list (no user creation)
+User-managed WorkTypes define measurable work context.
 
-Selected in template
+WorkTypes are unique by `(title, workUnit, buildPhase)`.
 
-Copied to task
+Tasks and templates link to WorkTypes by `workTypeId`.
 
-Read-only during execution
+Classification may be optional at creation, then resolved through remediation/workflow.
 
 Productivity Key (Critical)
 
 Productivity is grouped by:
 
-Work Category + Unit Type (+ Build Phase)
+WorkType (+ build phase/unit from the selected WorkType)
 
 
 This combination defines a unique Work Type for analytics.
@@ -200,11 +208,7 @@ Completed tasks feed KPI data
 
 Grouped by:
 
-Work category
-
-Unit type
-
-Build phase (optional)
+WorkType
 
 KPI Metrics (computed)
 
@@ -223,7 +227,7 @@ Support planning decisions using real data.
 
 Calculator Inputs
 
-Work category
+WorkType
 
 Unit type
 
@@ -263,7 +267,7 @@ Not required for MVP.
 
 Explicit Non-Goals (for now)
 
-No task categories (replaced by work category)
+No task categories (classification is WorkType only)
 
 No productivity ranges
 
@@ -283,7 +287,7 @@ You can stub these immediately:
 
 TaskTemplate
 
-WorkCategory
+WorkType
 
 BuildPhase
 

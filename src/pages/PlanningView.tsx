@@ -31,6 +31,9 @@ import type { WorkTypeKpi } from '../lib/kpi';
 import { computeWorkTypeKpis } from '../lib/kpi';
 import { useTaskStore } from '../lib/stores/task-store';
 import { buildAttributedRollup } from '../lib/attributed-rollup';
+import { getOutlierHandlingMode } from '../lib/stores/kpi-settings';
+import { getFeatureFlag } from '../lib/flags/feature-flags';
+import { trackTelemetryEvent } from '../lib/telemetry/telemetry';
 
 type PlanningSubView = 'list' | 'edit' | 'compare';
 
@@ -42,6 +45,7 @@ export function PlanningView() {
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
   const { tasks } = useTaskStore();
   const { workTypes } = useWorkTypeStore();
+  const canComparePlans = getFeatureFlag('planningScenarioCompare');
 
   // Load plans from DB
   useEffect(() => {
@@ -57,9 +61,11 @@ export function PlanningView() {
         return;
       }
       const rollup = await buildAttributedRollup(completedTasks, tasks);
+      const outlierMode = getOutlierHandlingMode();
       const computed = computeWorkTypeKpis(completedTasks, rollup.entriesByTask, {
         workTypes,
         archiveOnly: true,
+        outlierMode,
       });
       setKpis(computed);
     }
@@ -105,6 +111,13 @@ export function PlanningView() {
     ? comparePlans(activePlan, plans.find((p) => p.id === comparePlanId)!)
     : null;
 
+  useEffect(() => {
+    if (!canComparePlans && subView === 'compare') {
+      setSubView('edit');
+      setComparePlanId(null);
+    }
+  }, [canComparePlans, subView]);
+
   if (subView === 'list') {
     return (
       <PlanList
@@ -116,7 +129,7 @@ export function PlanningView() {
     );
   }
 
-  if (subView === 'compare' && activePlan && comparison) {
+  if (canComparePlans && subView === 'compare' && activePlan && comparison) {
     return (
       <CompareView
         comparison={comparison}
@@ -131,9 +144,11 @@ export function PlanningView() {
         plan={activePlan}
         kpis={kpis}
         plans={plans}
+        canComparePlans={canComparePlans}
         onSave={handleSavePlan}
         onBack={handleBack}
         onCompare={(planId) => {
+          trackTelemetryEvent('planning_compare_open');
           setComparePlanId(planId);
           setSubView('compare');
         }}
@@ -207,6 +222,7 @@ function PlanEditor({
   plan,
   kpis,
   plans,
+  canComparePlans,
   onSave,
   onBack,
   onCompare,
@@ -214,6 +230,7 @@ function PlanEditor({
   plan: Plan;
   kpis: WorkTypeKpi[];
   plans: Plan[];
+  canComparePlans: boolean;
   onSave: (plan: Plan) => void;
   onBack: () => void;
   onCompare: (planId: string) => void;
@@ -235,6 +252,7 @@ function PlanEditor({
     const updated = isLocked ? unlockPlan(currentPlan) : lockPlan(currentPlan);
     setCurrentPlan(updated);
     onSave(updated);
+    trackTelemetryEvent('planning_lock_toggle');
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
@@ -283,7 +301,7 @@ function PlanEditor({
             Add Work Package
           </button>
         )}
-        {otherPlans.length > 0 && (
+        {canComparePlans && otherPlans.length > 0 && (
           <select
             className="input planning-view__compare-select"
             onChange={(e) => {
@@ -498,7 +516,6 @@ function AddLineItemForm({
     const item = createLineItem(
       title.trim(),
       selectedWorkType.title,
-      null,
       selectedWorkType.workUnit,
       selectedWorkType.buildPhase,
       workQuantity,

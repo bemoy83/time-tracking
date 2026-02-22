@@ -16,12 +16,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
-    workTypeId: null,
+    workTypeId: 'wt-1',
     ...overrides,
   };
 }
@@ -63,7 +62,7 @@ describe('runMaintenanceScan', () => {
   it('detects issues in archived tasks', () => {
     const task = makeTask({
       id: 't1',
-      workCategory: null, // missing work data
+      workTypeId: null, // missing work data
       archivedAt: '2024-02-01T00:00:00.000Z',
       archiveVersion: 'v1',
     });

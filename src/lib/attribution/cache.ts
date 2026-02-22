@@ -10,7 +10,7 @@ import { attributeEntries } from './engine';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const VALID_STATUSES = new Set(['attributed', 'unattributed', 'ambiguous']);
-const VALID_REASONS = new Set(['self', 'ancestor', 'noMeasurableOwner', 'multipleOwners']);
+const VALID_REASONS = new Set(['self', 'ancestor', 'policySuggestedOwner', 'noMeasurableOwner', 'multipleOwners']);
 
 export interface CachedAttributionResult {
   results: AttributedEntry[];

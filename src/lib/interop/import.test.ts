@@ -59,14 +59,14 @@ describe('parseWorkPackageCsv', () => {
     expect(result.errors[0].message).toContain('Missing required headers');
   });
 
-  it('rejects invalid workCategory', () => {
+  it('requires workTypeTitle header', () => {
     const result = parseWorkPackageCsv([
-      'title,workCategory,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
-      'Task,invalid-category,m2,build-up,,,,',
+      'title,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'Task,m2,build-up,,,,',
     ].join('\n'));
 
     expect(result.valid).toBe(false);
-    expect(result.errors[0].field).toBe('workCategory');
+    expect(result.errors[0].field).toBe('headers');
   });
 
   it('rejects invalid workUnit', () => {

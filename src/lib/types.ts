@@ -33,17 +33,6 @@ export const BUILD_PHASE_LABELS: Record<BuildPhase, string> = {
 
 export const BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
 
-// Work categories for task templates
-export type WorkCategory = 'carpet-tiles' | 'partition-walls' | 'furniture';
-
-export const WORK_CATEGORY_LABELS: Record<WorkCategory, string> = {
-  'carpet-tiles': 'Carpet Tiles',
-  'partition-walls': 'Partition Walls',
-  'furniture': 'Furniture',
-};
-
-export const WORK_CATEGORIES: WorkCategory[] = ['carpet-tiles', 'partition-walls', 'furniture'];
-
 /**
  * Reusable Work Type definition.
  * Represents a unique combination of title + unit + build phase → expected productivity.
@@ -72,7 +61,6 @@ export interface TaskTemplate {
   defaultWorkers: number | null;
   targetProductivity: number | null; // units/person-hr (legacy, sourced from WorkType)
   buildPhase: BuildPhase;
-  workCategory: WorkCategory | null; // legacy compatibility only
   createdAt: string;
   updatedAt: string;
 }
@@ -84,14 +72,6 @@ export function normalizeWorkTypeTitle(title: string | null | undefined): string
 
 export function workTypeKeyString(title: string, workUnit: WorkUnit, buildPhase: BuildPhase): string {
   return `${normalizeWorkTypeTitle(title)}:${workUnit}:${buildPhase}`;
-}
-
-export function legacyWorkCategoryFromTitle(title: string): WorkCategory | null {
-  const normalized = normalizeWorkTypeTitle(title);
-  if (normalized.includes('carpet')) return 'carpet-tiles';
-  if (normalized.includes('partition') || normalized.includes('wall')) return 'partition-walls';
-  if (normalized.includes('furniture')) return 'furniture';
-  return null;
 }
 
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {
@@ -153,7 +133,6 @@ export interface Task {
   defaultWorkers: number | null; // Expected crew count; null = use 1
   targetProductivity: number | null; // units/person-hr from template
   buildPhase: BuildPhase | null; // from template, read-only
-  workCategory: WorkCategory | null; // from template, read-only
   workTypeId: string | null; // references WorkType
   createdAt: string;
   updatedAt: string;
@@ -201,6 +180,17 @@ export interface TaskNote {
   taskId: string;
   text: string;        // plain text, max ~280 chars
   createdAt: string;   // ISO 8601 UTC
+}
+
+/**
+ * Template note / activity log entry.
+ * Append-only audit notes for template-level actions.
+ */
+export interface TemplateNote {
+  id: string;
+  templateId: string;
+  text: string;
+  createdAt: string;
 }
 
 /**
@@ -335,6 +325,7 @@ export type AttributionStatus = 'attributed' | 'unattributed' | 'ambiguous';
 export type AttributionReason =
   | 'self'                    // logged task is measurable
   | 'ancestor'                // nearest measurable ancestor used
+  | 'policySuggestedOwner'    // policy auto-applied heuristic suggestion
   | 'noMeasurableOwner'       // no measurable task in branch
   | 'multipleOwners';         // ambiguous: multiple valid measurable owners
 

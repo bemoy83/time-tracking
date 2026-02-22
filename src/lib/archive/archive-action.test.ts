@@ -34,12 +34,11 @@ const baseTask = {
   defaultWorkers: null,
   targetProductivity: null,
   buildPhase: 'build-up' as const,
-  workCategory: 'carpet-tiles' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
   archiveVersion: null,
-  workTypeId: null,
+  workTypeId: 'wt-1',
 };
 
 const validEntry = {
@@ -128,9 +127,9 @@ describe('archiveTask', () => {
   });
 
   it('allows archival with warnings only', async () => {
-    const taskMissingCategory = { ...baseTask, workCategory: null };
-    mockGetTask.mockResolvedValue(taskMissingCategory);
-    mockGetAllTasks.mockResolvedValue([taskMissingCategory]);
+    const taskMissingWorkType = { ...baseTask, workTypeId: null };
+    mockGetTask.mockResolvedValue(taskMissingWorkType);
+    mockGetAllTasks.mockResolvedValue([taskMissingWorkType]);
     mockGetEntries.mockResolvedValue([]);
     mockUpdateTask.mockResolvedValue(undefined);
     mockAddTaskNote.mockResolvedValue(undefined);

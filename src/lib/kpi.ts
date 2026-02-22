@@ -6,8 +6,8 @@
  * Phase 2: Adds confidence classification and stability indicator.
  */
 
-import type { Task, WorkCategory, WorkUnit, BuildPhase, AttributedEntry, WorkType } from './types';
-import { WORK_CATEGORY_LABELS, normalizeWorkTypeTitle } from './types';
+import type { Task, WorkUnit, BuildPhase, AttributedEntry, WorkType } from './types';
+import { normalizeWorkTypeTitle } from './types';
 
 // --- Sample thresholds ---
 export const MIN_SAMPLE_COUNT = 3;    // Below this: insufficient data
@@ -15,16 +15,13 @@ export const MED_SAMPLE_COUNT = 5;    // Below this: low confidence
 export const HIGH_SAMPLE_COUNT = 10;  // At or above: high confidence
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'insufficient';
+export type OutlierHandlingMode = 'report_only' | 'exclude_from_rate';
 
 export interface WorkTypeKey {
   workTypeId: string | null;
   workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase | null;
-  // Legacy fallback while migrating off WorkCategory.
-  legacyWorkCategory?: WorkCategory | null;
-  /** @deprecated Use workTypeTitle + workTypeId instead. */
-  workCategory?: WorkCategory | null;
 }
 
 export interface WorkTypeKpi {
@@ -82,10 +79,7 @@ export function computeCV(rates: number[]): number | null {
 }
 
 export function workTypeKeyString(key: WorkTypeKey): string {
-  const resolvedTitle =
-    key.workTypeTitle ||
-    (key.legacyWorkCategory ? WORK_CATEGORY_LABELS[key.legacyWorkCategory] : '') ||
-    (key.workCategory ? WORK_CATEGORY_LABELS[key.workCategory] : '');
+  const resolvedTitle = key.workTypeTitle;
   return `${normalizeWorkTypeTitle(resolvedTitle)}:${key.workUnit}:${key.buildPhase ?? '_'}`;
 }
 
@@ -99,6 +93,8 @@ export interface KpiOptions {
   archiveOnly?: boolean;
   /** Optional work type definitions for canonical title resolution. */
   workTypes?: WorkType[];
+  /** Outlier handling mode. report_only keeps all samples in aggregates. */
+  outlierMode?: OutlierHandlingMode;
 }
 
 /**
@@ -112,7 +108,7 @@ export function computeWorkTypeKpis(
   entriesByTask: Map<string, AttributedEntry[]>,
   options: KpiOptions = {},
 ): WorkTypeKpi[] {
-  const { archiveOnly = false, workTypes = [] } = options;
+  const { archiveOnly = true, workTypes = [], outlierMode = 'report_only' } = options;
   const workTypesById = new Map(workTypes.map((wt) => [wt.id, wt]));
 
   // Filter to completed tasks with required work data
@@ -122,14 +118,21 @@ export function computeWorkTypeKpis(
       t.workUnit != null &&
       t.workQuantity != null &&
       t.workQuantity > 0 &&
-      (t.workTypeId != null || t.workCategory != null) &&
+      t.workTypeId != null &&
       (!archiveOnly || t.archivedAt != null)
   );
 
   // Accumulate per Work Type, tracking per-task rates for stability
   const groups = new Map<
     string,
-    { key: WorkTypeKey; totalQuantity: number; totalPersonHours: number; sampleCount: number; rates: number[] }
+    {
+      key: WorkTypeKey;
+      totalQuantity: number;
+      totalPersonHours: number;
+      sampleCount: number;
+      rates: number[];
+      samples: Array<{ quantity: number; personHours: number; rate: number }>;
+    }
   >();
 
   for (const task of qualifying) {
@@ -145,17 +148,13 @@ export function computeWorkTypeKpis(
     if (personHours <= 0) continue;
 
     const linkedWorkType = task.workTypeId ? workTypesById.get(task.workTypeId) : undefined;
-    const legacyTitle = task.workCategory != null ? WORK_CATEGORY_LABELS[task.workCategory] : null;
-    const workTypeTitle = linkedWorkType?.title ?? legacyTitle;
-    if (!workTypeTitle) continue;
+    if (!linkedWorkType) continue;
 
     const key: WorkTypeKey = {
-      workTypeId: task.workTypeId ?? null,
-      workTypeTitle,
+      workTypeId: task.workTypeId,
+      workTypeTitle: linkedWorkType.title,
       workUnit: task.workUnit!,
       buildPhase: task.buildPhase,
-      legacyWorkCategory: task.workCategory,
-      workCategory: task.workCategory,
     };
     const keyStr = workTypeKeyString(key);
     const taskRate = task.workQuantity! / personHours;
@@ -166,6 +165,7 @@ export function computeWorkTypeKpis(
       existing.totalPersonHours += personHours;
       existing.sampleCount += 1;
       existing.rates.push(taskRate);
+      existing.samples.push({ quantity: task.workQuantity!, personHours, rate: taskRate });
     } else {
       groups.set(keyStr, {
         key,
@@ -173,6 +173,7 @@ export function computeWorkTypeKpis(
         totalPersonHours: personHours,
         sampleCount: 1,
         rates: [taskRate],
+        samples: [{ quantity: task.workQuantity!, personHours, rate: taskRate }],
       });
     }
   }
@@ -180,15 +181,32 @@ export function computeWorkTypeKpis(
   // Build result array
   const results: WorkTypeKpi[] = [];
   for (const group of groups.values()) {
+    const outlierIndices = detectOutliers(group.rates);
+    const outlierIndexSet = new Set(outlierIndices);
+    const includedSamples =
+      outlierMode === 'exclude_from_rate' && outlierIndices.length > 0
+        ? group.samples.filter((_, index) => !outlierIndexSet.has(index))
+        : group.samples;
+
+    if (includedSamples.length === 0) {
+      continue;
+    }
+
+    const totalQuantity = includedSamples.reduce((sum, sample) => sum + sample.quantity, 0);
+    const totalPersonHours = includedSamples.reduce((sum, sample) => sum + sample.personHours, 0);
+    if (totalPersonHours <= 0) continue;
+
+    const includedRates = includedSamples.map((sample) => sample.rate);
+
     results.push({
       key: group.key,
-      sampleCount: group.sampleCount,
-      avgProductivity: group.totalQuantity / group.totalPersonHours,
-      totalQuantity: group.totalQuantity,
-      totalPersonHours: group.totalPersonHours,
-      confidence: classifyConfidence(group.sampleCount),
-      cv: computeCV(group.rates),
-      outlierCount: detectOutliers(group.rates).length,
+      sampleCount: includedSamples.length,
+      avgProductivity: totalQuantity / totalPersonHours,
+      totalQuantity,
+      totalPersonHours,
+      confidence: classifyConfidence(includedSamples.length),
+      cv: computeCV(includedRates),
+      outlierCount: outlierIndices.length,
     });
   }
 

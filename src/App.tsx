@@ -4,6 +4,7 @@ import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeTemplateStore } from './lib/stores/template-store';
 import { initializeWorkTypeStore } from './lib/stores/work-type-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
+import { runWorkTypeLinkBackfill } from './lib/migrations/backfill-worktype-link';
 import { Task, Project } from './lib/types';
 // import { NetworkStatus } from './components/NetworkStatus';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -47,13 +48,27 @@ function App() {
 
   // Initialize stores and sync queue on mount
   useEffect(() => {
-    Promise.all([
-      initializeTimerStore(),
-      initializeTaskStore(),
-      initializeTemplateStore(),
-      initializeWorkTypeStore(),
-      initializeSyncQueue(),
-    ]).then(() => setInitialized(true));
+    async function initialize() {
+      await Promise.all([
+        initializeTimerStore(),
+        initializeTaskStore(),
+        initializeTemplateStore(),
+        initializeWorkTypeStore(),
+        initializeSyncQueue(),
+      ]);
+
+      // Backfill legacy task/template links to WorkType deterministically.
+      // This is best-effort and should never block app startup.
+      try {
+        await runWorkTypeLinkBackfill();
+      } catch {
+        // Intentionally ignore backfill failures at startup.
+      }
+
+      setInitialized(true);
+    }
+
+    void initialize();
   }, []);
 
   // Show network status bar when offline or has pending/errors (disabled until sync implemented)
@@ -155,7 +170,10 @@ function App() {
           <SettingsProductivityView onBack={handleBack} />
         )}
         {view.type === 'settingsDetail' && view.section === 'attribution' && (
-          <SettingsAttributionView onBack={handleBack} />
+          <SettingsAttributionView
+            onBack={handleBack}
+            onOpenRemediation={() => setView({ type: 'settingsDetail', section: 'remediation', returnTab: 'settings' })}
+          />
         )}
         {view.type === 'settingsDetail' && view.section === 'remediation' && (
           <SettingsRemediationView onBack={handleBack} />

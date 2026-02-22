@@ -3,15 +3,20 @@ import type { Task, TaskTemplate } from '../types';
 import type { ImportedWorkPackage } from './import';
 import { generateImportPreview } from './import-preview';
 
+const WORK_TYPE_TITLE_BY_ID = new Map([
+  ['wt-carpet', 'Carpet Tiles'],
+  ['wt-furniture', 'Furniture'],
+  ['wt-walls', 'Partition Walls'],
+]);
+
 function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedWorkPackage {
   return {
     mappingKey: 'Install carpet::Carpet Tiles:m2:build-up',
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
-    legacyWorkCategory: 'carpet-tiles',
     workUnit: 'm2',
     buildPhase: 'build-up',
-    workTypeId: null,
+    workTypeId: 'wt-carpet',
     workQuantity: 100,
     estimatedMinutes: 60,
     defaultWorkers: 2,
@@ -30,8 +35,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     defaultWorkers: 2,
     targetProductivity: 10,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
-    workTypeId: null,
+    workTypeId: 'wt-carpet',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -52,19 +56,18 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: 2,
     targetProductivity: 10,
     buildPhase: 'build-up',
-    workCategory: 'carpet-tiles',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
-    workTypeId: null,
+    workTypeId: 'wt-carpet',
     ...overrides,
   };
 }
 
 describe('generateImportPreview', () => {
   it('marks items as create when no match exists', () => {
-    const preview = generateImportPreview([makeImportItem()], [], []);
+    const preview = generateImportPreview([makeImportItem()], [], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.summary.create).toBe(1);
     expect(preview.items[0].action).toBe('create');
@@ -75,7 +78,7 @@ describe('generateImportPreview', () => {
     const item = makeImportItem();
     const template = makeTemplate();
 
-    const preview = generateImportPreview([item], [], [template]);
+    const preview = generateImportPreview([item], [], [template], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.summary.skip).toBe(1);
     expect(preview.items[0].action).toBe('skip');
@@ -87,7 +90,7 @@ describe('generateImportPreview', () => {
     const item = makeImportItem({ workQuantity: 200 }); // differs from template's 100
     const template = makeTemplate({ workQuantity: 100 });
 
-    const preview = generateImportPreview([item], [], [template]);
+    const preview = generateImportPreview([item], [], [template], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.summary.update).toBe(1);
     expect(preview.items[0].action).toBe('update');
@@ -99,7 +102,7 @@ describe('generateImportPreview', () => {
     const item = makeImportItem();
     const task = makeTask();
 
-    const preview = generateImportPreview([item], [task], []);
+    const preview = generateImportPreview([item], [task], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.summary.skip).toBe(1);
     expect(preview.items[0].existingId).toBe('task-1');
@@ -110,7 +113,7 @@ describe('generateImportPreview', () => {
     const template = makeTemplate();
     const task = makeTask({ id: 'task-1' });
 
-    const preview = generateImportPreview([item], [task], [template]);
+    const preview = generateImportPreview([item], [task], [template], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.items[0].existingId).toBe('tmpl-1'); // template wins
   });
@@ -119,7 +122,7 @@ describe('generateImportPreview', () => {
     const item = makeImportItem({ defaultWorkers: 5 });
     const task = makeTask({ defaultWorkers: 2 });
 
-    const preview = generateImportPreview([item], [task], []);
+    const preview = generateImportPreview([item], [task], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.items[0].action).toBe('update');
     expect(preview.items[0].changedFields).toContain('defaultWorkers');
@@ -129,7 +132,7 @@ describe('generateImportPreview', () => {
     const item1 = makeImportItem();
     const item2 = makeImportItem(); // same mapping key
 
-    const preview = generateImportPreview([item1, item2], [], []);
+    const preview = generateImportPreview([item1, item2], [], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.duplicateKeys).toContain('Install carpet::Carpet Tiles:m2:build-up');
   });
@@ -139,7 +142,7 @@ describe('generateImportPreview', () => {
       mappingKey: 'New task::Furniture:pcs:build-up',
       title: 'New task',
       workTypeTitle: 'Furniture',
-      legacyWorkCategory: 'furniture',
+      workTypeId: 'wt-furniture',
       workUnit: 'pcs',
     });
     const skip = makeImportItem();
@@ -147,7 +150,7 @@ describe('generateImportPreview', () => {
       mappingKey: 'Walls::Partition Walls:m2:build-up',
       title: 'Walls',
       workTypeTitle: 'Partition Walls',
-      legacyWorkCategory: 'partition-walls',
+      workTypeId: 'wt-walls',
       workQuantity: 300,
     });
 
@@ -155,11 +158,11 @@ describe('generateImportPreview', () => {
     const task = makeTask({
       id: 'task-w',
       title: 'Walls',
-      workCategory: 'partition-walls',
+      workTypeId: 'wt-walls',
       workQuantity: 200, // differs from import's 300
     });
 
-    const preview = generateImportPreview([create, skip, update], [task], [template]);
+    const preview = generateImportPreview([create, skip, update], [task], [template], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.summary.create).toBe(1);
     expect(preview.summary.skip).toBe(1);
@@ -169,19 +172,19 @@ describe('generateImportPreview', () => {
   it('skips tasks without work context for matching', () => {
     const item = makeImportItem();
     const task = makeTask({
-      workCategory: null,
+      workTypeId: null,
       workUnit: null,
       buildPhase: null,
     });
 
-    const preview = generateImportPreview([item], [task], []);
+    const preview = generateImportPreview([item], [task], [], WORK_TYPE_TITLE_BY_ID);
 
     // Task can't generate mapping key → no match → create
     expect(preview.summary.create).toBe(1);
   });
 
   it('returns empty preview for empty import', () => {
-    const preview = generateImportPreview([], [], []);
+    const preview = generateImportPreview([], [], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.items).toHaveLength(0);
     expect(preview.summary).toEqual({ create: 0, update: 0, skip: 0 });

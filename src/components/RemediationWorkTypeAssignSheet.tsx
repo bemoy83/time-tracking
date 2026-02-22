@@ -3,11 +3,11 @@ import { ActionSheet } from './ActionSheet';
 import { useTaskStore } from '../lib/stores/task-store';
 import { useWorkTypeStore } from '../lib/stores/work-type-store';
 import {
-  classifyEntryToWorkType,
-  createAndClassifyFromEntry,
+  classifyTaskToWorkType,
+  createAndClassifyFromTask,
   WorkTypeConflictError,
-  type ClassifyEntryToWorkTypeResult,
-  type CreateAndClassifyResult,
+  type ClassifyTaskToWorkTypeResult,
+  type CreateAndClassifyTaskResult,
 } from '../lib/remediation/worktype-classify';
 import {
   BUILD_PHASE_LABELS,
@@ -21,11 +21,11 @@ type AssignMode = 'existing' | 'create';
 interface RemediationWorkTypeAssignSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  entryId: string;
   taskId: string;
+  entryId?: string | null;
   recommendedWorkTypeId?: string | null;
   initialMode?: AssignMode;
-  onAssigned: (result: ClassifyEntryToWorkTypeResult | CreateAndClassifyResult) => void;
+  onAssigned: (result: ClassifyTaskToWorkTypeResult | CreateAndClassifyTaskResult) => void;
 }
 
 const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
@@ -33,8 +33,8 @@ const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 export function RemediationWorkTypeAssignSheet({
   isOpen,
   onClose,
-  entryId,
   taskId,
+  entryId = null,
   recommendedWorkTypeId = null,
   initialMode = 'existing',
   onAssigned,
@@ -106,7 +106,8 @@ export function RemediationWorkTypeAssignSheet({
     setIsSubmitting(true);
     setError(null);
     try {
-      const result = await classifyEntryToWorkType(entryId, workTypeId, reason.trim());
+      const auditDetails = entryId ? `Entry ${entryId}` : 'Task';
+      const result = await classifyTaskToWorkType(taskId, workTypeId, reason.trim(), auditDetails);
       onAssigned(result);
       onClose();
     } catch (err) {
@@ -128,8 +129,8 @@ export function RemediationWorkTypeAssignSheet({
     setError(null);
     setConflictWorkTypeId(null);
     try {
-      const result = await createAndClassifyFromEntry(
-        entryId,
+      const result = await createAndClassifyFromTask(
+        taskId,
         {
           title: createTitle.trim(),
           workUnit: createWorkUnit,

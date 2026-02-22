@@ -1,34 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTaskStore } from '../../lib/stores/task-store';
-import { getCachedAttribution, recomputeAttribution } from '../../lib/attribution/cache';
 import { getAttributionPolicy } from '../../lib/stores/attribution-settings';
-import { buildIssueQueues, type IssueQueueItem, type IssueQueueResult } from '../../lib/remediation/issue-queue';
-import { computeDataQualityProgress, type DataQualityProgress } from '../../lib/remediation/data-quality';
+import type { IssueQueueItem, IssueQueueResult } from '../../lib/remediation/issue-queue';
+import type { DataQualityProgress } from '../../lib/remediation/data-quality';
 import {
   bulkClassifyToRecommendedWorkType,
   type BulkClassifyResult,
-  type ClassifyEntryToWorkTypeResult,
-  type CreateAndClassifyResult,
+  type ClassifyTaskToWorkTypeResult,
+  type CreateAndClassifyTaskResult,
 } from '../../lib/remediation/worktype-classify';
+import { loadAttributionDiagnostics } from '../../lib/attribution/diagnostics';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { RemediationWorkTypeAssignSheet } from '../../components/RemediationWorkTypeAssignSheet';
 import { ReassignEntrySheet } from '../../components/ReassignEntrySheet';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 
 interface SettingsRemediationViewProps {
   onBack: () => void;
 }
 
 interface NeedsActionCounters {
-  total: number;
+  totalScopes: number;
+  totalEntries: number;
   withSuggestion: number;
   manualRequired: number;
 }
 
 export function getNeedsActionCounters(items: IssueQueueItem[]): NeedsActionCounters {
   const withSuggestion = items.filter((item) => item.recommendedWorkTypeId != null).length;
+  const totalEntries = items.reduce((sum, item) => sum + item.entryCount, 0);
   return {
-    total: items.length,
+    totalScopes: items.length,
+    totalEntries,
     withSuggestion,
     manualRequired: items.length - withSuggestion,
   };
@@ -36,12 +40,12 @@ export function getNeedsActionCounters(items: IssueQueueItem[]): NeedsActionCoun
 
 export function summarizeBulkFixResult(label: string, result: BulkClassifyResult): string {
   if (result.attempted === 0) {
-    return `${label}: no eligible entries with recommended WorkType.`;
+    return `${label}: no eligible task scopes with recommended WorkType.`;
   }
   if (result.failed.length === 0) {
-    return `${label}: ${result.succeeded}/${result.attempted} entries classified.`;
+    return `${label}: ${result.succeeded}/${result.attempted} scopes classified.`;
   }
-  return `${label}: ${result.succeeded}/${result.attempted} entries classified, ${result.failed.length} failed.`;
+  return `${label}: ${result.succeeded}/${result.attempted} scopes classified, ${result.failed.length} failed.`;
 }
 
 function formatUpdatedAt(iso: string | null): string | null {
@@ -62,8 +66,8 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [assignEntry, setAssignEntry] = useState<{
-    entryId: string;
     taskId: string;
+    entryId: string | null;
     recommendedWorkTypeId: string | null;
     initialMode: 'existing' | 'create';
   } | null>(null);
@@ -79,14 +83,14 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
     setError(null);
     try {
       const policy = getAttributionPolicy();
-      const attribution = options.forceRecompute
-        ? await recomputeAttribution(policy)
-        : await getCachedAttribution(policy);
-      const issueQueues = buildIssueQueues(attribution.results, tasks);
-      const quality = computeDataQualityProgress(attribution.summary, issueQueues);
-      setQueues(issueQueues);
-      setProgress(quality);
-      setLastUpdatedAt(attribution.computedAt);
+      const diagnostics = await loadAttributionDiagnostics({
+        tasks,
+        policy,
+        forceRecompute: options.forceRecompute,
+      });
+      setQueues(diagnostics.queues);
+      setProgress(diagnostics.progress);
+      setLastUpdatedAt(diagnostics.computedAt);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load remediation data.');
     } finally {
@@ -105,7 +109,9 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
     try {
       const result = await bulkClassifyToRecommendedWorkType(items, label);
       setActionMessage(summarizeBulkFixResult(label, result));
-      await recomputeAttribution(getAttributionPolicy());
+      if (result.attempted > 0) {
+        trackTelemetryEvent('remediation_bulk_apply');
+      }
       await load({ forceRecompute: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply remediation action.');
@@ -128,7 +134,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
   };
 
   const handleClassificationApplied = async (
-    result: ClassifyEntryToWorkTypeResult | CreateAndClassifyResult,
+    result: ClassifyTaskToWorkTypeResult | CreateAndClassifyTaskResult,
   ) => {
     const createdPrefix = 'createdWorkTypeId' in result ? 'Created + assigned WorkType.' : 'Assigned WorkType.';
     const warningSuffix = result.warning === 'missing_quantity'
@@ -136,7 +142,6 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
       : '';
     setActionMessage(`${createdPrefix}${warningSuffix}`);
     try {
-      await recomputeAttribution(getAttributionPolicy());
       await load({ forceRecompute: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh remediation data.');
@@ -145,7 +150,6 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
 
   const handleManualReassigned = async () => {
     setActionMessage('Manual move-entry reassignment applied.');
-    await recomputeAttribution(getAttributionPolicy());
     await load({ forceRecompute: true });
   };
 
@@ -224,7 +228,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                   <div className="settings-view__template-info">
                     <span className="settings-view__row-label">Needs measurable owner</span>
                     <span className="settings-view__row-detail">
-                      {needsCounters.total} entries · {needsCounters.withSuggestion} with suggestion · {needsCounters.manualRequired} manual
+                      {needsCounters.totalScopes} scopes · {needsCounters.totalEntries} entries · {needsCounters.withSuggestion} with suggestion · {needsCounters.manualRequired} manual
                     </span>
                   </div>
                 </div>
@@ -232,7 +236,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                   <div className="settings-view__template-info">
                     <span className="settings-view__row-label">Ambiguous owner</span>
                     <span className="settings-view__row-detail">
-                      {queues.ambiguousOwner.length} entries with suggestions
+                      {queues.ambiguousOwner.length} scopes with suggestions
                     </span>
                   </div>
                 </div>
@@ -285,11 +289,11 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
             {queues && queues.needsMeasurableOwner.length > 0 && (
               <div className="settings-view__list" style={{ marginTop: 12 }}>
                 {queues.needsMeasurableOwner.map((item) => (
-                  <div key={`${item.entryId ?? item.taskId}-needs`} className="settings-view__row">
+                  <div key={`${item.taskId}-needs`} className="settings-view__row">
                     <div className="settings-view__template-info">
                       <span className="settings-view__row-label">{item.taskTitle}</span>
                       <span className="settings-view__row-detail">
-                        {item.personHours.toFixed(2)} hrs · {item.description}
+                        {item.personHours.toFixed(2)} hrs · {item.entryCount} {item.entryCount === 1 ? 'entry' : 'entries'} · {item.description}
                       </span>
                       {item.suggestedTargetTitle && (
                         <span className="settings-view__row-detail">
@@ -301,15 +305,20 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                           Recommended WorkType: {workTypeTitleById.get(item.recommendedWorkTypeId) ?? item.recommendedWorkTypeId}
                         </span>
                       )}
+                      {item.conflictingRecommendedWorkTypeIds.length > 1 && (
+                        <span className="settings-view__row-detail">
+                          Conflicting recommendations: manual WorkType selection required.
+                        </span>
+                      )}
                     </div>
-                    {item.entryId && (
+                    {item.entryCount > 0 && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           className="btn btn--primary btn--sm"
                           onClick={() => {
                             setAssignEntry({
-                              entryId: item.entryId!,
+                              entryId: item.entryId,
                               taskId: item.taskId,
                               recommendedWorkTypeId: item.recommendedWorkTypeId,
                               initialMode: 'existing',
@@ -323,7 +332,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                           className="btn btn--secondary btn--sm"
                           onClick={() => {
                             setAssignEntry({
-                              entryId: item.entryId!,
+                              entryId: item.entryId,
                               taskId: item.taskId,
                               recommendedWorkTypeId: item.recommendedWorkTypeId,
                               initialMode: 'create',
@@ -332,13 +341,15 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                         >
                           Create + Assign
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
-                        >
-                          Advanced: Move Entry
-                        </button>
+                        {item.entryCount === 1 && item.entryId && (
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
+                          >
+                            Advanced: Move Entry
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -349,11 +360,11 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
             {queues && queues.ambiguousOwner.length > 0 && (
               <div className="settings-view__list" style={{ marginTop: 12 }}>
                 {queues.ambiguousOwner.map((item) => (
-                  <div key={`${item.entryId ?? item.taskId}-ambiguous`} className="settings-view__row">
+                  <div key={`${item.taskId}-ambiguous`} className="settings-view__row">
                     <div className="settings-view__template-info">
                       <span className="settings-view__row-label">{item.taskTitle}</span>
                       <span className="settings-view__row-detail">
-                        {item.personHours.toFixed(2)} hrs · {item.description}
+                        {item.personHours.toFixed(2)} hrs · {item.entryCount} {item.entryCount === 1 ? 'entry' : 'entries'} · {item.description}
                       </span>
                       {item.suggestedTargetTitle && (
                         <span className="settings-view__row-detail">
@@ -365,15 +376,20 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                           Recommended WorkType: {workTypeTitleById.get(item.recommendedWorkTypeId) ?? item.recommendedWorkTypeId}
                         </span>
                       )}
+                      {item.conflictingRecommendedWorkTypeIds.length > 1 && (
+                        <span className="settings-view__row-detail">
+                          Conflicting recommendations: manual WorkType selection required.
+                        </span>
+                      )}
                     </div>
-                    {item.entryId && (
+                    {item.entryCount > 0 && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           className="btn btn--primary btn--sm"
                           onClick={() => {
                             setAssignEntry({
-                              entryId: item.entryId!,
+                              entryId: item.entryId,
                               taskId: item.taskId,
                               recommendedWorkTypeId: item.recommendedWorkTypeId,
                               initialMode: 'existing',
@@ -387,7 +403,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                           className="btn btn--secondary btn--sm"
                           onClick={() => {
                             setAssignEntry({
-                              entryId: item.entryId!,
+                              entryId: item.entryId,
                               taskId: item.taskId,
                               recommendedWorkTypeId: item.recommendedWorkTypeId,
                               initialMode: 'create',
@@ -396,13 +412,15 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                         >
                           Create + Assign
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
-                        >
-                          Advanced: Move Entry
-                        </button>
+                        {item.entryCount === 1 && item.entryId && (
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
+                          >
+                            Advanced: Move Entry
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -417,8 +435,8 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
         <RemediationWorkTypeAssignSheet
           isOpen={true}
           onClose={() => setAssignEntry(null)}
-          entryId={assignEntry.entryId}
           taskId={assignEntry.taskId}
+          entryId={assignEntry.entryId}
           recommendedWorkTypeId={assignEntry.recommendedWorkTypeId}
           initialMode={assignEntry.initialMode}
           onAssigned={(result) => {

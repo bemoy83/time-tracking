@@ -1,17 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { saveRecommendationToTask } from './calculator-save';
+import { saveRecommendationToTask, saveRecommendationToTemplate } from './calculator-save';
 
 vi.mock('./db', () => ({
   getTask: vi.fn(),
   updateTask: vi.fn(),
   addTaskNote: vi.fn(),
+  getTaskTemplate: vi.fn(),
+  updateTaskTemplate: vi.fn(),
+  addTemplateNote: vi.fn(),
 }));
 
-import { getTask, updateTask, addTaskNote } from './db';
+import { getTask, updateTask, addTaskNote, getTaskTemplate, updateTaskTemplate, addTemplateNote } from './db';
 
 const mockGetTask = vi.mocked(getTask);
 const mockUpdateTask = vi.mocked(updateTask);
 const mockAddTaskNote = vi.mocked(addTaskNote);
+const mockGetTaskTemplate = vi.mocked(getTaskTemplate);
+const mockUpdateTaskTemplate = vi.mocked(updateTaskTemplate);
+const mockAddTemplateNote = vi.mocked(addTemplateNote);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,12 +36,25 @@ const baseTask = {
   defaultWorkers: null,
   targetProductivity: null,
   buildPhase: 'build-up' as const,
-  workCategory: 'carpet-tiles' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
   archiveVersion: null,
   workTypeId: null,
+};
+
+const baseTemplate = {
+  id: 'tmpl-1',
+  title: 'Template',
+  workTypeId: 'wt-1',
+  workUnit: 'm2' as const,
+  workQuantity: 100,
+  estimatedMinutes: null,
+  defaultWorkers: null,
+  targetProductivity: 10,
+  buildPhase: 'build-up' as const,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
 describe('saveRecommendationToTask', () => {
@@ -119,5 +138,65 @@ describe('saveRecommendationToTask', () => {
       quantityUsed: 100,
       sampleCount: null,
     })).rejects.toThrow('Task missing not found');
+  });
+
+  it('supports manual rate provenance in audit note', async () => {
+    mockGetTask.mockResolvedValue(baseTask);
+    mockUpdateTask.mockResolvedValue(undefined);
+    mockAddTaskNote.mockResolvedValue(undefined);
+
+    await saveRecommendationToTask({
+      taskId: 'task-1',
+      type: 'time',
+      estimatedMinutes: 95,
+      rateUsed: 7.5,
+      rateSource: 'manual',
+      workUnit: 'm2',
+      quantityUsed: 80,
+      sampleCount: null,
+    });
+
+    const note = mockAddTaskNote.mock.calls[0][0];
+    expect(note.text).toContain('manual rate');
+  });
+});
+
+describe('saveRecommendationToTemplate', () => {
+  it('saves crew recommendation to template.defaultWorkers', async () => {
+    mockGetTaskTemplate.mockResolvedValue(baseTemplate);
+    mockUpdateTaskTemplate.mockResolvedValue(undefined);
+    mockAddTemplateNote.mockResolvedValue(undefined);
+
+    await saveRecommendationToTemplate({
+      templateId: 'tmpl-1',
+      type: 'crew',
+      crewValue: 5,
+      rateUsed: 12,
+      rateSource: 'historical',
+      workUnit: 'm2',
+      quantityUsed: 120,
+      sampleCount: 9,
+    });
+
+    expect(mockUpdateTaskTemplate).toHaveBeenCalledOnce();
+    const updated = mockUpdateTaskTemplate.mock.calls[0][0];
+    expect(updated.defaultWorkers).toBe(5);
+    expect(mockAddTemplateNote).toHaveBeenCalledOnce();
+    expect(mockAddTemplateNote.mock.calls[0][0].templateId).toBe('tmpl-1');
+  });
+
+  it('throws when template not found', async () => {
+    mockGetTaskTemplate.mockResolvedValue(null);
+
+    await expect(saveRecommendationToTemplate({
+      templateId: 'missing',
+      type: 'time',
+      estimatedMinutes: 120,
+      rateUsed: 10,
+      rateSource: 'template',
+      workUnit: 'm2',
+      quantityUsed: 100,
+      sampleCount: null,
+    })).rejects.toThrow('Template missing not found');
   });
 });

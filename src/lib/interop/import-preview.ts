@@ -10,7 +10,6 @@ import type { Task } from '../types';
 import type { TaskTemplate } from '../types';
 import type { ImportedWorkPackage } from './import';
 import { workPackageMappingKey } from './import';
-import { WORK_CATEGORY_LABELS } from '../types';
 
 export type ImportAction = 'create' | 'update' | 'skip';
 
@@ -40,19 +39,17 @@ export interface ImportPreview {
 
 /** Build a mapping key for an existing task. */
 function taskMappingKey(task: Task, workTypeTitleById: Map<string, string>): string | null {
-  if (!task.workUnit || !task.buildPhase) return null;
-  if (!task.workTypeId && !task.workCategory) return null;
-  const workTypeTitle = task.workTypeId
-    ? (workTypeTitleById.get(task.workTypeId) ?? (task.workCategory ? WORK_CATEGORY_LABELS[task.workCategory] : task.title))
-    : WORK_CATEGORY_LABELS[task.workCategory!];
+  if (!task.workUnit || !task.buildPhase || !task.workTypeId) return null;
+  const workTypeTitle = workTypeTitleById.get(task.workTypeId);
+  if (!workTypeTitle) return null;
   return workPackageMappingKey(task.title, workTypeTitle, task.workUnit, task.buildPhase);
 }
 
 /** Build a mapping key for an existing template. */
-function templateMappingKey(template: TaskTemplate, workTypeTitleById: Map<string, string>): string {
-  const workTypeTitle = template.workTypeId
-    ? (workTypeTitleById.get(template.workTypeId) ?? (template.workCategory ? WORK_CATEGORY_LABELS[template.workCategory] : template.title))
-    : (template.workCategory ? WORK_CATEGORY_LABELS[template.workCategory] : template.title);
+function templateMappingKey(template: TaskTemplate, workTypeTitleById: Map<string, string>): string | null {
+  if (!template.workTypeId) return null;
+  const workTypeTitle = workTypeTitleById.get(template.workTypeId);
+  if (!workTypeTitle) return null;
   return workPackageMappingKey(
     template.title,
     workTypeTitle,
@@ -99,7 +96,8 @@ export function generateImportPreview(
   // Build lookup maps by mapping key
   const templatesByKey = new Map<string, TaskTemplate>();
   for (const t of existingTemplates) {
-    templatesByKey.set(templateMappingKey(t, workTypeTitleById), t);
+    const key = templateMappingKey(t, workTypeTitleById);
+    if (key) templatesByKey.set(key, t);
   }
 
   const tasksByKey = new Map<string, Task>();

@@ -33,12 +33,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: null,
-    workCategory: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
     archiveVersion: null,
-    workTypeId: null,
+    workTypeId: 'wt-default',
     ...overrides,
   };
 }
@@ -68,7 +67,7 @@ describe('buildAttributedRollup', () => {
       id: 'parent-1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-parent',
       buildPhase: 'build-up',
     });
     const child = makeTask({
@@ -100,7 +99,7 @@ describe('buildAttributedRollup', () => {
       id: 't1',
       workQuantity: 50,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-1',
     });
     const unmeasurable = makeTask({ id: 't2' });
 
@@ -127,7 +126,7 @@ describe('buildAttributedRollup', () => {
       id: 't1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-1',
     });
 
     mockGetEntries.mockResolvedValue([]);
@@ -144,13 +143,13 @@ describe('buildAttributedRollup', () => {
       id: 'q1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-1',
     });
     const other = makeTask({
       id: 'other',
       workQuantity: 200,
       workUnit: 'm',
-      workCategory: 'partition-walls',
+      workTypeId: 'wt-other',
     });
 
     mockGetEntries.mockImplementation(async (taskId: string) => {
@@ -171,7 +170,7 @@ describe('buildAttributedRollup', () => {
       id: 'p1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-parent',
     });
     const sub1 = makeTask({ id: 's1', parentId: 'p1' });
     const sub2 = makeTask({ id: 's2', parentId: 'p1' });

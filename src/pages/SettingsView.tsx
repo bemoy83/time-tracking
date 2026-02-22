@@ -7,6 +7,8 @@ import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { ChevronRightIcon } from '../components/icons';
 import { pluralize } from '../lib/utils/pluralize';
+import { getFeatureFlags, setFeatureFlag, type FeatureFlagKey } from '../lib/flags/feature-flags';
+import { getTelemetrySnapshot, type TelemetryEventName } from '../lib/telemetry/telemetry';
 
 type SettingsSection =
   | 'workTypes'
@@ -26,6 +28,8 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
+  const [featureFlags, setFeatureFlags] = useState(getFeatureFlags);
+  const [telemetrySnapshot, setTelemetrySnapshot] = useState(getTelemetrySnapshot);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -51,6 +55,11 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
     { key: 'interop', label: 'Interop', helper: 'Export KPI profiles and import work packages' },
   ];
+
+  const handleToggleFeatureFlag = (flag: FeatureFlagKey, enabled: boolean) => {
+    setFeatureFlag(flag, enabled);
+    setFeatureFlags((prev) => ({ ...prev, [flag]: enabled }));
+  };
 
   return (
     <div className="settings-view">
@@ -92,6 +101,98 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
           </button>
         </section>
       ))}
+
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <h2 className="settings-view__sub-header">Feature Flags</h2>
+          <p className="settings-view__helper">Gate risky planning/interop/archive features for rollout safety</p>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Planning scenario compare</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.planningScenarioCompare}
+              onChange={(e) => {
+                handleToggleFeatureFlag('planningScenarioCompare', e.target.checked);
+              }}
+            />
+          </label>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Interop stale import guard</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.interopStaleImportGuard}
+              onChange={(e) => {
+                handleToggleFeatureFlag('interopStaleImportGuard', e.target.checked);
+              }}
+            />
+          </label>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Archive maintenance tools</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.archiveMaintenanceTools}
+              onChange={(e) => {
+                handleToggleFeatureFlag('archiveMaintenanceTools', e.target.checked);
+              }}
+            />
+          </label>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Archive KPI recompute</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.archiveKpiRecompute}
+              onChange={(e) => {
+                handleToggleFeatureFlag('archiveKpiRecompute', e.target.checked);
+              }}
+            />
+          </label>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Calculator multi-scenario cards</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.calculatorMultiScenarioCards}
+              onChange={(e) => {
+                handleToggleFeatureFlag('calculatorMultiScenarioCards', e.target.checked);
+              }}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <div className="settings-view__card-header">
+            <h2 className="settings-view__sub-header">Telemetry</h2>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => setTelemetrySnapshot(getTelemetrySnapshot())}
+            >
+              Refresh
+            </button>
+          </div>
+          <p className="settings-view__helper">Quality/adoption event counters (local aggregate)</p>
+          {Object.keys(telemetrySnapshot).length === 0 ? (
+            <p className="settings-view__empty">No telemetry events captured yet.</p>
+          ) : (
+            <div className="settings-view__list">
+              {(Object.entries(telemetrySnapshot) as Array<[TelemetryEventName, { count: number; lastAt: string }]>).map(([name, record]) => (
+                <div key={name} className="settings-view__row">
+                  <div className="settings-view__template-info">
+                    <span className="settings-view__row-label">{name}</span>
+                    <span className="settings-view__row-detail">{record.count} events · last {new Date(record.lastAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Data — inline */}
       <section className="settings-view__section">

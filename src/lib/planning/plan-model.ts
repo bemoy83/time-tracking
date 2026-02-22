@@ -7,8 +7,8 @@
  * Each line item maps to a WorkType key for KPI-backed suggestions.
  */
 
-import type { WorkCategory, WorkUnit, BuildPhase } from '../types';
-import { WORK_CATEGORY_LABELS, generateId, nowUtc } from '../types';
+import type { WorkUnit, BuildPhase } from '../types';
+import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 
 export type PlanStatus = 'draft' | 'locked';
@@ -18,7 +18,6 @@ export interface PlanLineItem {
   /** Display name for the work package. */
   title: string;
   /** Work type fields — used for KPI lookup. */
-  workCategory: WorkCategory | null; // legacy compatibility only
   workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
@@ -48,16 +47,13 @@ export interface Plan {
 
 /**
  * Resolve a canonical WorkType title for line-item keying.
- * Falls back for legacy plans that only stored workCategory.
+ * Falls back to line-item title for legacy plans missing explicit WorkType title.
  */
 export function resolveLineItemWorkTypeTitle(
-  item: Pick<PlanLineItem, 'workTypeTitle' | 'workCategory' | 'title'>,
+  item: Pick<PlanLineItem, 'workTypeTitle' | 'title'>,
 ): string {
   if (item.workTypeTitle && item.workTypeTitle.trim().length > 0) {
     return item.workTypeTitle;
-  }
-  if (item.workCategory) {
-    return WORK_CATEGORY_LABELS[item.workCategory];
   }
   return item.title;
 }
@@ -69,8 +65,6 @@ export function lineItemWorkTypeKey(item: PlanLineItem): WorkTypeKey {
     workTypeTitle: resolveLineItemWorkTypeTitle(item),
     workUnit: item.workUnit,
     buildPhase: item.buildPhase,
-    legacyWorkCategory: item.workCategory,
-    workCategory: item.workCategory,
   };
 }
 
@@ -106,7 +100,6 @@ export function createPlan(title: string): Plan {
 export function createLineItem(
   title: string,
   workTypeTitle: string,
-  workCategory: WorkCategory | null,
   workUnit: WorkUnit,
   buildPhase: BuildPhase,
   workQuantity: number,
@@ -119,7 +112,6 @@ export function createLineItem(
     id: generateId(),
     title,
     workTypeTitle,
-    workCategory,
     workUnit,
     buildPhase,
     workTypeId,

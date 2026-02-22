@@ -30,6 +30,7 @@ import {
 import { getTaskById, updateTaskFields } from '../stores/task-store';
 import { createWorkType, findWorkTypeByKey as findWorkTypeByKeyInStore } from '../stores/work-type-store';
 import {
+  bulkClassifyToRecommendedWorkType,
   classifyEntryToWorkType,
   createAndClassifyFromEntry,
   WorkTypeConflictError,
@@ -59,7 +60,6 @@ const baseTask = {
   defaultWorkers: null,
   targetProductivity: null,
   buildPhase: null,
-  workCategory: null,
   workTypeId: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
@@ -158,6 +158,48 @@ describe('classifyEntryToWorkType', () => {
     expect(updated.workUnit).toBe('m2');
     expect(updated.buildPhase).toBe('build-up');
   });
+
+  it('classifies parent scope when source entry task lacks quantity context', async () => {
+    mockGetTimeEntry.mockResolvedValue({ ...baseEntry, taskId: 'task-child' });
+    const parentTask = {
+      ...baseTask,
+      id: 'task-parent',
+      title: 'Parent Scope',
+      workQuantity: 80,
+      workUnit: 'm2' as const,
+      buildPhase: 'build-up' as const,
+    };
+    const childTask = {
+      ...baseTask,
+      id: 'task-child',
+      title: 'Child Task',
+      parentId: 'task-parent',
+      workQuantity: null,
+      workUnit: null,
+      buildPhase: null,
+    };
+    mockGetTask.mockImplementation(async (id: string) => {
+      if (id === 'task-child') return childTask;
+      if (id === 'task-parent') return parentTask;
+      return null;
+    });
+    mockGetTaskById.mockImplementation((id: string) => {
+      if (id === 'task-parent') return parentTask;
+      if (id === 'task-child') return childTask;
+      return undefined;
+    });
+
+    const result = await classifyEntryToWorkType('entry-1', 'wt-1', 'Scope classify');
+
+    expect(mockUpdateTaskFields).toHaveBeenCalledWith('task-parent', {
+      workTypeId: 'wt-1',
+      workUnit: 'm2',
+      buildPhase: 'build-up',
+      targetProductivity: 55,
+    });
+    expect(result.sourceTaskId).toBe('task-child');
+    expect(result.taskId).toBe('task-parent');
+  });
 });
 
 describe('createAndClassifyFromEntry', () => {
@@ -196,5 +238,35 @@ describe('createAndClassifyFromEntry', () => {
     });
     expect(result.createdWorkTypeId).toBe('wt-new');
     expect(mockUpdateTaskFields).toHaveBeenCalled();
+  });
+});
+
+describe('bulkClassifyToRecommendedWorkType', () => {
+  it('fails grouped scope when recommendations conflict', async () => {
+    const result = await bulkClassifyToRecommendedWorkType([
+      {
+        category: 'ambiguous_owner',
+        taskId: 'scope-1',
+        scopeTaskId: 'scope-1',
+        entryId: null,
+        entryIds: ['e1', 'e2'],
+        entryCount: 2,
+        taskTitle: 'Scope',
+        description: 'conflict',
+        suggestedTargetId: null,
+        suggestedTargetTitle: null,
+        recommendedWorkTypeId: null,
+        conflictingRecommendedWorkTypeIds: ['wt-1', 'wt-2'],
+        suggestionSource: null,
+        personHours: 2,
+      },
+    ], 'bulk');
+
+    expect(result.attempted).toBe(1);
+    expect(result.succeeded).toBe(0);
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0].itemId).toBe('scope-1');
+    expect(result.failed[0].error).toContain('Conflicting WorkType recommendations');
+    expect(mockUpdateTaskFields).not.toHaveBeenCalled();
   });
 });

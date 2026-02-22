@@ -13,7 +13,6 @@ import {
   TaskTemplate,
   WorkUnit,
   BuildPhase,
-  WorkCategory,
   generateId,
   nowUtc,
 } from '../types';
@@ -69,7 +68,6 @@ export interface CreateTemplateInput {
   title: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
-  workCategory: WorkCategory | null;
   workTypeId?: string | null;
   workQuantity?: number | null;
   estimatedMinutes?: number | null;
@@ -89,7 +87,6 @@ export async function createTemplate(input: CreateTemplateInput): Promise<TaskTe
     defaultWorkers: input.defaultWorkers ?? null,
     targetProductivity: input.targetProductivity ?? null,
     buildPhase: input.buildPhase,
-    workCategory: input.workCategory,
     createdAt: now,
     updatedAt: now,
   };

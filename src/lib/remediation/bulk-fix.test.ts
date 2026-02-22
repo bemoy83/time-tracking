@@ -47,7 +47,6 @@ const baseTask = {
   defaultWorkers: null,
   targetProductivity: null,
   buildPhase: null,
-  workCategory: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
@@ -60,12 +59,16 @@ describe('bulkReassignToSuggested', () => {
     const items: IssueQueueItem[] = [{
       category: 'ambiguous_owner',
       taskId: 'task-old',
+      scopeTaskId: 'task-old',
       entryId: 'entry-1',
+      entryIds: ['entry-1'],
+      entryCount: 1,
       taskTitle: 'Old Task',
       description: 'test',
       suggestedTargetId: 'task-new',
       suggestedTargetTitle: 'New Task',
       recommendedWorkTypeId: 'wt-1',
+      conflictingRecommendedWorkTypeIds: [],
       suggestionSource: 'engine',
       personHours: 2,
     }];
@@ -93,12 +96,16 @@ describe('bulkReassignToSuggested', () => {
     const items: IssueQueueItem[] = [{
       category: 'needs_measurable_owner',
       taskId: 'task-1',
+      scopeTaskId: 'task-1',
       entryId: 'entry-1',
+      entryIds: ['entry-1'],
+      entryCount: 1,
       taskTitle: 'Task',
       description: 'test',
       suggestedTargetId: null,
       suggestedTargetTitle: null,
       recommendedWorkTypeId: null,
+      conflictingRecommendedWorkTypeIds: [],
       suggestionSource: null,
       personHours: 2,
     }];
@@ -111,12 +118,16 @@ describe('bulkReassignToSuggested', () => {
     const items: IssueQueueItem[] = [{
       category: 'no_work_context',
       taskId: 'task-1',
+      scopeTaskId: 'task-1',
       entryId: null,
+      entryIds: [],
+      entryCount: 0,
       taskTitle: 'Task',
       description: 'test',
       suggestedTargetId: 'task-2',
       suggestedTargetTitle: 'Other',
       recommendedWorkTypeId: null,
+      conflictingRecommendedWorkTypeIds: [],
       suggestionSource: 'nearest',
       personHours: 0,
     }];
@@ -129,12 +140,16 @@ describe('bulkReassignToSuggested', () => {
     const items: IssueQueueItem[] = [{
       category: 'ambiguous_owner',
       taskId: 'task-old',
+      scopeTaskId: 'task-old',
       entryId: 'missing',
+      entryIds: ['missing'],
+      entryCount: 1,
       taskTitle: 'Task',
       description: 'test',
       suggestedTargetId: 'task-new',
       suggestedTargetTitle: 'New',
       recommendedWorkTypeId: null,
+      conflictingRecommendedWorkTypeIds: [],
       suggestionSource: 'engine',
       personHours: 1,
     }];
@@ -155,13 +170,12 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['task-old'],
-      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: 'build-up', workTypeId: null },
+      { workUnit: 'm2', workQuantity: 100, buildPhase: 'build-up', workTypeId: 'wt-1' },
     );
 
     expect(result.succeeded).toBe(1);
     expect(mockUpdateTask).toHaveBeenCalledOnce();
     const updated = mockUpdateTask.mock.calls[0][0];
-    expect(updated.workCategory).toBe('carpet-tiles');
     expect(updated.workUnit).toBe('m2');
     expect(updated.workQuantity).toBe(100);
     // Audit note written
@@ -176,7 +190,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['missing'],
-      { workCategory: 'carpet-tiles', workUnit: 'm2', workQuantity: 100, buildPhase: null, workTypeId: null },
+      { workUnit: 'm2', workQuantity: 100, buildPhase: null, workTypeId: null },
     );
 
     expect(result.failed).toHaveLength(1);
@@ -190,7 +204,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['t1', 't2', 't3'],
-      { workCategory: 'furniture', workUnit: 'pcs', workQuantity: 50, buildPhase: null, workTypeId: null },
+      { workUnit: 'pcs', workQuantity: 50, buildPhase: null, workTypeId: 'wt-furniture' },
     );
 
     expect(result.attempted).toBe(3);

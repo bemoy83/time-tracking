@@ -11,9 +11,30 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Task, TimeEntry, AttributedEntry } from './types';
+import type { Task, TimeEntry, AttributedEntry, WorkType } from './types';
 import { computeWorkTypeKpis, findKpiByKey, type WorkTypeKey } from './kpi';
 import { attributeEntries } from './attribution/engine';
+
+const WORK_TYPES: WorkType[] = [
+  {
+    id: 'wt-carpet',
+    title: 'Carpet Tiles',
+    workUnit: 'm2',
+    buildPhase: 'build-up',
+    expectedProductivity: 55,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'wt-furniture',
+    title: 'Furniture',
+    workUnit: 'pcs',
+    buildPhase: 'build-up',
+    expectedProductivity: 20,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+];
 
 // --- factories ---
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -30,7 +51,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     defaultWorkers: null,
     targetProductivity: null,
     buildPhase: null,
-    workCategory: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -62,14 +82,14 @@ describe('KPI ↔ Calculator parity', () => {
       id: 't1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-carpet',
       buildPhase: 'build-up',
     });
     const t2 = makeTask({
       id: 't2',
       workQuantity: 200,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-carpet',
       buildPhase: 'build-up',
     });
 
@@ -95,11 +115,11 @@ describe('KPI ↔ Calculator parity', () => {
     }
 
     // Step 3: KPI computation (KpiSection path)
-    const kpis = computeWorkTypeKpis([t1, t2], entriesByTask);
+    const kpis = computeWorkTypeKpis([t1, t2], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
 
     // Step 4: Calculator lookup (CalculatorSheet path)
     const key: WorkTypeKey = {
-      workTypeId: null,
+      workTypeId: 'wt-carpet',
       workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
       buildPhase: 'build-up',
@@ -121,7 +141,7 @@ describe('KPI ↔ Calculator parity', () => {
       id: 'm1',
       workQuantity: 100,
       workUnit: 'm2',
-      workCategory: 'carpet-tiles',
+      workTypeId: 'wt-carpet',
       buildPhase: 'build-up',
     });
     const unmeasurable = makeTask({ id: 'u1' });
@@ -147,7 +167,7 @@ describe('KPI ↔ Calculator parity', () => {
       }
     }
 
-    const kpis = computeWorkTypeKpis([measurable, unmeasurable], entriesByTask);
+    const kpis = computeWorkTypeKpis([measurable, unmeasurable], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
     expect(kpis).toHaveLength(1);
 
     // Productivity should only reflect measurable entry: 100 / 2 = 50
@@ -160,7 +180,7 @@ describe('KPI ↔ Calculator parity', () => {
       id: 't1',
       workQuantity: 80,
       workUnit: 'pcs',
-      workCategory: 'furniture',
+      workTypeId: 'wt-furniture',
       buildPhase: null, // no phase
     });
 
@@ -178,11 +198,11 @@ describe('KPI ↔ Calculator parity', () => {
       }
     }
 
-    const kpis = computeWorkTypeKpis([task], entriesByTask);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
 
     // Calculator fallback: search without buildPhase
     const fallbackKey: WorkTypeKey = {
-      workTypeId: null,
+      workTypeId: 'wt-furniture',
       workTypeTitle: 'Furniture',
       workUnit: 'pcs',
       buildPhase: null,

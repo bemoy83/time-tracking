@@ -4,13 +4,22 @@
  */
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { ActiveTimer, TimeEntry, Task, Project, TaskNote, TaskTemplate, AttributionSnapshot, WorkType } from './types';
+import type {
+  ActiveTimer,
+  TimeEntry,
+  Task,
+  Project,
+  TaskNote,
+  TemplateNote,
+  TaskTemplate,
+  AttributionSnapshot,
+  WorkType,
+} from './types';
 import type { Plan } from './planning/plan-model';
-import { PROJECT_COLORS, WORK_CATEGORY_LABELS, WORK_CATEGORIES, BUILD_PHASES, generateId, nowUtc } from './types';
-import type { WorkCategory } from './types';
+import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 16;
+const DB_VERSION = 17;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -60,12 +69,19 @@ interface TimeTrackingDBSchema extends DBSchema {
       'by-task': string;
     };
   };
+  // Template notes / activity log
+  templateNotes: {
+    key: string;
+    value: TemplateNote;
+    indexes: {
+      'by-template': string;
+    };
+  };
   // Task templates for recurring tasks
   taskTemplates: {
     key: string;
     value: TaskTemplate;
     indexes: {
-      'by-category': string;
       'by-phase': string;
     };
   };
@@ -237,7 +253,6 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
         if (oldVersion < 10) {
           if (!db.objectStoreNames.contains('taskTemplates')) {
             const templateStore = db.createObjectStore('taskTemplates', { keyPath: 'id' });
-            templateStore.createIndex('by-category', 'workCategory');
             templateStore.createIndex('by-phase', 'buildPhase');
           }
         }
@@ -277,7 +292,7 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
           }
         }
 
-        // Version 12: Add buildPhase and workCategory fields to tasks
+        // Version 12: Add buildPhase field to tasks
         if (oldVersion < 12 && oldVersion >= 1) {
           const taskStore = transaction.objectStore('tasks');
           taskStore.getAll().then((tasks) => {
@@ -285,7 +300,6 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               const t = task as unknown as Record<string, unknown>;
               if (t.buildPhase === undefined) {
                 t.buildPhase = null;
-                t.workCategory = null;
                 taskStore.put(task);
               }
             });
@@ -312,37 +326,10 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
           db.createObjectStore('plans', { keyPath: 'id' });
         }
 
-        // Version 16: Add workTypes store, seed from WORK_CATEGORIES, backfill workTypeId
+        // Version 16: Add workTypes store and workTypeId field.
         if (oldVersion < 16) {
           const workTypeStore = db.createObjectStore('workTypes', { keyPath: 'id' });
           workTypeStore.createIndex('by-title-unit-phase', ['title', 'workUnit', 'buildPhase']);
-
-          // Seed default WorkTypes from existing enum × phases
-          const now = nowUtc();
-          const defaultUnit: Record<WorkCategory, 'm2' | 'm' | 'pcs'> = {
-            'carpet-tiles': 'm2',
-            'partition-walls': 'm',
-            'furniture': 'pcs',
-          };
-          const seeded = new Map<string, string>(); // "category:unit:phase" → workTypeId
-
-          for (const cat of WORK_CATEGORIES) {
-            for (const phase of BUILD_PHASES) {
-              const unit = defaultUnit[cat];
-              const id = generateId();
-              const wt: WorkType = {
-                id,
-                title: WORK_CATEGORY_LABELS[cat],
-                workUnit: unit,
-                buildPhase: phase,
-                expectedProductivity: 10,
-                createdAt: now,
-                updatedAt: now,
-              };
-              workTypeStore.add(wt);
-              seeded.set(`${cat}:${unit}:${phase}`, id);
-            }
-          }
 
           // Backfill workTypeId on existing templates
           if (db.objectStoreNames.contains('taskTemplates')) {
@@ -351,8 +338,7 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               for (const tpl of templates) {
                 const t = tpl as unknown as Record<string, unknown>;
                 if (t.workTypeId === undefined) {
-                  const key = `${t.workCategory}:${t.workUnit}:${t.buildPhase}`;
-                  t.workTypeId = seeded.get(key) ?? null;
+                  t.workTypeId = null;
                   tplStore.put(tpl);
                 }
               }
@@ -366,16 +352,19 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               for (const task of tasks) {
                 const t = task as unknown as Record<string, unknown>;
                 if (t.workTypeId === undefined) {
-                  if (t.workCategory && t.workUnit && t.buildPhase) {
-                    const key = `${t.workCategory}:${t.workUnit}:${t.buildPhase}`;
-                    t.workTypeId = seeded.get(key) ?? null;
-                  } else {
-                    t.workTypeId = null;
-                  }
+                  t.workTypeId = null;
                   taskStore.put(task);
                 }
               }
             });
+          }
+        }
+
+        // Version 17: Add templateNotes store
+        if (oldVersion < 17) {
+          if (!db.objectStoreNames.contains('templateNotes')) {
+            const templateNotesStore = db.createObjectStore('templateNotes', { keyPath: 'id' });
+            templateNotesStore.createIndex('by-template', 'templateId');
           }
         }
       },
@@ -685,6 +674,34 @@ export async function deleteTaskNotesByTask(taskId: string): Promise<void> {
     ...notes.map((note) => tx.store.delete(note.id)),
     tx.done,
   ]);
+}
+
+/**
+ * Add a template note.
+ */
+export async function addTemplateNote(note: TemplateNote): Promise<void> {
+  const db = await getDB();
+  await db.add('templateNotes', note);
+}
+
+/**
+ * Get all notes for a template, sorted newest-first.
+ */
+export async function getTemplateNotesByTemplate(templateId: string): Promise<TemplateNote[]> {
+  const db = await getDB();
+  const notes = await db.getAllFromIndex('templateNotes', 'by-template', templateId);
+  notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return notes;
+}
+
+/**
+ * Delete all template notes.
+ */
+export async function deleteAllTemplateNotes(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('templateNotes', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
 }
 
 // ============================================================
