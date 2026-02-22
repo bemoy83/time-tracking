@@ -163,6 +163,14 @@ export function PeopleIcon({ className, 'aria-hidden': ariaHidden = true }: Icon
   );
 }
 
+export function ChevronRightIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+    </svg>
+  );
+}
+
 /** Calculator icon — used for suggest estimate/workers actions. */
 export function CalculatorIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (

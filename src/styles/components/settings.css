@@ -8,10 +8,13 @@
   gap: var(--space-md);
 }
 
-/* Page title */
+/* Page title — unified settings header */
 .settings-view__title {
-  font-size: var(--font-large);
-  font-weight: 700;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0 0 var(--space-xs);
 }
 
@@ -28,6 +31,24 @@
   margin: 0;
 }
 
+/* Sub-header — unified uppercase label inside cards */
+.settings-view__sub-header {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-sm);
+}
+
+/* Helper text — explains section purpose below sub-header */
+.settings-view__helper {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.4;
+}
+
 /* ============================================================
    Card shell — mirrors .expandable-section
    ============================================================ */
@@ -35,7 +56,38 @@
 .settings-view__card {
   background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
-  padding: var(--space-xs) var(--space-md) var(--space-md);
+  padding: var(--space-md);
+}
+
+/* Tappable card — whole card is a button for drill-down sections */
+.settings-view__card--tappable {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: background-color 0.15s;
+}
+
+.settings-view__card--tappable:hover {
+  background: var(--color-surface-hover);
+}
+
+.settings-view__card--tappable:active {
+  background: var(--color-border);
+}
+
+.settings-view__card--tappable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.settings-view__card-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 /* Card header — mirrors .expandable-section__toggle layout */
@@ -45,6 +97,10 @@
   justify-content: space-between;
   gap: var(--space-sm);
   padding: var(--space-sm) 0;
+}
+
+.settings-view__card-header .settings-view__sub-header {
+  margin: 0;
 }
 
 /* ============================================================
@@ -60,7 +116,6 @@
   margin: 0 calc(-1 * var(--space-sm));
   background: transparent;
   border: none;
-  border-top: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
@@ -68,10 +123,6 @@
   color: var(--color-text);
   width: calc(100% + var(--space-md));
   transition: background-color 0.15s;
-}
-
-.settings-view__row:first-child {
-  border-top: none;
 }
 
 /* Hover / active / focus-visible affordances */
@@ -190,7 +241,6 @@ button.settings-view__row:active {
   padding: var(--space-sm);
   background: none;
   border: none;
-  border-top: 1px solid var(--color-border);
   color: var(--color-recording);
   font-size: var(--font-body);
   font-weight: 500;
@@ -228,6 +278,16 @@ button.settings-view__row:active {
   padding: var(--space-md);
   text-align: center;
   margin: 0;
+}
+
+/* List container — dividers only between items */
+.settings-view__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-view__list > *:not(:first-child) {
+  border-top: 1px solid var(--color-border);
 }
 
 /* Template list */
@@ -309,4 +369,105 @@ button.settings-view__row:active {
 
 .kpi-trend--declining {
   color: var(--color-recording);
+}
+
+/* ============================================================
+   Link rows — tappable drill-down navigation
+   ============================================================ */
+
+.settings-view__link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-min);
+  padding: var(--space-md) var(--space-sm);
+  margin: 0 calc(-1 * var(--space-sm));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-body);
+  color: var(--color-text);
+  width: calc(100% + var(--space-md));
+  transition: background-color 0.15s;
+}
+
+.settings-view__link-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.settings-view__link-row:active {
+  background: var(--color-border);
+}
+
+.settings-view__link-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
+
+.settings-view__link-row-label {
+  font-weight: 500;
+}
+
+.settings-view__link-row-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Settings Detail Layout — full-page drill-down
+   ============================================================ */
+
+.settings-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.settings-detail__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+}
+
+.settings-detail__back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-body);
+  cursor: pointer;
+  padding: var(--space-xs);
+  margin: 0 calc(-1 * var(--space-xs));
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s;
+}
+
+.settings-detail__back:hover {
+  background: var(--color-surface-hover);
+}
+
+.settings-detail__back:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.settings-detail__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-detail__title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
 }

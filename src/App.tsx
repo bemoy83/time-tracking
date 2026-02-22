@@ -13,15 +13,21 @@ import { ProjectList } from './pages/ProjectList';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { SettingsView } from './pages/SettingsView';
 import { PlanningView } from './pages/PlanningView';
+import { SettingsWorkTypesView } from './pages/settings/SettingsWorkTypesView';
+import { SettingsTemplatesView } from './pages/settings/SettingsTemplatesView';
+import { SettingsProductivityView } from './pages/settings/SettingsProductivityView';
+import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
 
 type Tab = 'today' | 'projects' | 'planning' | 'settings';
+type SettingsSection = 'workTypes' | 'templates' | 'productivity' | 'attribution';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab };
 type View =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab }
-  | { type: 'projectDetail'; projectId: string; returnTo: ReturnTo };
+  | { type: 'projectDetail'; projectId: string; returnTo: ReturnTo }
+  | { type: 'settingsDetail'; section: SettingsSection; returnTab: Tab };
 
 function App() {
   const [initialized, setInitialized] = useState(false);
@@ -58,6 +64,7 @@ function App() {
   const currentTab =
     view.type === 'tab' ? view.tab
     : view.type === 'detail' ? view.returnTab
+    : view.type === 'settingsDetail' ? view.returnTab
     : view.returnTo.type === 'tab' ? view.returnTo.tab
     : view.returnTo.returnTab;
 
@@ -68,6 +75,8 @@ function App() {
   const handleBack = () => {
     if (view.type === 'projectDetail') {
       setView(view.returnTo);
+    } else if (view.type === 'settingsDetail') {
+      setView({ type: 'tab', tab: view.returnTab });
     } else {
       setView({ type: 'tab', tab: currentTab });
     }
@@ -81,7 +90,7 @@ function App() {
     setView({
       type: 'projectDetail',
       projectId: project.id,
-      returnTo: view.type === 'tab' || view.type === 'detail' ? view : view.returnTo,
+      returnTo: view.type === 'tab' || view.type === 'detail' ? view : view.type === 'settingsDetail' ? { type: 'tab' as const, tab: view.returnTab } : view.returnTo,
     });
   };
 
@@ -107,7 +116,11 @@ function App() {
           <PlanningView />
         )}
         {view.type === 'tab' && view.tab === 'settings' && (
-          <SettingsView />
+          <SettingsView
+            onNavigateToSection={(section) =>
+              setView({ type: 'settingsDetail', section, returnTab: 'settings' })
+            }
+          />
         )}
         {view.type === 'detail' && (
           <TaskDetail
@@ -123,6 +136,18 @@ function App() {
             onBack={handleBack}
             onSelectTask={handleSelectTask}
           />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'workTypes' && (
+          <SettingsWorkTypesView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'templates' && (
+          <SettingsTemplatesView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'productivity' && (
+          <SettingsProductivityView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'attribution' && (
+          <SettingsAttributionView onBack={handleBack} />
         )}
       </main>
 
