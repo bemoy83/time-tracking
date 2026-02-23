@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import {
   WorkUnit,
+  WORK_UNITS,
   WORK_UNIT_LABELS,
   TaskTemplate,
   BUILD_PHASE_LABELS,
@@ -18,10 +19,10 @@ import { createTask } from '../lib/stores/task-store';
 import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
 import { computeProductivityResult } from '../lib/calculator';
 import { ActionSheet } from './ActionSheet';
+import { WorkTypePicker } from './WorkTypePicker';
 import { WorkersStepper } from './WorkersStepper';
 import { CalculatorIcon } from './icons';
 
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 
 interface CreateTaskSheetProps {
   isOpen: boolean;
@@ -176,36 +177,21 @@ export function CreateTaskSheet({
 
         {/* Work Type picker (blank mode only) */}
         {showWork && !hasTemplate && (
-          <div className="create-task-sheet__section">
-            <label className="entry-modal__label">Work Type</label>
-            {workTypes.length === 0 ? (
-              <div className="settings-view__row-detail">
-                No work types yet. You can still create this task without one.
-              </div>
-            ) : (
-              <select
-                className="input"
-                value={selectedWorkTypeId ?? ''}
-                onChange={(e) => {
-                  const id = e.target.value || null;
-                  setSelectedWorkTypeId(id);
-                  const wt = id ? workTypes.find((w) => w.id === id) : null;
-                  if (wt) {
-                    setUnit(wt.workUnit);
-                    if (!title.trim()) setTitle(wt.title);
-                  }
-                }}
-                aria-label="Work Type"
-              >
-                <option value="">Select work type...</option>
-                {workTypes.map((wt) => (
-                  <option key={wt.id} value={wt.id}>
-                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          <WorkTypePicker
+            workTypes={workTypes}
+            selectedId={selectedWorkTypeId}
+            onChange={(id) => {
+              setSelectedWorkTypeId(id);
+              const wt = id ? workTypes.find((w) => w.id === id) : null;
+              if (wt) {
+                setUnit(wt.workUnit);
+                if (!title.trim()) setTitle(wt.title);
+              }
+            }}
+            emptyMessage="No work types yet. You can still create this task without one."
+            placeholder="Select work type..."
+            className="create-task-sheet__section"
+          />
         )}
 
         {/* Work Quantity */}

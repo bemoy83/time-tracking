@@ -11,15 +11,16 @@ import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-sett
 import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
 import {
   WorkUnit,
+  WORK_UNITS,
   WORK_UNIT_LABELS,
-  BUILD_PHASE_LABELS,
   formatWorkQuantity,
 } from '../lib/types';
+import type { Task } from '../lib/types';
 import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
+import { WorkTypePicker } from './WorkTypePicker';
 import { RulerIcon, PencilIcon } from './icons';
 
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 
 interface TaskWorkQuantityProps {
   taskId: string;
@@ -58,7 +59,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
     const parsed = parseFloat(quantity);
     if (isNaN(parsed) || parsed <= 0) return;
 
-    const patch: Record<string, unknown> = {
+    const patch: Partial<Pick<Task, 'workQuantity' | 'workUnit' | 'workTypeId' | 'buildPhase' | 'targetProductivity'>> = {
       workQuantity: parsed,
       workUnit: unit,
     };
@@ -158,35 +159,18 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       >
         <div className="task-work-quantity__form">
           {/* Work Type picker */}
-          <div className="task-work-quantity__section">
-            <label className="entry-modal__label">Work Type</label>
-            {filteredWorkTypes.length === 0 ? (
-              <div className="task-work-quantity__hint">
-                {workTypes.length === 0
-                  ? 'No work types yet. Create work types in Settings.'
-                  : `No work types for ${WORK_UNIT_LABELS[unit]}.`}
-              </div>
-            ) : (
-              <select
-                className="input"
-                value={selectedWorkTypeId ?? ''}
-                onChange={(e) => handleWorkTypeChange(e.target.value || null)}
-                aria-label="Work Type"
-              >
-                <option value="">None</option>
-                {filteredWorkTypes.map((wt) => (
-                  <option key={wt.id} value={wt.id}>
-                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
-                  </option>
-                ))}
-              </select>
-            )}
-            {selectedWorkType && (
-              <div className="task-work-quantity__hint">
-                Expected: {selectedWorkType.expectedProductivity} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
-              </div>
-            )}
-          </div>
+          <WorkTypePicker
+            workTypes={filteredWorkTypes}
+            selectedId={selectedWorkTypeId}
+            onChange={handleWorkTypeChange}
+            emptyMessage={
+              workTypes.length === 0
+                ? 'No work types yet. Create work types in Settings.'
+                : `No work types for ${WORK_UNIT_LABELS[unit]}.`
+            }
+            showRate
+            className="task-work-quantity__section"
+          />
 
           {/* Quantity input */}
           <div className="task-work-quantity__input-wrap">

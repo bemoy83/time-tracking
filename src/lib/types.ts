@@ -16,6 +16,8 @@ export type TaskStatus = 'active' | 'completed' | 'blocked';
 // Work unit types for quantity tracking
 export type WorkUnit = 'm2' | 'm' | 'pcs' | 'orders';
 
+export const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
+
 export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
   m2: 'm\u00B2',
   m: 'm',

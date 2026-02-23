@@ -200,23 +200,6 @@ export async function updateTaskFields(
   });
 }
 
-/**
- * Update a task's work quantity and unit.
- */
-export async function updateTaskWork(
-  id: string,
-  workQuantity: number | null,
-  workUnit: WorkUnit | null
-): Promise<void> {
-  const task = state.tasks.find((t) => t.id === id);
-  if (!task) return;
-
-  const updated = { ...task, workQuantity, workUnit, updatedAt: nowUtc() };
-  await dbUpdateTask(updated);
-  setState({
-    tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
-  });
-}
 
 /**
  * Update a task's default workers (crew count).
