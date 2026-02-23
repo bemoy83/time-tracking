@@ -210,6 +210,12 @@
     background: rgba(160, 160, 160, 0.15);
   }
 
+  /* --- Settings Attribution --- */
+  .attribution__status,
+  .attribution__error {
+    background: #1e1e1e;
+  }
+
   /* --- Settings Productivity --- */
   .productivity__kpi {
     background: #1e1e1e;

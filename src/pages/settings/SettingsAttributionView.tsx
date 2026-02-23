@@ -58,8 +58,6 @@ export function SettingsAttributionView({ onBack, onOpenRemediation }: SettingsA
     void load();
   }, [tasks, policy]);
 
-  const statusLine = buildAttributionStatusLine(diagnostics);
-
   return (
     <SettingsDetailLayout title="Attribution Quality" onBack={onBack}>
       <div className="settings-view__card">
@@ -75,9 +73,9 @@ export function SettingsAttributionView({ onBack, onOpenRemediation }: SettingsA
             Recompute
           </button>
         </div>
-        <p className="settings-view__helper">Set attribution policy and monitor quality</p>
-        <label className="settings-view__row">
-          <span className="settings-view__row-label">Policy</span>
+        <p className="settings-view__helper">Set attribution policy and monitor quality.</p>
+        <label className="attribution__policy-control">
+          <span className="attribution__policy-label">Policy</span>
           <select
             className="input"
             value={policy}
@@ -95,30 +93,38 @@ export function SettingsAttributionView({ onBack, onOpenRemediation }: SettingsA
 
         {isLoading && diagnostics == null ? (
           <p className="settings-view__empty">Loading...</p>
-        ) : (
-          <div className="settings-view__list">
-            <div className="settings-view__row">
-              <div className="settings-view__template-info">
-                <span className="settings-view__row-label">{statusLine}</span>
-              </div>
+        ) : diagnostics && diagnostics.summary.totalEntries === 0 ? (
+          <p className="settings-view__empty">No time entries yet.</p>
+        ) : diagnostics ? (
+          <div className="attribution__status">
+            <span className="attribution__status-grade">
+              {diagnostics.progress.attributionRate}% attributed
+            </span>
+            <span className="attribution__status-detail">
+              {diagnostics.progress.totalOpenIssues} open issues · {diagnostics.progress.affectedHours.toFixed(1)} affected hrs
+            </span>
+            {formatUpdatedAt(diagnostics.computedAt) && (
+              <span className="attribution__status-detail">
+                Updated {formatUpdatedAt(diagnostics.computedAt)}
+              </span>
+            )}
+            <div className="attribution__status-actions">
               <button
                 type="button"
-                className="btn btn--secondary btn--sm"
+                className="btn btn--secondary btn--sm btn--full"
                 onClick={onOpenRemediation}
               >
                 Open Remediation
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {error && (
-          <div className="settings-view__list">
-            <div className="settings-view__row">
-              <div className="settings-view__template-info">
-                <span className="settings-view__row-label">Failed to refresh attribution diagnostics</span>
-                <span className="settings-view__row-detail">{error}</span>
-              </div>
+          <div className="attribution__error">
+            <span className="attribution__error-title">Failed to refresh diagnostics</span>
+            <span className="attribution__error-detail">{error}</span>
+            <div className="attribution__error-actions">
               <button
                 type="button"
                 className="btn btn--secondary btn--sm"

@@ -133,7 +133,11 @@
 
 .remediation__issue-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-xs);
   padding-top: var(--space-xs);
+}
+
+.remediation__issue-actions .btn {
+  width: 100%;
 }

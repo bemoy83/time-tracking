@@ -54,6 +54,7 @@
 @import './styles/components/task-attribution-breakdown.css';
 @import './styles/components/settings-remediation.css';
 @import './styles/components/settings-productivity.css';
+@import './styles/components/settings-attribution.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

@@ -1,0 +1,80 @@
+/* ============================================================
+   Settings Attribution View — mobile-first stacked layout
+   ============================================================ */
+
+/* ---- Policy control — stacked label + select ---- */
+
+.attribution__policy-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+}
+
+.attribution__policy-label {
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.attribution__policy-control .input {
+  max-width: none;
+}
+
+/* ---- Status summary ---- */
+
+.attribution__status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.attribution__status-grade {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.attribution__status-detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.attribution__status-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-xs);
+}
+
+/* ---- Error card ---- */
+
+.attribution__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.attribution__error-title {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.attribution__error-detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.attribution__error-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-xs);
+}
