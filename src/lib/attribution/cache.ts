@@ -1,6 +1,6 @@
 /**
  * Attribution snapshot cache — persists attribution results to IndexedDB
- * and provides freshness-aware retrieval.
+ * and provides freshness-aware retrieval with background refresh support.
  */
 
 import type { AttributionPolicy, AttributionSnapshot, AttributedEntry, AttributionSummary } from '../types';
@@ -9,6 +9,7 @@ import { getAllTimeEntries, getAllTasks, getAttributionSnapshot, setAttributionS
 import { attributeEntries } from './engine';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const STALE_SERVE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days — max age for stale-while-revalidate
 const VALID_STATUSES = new Set(['attributed', 'unattributed', 'ambiguous']);
 const VALID_REASONS = new Set(['self', 'ancestor', 'policySuggestedOwner', 'noMeasurableOwner', 'multipleOwners']);
 
@@ -16,8 +17,13 @@ export interface CachedAttributionResult {
   results: AttributedEntry[];
   summary: AttributionSummary;
   computedAt: string;
-  source: 'cache' | 'recomputed';
+  source: 'cache' | 'recomputed' | 'stale-cache';
 }
+
+export type BackgroundRefreshCallback = (result: CachedAttributionResult) => void;
+
+// In-flight background refresh promises keyed by policy to prevent duplicate work.
+const inflightRefreshes = new Map<string, Promise<CachedAttributionResult>>();
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -73,14 +79,22 @@ function isValidSnapshot(
   return true;
 }
 
+function snapshotAge(snapshot: AttributionSnapshot): number {
+  return Date.now() - new Date(snapshot.computedAt).getTime();
+}
+
 function isFreshSnapshot(snapshot: AttributionSnapshot): boolean {
-  const age = Date.now() - new Date(snapshot.computedAt).getTime();
-  return age < CACHE_TTL_MS;
+  return snapshotAge(snapshot) < CACHE_TTL_MS;
+}
+
+function isStaleServeable(snapshot: AttributionSnapshot): boolean {
+  const age = snapshotAge(snapshot);
+  return age >= CACHE_TTL_MS && age < STALE_SERVE_TTL_MS;
 }
 
 function toResult(
   payload: { results: AttributedEntry[]; summary: AttributionSummary; computedAt: string },
-  source: 'cache' | 'recomputed',
+  source: CachedAttributionResult['source'],
 ): CachedAttributionResult {
   return {
     results: payload.results,
@@ -136,6 +150,72 @@ export async function recomputeAttribution(
   }
 
   return toResult({ results, summary, computedAt }, 'recomputed');
+}
+
+/**
+ * Get attribution with stale-while-revalidate semantics for large datasets.
+ *
+ * - Fresh cache → return immediately (source: 'cache').
+ * - Stale but valid cache (<7d) → return stale data immediately (source: 'stale-cache')
+ *   and trigger background recompute. When done, `onRefreshComplete` fires.
+ * - No usable cache → full recompute (source: 'recomputed').
+ *
+ * Background refreshes are deduplicated per policy.
+ */
+export async function getCachedAttributionWithBackgroundRefresh(
+  policy: AttributionPolicy = DEFAULT_ATTRIBUTION_POLICY,
+  onRefreshComplete?: BackgroundRefreshCallback,
+): Promise<CachedAttributionResult> {
+  try {
+    const snapshot = await getAttributionSnapshot(policy);
+    if (isValidSnapshot(snapshot, policy)) {
+      if (isFreshSnapshot(snapshot)) {
+        return toResult(snapshot, 'cache');
+      }
+      if (isStaleServeable(snapshot)) {
+        scheduleBackgroundRefresh(policy, onRefreshComplete);
+        return toResult(snapshot, 'stale-cache');
+      }
+    }
+  } catch {
+    // Fall back to recompute below.
+  }
+
+  return recomputeAttribution(policy);
+}
+
+function scheduleBackgroundRefresh(
+  policy: AttributionPolicy,
+  onComplete?: BackgroundRefreshCallback,
+): void {
+  if (inflightRefreshes.has(policy)) {
+    // Already refreshing — attach callback to existing promise if provided.
+    if (onComplete) {
+      inflightRefreshes.get(policy)!.then(onComplete).catch(() => {});
+    }
+    return;
+  }
+
+  const refreshPromise = recomputeAttribution(policy);
+  inflightRefreshes.set(policy, refreshPromise);
+
+  refreshPromise
+    .then((result) => {
+      onComplete?.(result);
+    })
+    .catch(() => {
+      // Background refresh failures are non-fatal; stale data was already served.
+    })
+    .finally(() => {
+      inflightRefreshes.delete(policy);
+    });
+}
+
+/**
+ * Check whether a background refresh is currently in flight for a given policy.
+ */
+export function isBackgroundRefreshInFlight(policy: AttributionPolicy = DEFAULT_ATTRIBUTION_POLICY): boolean {
+  return inflightRefreshes.has(policy);
 }
 
 /**

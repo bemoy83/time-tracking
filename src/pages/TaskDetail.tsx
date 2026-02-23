@@ -4,6 +4,7 @@
  * Renders status banner, expandable sections, and fixed action bar.
  */
 
+import { useRef, useCallback } from 'react';
 import { Task, Project } from '../lib/types';
 import { TrashIcon, HomeIcon } from '../components/icons';
 import { useTaskDetail } from '../lib/hooks/useTaskDetail';
@@ -31,6 +32,15 @@ interface TaskDetailProps {
 
 export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }: TaskDetailProps) {
   const detail = useTaskDetail(taskId, onBack);
+  const attributedRefreshRef = useRef<(() => void) | null>(null);
+
+  const handleEntriesChange = useCallback(() => {
+    attributedRefreshRef.current?.();
+  }, []);
+
+  const handleAttributedRefresh = useCallback((refresh: () => void) => {
+    attributedRefreshRef.current = refresh;
+  }, []);
 
   if (!detail.task) {
     return (
@@ -76,7 +86,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       />
 
       {/* 4. Time Tracking (expandable, default open) */}
-      <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+      <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} onEntriesChange={handleEntriesChange} />
 
       {/* 5. Work quantity (expandable, default closed) */}
       <TaskWorkQuantity taskId={task.id} />
@@ -85,7 +95,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       <TaskPersonnel taskId={task.id} />
 
       {/* 7. Productivity (when quantity + estimate or time) */}
-      <TaskProductivity taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+      <TaskProductivity taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} onAttributedRefresh={handleAttributedRefresh} />
 
       {/* 7b. Attribution breakdown (expandable, default closed) */}
       <TaskAttributionBreakdown taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />

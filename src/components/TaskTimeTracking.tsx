@@ -26,9 +26,10 @@ import { pluralize } from '../lib/utils/pluralize';
 interface TaskTimeTrackingProps {
   taskId: string;
   subtaskIds: string[];
+  onEntriesChange?: () => void;
 }
 
-export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) {
+export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTimeTrackingProps) {
   const { activeTimers } = useTimerStore();
   const task = useTask(taskId);
   const { breakdown, isLoading, refresh } = useTaskTimeBreakdown(
@@ -74,6 +75,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     setEditingEntry(null);
     await loadEntries();
     refresh();
+    onEntriesChange?.();
   };
 
   const handleDeleteEntry = async (id: string) => {
@@ -81,6 +83,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     setEditingEntry(null);
     await loadEntries();
     refresh();
+    onEntriesChange?.();
   };
 
   const handleAddEntry = async (hours: number, minutes: number, workers?: number) => {
@@ -89,6 +92,7 @@ export function TaskTimeTracking({ taskId, subtaskIds }: TaskTimeTrackingProps) 
     setShowAddSheet(false);
     await loadEntries();
     refresh();
+    onEntriesChange?.();
   };
 
   const handleSaveEstimate = async (hours: number, minutes: number) => {

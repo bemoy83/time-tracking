@@ -6,9 +6,9 @@
  * Actual   = workQuantity / actual person-hours (from tracked time)
  */
 
-import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
+import { useAttributedPersonHours } from '../lib/hooks/useAttributedPersonHours';
 import { useTimerStore } from '../lib/stores/timer-store';
-import { useTask } from '../lib/stores/task-store';
+import { useTask, useTaskStore } from '../lib/stores/task-store';
 import { formatProductivity, BUILD_PHASE_LABELS } from '../lib/types';
 import { getWorkTypeById } from '../lib/stores/work-type-store';
 import { ExpandableSection } from './ExpandableSection';
@@ -17,12 +17,24 @@ import { SpeedIcon } from './icons';
 interface TaskProductivityProps {
   taskId: string;
   subtaskIds: string[];
+  onAttributedRefresh?: (refresh: () => void) => void;
 }
 
-export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) {
+export function TaskProductivity({ taskId, subtaskIds, onAttributedRefresh }: TaskProductivityProps) {
   const task = useTask(taskId);
+  const { tasks: allTasks } = useTaskStore();
   const { activeTimers } = useTimerStore();
-  const { breakdown } = useTaskTimeBreakdown(taskId, subtaskIds, activeTimers);
+  const { attributedPersonMs, refresh } = useAttributedPersonHours(
+    taskId,
+    subtaskIds,
+    allTasks,
+    activeTimers,
+  );
+
+  // Expose refresh to parent for coordination
+  if (onAttributedRefresh) {
+    onAttributedRefresh(refresh);
+  }
 
   if (!task || task.workQuantity == null || task.workUnit == null) {
     return null;
@@ -43,9 +55,9 @@ export function TaskProductivity({ taskId, subtaskIds }: TaskProductivityProps) 
     : 0;
   const requiredRate = hasEstimate ? quantity / estimatedPersonHours : null;
 
-  // Actual rate: quantity / actual person-hours
-  const hasTime = breakdown.totalPersonMs > 0;
-  const actualPersonHours = hasTime ? breakdown.totalPersonMs / 3_600_000 : 0;
+  // Actual rate: quantity / attributed person-hours
+  const hasTime = attributedPersonMs > 0;
+  const actualPersonHours = hasTime ? attributedPersonMs / 3_600_000 : 0;
   const actualRate = hasTime ? quantity / actualPersonHours : null;
 
   // Nothing to show

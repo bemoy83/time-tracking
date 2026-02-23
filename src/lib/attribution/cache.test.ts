@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AttributedEntry, AttributionSummary } from '../types';
-import { getCachedAttribution, recomputeAttribution } from './cache';
+import { getCachedAttribution, getCachedAttributionWithBackgroundRefresh, isBackgroundRefreshInFlight, recomputeAttribution } from './cache';
 
 vi.mock('../db', () => ({
   getAllTimeEntries: vi.fn(),
@@ -129,5 +129,119 @@ describe('recomputeAttribution', () => {
     expect(response.source).toBe('recomputed');
     expect(response.results).toEqual(results);
     expect(response.summary).toEqual(summary);
+  });
+});
+
+describe('getCachedAttributionWithBackgroundRefresh', () => {
+  it('returns fresh cache without triggering background refresh', async () => {
+    mockGetAttributionSnapshot.mockResolvedValue({
+      id: 'soft_allow_flag',
+      policy: 'soft_allow_flag',
+      results,
+      summary,
+      computedAt: new Date().toISOString(),
+    });
+
+    const onRefresh = vi.fn();
+    const response = await getCachedAttributionWithBackgroundRefresh('soft_allow_flag', onRefresh);
+
+    expect(response.source).toBe('cache');
+    expect(mockAttributeEntries).not.toHaveBeenCalled();
+    // Wait a tick to ensure no background work fires
+    await vi.waitFor(() => expect(onRefresh).not.toHaveBeenCalled());
+  });
+
+  it('returns stale cache immediately and fires background refresh', async () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    mockGetAttributionSnapshot.mockResolvedValue({
+      id: 'soft_allow_flag',
+      policy: 'soft_allow_flag',
+      results,
+      summary,
+      computedAt: twoDaysAgo,
+    });
+
+    const onRefresh = vi.fn();
+    const response = await getCachedAttributionWithBackgroundRefresh('soft_allow_flag', onRefresh);
+
+    expect(response.source).toBe('stale-cache');
+    expect(response.computedAt).toBe(twoDaysAgo);
+
+    // Background refresh should fire and call back
+    await vi.waitFor(() => expect(onRefresh).toHaveBeenCalledOnce());
+    expect(onRefresh.mock.calls[0][0].source).toBe('recomputed');
+  });
+
+  it('falls back to full recompute when cache is too old (>7d)', async () => {
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    mockGetAttributionSnapshot.mockResolvedValue({
+      id: 'soft_allow_flag',
+      policy: 'soft_allow_flag',
+      results,
+      summary,
+      computedAt: tenDaysAgo,
+    });
+
+    const response = await getCachedAttributionWithBackgroundRefresh('soft_allow_flag');
+
+    expect(response.source).toBe('recomputed');
+  });
+
+  it('falls back to recompute when no cache exists', async () => {
+    mockGetAttributionSnapshot.mockResolvedValue(null);
+
+    const response = await getCachedAttributionWithBackgroundRefresh('soft_allow_flag');
+
+    expect(response.source).toBe('recomputed');
+  });
+
+  it('deduplicates concurrent background refreshes for same policy', async () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    mockGetAttributionSnapshot.mockResolvedValue({
+      id: 'soft_allow_flag',
+      policy: 'soft_allow_flag',
+      results,
+      summary,
+      computedAt: twoDaysAgo,
+    });
+
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+    await getCachedAttributionWithBackgroundRefresh('soft_allow_flag', cb1);
+    await getCachedAttributionWithBackgroundRefresh('soft_allow_flag', cb2);
+
+    await vi.waitFor(() => {
+      expect(cb1).toHaveBeenCalledOnce();
+      expect(cb2).toHaveBeenCalledOnce();
+    });
+
+    // Engine should only have been called once (deduplicated)
+    expect(mockAttributeEntries).toHaveBeenCalledOnce();
+  });
+
+  it('does not fire callback when background refresh fails', async () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    mockGetAttributionSnapshot.mockResolvedValue({
+      id: 'soft_allow_flag',
+      policy: 'soft_allow_flag',
+      results,
+      summary,
+      computedAt: twoDaysAgo,
+    });
+    mockGetAllTimeEntries.mockRejectedValue(new Error('db unavailable'));
+
+    const onRefresh = vi.fn();
+    const response = await getCachedAttributionWithBackgroundRefresh('soft_allow_flag', onRefresh);
+
+    expect(response.source).toBe('stale-cache');
+    // Wait and confirm callback was never called
+    await new Promise((r) => setTimeout(r, 50));
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe('isBackgroundRefreshInFlight', () => {
+  it('returns false when no refresh is in progress', () => {
+    expect(isBackgroundRefreshInFlight('soft_allow_flag')).toBe(false);
   });
 });

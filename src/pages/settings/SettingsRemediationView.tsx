@@ -15,6 +15,7 @@ import { RemediationWorkTypeAssignSheet } from '../../components/RemediationWork
 import { ReassignEntrySheet } from '../../components/ReassignEntrySheet';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { isRolloutGateOpen, REMEDIATION_BULK_GATE } from '../../lib/flags/rollout-gates';
 
 interface SettingsRemediationViewProps {
   onBack: () => void;
@@ -156,6 +157,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
   const needsCounters = getNeedsActionCounters(queues?.needsMeasurableOwner ?? []);
   const hasAutoApplicable = (queues?.ambiguousOwner.some((i) => i.recommendedWorkTypeId != null) ?? false)
     || needsCounters.withSuggestion > 0;
+  const bulkGateOpen = isRolloutGateOpen(REMEDIATION_BULK_GATE);
 
   return (
     <SettingsDetailLayout title="Remediation" onBack={onBack}>
@@ -266,22 +268,22 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
                 <button
                   type="button"
                   className="btn btn--primary btn--sm"
-                  disabled={isApplying || queues.ambiguousOwner.every((i) => i.recommendedWorkTypeId == null)}
+                  disabled={isApplying || !bulkGateOpen || queues.ambiguousOwner.every((i) => i.recommendedWorkTypeId == null)}
                   onClick={() => {
                     void handleApplyAmbiguous();
                   }}
                 >
-                  {isApplying ? 'Applying...' : 'Apply Ambiguous WorkType Suggestions'}
+                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Ambiguous WorkType Suggestions'}
                 </button>
                 <button
                   type="button"
                   className="btn btn--secondary btn--sm"
-                  disabled={isApplying || needsCounters.withSuggestion === 0}
+                  disabled={isApplying || !bulkGateOpen || needsCounters.withSuggestion === 0}
                   onClick={() => {
                     void handleApplyNeeds();
                   }}
                 >
-                  {isApplying ? 'Applying...' : 'Apply Needs-Owner WorkType Suggestions'}
+                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Needs-Owner WorkType Suggestions'}
                 </button>
               </div>
             )}

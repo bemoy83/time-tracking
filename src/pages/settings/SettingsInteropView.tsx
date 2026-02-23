@@ -14,6 +14,7 @@ import { recomputeArchivedKpisByVersion, type RecomputedArchiveKpiGroup } from '
 import { createRecomputeChangeReport, type RecomputeChangeReport } from '../../lib/archive/recompute-report';
 import { getAttributionPolicy } from '../../lib/stores/attribution-settings';
 import { getFeatureFlag } from '../../lib/flags/feature-flags';
+import { isRolloutGateOpen, IMPORT_APPLY_GATE, ARCHIVE_RECOMPUTE_GATE } from '../../lib/flags/rollout-gates';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 
 interface SettingsInteropViewProps {
@@ -64,7 +65,10 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
   );
   const staleGuardEnabled = getFeatureFlag('interopStaleImportGuard');
   const archiveToolsEnabled = getFeatureFlag('archiveMaintenanceTools');
-  const archiveRecomputeEnabled = getFeatureFlag('archiveKpiRecompute');
+
+  // Rollout gates: flag + quality metric thresholds
+  const importApplyGateOpen = isRolloutGateOpen(IMPORT_APPLY_GATE);
+  const archiveRecomputeGateOpen = isRolloutGateOpen(ARCHIVE_RECOMPUTE_GATE);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -292,10 +296,10 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
             <button
               type="button"
               className="btn btn--primary btn--sm"
-              disabled={isApplying || preview.duplicateKeys.length > 0}
+              disabled={isApplying || preview.duplicateKeys.length > 0 || !importApplyGateOpen}
               onClick={handleApply}
             >
-              {isApplying ? 'Applying...' : 'Apply Import'}
+              {isApplying ? 'Applying...' : !importApplyGateOpen ? 'Blocked by quality gate' : 'Apply Import'}
             </button>
           </div>
         )}
@@ -348,9 +352,9 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
             onClick={() => {
               void handleRecomputeArchivedKpis();
             }}
-            disabled={isRecomputingArchive || !archiveRecomputeEnabled}
+            disabled={isRecomputingArchive || !archiveRecomputeGateOpen}
           >
-            {isRecomputingArchive ? 'Recomputing...' : archiveRecomputeEnabled ? 'Recompute KPIs' : 'Disabled by flag'}
+            {isRecomputingArchive ? 'Recomputing...' : !archiveRecomputeGateOpen ? 'Blocked by quality gate' : 'Recompute KPIs'}
           </button>
         </div>
         <p className="settings-view__helper">Recompute archive-grade KPIs by archive engine version and report what changed.</p>

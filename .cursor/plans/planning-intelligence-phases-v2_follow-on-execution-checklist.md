@@ -32,9 +32,9 @@ Goal:
 
 ## Iteration 3 (Promoted Later Items, High ROI)
 
-- [ ] **Later-1 (partial)** Extend attribution snapshot caching for large datasets (background refresh strategy, not only on-demand recompute).
+- [x] **Later-1 (partial)** Extend attribution snapshot caching for large datasets (background refresh strategy, not only on-demand recompute).
   Targets: `src/lib/attribution/cache.ts`, diagnostics loader, performance tests/bench checks.
-- [ ] **Later-8 (missing)** Add rollout gates based on production quality metrics.
+- [x] **Later-8 (missing)** Add rollout gates based on production quality metrics.
   Targets: flag + telemetry integration; block/allow logic in risky flows.
 - [x] **Later-3 (done)** Multi-scenario calculator comparison cards.
   Targets: `src/lib/calculator-scenarios.ts`, `src/components/CalculatorSheet.tsx`, `src/lib/flags/feature-flags.ts`, `src/lib/telemetry/telemetry.ts`.
@@ -57,5 +57,5 @@ Goal:
 ## Definition of Done (Follow-On Program)
 
 - [x] All remaining `Should Have` items are `done`.
-- [ ] At least 2 promoted `Later` items are `done` (or explicitly deferred with rationale).
-- [ ] Checklist status reflects implementation truth with file-level evidence.
+- [x] At least 2 promoted `Later` items are `done` (or explicitly deferred with rationale).
+- [x] Checklist status reflects implementation truth with file-level evidence.
