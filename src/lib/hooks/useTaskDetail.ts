@@ -25,7 +25,7 @@ import {
   stopTimer,
   setTimerWorkers,
 } from '../stores/timer-store';
-import { useTaskTimes } from './useTaskTimes';
+import { useTaskTimes, type TaskTimes } from './useTaskTimes';
 
 interface CompletionFlow {
   showConfirm: boolean;
@@ -69,7 +69,7 @@ export interface UseTaskDetailReturn {
   isCompleted: boolean;
   isSubtask: boolean;
   error: string | null;
-  taskTimes: Map<string, number>;
+  taskTimes: TaskTimes;
   activeTimers: ReturnType<typeof useTimerStore>['activeTimers'];
 
   // Actions

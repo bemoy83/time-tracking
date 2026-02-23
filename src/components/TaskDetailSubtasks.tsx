@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { Task } from '../lib/types';
 import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-settings';
+import type { TaskTimes } from '../lib/hooks/useTaskTimes';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import { ExpandableSection } from './ExpandableSection';
 import { CreateTaskSheet } from './CreateTaskSheet';
@@ -14,7 +15,7 @@ import { CreateTaskSheet } from './CreateTaskSheet';
 interface TaskDetailSubtasksProps {
   task: Task;
   subtasks: Task[];
-  taskTimes?: Map<string, number>;
+  taskTimes?: TaskTimes;
   onSelectTask: (task: Task) => void;
   onStartTimer: (task: Task) => void;
   onCompleteSubtask: (subtask: Task) => void;
@@ -45,7 +46,7 @@ export function TaskDetailSubtasks({
           key={subtask.id}
           task={subtask}
           isSubtask
-          totalMs={taskTimes?.get(subtask.id)}
+          totalMs={taskTimes?.durationByTask.get(subtask.id)}
           onSelect={onSelectTask}
           onStartTimer={onStartTimer}
           onComplete={onCompleteSubtask}

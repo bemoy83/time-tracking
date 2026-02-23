@@ -4,7 +4,14 @@
  * Used in TodayView for the card-based layout.
  */
 
-import { Task, calculateBudgetStatus, formatTrackedVsEstimate } from '../lib/types';
+import {
+  Task,
+  calculateBudgetStatusPersonHours,
+  formatDurationShort,
+  formatTrackedVsEstimatePersonHours,
+  getEstimatedPersonMs,
+} from '../lib/types';
+import type { TaskTimes } from '../lib/hooks/useTaskTimes';
 import { SwipeableRow } from './SwipeableRow';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import {
@@ -19,7 +26,8 @@ export interface TaskCardProps {
   task: Task;
   isTimerActive: boolean;
   totalMs?: number;
-  taskTimes?: Map<string, number>;
+  totalPersonMs?: number;
+  taskTimes?: TaskTimes;
   progress: { completed: number; total: number } | null;
   isExpanded: boolean;
   subtasks: Task[];
@@ -36,6 +44,7 @@ export function TaskCard({
   task,
   isTimerActive,
   totalMs = 0,
+  totalPersonMs = 0,
   taskTimes,
   progress,
   isExpanded,
@@ -48,7 +57,8 @@ export function TaskCard({
   onCompleteTask,
   onExpandToggle,
 }: TaskCardProps) {
-  const budgetStatus = calculateBudgetStatus(totalMs, task.estimatedMinutes);
+  const estimatedPersonMs = getEstimatedPersonMs(task.estimatedMinutes, task.defaultWorkers);
+  const budgetStatus = calculateBudgetStatusPersonHours(totalPersonMs, estimatedPersonMs);
   const hasBudget = budgetStatus.status !== 'none';
 
   // Budget bar takes priority over subtask progress bar
@@ -60,7 +70,9 @@ export function TaskCard({
     : null;
   const budgetPercent = Math.min(Math.round(budgetStatus.percentUsed), 100);
 
-  const timeBadgeText = formatTrackedVsEstimate(totalMs, task.estimatedMinutes);
+  const timeBadgeText = hasBudget
+    ? formatTrackedVsEstimatePersonHours(totalPersonMs, estimatedPersonMs)
+    : formatDurationShort(totalMs);
 
   return (
     <>
@@ -171,7 +183,7 @@ export function TaskCard({
               key={subtask.id}
               task={subtask}
               isSubtask
-              totalMs={taskTimes?.get(subtask.id)}
+              totalMs={taskTimes?.durationByTask.get(subtask.id)}
               onSelect={onSelectTask}
               onStartTimer={onStartTimerForTask}
               onComplete={onCompleteTask}

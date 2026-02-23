@@ -46,6 +46,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const taskTimes = useTaskTimes(tasks, activeTimers);
+  const { durationByTask, personMsByTask } = taskTimes;
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
   const {
     confirmTarget,
@@ -168,7 +169,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 key={task.id}
                 task={task}
                 isTimerActive={activeTimerTaskIds.has(task.id)}
-                totalMs={taskTimes.get(task.id)}
+                totalMs={durationByTask.get(task.id)}
+                totalPersonMs={personMsByTask.get(task.id)}
                 taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}
 
@@ -205,7 +207,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 key={task.id}
                 task={task}
                 isTimerActive={activeTimerTaskIds.has(task.id)}
-                totalMs={taskTimes.get(task.id)}
+                totalMs={durationByTask.get(task.id)}
+                totalPersonMs={personMsByTask.get(task.id)}
                 taskTimes={taskTimes}
                 progress={getSubtaskProgress(task.id)}
 
@@ -239,7 +242,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
               <SwipeableTaskRow
                 key={task.id}
                 task={task}
-                totalMs={taskTimes.get(task.id)}
+                totalMs={durationByTask.get(task.id)}
                 onSelect={onSelectTask}
                 onComplete={() => handleComplete(task)}
               />

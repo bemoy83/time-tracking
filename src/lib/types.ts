@@ -312,6 +312,48 @@ export function formatTrackedVsEstimateBadge(
 }
 
 /**
+ * Convert clock-time estimate to person-time estimate.
+ * Defaults to one worker when defaultWorkers is null.
+ */
+export function getEstimatedPersonMs(
+  estimatedMinutes: number | null,
+  defaultWorkers: number | null
+): number | null {
+  if (estimatedMinutes === null || estimatedMinutes <= 0) return null;
+  return estimatedMinutes * 60_000 * (defaultWorkers ?? 1);
+}
+
+/**
+ * Format tracked person-time vs person-time estimate.
+ */
+export function formatTrackedVsEstimatePersonHours(
+  trackedPersonMs: number,
+  estimatedPersonMs: number | null
+): string {
+  const tracked = formatDurationShort(trackedPersonMs);
+  if (estimatedPersonMs !== null && estimatedPersonMs > 0) {
+    return `${tracked} / ${formatDurationShort(estimatedPersonMs)}`;
+  }
+  return tracked;
+}
+
+/**
+ * Format person-hours for compact badges.
+ * Returns estimate only when no tracked person-time.
+ */
+export function formatTrackedVsEstimateBadgePersonHours(
+  trackedPersonMs: number,
+  estimatedPersonMs: number | null
+): string {
+  if (estimatedPersonMs === null || estimatedPersonMs <= 0) return '';
+  const estimate = formatDurationShort(estimatedPersonMs);
+  if (trackedPersonMs > 0) {
+    return `${formatDurationShort(trackedPersonMs)} / ${estimate}`;
+  }
+  return estimate;
+}
+
+/**
  * Budget status for comparing tracked vs estimated time.
  */
 // Attribution policy controls how heuristic suggestions are applied
@@ -381,19 +423,14 @@ export interface BudgetStatus {
   varianceText: string; // "Over by 25m" / "Under by 1h 15m"
 }
 
-/**
- * Calculate budget status from tracked time and estimate.
- * Thresholds: green < 75%, amber 75–99%, red >= 100%.
- */
-export function calculateBudgetStatus(
+function calculateBudgetStatusFromEstimateMs(
   trackedMs: number,
-  estimatedMinutes: number | null
+  estimatedMs: number | null
 ): BudgetStatus {
-  if (estimatedMinutes === null || estimatedMinutes <= 0) {
+  if (estimatedMs === null || estimatedMs <= 0) {
     return { status: 'none', percentUsed: 0, varianceMs: 0, varianceText: '' };
   }
 
-  const estimatedMs = estimatedMinutes * 60_000;
   const percentUsed = (trackedMs / estimatedMs) * 100;
   const varianceMs = trackedMs - estimatedMs;
 
@@ -411,4 +448,29 @@ export function calculateBudgetStatus(
   const varianceText = prefix + formatDurationShort(absVariance);
 
   return { status, percentUsed, varianceMs, varianceText };
+}
+
+/**
+ * Calculate budget status from tracked time and estimate.
+ * Thresholds: green < 75%, amber 75–99%, red >= 100%.
+ */
+export function calculateBudgetStatus(
+  trackedMs: number,
+  estimatedMinutes: number | null
+): BudgetStatus {
+  const estimatedMs = estimatedMinutes !== null && estimatedMinutes > 0
+    ? estimatedMinutes * 60_000
+    : null;
+  return calculateBudgetStatusFromEstimateMs(trackedMs, estimatedMs);
+}
+
+/**
+ * Calculate budget status from tracked and estimated person-time.
+ * Input/output units are person-ms.
+ */
+export function calculateBudgetStatusPersonHours(
+  trackedPersonMs: number,
+  estimatedPersonMs: number | null
+): BudgetStatus {
+  return calculateBudgetStatusFromEstimateMs(trackedPersonMs, estimatedPersonMs);
 }

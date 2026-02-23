@@ -12,7 +12,12 @@ import { useTask, useTaskStore } from '../lib/stores/task-store';
 import { updateTaskEstimate } from '../lib/stores/task-store';
 import { getTimeEntriesByTask } from '../lib/db';
 import { addManualEntry, updateEntry, deleteEntry } from '../lib/stores/entry-actions';
-import { TimeEntry, formatDurationShort, calculateBudgetStatus } from '../lib/types';
+import {
+  TimeEntry,
+  formatDurationShort,
+  calculateBudgetStatusPersonHours,
+  getEstimatedPersonMs,
+} from '../lib/types';
 import { TimeEntryRow } from './TimeEntryRow';
 import { EditEntryModal } from './EditEntryModal';
 import { ActionSheet } from './ActionSheet';
@@ -46,7 +51,8 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showEstimateSheet, setShowEstimateSheet] = useState(false);
 
-  const budgetStatus = calculateBudgetStatus(breakdown.totalMs, task?.estimatedMinutes ?? null);
+  const estimatedPersonMs = getEstimatedPersonMs(task?.estimatedMinutes ?? null, task?.defaultWorkers ?? null);
+  const budgetStatus = calculateBudgetStatusPersonHours(breakdown.totalPersonMs, estimatedPersonMs);
 
   const hasSubtasks = subtaskIds.length > 0;
   const hasTime = breakdown.totalMs > 0;
@@ -124,7 +130,8 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
         icon={<ClockIcon className="task-time-tracking__icon" />}
         defaultOpen={true}
         timeBadgeMs={breakdown.totalMs}
-        estimatedMinutes={task?.estimatedMinutes ?? null}
+        timeBadgePersonMs={estimatedPersonMs != null ? breakdown.totalPersonMs : undefined}
+        estimatedPersonMs={estimatedPersonMs}
         timeBadgeStatus={budgetStatus.status}
       >
         {isLoading ? (
@@ -186,8 +193,8 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
                   <div className="task-time-tracking__estimate-heading">
                     <span className="task-time-tracking__estimate-metrics">
                       <TrackedVsEstimateBadge
-                        trackedMs={breakdown.totalMs}
-                        estimatedMinutes={task?.estimatedMinutes ?? null}
+                        trackedPersonMs={breakdown.totalPersonMs}
+                        estimatedPersonMs={estimatedPersonMs}
                         status={budgetStatus.status}
                       />
                       <span className={`task-time-tracking__variance task-time-tracking__variance--${budgetStatus.status}`}>

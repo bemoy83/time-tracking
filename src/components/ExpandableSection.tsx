@@ -9,7 +9,11 @@
 import { useState } from 'react';
 import { ClockIcon } from './icons';
 import type { BudgetLevel } from '../lib/types';
-import { formatDurationShort, formatTrackedVsEstimate } from '../lib/types';
+import {
+  formatDurationShort,
+  formatTrackedVsEstimate,
+  formatTrackedVsEstimatePersonHours,
+} from '../lib/types';
 
 interface ExpandableSectionProps {
   label: string;
@@ -17,7 +21,9 @@ interface ExpandableSectionProps {
   defaultOpen?: boolean;
   badge?: React.ReactNode;
   timeBadgeMs?: number;
+  timeBadgePersonMs?: number;
   estimatedMinutes?: number | null;
+  estimatedPersonMs?: number | null;
   timeBadgeStatus?: BudgetLevel;
   sectionSummary?: string;
   flush?: boolean;
@@ -31,7 +37,9 @@ export function ExpandableSection({
   defaultOpen = false,
   badge,
   timeBadgeMs,
+  timeBadgePersonMs,
   estimatedMinutes,
+  estimatedPersonMs,
   timeBadgeStatus,
   sectionSummary,
   flush = false,
@@ -48,6 +56,14 @@ export function ExpandableSection({
 
   const sectionClass = `expandable-section${flush ? ' expandable-section--flush' : ''}${!isOpen ? ' expandable-section--collapsed' : ''}`;
   const contentClass = `expandable-section__content${flush ? ' expandable-section__content--flush' : ''}`;
+  const hasPersonBudget = estimatedPersonMs != null && estimatedPersonMs > 0;
+  const hasClockBudget = estimatedMinutes != null && estimatedMinutes > 0;
+  const hasTimeBadge = hasPersonBudget || hasClockBudget || ((timeBadgeMs ?? 0) > 0);
+  const timeBadgeText = hasPersonBudget
+    ? formatTrackedVsEstimatePersonHours(timeBadgePersonMs ?? 0, estimatedPersonMs)
+    : hasClockBudget
+      ? formatTrackedVsEstimate(timeBadgeMs ?? 0, estimatedMinutes)
+      : formatDurationShort(timeBadgeMs ?? 0);
 
   return (
     <section className={sectionClass} aria-label={label}>
@@ -62,7 +78,7 @@ export function ExpandableSection({
           {label}
           {badge}
         </span>
-        {!isOpen && timeBadgeMs != null && timeBadgeMs > 0 && (
+        {!isOpen && hasTimeBadge && (
           <span
             className={`expandable-section__time-badge task-item__time-badge${
               timeBadgeStatus && timeBadgeStatus !== 'none'
@@ -71,9 +87,7 @@ export function ExpandableSection({
             }`}
           >
             <ClockIcon className="task-item__time-badge-icon" />
-            {estimatedMinutes != null
-              ? formatTrackedVsEstimate(timeBadgeMs, estimatedMinutes)
-              : formatDurationShort(timeBadgeMs)}
+            {timeBadgeText}
           </span>
         )}
         {!isOpen && sectionSummary != null && sectionSummary !== '' && (
