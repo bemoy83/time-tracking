@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Task, TimeEntry } from '../types';
 import {
+  taskHasQuantityContext,
   isMeasurable,
   findMeasurableOwner,
   attributeEntry,
@@ -46,6 +47,18 @@ function makeEntry(overrides: Partial<TimeEntry> = {}): TimeEntry {
   };
 }
 
+describe('taskHasQuantityContext', () => {
+  it('returns true when task has quantity and unit', () => {
+    const task = makeTask({ workQuantity: 100, workUnit: 'm2' });
+    expect(taskHasQuantityContext(task)).toBe(true);
+  });
+
+  it('returns false when workUnit is missing', () => {
+    const task = makeTask({ workQuantity: 100, workUnit: null });
+    expect(taskHasQuantityContext(task)).toBe(false);
+  });
+});
+
 describe('isMeasurable', () => {
   it('returns true when task has quantity, unit, and workTypeId', () => {
     const task = makeTask({ workQuantity: 100, workUnit: 'm2', workTypeId: 'wt-1' });
@@ -65,7 +78,31 @@ describe('findMeasurableOwner', () => {
     expect(result).toEqual({ ownerTaskId: 'task-1', status: 'attributed', reason: 'self' });
   });
 
-  it('returns parent when parent is measurable', () => {
+  it('returns self when task has quantity context but no workTypeId', () => {
+    const task = makeTask({ workQuantity: 100, workUnit: 'm2', workTypeId: null });
+    const result = findMeasurableOwner(task, [task]);
+    expect(result).toEqual({ ownerTaskId: 'task-1', status: 'attributed', reason: 'self' });
+  });
+
+  it('subtask with quantity context owns itself instead of rolling to parent', () => {
+    const parent = makeTask({
+      id: 'parent-1',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child-1',
+      parentId: 'parent-1',
+      workQuantity: 50,
+      workUnit: 'm2',
+      // No workTypeId — but has quantity context
+    });
+    const result = findMeasurableOwner(child, [parent, child]);
+    expect(result).toEqual({ ownerTaskId: 'child-1', status: 'attributed', reason: 'self' });
+  });
+
+  it('returns parent when child has no quantity context and parent is measurable', () => {
     const parent = makeTask({
       id: 'parent-1',
       workQuantity: 100,

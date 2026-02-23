@@ -131,7 +131,7 @@ describe('getAttributedPersonHoursForTask', () => {
     expect(result).toBe(7_200_000);
   });
 
-  it('excludes measurable subtask entries (they own themselves)', async () => {
+  it('excludes subtask with quantity context (they own themselves)', async () => {
     const parent = makeTask({
       id: 'parent',
       workQuantity: 100,
@@ -143,7 +143,7 @@ describe('getAttributedPersonHoursForTask', () => {
       parentId: 'parent',
       workQuantity: 50,
       workUnit: 'm2',
-      workTypeId: 'wt-child',
+      // No workTypeId — but has quantity context, so self-owns
     });
 
     mockGetEntries.mockImplementation(async (taskId: string) => {
@@ -227,5 +227,69 @@ describe('getAttributedPersonHoursForTask', () => {
 
     // 1 hour × 3 workers = 3 person-hours = 10_800_000 ms
     expect(result).toBe(10_800_000);
+  });
+
+  it('subtask with quantity context (no workTypeId) self-owns entries', async () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child',
+      parentId: 'parent',
+      workQuantity: 50,
+      workUnit: 'm2',
+      // No workTypeId — has quantity context, engine attributes to self
+    });
+
+    mockGetEntries.mockImplementation(async (taskId: string) => {
+      if (taskId === 'child') return [makeEntry({ id: 'e1', taskId: 'child' })];
+      return [];
+    });
+
+    const result = await getAttributedPersonHoursForTask(
+      'child',
+      [],
+      [parent, child],
+      [],
+    );
+
+    // 1 entry × 1 hour × 1 worker = 3_600_000 ms
+    expect(result).toBe(3_600_000);
+  });
+
+  it('subtask with quantity context self-owns active timer', async () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child',
+      parentId: 'parent',
+      workQuantity: 50,
+      workUnit: 'm2',
+    });
+
+    mockGetEntries.mockResolvedValue([]);
+
+    const timer = makeTimer({
+      taskId: 'child',
+      startUtc: '2024-06-15T09:00:00.000Z', // 1 hour ago
+      workers: 1,
+    });
+
+    const result = await getAttributedPersonHoursForTask(
+      'child',
+      [],
+      [parent, child],
+      [timer],
+    );
+
+    // Timer: 1hr × 1 worker = 3_600_000 ms
+    expect(result).toBe(3_600_000);
   });
 });

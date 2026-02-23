@@ -9,7 +9,7 @@
  */
 
 import type { Task, AttributedEntry } from '../types';
-import { isMeasurable } from '../attribution/engine';
+import { isMeasurable, taskHasQuantityContext } from '../attribution/engine';
 
 export type IssueCategory =
   | 'needs_measurable_owner'
@@ -285,10 +285,6 @@ export function buildIssueQueues(
     totalIssues: needsMeasurableOwner.length + ambiguousOwner.length + noWorkContext.length,
     totalAffectedHours,
   };
-}
-
-export function taskHasQuantityContext(task: Task): boolean {
-  return task.workQuantity != null && task.workQuantity > 0 && task.workUnit != null;
 }
 
 /**

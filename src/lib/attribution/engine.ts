@@ -30,14 +30,14 @@ interface HeuristicResult {
   heuristicUsed: HeuristicName;
 }
 
+/** A task has quantity context when it has quantity and unit (sufficient for self-ownership). */
+export function taskHasQuantityContext(task: Task): boolean {
+  return task.workQuantity != null && task.workQuantity > 0 && task.workUnit != null;
+}
+
 /** A task is measurable when it has quantity, unit, and a WorkType link. */
 export function isMeasurable(task: Task): boolean {
-  return (
-    task.workQuantity != null &&
-    task.workQuantity > 0 &&
-    task.workUnit != null &&
-    task.workTypeId != null
-  );
+  return taskHasQuantityContext(task) && task.workTypeId != null;
 }
 
 /** Walk self → parent to find the measurable owner of a task. */
@@ -49,8 +49,8 @@ export function findMeasurableOwner(
   status: AttributionStatus;
   reason: AttributionReason;
 } {
-  // Self check first — logged task takes priority
-  if (isMeasurable(task)) {
+  // Self check first — a task with quantity context owns its own entries
+  if (taskHasQuantityContext(task)) {
     return { ownerTaskId: task.id, status: 'attributed', reason: 'self' };
   }
 

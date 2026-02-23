@@ -180,6 +180,38 @@ describe('addActiveTimerContribution', () => {
     expect(result).toBe(0);
   });
 
+  it('excludes timer when subtask has quantity context (no workTypeId)', () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child',
+      parentId: 'parent',
+      workQuantity: 50,
+      workUnit: 'm2',
+      // No workTypeId — but has quantity context, so self-owns
+    });
+
+    const timer = makeTimer({
+      taskId: 'child',
+      startUtc: '2024-06-15T09:00:00.000Z',
+      workers: 1,
+    });
+
+    const result = addActiveTimerContribution(
+      'parent',
+      ['parent', 'child'],
+      [timer],
+      [parent, child],
+    );
+
+    // Child has quantity context → self-owns → does NOT attribute to parent
+    expect(result).toBe(0);
+  });
+
   it('returns 0 when no active timers match timerTaskIds', () => {
     const parent = makeTask({ id: 'parent', workQuantity: 100, workUnit: 'm2', workTypeId: 'wt-1' });
 
