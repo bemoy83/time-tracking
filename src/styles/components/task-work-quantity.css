@@ -76,6 +76,19 @@
   padding: var(--space-sm) 0;
 }
 
+/* Section within the form (e.g. Work Type picker) */
+.task-work-quantity__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* Subtle hint / rate text */
+.task-work-quantity__hint {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 .task-work-quantity__input-wrap {
   display: flex;
   align-items: center;

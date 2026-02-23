@@ -1,13 +1,20 @@
 /**
  * TaskWorkQuantity component.
  * Displays work quantity summary; opens ActionSheet to edit.
+ * Supports WorkType selection for attribution/measurability.
  * Uses ExpandableSection for the outer toggle.
  */
 
 import { useState } from 'react';
-import { useTask, updateTaskWork } from '../lib/stores/task-store';
+import { useTask, updateTaskFields } from '../lib/stores/task-store';
 import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-settings';
-import { WorkUnit, WORK_UNIT_LABELS, formatWorkQuantity } from '../lib/types';
+import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
+import {
+  WorkUnit,
+  WORK_UNIT_LABELS,
+  BUILD_PHASE_LABELS,
+  formatWorkQuantity,
+} from '../lib/types';
 import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
 import { RulerIcon, PencilIcon } from './icons';
@@ -21,11 +28,19 @@ interface TaskWorkQuantityProps {
 export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
   const task = useTask(taskId);
   const subtaskRollupMode = useSubtaskTimeRollupMode();
+  const { workTypes } = useWorkTypeStore();
   const [showSheet, setShowSheet] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<WorkUnit>('m2');
+  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string | null>(null);
 
   const hasWork = task?.workQuantity != null && task?.workUnit != null;
+  const selectedWorkType = selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null;
+
+  // Filter work types by task's existing unit, or show all if no unit set
+  const filteredWorkTypes = task?.workUnit
+    ? workTypes.filter((wt) => wt.workUnit === task.workUnit)
+    : workTypes;
 
   const handleOpen = () => {
     if (task?.workQuantity != null && task?.workUnit != null) {
@@ -35,24 +50,69 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       setQuantity('');
       setUnit('m2');
     }
+    setSelectedWorkTypeId(task?.workTypeId ?? null);
     setShowSheet(true);
   };
 
   const handleSave = async () => {
     const parsed = parseFloat(quantity);
     if (isNaN(parsed) || parsed <= 0) return;
-    await updateTaskWork(taskId, parsed, unit);
+
+    const patch: Record<string, unknown> = {
+      workQuantity: parsed,
+      workUnit: unit,
+    };
+
+    if (selectedWorkTypeId) {
+      const wt = getWorkTypeById(selectedWorkTypeId);
+      if (!wt) return;
+      patch.workTypeId = wt.id;
+      patch.buildPhase = wt.buildPhase;
+      patch.targetProductivity = wt.expectedProductivity;
+      patch.workUnit = wt.workUnit;
+    } else {
+      patch.workTypeId = null;
+      patch.buildPhase = null;
+      patch.targetProductivity = null;
+    }
+
+    await updateTaskFields(taskId, patch);
     setShowSheet(false);
   };
 
   const handleClear = async () => {
-    await updateTaskWork(taskId, null, null);
+    await updateTaskFields(taskId, {
+      workQuantity: null,
+      workUnit: null,
+      workTypeId: null,
+      buildPhase: null,
+      targetProductivity: null,
+    });
     setShowSheet(false);
+  };
+
+  const handleWorkTypeChange = (id: string | null) => {
+    setSelectedWorkTypeId(id);
+    const wt = id ? getWorkTypeById(id) : null;
+    if (wt) {
+      setUnit(wt.workUnit);
+    }
   };
 
   if (task?.parentId != null && subtaskRollupMode === 'simple') {
     return null;
   }
+
+  // Section summary: "120 m² · Carpet Tiles" or "120 m²"
+  const summaryLabel = (() => {
+    if (!hasWork) return undefined;
+    const base = formatWorkQuantity(task.workQuantity!, task.workUnit!);
+    if (task.workTypeId) {
+      const wt = getWorkTypeById(task.workTypeId);
+      if (wt) return `${base} · ${wt.title}`;
+    }
+    return base;
+  })();
 
   return (
     <>
@@ -60,7 +120,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
         label="WORK"
         icon={<RulerIcon className="task-work-quantity__icon" />}
         defaultOpen={false}
-        sectionSummary={hasWork ? formatWorkQuantity(task.workQuantity!, task.workUnit!) : undefined}
+        sectionSummary={summaryLabel}
       >
         <div className="task-work-quantity__content">
           <span className="task-work-quantity__section-label section-heading">WORK QUANTITY</span>
@@ -97,6 +157,38 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
         onClose={() => setShowSheet(false)}
       >
         <div className="task-work-quantity__form">
+          {/* Work Type picker */}
+          <div className="task-work-quantity__section">
+            <label className="entry-modal__label">Work Type</label>
+            {filteredWorkTypes.length === 0 ? (
+              <div className="task-work-quantity__hint">
+                {workTypes.length === 0
+                  ? 'No work types yet. Create work types in Settings.'
+                  : `No work types for ${WORK_UNIT_LABELS[unit]}.`}
+              </div>
+            ) : (
+              <select
+                className="input"
+                value={selectedWorkTypeId ?? ''}
+                onChange={(e) => handleWorkTypeChange(e.target.value || null)}
+                aria-label="Work Type"
+              >
+                <option value="">None</option>
+                {filteredWorkTypes.map((wt) => (
+                  <option key={wt.id} value={wt.id}>
+                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedWorkType && (
+              <div className="task-work-quantity__hint">
+                Expected: {selectedWorkType.expectedProductivity} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+              </div>
+            )}
+          </div>
+
+          {/* Quantity input */}
           <div className="task-work-quantity__input-wrap">
             <input
               inputMode="decimal"
@@ -113,24 +205,30 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
               {WORK_UNIT_LABELS[unit]}
             </span>
           </div>
-          <div
-            className="task-work-quantity__unit-pills"
-            role="group"
-            aria-label="Unit"
-          >
-            {WORK_UNITS.map((u) => (
-              <button
-                key={u}
-                type="button"
-                role="radio"
-                aria-checked={unit === u}
-                className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                onClick={() => setUnit(u)}
-              >
-                {WORK_UNIT_LABELS[u]}
-              </button>
-            ))}
-          </div>
+
+          {/* Unit pills — hidden when WorkType selected (unit is locked) */}
+          {!selectedWorkType && (
+            <div
+              className="task-work-quantity__unit-pills"
+              role="group"
+              aria-label="Unit"
+            >
+              {WORK_UNITS.map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  role="radio"
+                  aria-checked={unit === u}
+                  className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
+                  onClick={() => setUnit(u)}
+                >
+                  {WORK_UNIT_LABELS[u]}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Actions */}
           <div className="action-sheet__actions">
             {hasWork && (
               <button
