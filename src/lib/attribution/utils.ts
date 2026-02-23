@@ -20,6 +20,18 @@ export function sumAttributedPersonHours(
 }
 
 /**
+ * Sum clock duration (ms) from attributed entries belonging to a specific task.
+ */
+export function sumAttributedDurationMs(
+  entriesByTask: Map<string, AttributedEntry[]>,
+  taskId: string,
+): number {
+  const entries = entriesByTask.get(taskId);
+  if (!entries) return 0;
+  return entries.reduce((sum, entry) => sum + entry.durationMs, 0);
+}
+
+/**
  * Compute additional person-ms from active timers that attribute to a given task.
  *
  * For each active timer whose taskId is in `timerTaskIds`, runs `findMeasurableOwner`
@@ -49,4 +61,33 @@ export function addActiveTimerContribution(
   }
 
   return additionalPersonMs;
+}
+
+/**
+ * Compute additional duration-ms from active timers that attribute to a given task.
+ *
+ * Returns elapsed clock time only (no worker multiplication).
+ */
+export function addActiveTimerDurationContribution(
+  taskId: string,
+  timerTaskIds: string[],
+  activeTimers: ActiveTimer[],
+  allTasks: Task[],
+): number {
+  const timerSet = new Set(timerTaskIds);
+  let additionalDurationMs = 0;
+
+  for (const timer of activeTimers) {
+    if (!timerSet.has(timer.taskId)) continue;
+
+    const task = allTasks.find((t) => t.id === timer.taskId);
+    if (!task) continue;
+
+    const { ownerTaskId } = findMeasurableOwner(task, allTasks);
+    if (ownerTaskId === taskId) {
+      additionalDurationMs += elapsedMs(timer.startUtc);
+    }
+  }
+
+  return additionalDurationMs;
 }

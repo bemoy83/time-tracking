@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTaskStore } from '../lib/stores/task-store';
 import { purgeTimeEntries, resetAllData } from '../lib/stores/purge-store';
 import { getParallelSubtaskTimers, setParallelSubtaskTimers } from '../lib/stores/timer-store';
+import {
+  useSubtaskTimeRollupMode,
+  setSubtaskTimeRollupMode,
+} from '../lib/stores/subtask-time-rollup-settings';
 import { getAllTimeEntries } from '../lib/db';
 import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
@@ -28,6 +32,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   const [showPurgeEntries, setShowPurgeEntries] = useState(false);
   const [showResetAll, setShowResetAll] = useState(false);
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
+  const subtaskRollupMode = useSubtaskTimeRollupMode();
   const [featureFlags, setFeatureFlags] = useState(getFeatureFlags);
   const [telemetrySnapshot, setTelemetrySnapshot] = useState(getTelemetrySnapshot);
 
@@ -161,6 +166,30 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
               }}
             />
           </label>
+        </div>
+      </section>
+
+      <section className="settings-view__section">
+        <div className="settings-view__card">
+          <h2 className="settings-view__sub-header">Advanced</h2>
+          <p className="settings-view__helper">
+            Control whether subtasks are phase-only or can carry their own measurable work.
+          </p>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Allow subtasks to have work</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={subtaskRollupMode === 'attribution'}
+              onChange={(e) => {
+                setSubtaskTimeRollupMode(e.target.checked ? 'attribution' : 'simple');
+              }}
+            />
+          </label>
+          <p className="settings-view__helper">
+            When on: subtasks can have their own work, and time/productivity use attribution.
+            When off: subtasks are phases only, and all subtask time rolls to parent.
+          </p>
         </div>
       </section>
 

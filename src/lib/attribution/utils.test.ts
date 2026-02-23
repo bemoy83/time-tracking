@@ -5,7 +5,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Task, ActiveTimer, AttributedEntry } from '../types';
-import { sumAttributedPersonHours, addActiveTimerContribution } from './utils';
+import {
+  sumAttributedPersonHours,
+  sumAttributedDurationMs,
+  addActiveTimerContribution,
+  addActiveTimerDurationContribution,
+} from './utils';
 
 // --- factories ---
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -38,6 +43,7 @@ function makeAttributedEntry(overrides: Partial<AttributedEntry> = {}): Attribut
     ownerTaskId: 'task-1',
     status: 'attributed',
     reason: 'self',
+    durationMs: 3_600_000,
     personHours: 1,
     suggestedOwnerTaskId: null,
     heuristicUsed: null,
@@ -78,6 +84,25 @@ describe('sumAttributedPersonHours', () => {
     const map = new Map<string, AttributedEntry[]>();
     map.set('task-1', []);
     expect(sumAttributedPersonHours(map, 'task-1')).toBe(0);
+  });
+});
+
+// --- sumAttributedDurationMs ---
+
+describe('sumAttributedDurationMs', () => {
+  it('sums durations for entries belonging to the given task', () => {
+    const map = new Map<string, AttributedEntry[]>();
+    map.set('task-1', [
+      makeAttributedEntry({ entryId: 'e1', durationMs: 1_800_000 }),
+      makeAttributedEntry({ entryId: 'e2', durationMs: 3_600_000 }),
+    ]);
+
+    expect(sumAttributedDurationMs(map, 'task-1')).toBe(5_400_000);
+  });
+
+  it('returns 0 when task has no entries', () => {
+    const map = new Map<string, AttributedEntry[]>();
+    expect(sumAttributedDurationMs(map, 'task-1')).toBe(0);
   });
 });
 
@@ -235,6 +260,73 @@ describe('addActiveTimerContribution', () => {
       ['parent'],
       [],
       [parent],
+    );
+
+    expect(result).toBe(0);
+  });
+});
+
+describe('addActiveTimerDurationContribution', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-06-15T10:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('adds elapsed duration-ms when timer attributes to target task', () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({ id: 'child', parentId: 'parent' });
+
+    const timer = makeTimer({
+      taskId: 'child',
+      startUtc: '2024-06-15T09:30:00.000Z', // 30 min ago
+      workers: 3,
+    });
+
+    const result = addActiveTimerDurationContribution(
+      'parent',
+      ['parent', 'child'],
+      [timer],
+      [parent, child],
+    );
+
+    // Duration path must ignore workers and add clock time only.
+    expect(result).toBe(1_800_000);
+  });
+
+  it('returns 0 when measurable subtask owns timer', () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child',
+      parentId: 'parent',
+      workQuantity: 50,
+      workUnit: 'm2',
+      workTypeId: 'wt-child',
+    });
+
+    const timer = makeTimer({
+      taskId: 'child',
+      startUtc: '2024-06-15T09:30:00.000Z',
+    });
+
+    const result = addActiveTimerDurationContribution(
+      'parent',
+      ['parent', 'child'],
+      [timer],
+      [parent, child],
     );
 
     expect(result).toBe(0);

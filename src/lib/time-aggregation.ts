@@ -4,7 +4,8 @@
  */
 
 import { getTimeEntriesByTask } from './db';
-import { ActiveTimer, TimeEntry, durationMs, elapsedMs } from './types';
+import { ActiveTimer, Task, TimeEntry, durationMs, elapsedMs } from './types';
+import { attributeEntries, findMeasurableOwner } from './attribution/engine';
 
 /**
  * Time breakdown result for a task.
@@ -122,5 +123,103 @@ export async function getTaskTimeBreakdown(
     directPersonMs,
     subtaskPersonMs,
     hasMultipleWorkers: hasMultiple,
+  };
+}
+
+/**
+ * Attribution-aware time breakdown for a parent task.
+ *
+ * Includes only durations attributed to `taskId` and splits contribution by
+ * source (direct task entries/timers vs subtask entries/timers).
+ */
+export async function getTaskTimeBreakdownAttribution(
+  taskId: string,
+  subtaskIds: string[],
+  allTasks: Task[],
+  activeTimers: ActiveTimer[],
+): Promise<TimeBreakdown> {
+  const directEntries = await getTimeEntriesByTask(taskId);
+  const subtaskEntriesById = new Map<string, TimeEntry[]>();
+
+  for (const subtaskId of subtaskIds) {
+    const entries = await getTimeEntriesByTask(subtaskId);
+    subtaskEntriesById.set(subtaskId, entries);
+  }
+
+  const allEntries: TimeEntry[] = [
+    ...directEntries,
+    ...Array.from(subtaskEntriesById.values()).flat(),
+  ];
+
+  const taskMap = new Map(allTasks.map((task) => [task.id, task]));
+  const sourceEntryById = new Map(allEntries.map((entry) => [entry.id, entry]));
+  const subtaskIdSet = new Set(subtaskIds);
+  const { results } = attributeEntries(allEntries, taskMap);
+
+  let directMs = 0;
+  let subtaskMs = 0;
+  let entryCount = 0;
+  let subtaskEntryCount = 0;
+  let directPersonMs = 0;
+  let subtaskPersonMs = 0;
+  let hasMultipleWorkers = false;
+
+  for (const attributedEntry of results) {
+    if (attributedEntry.ownerTaskId !== taskId) continue;
+    const sourceEntry = sourceEntryById.get(attributedEntry.entryId);
+    const workers = sourceEntry?.workers ?? 1;
+    const personMs = attributedEntry.personHours * 3_600_000;
+
+    if (attributedEntry.taskId === taskId) {
+      directMs += attributedEntry.durationMs;
+      directPersonMs += personMs;
+      entryCount += 1;
+    } else if (subtaskIdSet.has(attributedEntry.taskId)) {
+      subtaskMs += attributedEntry.durationMs;
+      subtaskPersonMs += personMs;
+      subtaskEntryCount += 1;
+    }
+
+    if (workers > 1) {
+      hasMultipleWorkers = true;
+    }
+  }
+
+  for (const timer of activeTimers) {
+    if (timer.taskId !== taskId && !subtaskIdSet.has(timer.taskId)) continue;
+
+    const task = taskMap.get(timer.taskId);
+    if (!task) continue;
+
+    const { ownerTaskId } = findMeasurableOwner(task, allTasks);
+    if (ownerTaskId !== taskId) continue;
+
+    const elapsed = elapsedMs(timer.startUtc);
+    const workers = timer.workers ?? 1;
+    const personMs = elapsed * workers;
+
+    if (timer.taskId === taskId) {
+      directMs += elapsed;
+      directPersonMs += personMs;
+    } else {
+      subtaskMs += elapsed;
+      subtaskPersonMs += personMs;
+    }
+
+    if (workers > 1) {
+      hasMultipleWorkers = true;
+    }
+  }
+
+  return {
+    totalMs: directMs + subtaskMs,
+    directMs,
+    subtaskMs,
+    entryCount,
+    subtaskEntryCount,
+    totalPersonMs: directPersonMs + subtaskPersonMs,
+    directPersonMs,
+    subtaskPersonMs,
+    hasMultipleWorkers,
   };
 }

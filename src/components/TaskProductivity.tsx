@@ -9,6 +9,7 @@
 import { useAttributedPersonHours } from '../lib/hooks/useAttributedPersonHours';
 import { useTimerStore } from '../lib/stores/timer-store';
 import { useTask, useTaskStore } from '../lib/stores/task-store';
+import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-settings';
 import { formatProductivity, BUILD_PHASE_LABELS } from '../lib/types';
 import { getWorkTypeById } from '../lib/stores/work-type-store';
 import { ExpandableSection } from './ExpandableSection';
@@ -24,11 +25,13 @@ export function TaskProductivity({ taskId, subtaskIds, onAttributedRefresh }: Ta
   const task = useTask(taskId);
   const { tasks: allTasks } = useTaskStore();
   const { activeTimers } = useTimerStore();
+  const subtaskRollupMode = useSubtaskTimeRollupMode();
   const { attributedPersonMs, refresh } = useAttributedPersonHours(
     taskId,
     subtaskIds,
     allTasks,
     activeTimers,
+    subtaskRollupMode,
   );
 
   // Expose refresh to parent for coordination

@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Task } from '../lib/types';
+import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-settings';
 import { SwipeableTaskRow } from './SwipeableTaskRow';
 import { ExpandableSection } from './ExpandableSection';
 import { CreateTaskSheet } from './CreateTaskSheet';
@@ -28,6 +29,7 @@ export function TaskDetailSubtasks({
   onCompleteSubtask,
 }: TaskDetailSubtasksProps) {
   const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const subtaskRollupMode = useSubtaskTimeRollupMode();
   const completedCount = subtasks.filter((t) => t.status === 'completed').length;
   const sectionSummary = subtasks.length > 0 ? `${completedCount}/${subtasks.length} completed` : undefined;
 
@@ -64,7 +66,7 @@ export function TaskDetailSubtasks({
         sheetTitle="New Subtask"
         parentId={task.id}
         projectId={task.projectId}
-        showWork={false}
+        showWork={subtaskRollupMode === 'attribution'}
         showEstimate={false}
         showWorkers={false}
       />

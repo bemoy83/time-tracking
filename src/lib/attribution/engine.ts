@@ -125,6 +125,8 @@ export function attributeEntry(
   tasks: Map<string, Task>,
   policy: AttributionPolicy = DEFAULT_ATTRIBUTION_POLICY,
 ): AttributedEntry {
+  const entryDurationMs = durationMs(entry.startUtc, entry.endUtc);
+  const entryPersonHours = computePersonHours(entryDurationMs, entry.workers);
   const task = tasks.get(entry.taskId);
 
   if (!task) {
@@ -134,7 +136,8 @@ export function attributeEntry(
       ownerTaskId: null,
       status: 'unattributed',
       reason: 'noMeasurableOwner',
-      personHours: computePersonHours(entry),
+      durationMs: entryDurationMs,
+      personHours: entryPersonHours,
       suggestedOwnerTaskId: null,
       heuristicUsed: null,
     };
@@ -151,7 +154,8 @@ export function attributeEntry(
       ownerTaskId,
       status,
       reason,
-      personHours: computePersonHours(entry),
+      durationMs: entryDurationMs,
+      personHours: entryPersonHours,
       suggestedOwnerTaskId: null,
       heuristicUsed: null,
     };
@@ -168,7 +172,8 @@ export function attributeEntry(
       ownerTaskId: heuristic.suggestedOwnerTaskId,
       status: 'attributed',
       reason: 'policySuggestedOwner',
-      personHours: computePersonHours(entry),
+      durationMs: entryDurationMs,
+      personHours: entryPersonHours,
       suggestedOwnerTaskId: heuristic.suggestedOwnerTaskId,
       heuristicUsed: heuristic.heuristicUsed,
     };
@@ -182,7 +187,8 @@ export function attributeEntry(
       ownerTaskId,
       status,
       reason,
-      personHours: computePersonHours(entry),
+      durationMs: entryDurationMs,
+      personHours: entryPersonHours,
       suggestedOwnerTaskId: null,
       heuristicUsed: null,
     };
@@ -195,7 +201,8 @@ export function attributeEntry(
     ownerTaskId,
     status,
     reason,
-    personHours: computePersonHours(entry),
+    durationMs: entryDurationMs,
+    personHours: entryPersonHours,
     suggestedOwnerTaskId: heuristic.suggestedOwnerTaskId,
     heuristicUsed: heuristic.heuristicUsed === 'none' ? null : heuristic.heuristicUsed,
   };
@@ -264,8 +271,7 @@ export function attributeEntries(
   };
 }
 
-function computePersonHours(entry: TimeEntry): number {
-  const ms = durationMs(entry.startUtc, entry.endUtc);
-  const hours = ms / 3_600_000;
-  return hours * entry.workers;
+function computePersonHours(entryDurationMs: number, workers: number): number {
+  const hours = entryDurationMs / 3_600_000;
+  return hours * workers;
 }

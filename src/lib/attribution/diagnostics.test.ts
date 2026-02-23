@@ -33,6 +33,7 @@ const sampleResults: AttributedEntry[] = [
     ownerTaskId: 't1',
     status: 'attributed',
     reason: 'self',
+    durationMs: 3_600_000,
     personHours: 2,
     suggestedOwnerTaskId: null,
     heuristicUsed: null,

@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useTask, updateTaskWork } from '../lib/stores/task-store';
+import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-settings';
 import { WorkUnit, WORK_UNIT_LABELS, formatWorkQuantity } from '../lib/types';
 import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
@@ -19,6 +20,7 @@ interface TaskWorkQuantityProps {
 
 export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
   const task = useTask(taskId);
+  const subtaskRollupMode = useSubtaskTimeRollupMode();
   const [showSheet, setShowSheet] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<WorkUnit>('m2');
@@ -47,6 +49,10 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
     await updateTaskWork(taskId, null, null);
     setShowSheet(false);
   };
+
+  if (task?.parentId != null && subtaskRollupMode === 'simple') {
+    return null;
+  }
 
   return (
     <>

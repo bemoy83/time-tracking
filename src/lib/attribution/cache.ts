@@ -44,6 +44,7 @@ function isValidAttributedEntry(value: unknown): value is AttributedEntry {
     VALID_STATUSES.has(candidate.status) &&
     typeof candidate.reason === 'string' &&
     VALID_REASONS.has(candidate.reason) &&
+    isFiniteNumber(candidate.durationMs) &&
     isFiniteNumber(candidate.personHours) &&
     (typeof candidate.suggestedOwnerTaskId === 'string' || candidate.suggestedOwnerTaskId == null) &&
     (typeof candidate.heuristicUsed === 'string' || candidate.heuristicUsed == null)

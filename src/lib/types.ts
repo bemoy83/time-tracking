@@ -336,6 +336,7 @@ export interface AttributedEntry {
   ownerTaskId: string | null;  // measurable task that "owns" this entry (null if unattributed)
   status: AttributionStatus;
   reason: AttributionReason;
+  durationMs: number;          // precomputed clock duration for this entry
   personHours: number;         // precomputed: durationHrs * workers
   suggestedOwnerTaskId: string | null;  // heuristic suggestion (may differ from ownerTaskId)
   heuristicUsed: string | null;         // which heuristic produced the suggestion

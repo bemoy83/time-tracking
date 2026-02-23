@@ -6,7 +6,12 @@
 import type { Task, ActiveTimer, AttributionPolicy } from './types';
 import { DEFAULT_ATTRIBUTION_POLICY } from './types';
 import { buildAttributedRollup } from './attributed-rollup';
-import { sumAttributedPersonHours, addActiveTimerContribution } from './attribution/utils';
+import {
+  sumAttributedPersonHours,
+  sumAttributedDurationMs,
+  addActiveTimerContribution,
+  addActiveTimerDurationContribution,
+} from './attribution/utils';
 
 /**
  * Get the total attributed person-ms for a task.
@@ -38,4 +43,26 @@ export async function getAttributedPersonHoursForTask(
   const timerPersonMs = addActiveTimerContribution(taskId, timerTaskIds, activeTimers, allTasks);
 
   return personMs + timerPersonMs;
+}
+
+/**
+ * Get total attributed duration-ms for a task.
+ */
+export async function getAttributedDurationForTask(
+  taskId: string,
+  subtaskIds: string[],
+  allTasks: Task[],
+  activeTimers: ActiveTimer[],
+  policy: AttributionPolicy = DEFAULT_ATTRIBUTION_POLICY,
+): Promise<number> {
+  const task = allTasks.find((t) => t.id === taskId);
+  if (!task) return 0;
+
+  const { entriesByTask } = await buildAttributedRollup([task], allTasks, policy);
+  const attributedDurationMs = sumAttributedDurationMs(entriesByTask, taskId);
+
+  const timerTaskIds = [taskId, ...subtaskIds];
+  const timerDurationMs = addActiveTimerDurationContribution(taskId, timerTaskIds, activeTimers, allTasks);
+
+  return attributedDurationMs + timerDurationMs;
 }

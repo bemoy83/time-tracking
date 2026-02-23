@@ -36,6 +36,7 @@ function makeAttributed(overrides: Partial<AttributedEntry> = {}): AttributedEnt
     suggestedOwnerTaskId: null,
     heuristicUsed: null,
     ...overrides,
+    durationMs: overrides.durationMs ?? 3_600_000,
   };
 }
 

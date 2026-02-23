@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ActiveTimer } from '../types';
-import { getTaskTimeBreakdown, TimeBreakdown } from '../time-aggregation';
+import { ActiveTimer, Task } from '../types';
+import { getTaskTimeBreakdown, getTaskTimeBreakdownAttribution, TimeBreakdown } from '../time-aggregation';
+import { useSubtaskTimeRollupMode } from '../stores/subtask-time-rollup-settings';
 
 const EMPTY_BREAKDOWN: TimeBreakdown = {
   totalMs: 0,
@@ -29,17 +30,22 @@ const EMPTY_BREAKDOWN: TimeBreakdown = {
 export function useTaskTimeBreakdown(
   taskId: string,
   subtaskIds: string[],
+  allTasks: Task[],
   activeTimers: ActiveTimer[]
 ): {
   breakdown: TimeBreakdown;
   isLoading: boolean;
   refresh: () => void;
 } {
+  const subtaskRollupMode = useSubtaskTimeRollupMode();
   const [breakdown, setBreakdown] = useState<TimeBreakdown>(EMPTY_BREAKDOWN);
   const [isLoading, setIsLoading] = useState(true);
 
   // Create stable key for subtaskIds to detect changes
   const subtaskKey = subtaskIds.join(',');
+  const taskKey = allTasks
+    .map((t) => `${t.id}:${t.parentId ?? ''}:${t.workQuantity ?? ''}:${t.workUnit ?? ''}:${t.workTypeId ?? ''}`)
+    .join(',');
 
   // Track active timer IDs to detect when timers start/stop
   const timerKey = activeTimers.map((t) => t.id).join(',');
@@ -47,7 +53,9 @@ export function useTaskTimeBreakdown(
   const fetchBreakdown = async () => {
     setIsLoading(true);
     try {
-      const result = await getTaskTimeBreakdown(taskId, subtaskIds, activeTimers);
+      const result = subtaskRollupMode === 'attribution'
+        ? await getTaskTimeBreakdownAttribution(taskId, subtaskIds, allTasks, activeTimers)
+        : await getTaskTimeBreakdown(taskId, subtaskIds, activeTimers);
       setBreakdown(result);
     } catch (err) {
       console.error('Failed to fetch time breakdown:', err);
@@ -60,7 +68,7 @@ export function useTaskTimeBreakdown(
   // Refetch when dependencies change
   useEffect(() => {
     fetchBreakdown();
-  }, [taskId, subtaskKey, timerKey]);
+  }, [taskId, subtaskKey, taskKey, timerKey, subtaskRollupMode]);
 
   // Refresh function for manual updates
   const refresh = () => {

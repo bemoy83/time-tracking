@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import type { Task, ActiveTimer } from '../types';
 import { getAttributedPersonHoursForTask } from '../attributed-person-hours';
+import type { SubtaskTimeRollupMode } from '../stores/subtask-time-rollup-settings';
+import { getTaskTimeBreakdown } from '../time-aggregation';
 
 /**
  * Fetch and track attributed person-ms for a task.
@@ -21,6 +23,7 @@ export function useAttributedPersonHours(
   subtaskIds: string[],
   allTasks: Task[],
   activeTimers: ActiveTimer[],
+  mode: SubtaskTimeRollupMode,
   refreshKey?: number,
 ): {
   attributedPersonMs: number;
@@ -32,16 +35,21 @@ export function useAttributedPersonHours(
 
   const subtaskKey = subtaskIds.join(',');
   const timerKey = activeTimers.map((t) => t.id).join(',');
+  const taskKey = allTasks
+    .map((t) => `${t.id}:${t.parentId ?? ''}:${t.workQuantity ?? ''}:${t.workUnit ?? ''}:${t.workTypeId ?? ''}`)
+    .join(',');
 
   const fetchAttributed = async () => {
     setIsLoading(true);
     try {
-      const result = await getAttributedPersonHoursForTask(
-        taskId,
-        subtaskIds,
-        allTasks,
-        activeTimers,
-      );
+      const result = mode === 'attribution'
+        ? await getAttributedPersonHoursForTask(
+          taskId,
+          subtaskIds,
+          allTasks,
+          activeTimers,
+        )
+        : (await getTaskTimeBreakdown(taskId, subtaskIds, activeTimers)).totalPersonMs;
       setAttributedPersonMs(result);
     } catch (err) {
       console.error('Failed to fetch attributed person-hours:', err);
@@ -53,7 +61,7 @@ export function useAttributedPersonHours(
 
   useEffect(() => {
     fetchAttributed();
-  }, [taskId, subtaskKey, timerKey, refreshKey]);
+  }, [taskId, subtaskKey, taskKey, timerKey, mode, refreshKey]);
 
   const refresh = () => {
     fetchAttributed();

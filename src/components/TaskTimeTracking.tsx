@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useTaskTimeBreakdown } from '../lib/hooks/useTaskTimeBreakdown';
 import { useTimerStore } from '../lib/stores/timer-store';
-import { useTask } from '../lib/stores/task-store';
+import { useTask, useTaskStore } from '../lib/stores/task-store';
 import { updateTaskEstimate } from '../lib/stores/task-store';
 import { getTimeEntriesByTask } from '../lib/db';
 import { addManualEntry, updateEntry, deleteEntry } from '../lib/stores/entry-actions';
@@ -31,10 +31,12 @@ interface TaskTimeTrackingProps {
 
 export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTimeTrackingProps) {
   const { activeTimers } = useTimerStore();
+  const { tasks: allTasks } = useTaskStore();
   const task = useTask(taskId);
   const { breakdown, isLoading, refresh } = useTaskTimeBreakdown(
     taskId,
     subtaskIds,
+    allTasks,
     activeTimers
   );
 

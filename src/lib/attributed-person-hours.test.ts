@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Task, TimeEntry, ActiveTimer } from './types';
-import { getAttributedPersonHoursForTask } from './attributed-person-hours';
+import { getAttributedPersonHoursForTask, getAttributedDurationForTask } from './attributed-person-hours';
 
 // --- stub DB layer ---
 vi.mock('./db', () => ({
@@ -290,6 +290,61 @@ describe('getAttributedPersonHoursForTask', () => {
     );
 
     // Timer: 1hr × 1 worker = 3_600_000 ms
+    expect(result).toBe(3_600_000);
+  });
+});
+
+describe('getAttributedDurationForTask', () => {
+  it('returns duration-ms from entries attributed to the task', async () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+
+    mockGetEntries.mockImplementation(async (taskId: string) => {
+      if (taskId === 'parent') return [makeEntry({ id: 'e1', taskId: 'parent' })];
+      return [];
+    });
+
+    const result = await getAttributedDurationForTask(
+      'parent',
+      [],
+      [parent],
+      [],
+    );
+
+    expect(result).toBe(3_600_000);
+  });
+
+  it('includes active timer elapsed-ms without worker multiplier', async () => {
+    const parent = makeTask({
+      id: 'parent',
+      workQuantity: 100,
+      workUnit: 'm2',
+      workTypeId: 'wt-1',
+    });
+    const child = makeTask({
+      id: 'child',
+      parentId: 'parent',
+    });
+
+    mockGetEntries.mockResolvedValue([]);
+
+    const timer = makeTimer({
+      taskId: 'child',
+      startUtc: '2024-06-15T09:00:00.000Z', // 1 hour ago
+      workers: 4,
+    });
+
+    const result = await getAttributedDurationForTask(
+      'parent',
+      ['child'],
+      [parent, child],
+      [timer],
+    );
+
     expect(result).toBe(3_600_000);
   });
 });
