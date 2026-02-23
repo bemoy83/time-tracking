@@ -9,7 +9,7 @@
 import { getTimeEntry, updateTimeEntry, getTask, updateTask, addTaskNote } from '../db';
 import { generateId, nowUtc, createAuditNote } from '../types';
 import type { Task, TaskNote, WorkUnit, BuildPhase } from '../types';
-import type { IssueQueueItem } from './issue-queue';
+import type { EntryLevelIssueItem } from './issue-queue';
 
 export interface BulkFixResult {
   attempted: number;
@@ -23,7 +23,7 @@ export interface BulkFixResult {
  * Writes audit notes on both source and destination tasks.
  */
 export async function bulkReassignToSuggested(
-  items: IssueQueueItem[],
+  items: EntryLevelIssueItem[],
   reason: string,
 ): Promise<BulkFixResult> {
   const eligible = items.filter((i) => i.entryId != null && i.suggestedTargetId != null);

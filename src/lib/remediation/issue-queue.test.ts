@@ -175,6 +175,7 @@ describe('buildIssueQueues', () => {
     expect(result.noWorkContext[0].description).toContain('work type');
     expect(result.noWorkContext[0].description).toContain('work unit');
     expect(result.noWorkContext[0].description).toContain('work quantity');
+    expect(result.noWorkContext[0].missingFields).toEqual(['work type', 'work unit', 'work quantity']);
   });
 
   it('skips active tasks for no_work_context check', () => {
@@ -237,6 +238,7 @@ describe('buildIssueQueues', () => {
     expect(result.noWorkContext[0].description).toContain('work type');
     expect(result.noWorkContext[0].description).not.toContain('work unit');
     expect(result.noWorkContext[0].description).not.toContain('work quantity');
+    expect(result.noWorkContext[0].missingFields).toEqual(['work type']);
     expect(result.noWorkContext[0].entryIds).toEqual(['e1', 'e2']);
     expect(result.noWorkContext[0].entryCount).toBe(2);
     expect(result.noWorkContext[0].personHours).toBe(4);

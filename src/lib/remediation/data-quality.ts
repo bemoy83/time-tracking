@@ -25,7 +25,7 @@ export interface DataQualityProgress {
   totalOpenIssues: number;
   /** Person-hours affected by open issues. */
   affectedHours: number;
-  /** Quality grade based on attribution rate. */
+  /** Quality grade based on effective attributed hours after no-work-context deductions. */
   grade: QualityGrade;
 }
 
@@ -56,6 +56,14 @@ export function computeDataQualityProgress(
     summary.totalEntries > 0
       ? (summary.attributed / summary.totalEntries) * 100
       : 100; // no entries = "perfect"
+  const noWorkContextAffectedHours = issues.noWorkContext.reduce((sum, item) => sum + item.personHours, 0);
+  const effectiveRateRaw =
+    summary.totalEntries === 0
+      ? 100
+      : summary.totalPersonHours > 0
+      ? ((summary.attributedPersonHours - noWorkContextAffectedHours) / summary.totalPersonHours) * 100
+      : 100;
+  const effectiveRate = Math.max(0, effectiveRateRaw);
 
   return {
     attributionRate: Math.round(attributionRate * 10) / 10,
@@ -69,6 +77,6 @@ export function computeDataQualityProgress(
     },
     totalOpenIssues: issues.totalIssues,
     affectedHours: issues.totalAffectedHours,
-    grade: classifyQualityGrade(attributionRate),
+    grade: classifyQualityGrade(effectiveRate),
   };
 }

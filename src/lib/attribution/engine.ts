@@ -35,12 +35,18 @@ export function taskHasQuantityContext(task: Task): boolean {
   return task.workQuantity != null && task.workQuantity > 0 && task.workUnit != null;
 }
 
+/** Alias for taskHasQuantityContext to clarify self-ownership semantics. */
+export const canSelfOwnEntries = taskHasQuantityContext;
+
 /** A task is measurable when it has quantity, unit, and a WorkType link. */
 export function isMeasurable(task: Task): boolean {
   return taskHasQuantityContext(task) && task.workTypeId != null;
 }
 
-/** Walk self → parent to find the measurable owner of a task. */
+/** Alias for isMeasurable to clarify parent-receive semantics. */
+export const canReceiveChildEntries = isMeasurable;
+
+/** Walk self → parent to find the owner task (self can own entries; parent can receive child entries). */
 export function findMeasurableOwner(
   task: Task,
   allTasks: Task[],
@@ -50,14 +56,14 @@ export function findMeasurableOwner(
   reason: AttributionReason;
 } {
   // Self check first — a task with quantity context owns its own entries
-  if (taskHasQuantityContext(task)) {
+  if (canSelfOwnEntries(task)) {
     return { ownerTaskId: task.id, status: 'attributed', reason: 'self' };
   }
 
   // Walk to parent (one-level hierarchy)
   if (task.parentId) {
     const parent = allTasks.find((t) => t.id === task.parentId);
-    if (parent && isMeasurable(parent)) {
+    if (parent && canReceiveChildEntries(parent)) {
       return { ownerTaskId: parent.id, status: 'attributed', reason: 'ancestor' };
     }
   }

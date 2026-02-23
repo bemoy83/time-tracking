@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { IssueQueueItem } from '../../lib/remediation/issue-queue';
-import { getNeedsActionCounters, summarizeBulkFixResult } from './SettingsRemediationView';
+import type { EntryLevelIssueItem, NoWorkContextItem } from '../../lib/remediation/issue-queue';
+import {
+  getQueueCounters,
+  getSuggestionQueueCounters,
+  summarizeBulkFixResult,
+} from './SettingsRemediationView';
 
-function makeNeedsItem(overrides: Partial<IssueQueueItem> = {}): IssueQueueItem {
+function makeNeedsItem(overrides: Partial<EntryLevelIssueItem> = {}): EntryLevelIssueItem {
   return {
     category: 'needs_measurable_owner',
     taskId: 't1',
@@ -22,7 +26,7 @@ function makeNeedsItem(overrides: Partial<IssueQueueItem> = {}): IssueQueueItem 
   };
 }
 
-describe('getNeedsActionCounters', () => {
+describe('getSuggestionQueueCounters', () => {
   it('counts suggested vs manual-required items', () => {
     const items = [
       makeNeedsItem({ taskId: 't1', suggestedTargetId: 'owner-1', recommendedWorkTypeId: 'wt-1', suggestionSource: 'nearest' }),
@@ -30,12 +34,49 @@ describe('getNeedsActionCounters', () => {
       makeNeedsItem({ taskId: 't3', entryId: 'e3', suggestedTargetId: 'owner-2', recommendedWorkTypeId: 'wt-2', suggestionSource: 'engine' }),
     ];
 
-    const counters = getNeedsActionCounters(items);
+    const counters = getSuggestionQueueCounters(items);
 
     expect(counters.totalScopes).toBe(3);
     expect(counters.totalEntries).toBe(3);
     expect(counters.withSuggestion).toBe(2);
     expect(counters.manualRequired).toBe(1);
+  });
+});
+
+describe('getQueueCounters', () => {
+  it('counts scopes and entries for base queue fields', () => {
+    const items: NoWorkContextItem[] = [
+      {
+        category: 'no_work_context',
+        taskId: 'scope-1',
+        scopeTaskId: 'scope-1',
+        entryId: 'e1',
+        entryIds: ['e1', 'e2'],
+        entryCount: 2,
+        taskTitle: 'Scope 1',
+        description: 'Missing: work type',
+        missingFields: ['work type'],
+        personHours: 3,
+      },
+      {
+        category: 'no_work_context',
+        taskId: 'scope-2',
+        scopeTaskId: 'scope-2',
+        entryId: null,
+        entryIds: [],
+        entryCount: 0,
+        taskTitle: 'Scope 2',
+        description: 'Missing: work unit',
+        missingFields: ['work unit'],
+        personHours: 0,
+      },
+    ];
+
+    const counters = getQueueCounters(items);
+
+    expect(counters.totalScopes).toBe(2);
+    expect(counters.totalEntries).toBe(2);
+    expect(counters.manualRequired).toBe(2);
   });
 });
 

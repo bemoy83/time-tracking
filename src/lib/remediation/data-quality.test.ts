@@ -158,4 +158,37 @@ describe('computeDataQualityProgress', () => {
     // 2/3 = 66.666... → 66.7
     expect(result.attributionRate).toBe(66.7);
   });
+
+  it('degrades grade when no-work-context hours are high despite 100% attribution', () => {
+    const result = computeDataQualityProgress(
+      makeSummary({
+        totalEntries: 10,
+        attributed: 10,
+        totalPersonHours: 100,
+        attributedPersonHours: 100,
+        excludedPersonHours: 0,
+      }),
+      makeIssues({
+        noWorkContext: [
+          {
+            category: 'no_work_context',
+            taskId: 't-nowork',
+            scopeTaskId: 't-nowork',
+            entryId: null,
+            entryIds: ['e1', 'e2'],
+            entryCount: 2,
+            taskTitle: 'Task missing context',
+            description: 'Missing: work type',
+            missingFields: ['work type'],
+            personHours: 30,
+          },
+        ],
+        totalIssues: 1,
+        totalAffectedHours: 30,
+      }),
+    );
+
+    expect(result.attributionRate).toBe(100);
+    expect(result.grade).toBe('fair');
+  });
 });

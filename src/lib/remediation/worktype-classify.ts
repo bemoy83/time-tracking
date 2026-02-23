@@ -27,7 +27,7 @@ import type {
 } from '../types';
 import {
   resolveClassificationScopeTask,
-  type IssueQueueItem,
+  type EntryLevelIssueItem,
 } from './issue-queue';
 
 export interface ClassifyEntryToWorkTypeResult {
@@ -320,7 +320,7 @@ export async function createAndClassifyFromTask(
 }
 
 export async function bulkClassifyToRecommendedWorkType(
-  items: IssueQueueItem[],
+  items: EntryLevelIssueItem[],
   reason: string,
 ): Promise<BulkClassifyResult> {
   const grouped = new Map<

@@ -16,8 +16,7 @@ export type IssueCategory =
   | 'ambiguous_owner'
   | 'no_work_context';
 
-export interface IssueQueueItem {
-  category: IssueCategory;
+export interface BaseIssueItem {
   /** Scope task that should be classified/fixed for this issue cluster. */
   taskId: string;
   /** Alias of taskId for readability in remediation flows. */
@@ -30,6 +29,12 @@ export interface IssueQueueItem {
   taskTitle: string;
   /** Human-readable description of the issue. */
   description: string;
+  /** Person-hours affected by this issue. */
+  personHours: number;
+}
+
+export interface NeedsMeasurableOwnerItem extends BaseIssueItem {
+  category: 'needs_measurable_owner';
   /** Suggested fix target (taskId to reassign to, or null). */
   suggestedTargetId: string | null;
   suggestedTargetTitle: string | null;
@@ -39,14 +44,33 @@ export interface IssueQueueItem {
   conflictingRecommendedWorkTypeIds: string[];
   /** Where the suggestion came from. */
   suggestionSource: 'engine' | 'nearest' | null;
-  /** Person-hours affected by this issue (0 for task-level issues). */
-  personHours: number;
 }
 
+export interface AmbiguousOwnerItem extends BaseIssueItem {
+  category: 'ambiguous_owner';
+  /** Suggested fix target (taskId to reassign to, or null). */
+  suggestedTargetId: string | null;
+  suggestedTargetTitle: string | null;
+  /** Suggested WorkType classification target. */
+  recommendedWorkTypeId: string | null;
+  /** Recommended WorkType conflict set for manual decision. */
+  conflictingRecommendedWorkTypeIds: string[];
+  /** Where the suggestion came from. */
+  suggestionSource: 'engine' | 'nearest' | null;
+}
+
+export interface NoWorkContextItem extends BaseIssueItem {
+  category: 'no_work_context';
+  missingFields: ('work type' | 'work unit' | 'work quantity')[];
+}
+
+export type EntryLevelIssueItem = NeedsMeasurableOwnerItem | AmbiguousOwnerItem;
+export type IssueQueueItem = EntryLevelIssueItem | NoWorkContextItem;
+
 export interface IssueQueueResult {
-  needsMeasurableOwner: IssueQueueItem[];
-  ambiguousOwner: IssueQueueItem[];
-  noWorkContext: IssueQueueItem[];
+  needsMeasurableOwner: NeedsMeasurableOwnerItem[];
+  ambiguousOwner: AmbiguousOwnerItem[];
+  noWorkContext: NoWorkContextItem[];
   totalIssues: number;
   totalAffectedHours: number;
 }
@@ -70,17 +94,13 @@ export function buildIssueQueues(
   ): string | null => sourceTask?.workTypeId ?? suggestedTask?.workTypeId ?? null;
 
   type RawIssue = Omit<
-    IssueQueueItem,
-    'entryIds' | 'entryCount' | 'entryId' | 'recommendedWorkTypeId' | 'conflictingRecommendedWorkTypeIds' | 'suggestionSource' | 'suggestedTargetId' | 'suggestedTargetTitle'
+    EntryLevelIssueItem,
+    'entryIds' | 'entryCount' | 'entryId' | 'conflictingRecommendedWorkTypeIds'
   > & {
     entryId: string;
-    recommendedWorkTypeId: string | null;
-    suggestionSource: 'engine' | 'nearest' | null;
-    suggestedTargetId: string | null;
-    suggestedTargetTitle: string | null;
   };
   interface GroupAccumulator {
-    category: IssueCategory;
+    category: EntryLevelIssueItem['category'];
     taskId: string;
     scopeTaskId: string;
     taskTitle: string;
@@ -95,10 +115,19 @@ export function buildIssueQueues(
 
   const needsRaw: RawIssue[] = [];
   const ambiguousRaw: RawIssue[] = [];
-  const noWorkContext: IssueQueueItem[] = [];
+  const noWorkContext: NoWorkContextItem[] = [];
+  const entriesByOwner = new Map<string, AttributedEntry[]>();
 
   // 1 & 2: Scan attributed entries for unattributed / ambiguous
   for (const entry of attributedEntries) {
+    // Index attributed entries by ownerTaskId so noWorkContext items
+    // can surface actual hours and entry counts for actionable cards.
+    if (entry.status === 'attributed' && entry.ownerTaskId) {
+      const list = entriesByOwner.get(entry.ownerTaskId);
+      if (list) list.push(entry);
+      else entriesByOwner.set(entry.ownerTaskId, [entry]);
+    }
+
     const sourceTask = taskMap.get(entry.taskId);
     const scopeTask = sourceTask
       ? resolveClassificationScopeTask(sourceTask, taskMap)
@@ -163,7 +192,7 @@ export function buildIssueQueues(
     }
   }
 
-  const groupIssues = (items: RawIssue[]): IssueQueueItem[] => {
+  const groupIssues = (items: RawIssue[]): EntryLevelIssueItem[] => {
     const groups = new Map<string, GroupAccumulator>();
     for (const item of items) {
       const key = `${item.category}:${item.scopeTaskId}`;
@@ -200,7 +229,7 @@ export function buildIssueQueues(
       }
     }
 
-    const grouped: IssueQueueItem[] = [];
+    const grouped: EntryLevelIssueItem[] = [];
     for (const group of groups.values()) {
       const entryIds = Array.from(group.entryIds).sort((a, b) => a.localeCompare(b));
       const recommendationIds = Array.from(group.recommendationIds).sort((a, b) => a.localeCompare(b));
@@ -229,22 +258,8 @@ export function buildIssueQueues(
     return grouped;
   };
 
-  const needsMeasurableOwner = groupIssues(needsRaw);
-  const ambiguousOwner = groupIssues(ambiguousRaw);
-
-  // Index attributed entries by ownerTaskId so noWorkContext items
-  // can surface the actual hours and entry counts for actionable cards.
-  const entriesByOwner = new Map<string, AttributedEntry[]>();
-  for (const entry of attributedEntries) {
-    if (entry.status === 'attributed' && entry.ownerTaskId) {
-      const list = entriesByOwner.get(entry.ownerTaskId);
-      if (list) {
-        list.push(entry);
-      } else {
-        entriesByOwner.set(entry.ownerTaskId, [entry]);
-      }
-    }
-  }
+  const needsMeasurableOwner = groupIssues(needsRaw) as NeedsMeasurableOwnerItem[];
+  const ambiguousOwner = groupIssues(ambiguousRaw) as AmbiguousOwnerItem[];
 
   // 3: Scan completed tasks for missing work context
   for (const task of tasks) {
@@ -252,10 +267,10 @@ export function buildIssueQueues(
     if (task.parentId != null) continue; // subtasks inherit from parent
     if (isMeasurable(task)) continue;
 
-    const missing: string[] = [];
-    if (task.workTypeId == null) missing.push('work type');
-    if (task.workUnit == null) missing.push('work unit');
-    if (task.workQuantity == null || task.workQuantity <= 0) missing.push('work quantity');
+    const missingFields: NoWorkContextItem['missingFields'] = [];
+    if (task.workTypeId == null) missingFields.push('work type');
+    if (task.workUnit == null) missingFields.push('work unit');
+    if (task.workQuantity == null || task.workQuantity <= 0) missingFields.push('work quantity');
 
     const ownedEntries = entriesByOwner.get(task.id) ?? [];
     const entryIds = ownedEntries.map((e) => e.entryId).sort();
@@ -269,17 +284,13 @@ export function buildIssueQueues(
       entryIds,
       entryCount: entryIds.length,
       taskTitle: task.title,
-      description: `Missing: ${missing.join(', ')}`,
-      suggestedTargetId: null,
-      suggestedTargetTitle: null,
-      recommendedWorkTypeId: task.workTypeId ?? null,
-      conflictingRecommendedWorkTypeIds: [],
-      suggestionSource: null,
+      description: `Missing: ${missingFields.join(', ')}`,
+      missingFields,
       personHours: entryPersonHours,
     });
   }
 
-  const sortQueue = (items: IssueQueueItem[]) =>
+  const sortQueue = <T extends IssueQueueItem>(items: T[]) =>
     items.sort((a, b) => {
       const taskCmp = a.taskId.localeCompare(b.taskId);
       if (taskCmp !== 0) return taskCmp;

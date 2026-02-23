@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { bulkReassignToSuggested, bulkSetWorkContext } from './bulk-fix';
-import type { IssueQueueItem } from './issue-queue';
+import type { EntryLevelIssueItem } from './issue-queue';
 
 vi.mock('../db', () => ({
   getTimeEntry: vi.fn(),
@@ -56,7 +56,7 @@ const baseTask = {
 
 describe('bulkReassignToSuggested', () => {
   it('reassigns entries to suggested targets with audit notes', async () => {
-    const items: IssueQueueItem[] = [{
+    const items: EntryLevelIssueItem[] = [{
       category: 'ambiguous_owner',
       taskId: 'task-old',
       scopeTaskId: 'task-old',
@@ -93,7 +93,7 @@ describe('bulkReassignToSuggested', () => {
   });
 
   it('skips items without suggestedTargetId', async () => {
-    const items: IssueQueueItem[] = [{
+    const items: EntryLevelIssueItem[] = [{
       category: 'needs_measurable_owner',
       taskId: 'task-1',
       scopeTaskId: 'task-1',
@@ -115,8 +115,8 @@ describe('bulkReassignToSuggested', () => {
   });
 
   it('skips items without entryId', async () => {
-    const items: IssueQueueItem[] = [{
-      category: 'no_work_context',
+    const items: EntryLevelIssueItem[] = [{
+      category: 'needs_measurable_owner',
       taskId: 'task-1',
       scopeTaskId: 'task-1',
       entryId: null,
@@ -129,7 +129,7 @@ describe('bulkReassignToSuggested', () => {
       recommendedWorkTypeId: null,
       conflictingRecommendedWorkTypeIds: [],
       suggestionSource: 'nearest',
-      personHours: 0,
+      personHours: 1,
     }];
 
     const result = await bulkReassignToSuggested(items, 'test');
@@ -137,7 +137,7 @@ describe('bulkReassignToSuggested', () => {
   });
 
   it('records failures for missing entries', async () => {
-    const items: IssueQueueItem[] = [{
+    const items: EntryLevelIssueItem[] = [{
       category: 'ambiguous_owner',
       taskId: 'task-old',
       scopeTaskId: 'task-old',
