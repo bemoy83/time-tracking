@@ -155,9 +155,78 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
   };
 
   const needsCounters = getNeedsActionCounters(queues?.needsMeasurableOwner ?? []);
+  const noWorkContextCounters = getNeedsActionCounters(queues?.noWorkContext ?? []);
   const hasAutoApplicable = (queues?.ambiguousOwner.some((i) => i.recommendedWorkTypeId != null) ?? false)
     || needsCounters.withSuggestion > 0;
   const bulkGateOpen = isRolloutGateOpen(REMEDIATION_BULK_GATE);
+
+  const renderIssueCard = (item: IssueQueueItem, keyPrefix: string) => (
+    <div key={`${item.taskId}-${keyPrefix}`} className="remediation__issue">
+      <span className="remediation__issue-title">{item.taskTitle}</span>
+      <div className="remediation__issue-meta">
+        <span className="remediation__issue-stat">
+          {item.personHours.toFixed(2)} hrs · {item.entryCount} {item.entryCount === 1 ? 'entry' : 'entries'}
+        </span>
+        <span className="remediation__issue-desc">{item.description}</span>
+        {item.suggestedTargetTitle && (
+          <span className="remediation__issue-suggestion">
+            Suggested: {item.suggestedTargetTitle} ({item.suggestionSource})
+          </span>
+        )}
+        {item.recommendedWorkTypeId && (
+          <span className="remediation__issue-suggestion">
+            Recommended: {workTypeTitleById.get(item.recommendedWorkTypeId) ?? item.recommendedWorkTypeId}
+          </span>
+        )}
+        {item.conflictingRecommendedWorkTypeIds.length > 1 && (
+          <span className="remediation__issue-conflict">
+            Conflicting recommendations — manual selection required
+          </span>
+        )}
+      </div>
+      {item.entryCount > 0 && (
+        <div className="remediation__issue-actions">
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => {
+              setAssignEntry({
+                entryId: item.entryId,
+                taskId: item.taskId,
+                recommendedWorkTypeId: item.recommendedWorkTypeId,
+                initialMode: 'existing',
+              });
+            }}
+          >
+            Assign WorkType
+          </button>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => {
+              setAssignEntry({
+                entryId: item.entryId,
+                taskId: item.taskId,
+                recommendedWorkTypeId: item.recommendedWorkTypeId,
+                initialMode: 'create',
+              });
+            }}
+          >
+            Create + Assign
+          </button>
+          {item.entryCount === 1 && item.entryId && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
+            >
+              Move Entry
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <SettingsDetailLayout title="Remediation" onBack={onBack}>
@@ -186,12 +255,10 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
         ) : (
           <>
             {error && (
-              <div className="settings-view__list">
-                <div className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">Failed to refresh remediation data</span>
-                    <span className="settings-view__row-detail">{error}</span>
-                  </div>
+              <div className="remediation__issue">
+                <span className="remediation__issue-title">Failed to refresh remediation data</span>
+                <span className="remediation__issue-desc">{error}</span>
+                <div className="remediation__issue-actions">
                   <button
                     type="button"
                     className="btn btn--secondary btn--sm"
@@ -210,45 +277,44 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
             )}
 
             {progress && (
-              <div className="settings-view__list">
-                <div className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">
-                      Quality grade: {progress.grade}
-                    </span>
-                    <span className="settings-view__row-detail">
-                      {progress.attributionRate}% attributed · {progress.totalOpenIssues} open issues · {progress.affectedHours.toFixed(1)} affected hrs
-                    </span>
-                  </div>
-                </div>
+              <div className="remediation__grade">
+                <span className="remediation__grade-label">
+                  Quality grade: {progress.grade}
+                </span>
+                <span className="remediation__grade-detail">
+                  {progress.attributionRate}% attributed · {progress.totalOpenIssues} open issues
+                </span>
+                <span className="remediation__grade-detail">
+                  {progress.affectedHours.toFixed(1)} affected hrs
+                </span>
               </div>
             )}
 
             {queues && (
-              <div className="settings-view__list">
-                <div className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">Needs measurable owner</span>
-                    <span className="settings-view__row-detail">
-                      {needsCounters.totalScopes} scopes · {needsCounters.totalEntries} entries · {needsCounters.withSuggestion} with suggestion · {needsCounters.manualRequired} manual
-                    </span>
-                  </div>
+              <div className="remediation__queue-summary">
+                <div className="remediation__queue-row">
+                  <span className="remediation__queue-label">Needs measurable owner</span>
+                  <span className="remediation__queue-detail">
+                    {needsCounters.totalScopes} scopes · {needsCounters.totalEntries} entries
+                  </span>
+                  <span className="remediation__queue-detail">
+                    {needsCounters.withSuggestion} with suggestion · {needsCounters.manualRequired} manual
+                  </span>
                 </div>
-                <div className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">Ambiguous owner</span>
-                    <span className="settings-view__row-detail">
-                      {queues.ambiguousOwner.length} scopes with suggestions
-                    </span>
-                  </div>
+                <div className="remediation__queue-row">
+                  <span className="remediation__queue-label">Ambiguous owner</span>
+                  <span className="remediation__queue-detail">
+                    {queues.ambiguousOwner.length} scopes with suggestions
+                  </span>
                 </div>
-                <div className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">No work context</span>
-                    <span className="settings-view__row-detail">
-                      {queues.noWorkContext.length} completed tasks
-                    </span>
-                  </div>
+                <div className="remediation__queue-row">
+                  <span className="remediation__queue-label">No work context</span>
+                  <span className="remediation__queue-detail">
+                    {noWorkContextCounters.totalScopes} scopes · {noWorkContextCounters.totalEntries} entries
+                  </span>
+                  <span className="remediation__queue-detail">
+                    {noWorkContextCounters.manualRequired} manual
+                  </span>
                 </div>
               </div>
             )}
@@ -264,169 +330,48 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
             )}
 
             {queues && (
-              <div className="settings-view__card-header" style={{ marginTop: 12, gap: 8 }}>
+              <div className="remediation__bulk-actions">
                 <button
                   type="button"
-                  className="btn btn--primary btn--sm"
+                  className="btn btn--primary btn--sm btn--full"
                   disabled={isApplying || !bulkGateOpen || queues.ambiguousOwner.every((i) => i.recommendedWorkTypeId == null)}
                   onClick={() => {
                     void handleApplyAmbiguous();
                   }}
                 >
-                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Ambiguous WorkType Suggestions'}
+                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Ambiguous Suggestions'}
                 </button>
                 <button
                   type="button"
-                  className="btn btn--secondary btn--sm"
+                  className="btn btn--secondary btn--sm btn--full"
                   disabled={isApplying || !bulkGateOpen || needsCounters.withSuggestion === 0}
                   onClick={() => {
                     void handleApplyNeeds();
                   }}
                 >
-                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Needs-Owner WorkType Suggestions'}
+                  {isApplying ? 'Applying...' : !bulkGateOpen ? 'Blocked by quality gate' : 'Apply Needs-Owner Suggestions'}
                 </button>
               </div>
             )}
 
             {queues && queues.needsMeasurableOwner.length > 0 && (
-              <div className="settings-view__list" style={{ marginTop: 12 }}>
-                {queues.needsMeasurableOwner.map((item) => (
-                  <div key={`${item.taskId}-needs`} className="settings-view__row">
-                    <div className="settings-view__template-info">
-                      <span className="settings-view__row-label">{item.taskTitle}</span>
-                      <span className="settings-view__row-detail">
-                        {item.personHours.toFixed(2)} hrs · {item.entryCount} {item.entryCount === 1 ? 'entry' : 'entries'} · {item.description}
-                      </span>
-                      {item.suggestedTargetTitle && (
-                        <span className="settings-view__row-detail">
-                          Suggested: {item.suggestedTargetTitle} ({item.suggestionSource})
-                        </span>
-                      )}
-                      {item.recommendedWorkTypeId && (
-                        <span className="settings-view__row-detail">
-                          Recommended WorkType: {workTypeTitleById.get(item.recommendedWorkTypeId) ?? item.recommendedWorkTypeId}
-                        </span>
-                      )}
-                      {item.conflictingRecommendedWorkTypeIds.length > 1 && (
-                        <span className="settings-view__row-detail">
-                          Conflicting recommendations: manual WorkType selection required.
-                        </span>
-                      )}
-                    </div>
-                    {item.entryCount > 0 && (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn--primary btn--sm"
-                          onClick={() => {
-                            setAssignEntry({
-                              entryId: item.entryId,
-                              taskId: item.taskId,
-                              recommendedWorkTypeId: item.recommendedWorkTypeId,
-                              initialMode: 'existing',
-                            });
-                          }}
-                        >
-                          Assign WorkType
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => {
-                            setAssignEntry({
-                              entryId: item.entryId,
-                              taskId: item.taskId,
-                              recommendedWorkTypeId: item.recommendedWorkTypeId,
-                              initialMode: 'create',
-                            });
-                          }}
-                        >
-                          Create + Assign
-                        </button>
-                        {item.entryCount === 1 && item.entryId && (
-                          <button
-                            type="button"
-                            className="btn btn--secondary btn--sm"
-                            onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
-                          >
-                            Advanced: Move Entry
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="remediation__issue-list">
+                <h3 className="remediation__issue-list-heading">Needs Measurable Owner</h3>
+                {queues.needsMeasurableOwner.map((item) => renderIssueCard(item, 'needs'))}
               </div>
             )}
 
             {queues && queues.ambiguousOwner.length > 0 && (
-              <div className="settings-view__list" style={{ marginTop: 12 }}>
-                {queues.ambiguousOwner.map((item) => (
-                  <div key={`${item.taskId}-ambiguous`} className="settings-view__row">
-                    <div className="settings-view__template-info">
-                      <span className="settings-view__row-label">{item.taskTitle}</span>
-                      <span className="settings-view__row-detail">
-                        {item.personHours.toFixed(2)} hrs · {item.entryCount} {item.entryCount === 1 ? 'entry' : 'entries'} · {item.description}
-                      </span>
-                      {item.suggestedTargetTitle && (
-                        <span className="settings-view__row-detail">
-                          Suggested: {item.suggestedTargetTitle} ({item.suggestionSource})
-                        </span>
-                      )}
-                      {item.recommendedWorkTypeId && (
-                        <span className="settings-view__row-detail">
-                          Recommended WorkType: {workTypeTitleById.get(item.recommendedWorkTypeId) ?? item.recommendedWorkTypeId}
-                        </span>
-                      )}
-                      {item.conflictingRecommendedWorkTypeIds.length > 1 && (
-                        <span className="settings-view__row-detail">
-                          Conflicting recommendations: manual WorkType selection required.
-                        </span>
-                      )}
-                    </div>
-                    {item.entryCount > 0 && (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn--primary btn--sm"
-                          onClick={() => {
-                            setAssignEntry({
-                              entryId: item.entryId,
-                              taskId: item.taskId,
-                              recommendedWorkTypeId: item.recommendedWorkTypeId,
-                              initialMode: 'existing',
-                            });
-                          }}
-                        >
-                          Assign WorkType
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => {
-                            setAssignEntry({
-                              entryId: item.entryId,
-                              taskId: item.taskId,
-                              recommendedWorkTypeId: item.recommendedWorkTypeId,
-                              initialMode: 'create',
-                            });
-                          }}
-                        >
-                          Create + Assign
-                        </button>
-                        {item.entryCount === 1 && item.entryId && (
-                          <button
-                            type="button"
-                            className="btn btn--secondary btn--sm"
-                            onClick={() => setReassignEntry({ entryId: item.entryId!, taskId: item.taskId })}
-                          >
-                            Advanced: Move Entry
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="remediation__issue-list">
+                <h3 className="remediation__issue-list-heading">Ambiguous Owner</h3>
+                {queues.ambiguousOwner.map((item) => renderIssueCard(item, 'ambiguous'))}
+              </div>
+            )}
+
+            {queues && queues.noWorkContext.length > 0 && (
+              <div className="remediation__issue-list">
+                <h3 className="remediation__issue-list-heading">No Work Context</h3>
+                {queues.noWorkContext.map((item) => renderIssueCard(item, 'nowork'))}
               </div>
             )}
           </>

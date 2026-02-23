@@ -1,0 +1,139 @@
+/* ============================================================
+   Settings Remediation View
+   Issue queue cards and bulk actions — mobile-first layout
+   ============================================================ */
+
+/* ---- Quality grade summary ---- */
+
+.remediation__grade {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) 0;
+}
+
+.remediation__grade-label {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.remediation__grade-detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* ---- Queue summary counters ---- */
+
+.remediation__queue-summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.remediation__queue-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm) 0;
+}
+
+.remediation__queue-row:not(:first-child) {
+  border-top: 1px solid var(--color-border);
+}
+
+.remediation__queue-label {
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.remediation__queue-detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+/* ---- Bulk action buttons ---- */
+
+.remediation__bulk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+}
+
+/* ---- Issue item list ---- */
+
+.remediation__issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+}
+
+.remediation__issue-list-heading {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+/* ---- Issue card ---- */
+
+.remediation__issue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.remediation__issue-title {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remediation__issue-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.remediation__issue-stat {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.remediation__issue-desc {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.remediation__issue-suggestion {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.remediation__issue-conflict {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-amber);
+}
+
+/* ---- Issue card actions ---- */
+
+.remediation__issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+}

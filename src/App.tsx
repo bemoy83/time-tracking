@@ -20,6 +20,7 @@ import { SettingsProductivityView } from './pages/settings/SettingsProductivityV
 import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
 import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
 import { SettingsInteropView } from './pages/settings/SettingsInteropView';
+import { SettingsTelemetryView } from './pages/settings/SettingsTelemetryView';
 
 type Tab = 'today' | 'projects' | 'planning' | 'settings';
 type SettingsSection =
@@ -28,7 +29,8 @@ type SettingsSection =
   | 'productivity'
   | 'attribution'
   | 'remediation'
-  | 'interop';
+  | 'interop'
+  | 'telemetry';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab };
@@ -180,6 +182,9 @@ function App() {
         )}
         {view.type === 'settingsDetail' && view.section === 'interop' && (
           <SettingsInteropView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'telemetry' && (
+          <SettingsTelemetryView onBack={handleBack} />
         )}
       </main>
 

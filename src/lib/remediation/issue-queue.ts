@@ -232,6 +232,20 @@ export function buildIssueQueues(
   const needsMeasurableOwner = groupIssues(needsRaw);
   const ambiguousOwner = groupIssues(ambiguousRaw);
 
+  // Index attributed entries by ownerTaskId so noWorkContext items
+  // can surface the actual hours and entry counts for actionable cards.
+  const entriesByOwner = new Map<string, AttributedEntry[]>();
+  for (const entry of attributedEntries) {
+    if (entry.status === 'attributed' && entry.ownerTaskId) {
+      const list = entriesByOwner.get(entry.ownerTaskId);
+      if (list) {
+        list.push(entry);
+      } else {
+        entriesByOwner.set(entry.ownerTaskId, [entry]);
+      }
+    }
+  }
+
   // 3: Scan completed tasks for missing work context
   for (const task of tasks) {
     if (task.status !== 'completed') continue;
@@ -243,13 +257,17 @@ export function buildIssueQueues(
     if (task.workUnit == null) missing.push('work unit');
     if (task.workQuantity == null || task.workQuantity <= 0) missing.push('work quantity');
 
+    const ownedEntries = entriesByOwner.get(task.id) ?? [];
+    const entryIds = ownedEntries.map((e) => e.entryId).sort();
+    const entryPersonHours = ownedEntries.reduce((sum, e) => sum + e.personHours, 0);
+
     noWorkContext.push({
       category: 'no_work_context',
       taskId: task.id,
       scopeTaskId: task.id,
-      entryId: null,
-      entryIds: [],
-      entryCount: 0,
+      entryId: entryIds.length === 1 ? entryIds[0] : null,
+      entryIds,
+      entryCount: entryIds.length,
       taskTitle: task.title,
       description: `Missing: ${missing.join(', ')}`,
       suggestedTargetId: null,
@@ -257,7 +275,7 @@ export function buildIssueQueues(
       recommendedWorkTypeId: task.workTypeId ?? null,
       conflictingRecommendedWorkTypeIds: [],
       suggestionSource: null,
-      personHours: 0,
+      personHours: entryPersonHours,
     });
   }
 

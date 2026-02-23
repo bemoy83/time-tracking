@@ -12,7 +12,6 @@ import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { ChevronRightIcon } from '../components/icons';
 import { pluralize } from '../lib/utils/pluralize';
 import { getFeatureFlags, setFeatureFlag, type FeatureFlagKey } from '../lib/flags/feature-flags';
-import { getTelemetrySnapshot, type TelemetryEventName } from '../lib/telemetry/telemetry';
 
 type SettingsSection =
   | 'workTypes'
@@ -20,7 +19,8 @@ type SettingsSection =
   | 'productivity'
   | 'attribution'
   | 'remediation'
-  | 'interop';
+  | 'interop'
+  | 'telemetry';
 
 interface SettingsViewProps {
   onNavigateToSection?: (section: SettingsSection) => void;
@@ -34,7 +34,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
   const subtaskRollupMode = useSubtaskTimeRollupMode();
   const [featureFlags, setFeatureFlags] = useState(getFeatureFlags);
-  const [telemetrySnapshot, setTelemetrySnapshot] = useState(getTelemetrySnapshot);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -59,6 +58,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
     { key: 'interop', label: 'Interop', helper: 'Export KPI profiles and import work packages' },
+    { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
 
   const handleToggleFeatureFlag = (flag: FeatureFlagKey, enabled: boolean) => {
@@ -190,36 +190,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
             When on: subtasks can have their own work, and time/productivity use attribution.
             When off: subtasks are phases only, and all subtask time rolls to parent.
           </p>
-        </div>
-      </section>
-
-      <section className="settings-view__section">
-        <div className="settings-view__card">
-          <div className="settings-view__card-header">
-            <h2 className="settings-view__sub-header">Telemetry</h2>
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => setTelemetrySnapshot(getTelemetrySnapshot())}
-            >
-              Refresh
-            </button>
-          </div>
-          <p className="settings-view__helper">Quality/adoption event counters (local aggregate)</p>
-          {Object.keys(telemetrySnapshot).length === 0 ? (
-            <p className="settings-view__empty">No telemetry events captured yet.</p>
-          ) : (
-            <div className="settings-view__list">
-              {(Object.entries(telemetrySnapshot) as Array<[TelemetryEventName, { count: number; lastAt: string }]>).map(([name, record]) => (
-                <div key={name} className="settings-view__row">
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">{name}</span>
-                    <span className="settings-view__row-detail">{record.count} events · last {new Date(record.lastAt).toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 

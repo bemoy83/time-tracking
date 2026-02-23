@@ -28,9 +28,9 @@ export function SettingsProductivityView({ onBack }: SettingsProductivityViewPro
             Calculator
           </button>
         </div>
-        <p className="settings-view__helper">View KPIs and use the estimate calculator</p>
-        <label className="settings-view__row">
-          <span className="settings-view__row-label">Outlier Handling</span>
+        <p className="settings-view__helper">View KPIs and use the estimate calculator.</p>
+        <label className="productivity__outlier-control">
+          <span className="productivity__outlier-label">Outlier Handling</span>
           <select
             className="input"
             value={outlierMode}

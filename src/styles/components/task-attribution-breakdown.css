@@ -1,0 +1,99 @@
+/* ============================================================
+   Task Attribution Breakdown
+   Content styles only — container/toggle provided by ExpandableSection
+   ============================================================ */
+
+.task-attribution-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* ---- Entry card ---- */
+
+.task-attribution-breakdown__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+/* Header row: status pill + person-hours */
+.task-attribution-breakdown__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+/* Status pill */
+.task-attribution-breakdown__status {
+  font-size: var(--font-small);
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.task-attribution-breakdown__status--attributed {
+  color: var(--color-ready);
+  background: var(--color-ready-bg);
+}
+
+.task-attribution-breakdown__status--unattributed {
+  color: var(--color-recording);
+  background: var(--color-recording-bg);
+}
+
+.task-attribution-breakdown__status--ambiguous {
+  color: var(--color-amber);
+  background: rgba(217, 119, 6, 0.12);
+}
+
+/* Person-hours value */
+.task-attribution-breakdown__hours {
+  font-size: var(--font-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ---- Metadata lines ---- */
+
+.task-attribution-breakdown__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.task-attribution-breakdown__reason {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.task-attribution-breakdown__task {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-attribution-breakdown__suggestion {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+/* ---- Footer: reassign action ---- */
+
+.task-attribution-breakdown__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-xs);
+}

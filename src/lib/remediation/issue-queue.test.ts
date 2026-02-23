@@ -204,6 +204,70 @@ describe('buildIssueQueues', () => {
     expect(result.noWorkContext).toHaveLength(0);
   });
 
+  it('includes entry data and hours for noWorkContext tasks with quantity context', () => {
+    const task = makeTask({
+      id: 't1',
+      status: 'completed',
+      workQuantity: 50,
+      workUnit: 'm2',
+      workTypeId: null,
+    });
+    const entries = [
+      makeAttributed({
+        entryId: 'e1',
+        taskId: 't1',
+        ownerTaskId: 't1',
+        status: 'attributed',
+        reason: 'self',
+        personHours: 2.5,
+      }),
+      makeAttributed({
+        entryId: 'e2',
+        taskId: 't1',
+        ownerTaskId: 't1',
+        status: 'attributed',
+        reason: 'self',
+        personHours: 1.5,
+      }),
+    ];
+
+    const result = buildIssueQueues(entries, [task]);
+
+    expect(result.noWorkContext).toHaveLength(1);
+    expect(result.noWorkContext[0].description).toContain('work type');
+    expect(result.noWorkContext[0].description).not.toContain('work unit');
+    expect(result.noWorkContext[0].description).not.toContain('work quantity');
+    expect(result.noWorkContext[0].entryIds).toEqual(['e1', 'e2']);
+    expect(result.noWorkContext[0].entryCount).toBe(2);
+    expect(result.noWorkContext[0].personHours).toBe(4);
+    expect(result.totalAffectedHours).toBe(4);
+  });
+
+  it('sets single entryId for noWorkContext task with one attributed entry', () => {
+    const task = makeTask({
+      id: 't1',
+      status: 'completed',
+      workQuantity: 50,
+      workUnit: 'm2',
+      workTypeId: null,
+    });
+    const entry = makeAttributed({
+      entryId: 'e1',
+      taskId: 't1',
+      ownerTaskId: 't1',
+      status: 'attributed',
+      reason: 'self',
+      personHours: 3,
+    });
+
+    const result = buildIssueQueues([entry], [task]);
+
+    expect(result.noWorkContext).toHaveLength(1);
+    expect(result.noWorkContext[0].entryId).toBe('e1');
+    expect(result.noWorkContext[0].entryCount).toBe(1);
+    expect(result.noWorkContext[0].personHours).toBe(3);
+  });
+
   it('computes total affected hours across all queues', () => {
     const task = makeTask({ id: 't1', workTypeId: null, workUnit: null, workQuantity: null });
     const entries = [

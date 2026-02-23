@@ -51,6 +51,9 @@
 @import './styles/components/template-picker.css';
 @import './styles/components/calculator.css';
 @import './styles/components/planning.css';
+@import './styles/components/task-attribution-breakdown.css';
+@import './styles/components/settings-remediation.css';
+@import './styles/components/settings-productivity.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

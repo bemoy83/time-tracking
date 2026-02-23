@@ -1,0 +1,86 @@
+/* ============================================================
+   Settings Productivity View — KPI cards & outlier control
+   ============================================================ */
+
+/* ---- Outlier control — stacked label + select ---- */
+
+.productivity__outlier-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+}
+
+.productivity__outlier-label {
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.productivity__outlier-control .input {
+  max-width: none;
+}
+
+/* ---- KPI list ---- */
+
+.productivity__kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* ---- KPI card ---- */
+
+.productivity__kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+/* Header: work type label + confidence badge */
+.productivity__kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.productivity__kpi-label {
+  font-size: var(--font-body);
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Productivity rate — prominent value */
+.productivity__kpi-rate {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stacked metadata */
+.productivity__kpi-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.productivity__kpi-stat {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Insufficient data state */
+.productivity__kpi-insufficient {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}

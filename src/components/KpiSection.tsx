@@ -107,7 +107,7 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
   }
 
   return (
-    <div className="settings-view__template-list">
+    <div className="productivity__kpi-list">
       {kpis.map((kpi) => {
         const { key } = kpi;
         const label = [
@@ -122,41 +122,42 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
         const trend = trends.get(workTypeKeyString(key));
 
         return (
-          <div
-            key={workTypeKeyString(key)}
-            className="settings-view__row settings-view__kpi-row"
-          >
-            <div className="settings-view__template-info">
-              <span className="settings-view__row-label">
-                {label}
-                <span className={`kpi-badge kpi-badge--${kpi.confidence}`}>
-                  {CONFIDENCE_LABELS[kpi.confidence]}
-                </span>
+          <div key={workTypeKeyString(key)} className="productivity__kpi">
+            <div className="productivity__kpi-header">
+              <span className="productivity__kpi-label">{label}</span>
+              <span className={`kpi-badge kpi-badge--${kpi.confidence}`}>
+                {CONFIDENCE_LABELS[kpi.confidence]}
               </span>
-              {isInsufficient ? (
-                <span className="settings-view__kpi-stats">
-                  {pluralize(kpi.sampleCount, 'task')} — need {3} or more for estimates
-                </span>
-              ) : (
-                <span className="settings-view__kpi-stats">
-                  {formatProductivity(kpi.avgProductivity, key.workUnit)}
-                  {' · '}
-                  {pluralize(kpi.sampleCount, 'task')}
-                  {' · '}
-                  {Math.round(kpi.totalQuantity)} {WORK_UNIT_LABELS[key.workUnit]} completed
-                  {kpi.cv != null && kpi.cv > 0 && ` · ±${Math.round(kpi.cv * 100)}% variation`}
-                  {trend?.direction != null && (
-                    <>
-                      {' · '}
-                      <span className={`kpi-trend kpi-trend--${trend.direction}`}>
-                        {TREND_ARROWS[trend.direction]}
-                        {trend.changePercent != null && ` ${Math.abs(Math.round(trend.changePercent * 100))}%`}
-                      </span>
-                    </>
-                  )}
-                </span>
-              )}
             </div>
+
+            {isInsufficient ? (
+              <span className="productivity__kpi-insufficient">
+                {pluralize(kpi.sampleCount, 'task')} — need 3 or more for estimates
+              </span>
+            ) : (
+              <>
+                <span className="productivity__kpi-rate">
+                  {formatProductivity(kpi.avgProductivity, key.workUnit)}
+                </span>
+                <div className="productivity__kpi-meta">
+                  <span className="productivity__kpi-stat">
+                    {pluralize(kpi.sampleCount, 'task')} · {Math.round(kpi.totalQuantity)} {WORK_UNIT_LABELS[key.workUnit]} completed
+                  </span>
+                  {(kpi.cv != null && kpi.cv > 0 || trend?.direction != null) && (
+                    <span className="productivity__kpi-stat">
+                      {kpi.cv != null && kpi.cv > 0 && `±${Math.round(kpi.cv * 100)}% variation`}
+                      {kpi.cv != null && kpi.cv > 0 && trend?.direction != null && ' · '}
+                      {trend?.direction != null && (
+                        <span className={`kpi-trend kpi-trend--${trend.direction}`}>
+                          {TREND_ARROWS[trend.direction]}
+                          {trend.changePercent != null && ` ${Math.abs(Math.round(trend.changePercent * 100))}%`}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         );
       })}

@@ -77,14 +77,14 @@ export function TaskAttributionBreakdown({ taskId, subtaskIds }: TaskAttribution
         {entries.length === 0 ? (
           <p className="settings-view__empty">No time entries for this task.</p>
         ) : (
-          <div className="task-attribution-breakdown">
+          <div className="task-attribution-breakdown" role="list">
             {entries.map((entry) => {
               const ownerTask = entry.ownerTaskId ? taskMap.get(entry.ownerTaskId) : null;
               const loggedTask = taskMap.get(entry.taskId);
 
               return (
-                <div key={entry.entryId} className="task-attribution-breakdown__entry">
-                  <div className="task-attribution-breakdown__row">
+                <div key={entry.entryId} className="task-attribution-breakdown__entry" role="listitem">
+                  <div className="task-attribution-breakdown__header">
                     <span className={`task-attribution-breakdown__status task-attribution-breakdown__status--${entry.status}`}>
                       {STATUS_LABELS[entry.status] ?? entry.status}
                     </span>
@@ -92,7 +92,8 @@ export function TaskAttributionBreakdown({ taskId, subtaskIds }: TaskAttribution
                       {entry.personHours.toFixed(2)} person-hrs
                     </span>
                   </div>
-                  <div className="task-attribution-breakdown__detail">
+
+                  <div className="task-attribution-breakdown__meta">
                     <span className="task-attribution-breakdown__reason">
                       {REASON_LABELS[entry.reason] ?? entry.reason}
                     </span>
@@ -113,13 +114,16 @@ export function TaskAttributionBreakdown({ taskId, subtaskIds }: TaskAttribution
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn--secondary btn--sm"
-                    onClick={() => setReassignEntry({ entryId: entry.entryId, taskId: entry.taskId })}
-                  >
-                    Reassign
-                  </button>
+
+                  <div className="task-attribution-breakdown__footer">
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm"
+                      onClick={() => setReassignEntry({ entryId: entry.entryId, taskId: entry.taskId })}
+                    >
+                      Reassign
+                    </button>
+                  </div>
                 </div>
               );
             })}

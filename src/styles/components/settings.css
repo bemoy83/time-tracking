@@ -280,14 +280,24 @@ button.settings-view__row:active {
   margin: 0;
 }
 
-/* List container — dividers only between items */
+/* List container — dividers only between items (straight line, no rounded corners) */
 .settings-view__list {
   display: flex;
   flex-direction: column;
 }
 
 .settings-view__list > *:not(:first-child) {
-  border-top: 1px solid var(--color-border);
+  position: relative;
+}
+
+.settings-view__list > *:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-border);
 }
 
 /* Template list */

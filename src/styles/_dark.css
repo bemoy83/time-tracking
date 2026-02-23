@@ -210,6 +210,25 @@
     background: rgba(160, 160, 160, 0.15);
   }
 
+  /* --- Settings Productivity --- */
+  .productivity__kpi {
+    background: #1e1e1e;
+  }
+
+  /* --- Settings Remediation --- */
+  .remediation__issue {
+    background: #1e1e1e;
+  }
+
+  /* --- Task Attribution Breakdown --- */
+  .task-attribution-breakdown__entry {
+    background: #1e1e1e;
+  }
+
+  .task-attribution-breakdown__status--ambiguous {
+    background: rgba(217, 119, 6, 0.2);
+  }
+
   /* --- Template Picker --- */
   .template-picker__row {
     background: #252525;
