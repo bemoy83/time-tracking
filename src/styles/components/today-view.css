@@ -8,6 +8,20 @@
   gap: var(--space-lg);
 }
 
+/* Page header — matches project-list style */
+.today-view__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.today-view__title {
+  font-size: var(--font-large);
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-text);
+}
+
 /* Loading & Error States */
 .today-view__loading,
 .today-view__error {

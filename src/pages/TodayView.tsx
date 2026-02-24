@@ -140,6 +140,10 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   return (
     <div className="today-view">
+      <header className="today-view__header">
+        <h1 className="today-view__title">Tasks</h1>
+      </header>
+
       {/* FAB + Create Flow */}
       <button className="fab" onClick={() => {
         if (templates.length > 0) {
@@ -164,12 +168,12 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
         template={selectedTemplate}
       />
 
-      {/* Tasks — main header, always visible when there are active tasks */}
+      {/* Active — section header when there are active tasks */}
       {(ungroupedTasks.length > 0 || groupedTasks.length > 0) && (
         <section className="today-view__section today-view__section--active">
           <h2 className="today-view__section-title section-heading section-heading--active">
             <TaskListIcon className="today-view__icon" />
-            Tasks
+            Active
             <CountBadge count={ungroupedTasks.length + groupedTasks.reduce((s, g) => s + g.tasks.length, 0)} variant="muted" />
           </h2>
 
