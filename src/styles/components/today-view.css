@@ -44,6 +44,26 @@
   margin: 0;
 }
 
+/* Task group — project subsection under main Tasks header */
+.today-view__task-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+
+.today-view__subsection-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
 .today-view__project-badge {
   display: inline-block;
   padding: var(--space-xs) var(--space-sm);
@@ -76,6 +96,12 @@
   border-top: none;
 }
 
+/* Active task — blue left accent (must come after border:none) */
+.today-view__task-list > .swipeable-row:has(.task-row--active),
+.today-view__task-list > .swipeable-row:has(.task-card--active) {
+  border-inline-start: 3px solid var(--color-primary);
+}
+
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
@@ -106,6 +132,34 @@
 .today-view__subtasks .swipeable-row:last-child:not(:first-child) {
   border-bottom-left-radius: var(--radius-xl);
   border-bottom-right-radius: var(--radius-xl);
+}
+
+/* Active task — blue accent corner radius (first/last in list) */
+.today-view__task-list > .swipeable-row:first-child:has(.task-row--active),
+.today-view__task-list > .swipeable-row:first-child:has(.task-card--active) {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.today-view__task-list > .swipeable-row:last-child:has(.task-row--active),
+.today-view__task-list > .swipeable-row:last-child:has(.task-card--active) {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}
+
+/* Blocked section — amber left accent */
+.today-view__section--blocked .today-view__task-list {
+  border-inline-start: 3px solid var(--color-amber);
+}
+
+.today-view__section--blocked .today-view__task-list > .swipeable-row:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.today-view__section--blocked .today-view__task-list > .swipeable-row:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
 }
 
 /* Card after a drawer: divider only (no special rounding) */

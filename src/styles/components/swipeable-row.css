@@ -13,6 +13,12 @@
   border-color: var(--color-recording-border);
 }
 
+/* Active task — blue left accent (wraps corners like section accents) */
+.swipeable-row:has(.task-row--active),
+.swipeable-row:has(.task-card--active) {
+  border-inline-start: 3px solid var(--color-primary);
+}
+
 .swipeable-row__action {
   position: absolute;
   top: 0;

@@ -1,0 +1,59 @@
+/* ============================================================
+   Collapsible Section (Shared)
+   ============================================================ */
+
+.collapsible-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ready);
+}
+
+.collapsible-section-toggle:hover {
+  opacity: 0.9;
+}
+
+.collapsible-section__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.collapsible-section__chevron {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.collapsible-section-toggle:not(.collapsible-section-toggle--expanded) .collapsible-section__chevron {
+  transform: rotate(-90deg);
+}
+
+.section--completed .today-view__task-list {
+  border-radius: var(--radius-xl);
+  border-inline-start: 3px solid var(--color-ready);
+}
+
+.section--completed .today-view__task-list > .swipeable-row:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.section--completed .today-view__task-list > .swipeable-row:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}

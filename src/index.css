@@ -34,8 +34,9 @@
 @import './styles/components/task-personnel.css';
 @import './styles/components/task-productivity.css';
 @import './styles/components/task-notes.css';
-@import './styles/components/today-view.css';
 @import './styles/components/section-heading.css';
+@import './styles/components/collapsible-section.css';
+@import './styles/components/today-view.css';
 @import './styles/components/tab-nav.css';
 @import './styles/components/network-status.css';
 @import './styles/components/install-prompt.css';
@@ -45,7 +46,10 @@
 @import './styles/components/entry-modal.css';
 @import './styles/components/action-sheet.css';
 @import './styles/components/create-task-sheet.css';
+@import './styles/components/breadcrumb-nav.css';
+@import './styles/components/editable-title.css';
 @import './styles/components/project.css';
+@import './styles/components/create-project-sheet.css';
 @import './styles/components/project-color-picker.css';
 @import './styles/components/settings.css';
 @import './styles/components/template-picker.css';

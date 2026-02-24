@@ -6,8 +6,9 @@
 
 import { useRef, useCallback } from 'react';
 import { Task, Project } from '../lib/types';
-import { TrashIcon, HomeIcon } from '../components/icons';
+import { TrashIcon } from '../components/icons';
 import { useTaskDetail } from '../lib/hooks/useTaskDetail';
+import { BreadcrumbNav } from '../components/BreadcrumbNav';
 import { TaskDetailHeader } from '../components/TaskDetailHeader';
 import { TaskStatusBanner } from '../components/TaskStatusBanner';
 import { TaskActionBar } from '../components/TaskActionBar';
@@ -45,11 +46,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   if (!detail.task) {
     return (
       <div className="task-detail">
-        <nav className="task-detail__breadcrumb">
-          <button className="task-detail__breadcrumb-back" onClick={onBack}>
-            <HomeIcon className="task-detail__breadcrumb-back-icon" />
-          </button>
-        </nav>
+        <BreadcrumbNav onBack={onBack} segments={[]} />
         <p>Task not found.</p>
       </div>
     );

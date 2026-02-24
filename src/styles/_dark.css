@@ -37,6 +37,15 @@
     background: #252525;
   }
 
+  .task-row--completed {
+    opacity: 0.85;
+    background: #1e1e1e;
+  }
+
+  .task-row--completed:hover {
+    background: #252525;
+  }
+
   .today-view__task-list {
     background: transparent;
   }
@@ -142,20 +151,32 @@
   }
 
   /* --- Project List --- */
-  .project-list__create-form {
-    background: #252525;
-    border-color: #444;
+  .project-list__items {
+    background: #1e1e1e;
+  }
+
+  .project-list__item:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .project-list__item:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .project-list__item + .project-list__item::before {
+    background: #333333;
   }
 
   /* --- Project Detail --- */
+  .project-detail__metric-card {
+    background: #1e1e1e;
+  }
+
   .project-detail .btn--secondary {
     background: #404040;
   }
   .project-detail .btn--secondary:hover:not(:disabled) {
     background: #505050;
-  }
-  .project-detail .project-color-picker {
-    border-color: #444;
   }
 
   /* --- Entry Modal --- */

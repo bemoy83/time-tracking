@@ -1,6 +1,6 @@
 interface ColorSwatchProps {
   color: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   selected?: boolean;
   shape?: 'dot' | 'swatch';
   interactive?: boolean;

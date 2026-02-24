@@ -1,0 +1,103 @@
+/* ============================================================
+   BreadcrumbNav — shared back + breadcrumb pattern
+   ============================================================ */
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  font-size: var(--font-small);
+  line-height: 1.4;
+  margin-left: calc(-1 * var(--space-sm));
+}
+
+.breadcrumb-nav__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: var(--space-xs);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.breadcrumb-nav__back:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.breadcrumb-nav__back-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.breadcrumb-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.breadcrumb-nav__sep {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  font-size: var(--font-body);
+  user-select: none;
+}
+
+.breadcrumb-nav__segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px var(--space-sm);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.breadcrumb-nav__segment:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.breadcrumb-nav__segment--static {
+  cursor: default;
+}
+
+.breadcrumb-nav__segment--static:hover {
+  background: none;
+  color: var(--color-text-muted);
+}
+
+/* "+ Add to project" trailing link */
+.breadcrumb-nav__add {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--space-sm);
+  background: none;
+  border: none;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.breadcrumb-nav__add:hover {
+  opacity: 1;
+}

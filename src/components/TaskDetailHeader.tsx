@@ -1,12 +1,13 @@
 /**
  * TaskDetailHeader component.
- * Merged back-nav + breadcrumb bar, and editable title.
+ * Back-nav breadcrumb bar + editable title.
+ * Uses shared BreadcrumbNav and EditableTitle components.
  */
 
-import { useState } from 'react';
 import { Task, Project } from '../lib/types';
 import { updateTaskTitle } from '../lib/stores/task-store';
-import { HomeIcon } from './icons';
+import { BreadcrumbNav, BreadcrumbSegment } from './BreadcrumbNav';
+import { EditableTitle } from './EditableTitle';
 import { ProjectColorDot } from './ProjectColorDot';
 
 interface TaskDetailHeaderProps {
@@ -28,99 +29,40 @@ export function TaskDetailHeader({
   onNavigateToParent,
   onShowProjectPicker,
 }: TaskDetailHeaderProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-
-  const handleSaveTitle = async () => {
-    if (!editTitle.trim()) return;
-    await updateTaskTitle(task.id, editTitle.trim());
-    setIsEditing(false);
-  };
-
   const hasBreadcrumb = project || parentTask;
+
+  const segments: BreadcrumbSegment[] = [];
+  if (project) {
+    segments.push({
+      label: project.name,
+      icon: <ProjectColorDot color={project.color} size="sm" />,
+      onClick: () => onNavigateToProject?.(project),
+    });
+  }
+  if (parentTask) {
+    segments.push({
+      label: parentTask.title,
+      onClick: onNavigateToParent,
+    });
+  }
+
+  const trailing = !hasBreadcrumb ? (
+    <button
+      className="breadcrumb-nav__add"
+      onClick={onShowProjectPicker}
+    >
+      + Add to project
+    </button>
+  ) : undefined;
 
   return (
     <div className="task-detail__title-section">
-      {/* Navigation bar: ← back arrow + breadcrumb merged */}
-      <nav className="task-detail__breadcrumb">
-        <button className="task-detail__breadcrumb-back" onClick={onBack}>
-          <HomeIcon className="task-detail__breadcrumb-back-icon" />
-        </button>
-        {hasBreadcrumb ? (
-          <>
-            {project && (
-              <>
-                <span className="task-detail__breadcrumb-sep">›</span>
-                <button
-                  className="task-detail__breadcrumb-segment"
-                  onClick={() => onNavigateToProject?.(project)}
-                >
-                  <ProjectColorDot color={project.color} size="sm" />
-                  {project.name}
-                </button>
-              </>
-            )}
-            {parentTask && (
-              <>
-                <span className="task-detail__breadcrumb-sep">›</span>
-                <button
-                  className="task-detail__breadcrumb-segment"
-                  onClick={onNavigateToParent}
-                >
-                  {parentTask.title}
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          <>
-            <span className="task-detail__breadcrumb-sep">›</span>
-            <button
-              className="task-detail__breadcrumb-add"
-              onClick={onShowProjectPicker}
-            >
-              + Add to project
-            </button>
-          </>
-        )}
-      </nav>
-
-      {/* Editable title */}
-      {isEditing ? (
-        <div className="task-detail__edit-title">
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="input"
-            autoFocus
-          />
-          <div className="task-detail__edit-actions">
-            <button
-              className="btn btn--secondary"
-              onClick={() => setIsEditing(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn btn--primary"
-              onClick={handleSaveTitle}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : (
-        <h1
-          className="task-detail__title"
-          onClick={() => {
-            setEditTitle(task.title);
-            setIsEditing(true);
-          }}
-        >
-          {task.title}
-        </h1>
-      )}
+      <BreadcrumbNav onBack={onBack} segments={segments} trailing={trailing} />
+      <EditableTitle
+        value={task.title}
+        onSave={(newTitle) => updateTaskTitle(task.id, newTitle)}
+        className="task-detail__title"
+      />
     </div>
   );
 }

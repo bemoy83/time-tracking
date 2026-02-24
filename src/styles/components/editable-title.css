@@ -1,0 +1,27 @@
+/* ============================================================
+   EditableTitle — shared click-to-edit title
+   ============================================================ */
+
+.editable-title {
+  font-size: var(--font-large);
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.editable-title:hover {
+  color: var(--color-primary);
+}
+
+.editable-title__edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.editable-title__actions {
+  display: flex;
+  gap: var(--space-sm);
+}

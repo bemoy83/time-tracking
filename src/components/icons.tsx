@@ -171,6 +171,20 @@ export function ChevronRightIcon({ className, 'aria-hidden': ariaHidden = true }
   );
 }
 
+/** Task list icon — checklist with lines. */
+export function TaskListIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden={ariaHidden}>
+      <path d="M3.5 5.5 5 7l2.5-2.5" />
+      <path d="M3.5 11.5 5 13l2.5-2.5" />
+      <path d="M3.5 17.5 5 19l2.5-2.5" />
+      <line x1="11" y1="6" x2="20" y2="6" />
+      <line x1="11" y1="12" x2="20" y2="12" />
+      <line x1="11" y1="18" x2="20" y2="18" />
+    </svg>
+  );
+}
+
 /** Calculator icon — used for suggest estimate/workers actions. */
 export function CalculatorIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (

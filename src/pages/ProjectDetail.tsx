@@ -1,13 +1,28 @@
 /**
  * ProjectDetail page.
- * Shows project info, task list, add-task form, and delete project.
+ * Shows project info with breadcrumb nav, metric cards, TaskCard-based task lists,
+ * CountBadge section headings, and FAB + sheet create flow.
  */
 
 import { useState } from 'react';
-import { Task, TaskTemplate } from '../lib/types';
-import { BackIcon, TrashIcon, ChevronIcon } from '../components/icons';
+import {
+  Task,
+  TaskTemplate,
+  WORK_UNIT_LABELS,
+  formatDurationShort,
+} from '../lib/types';
+import { TrashIcon, WarningIcon, CheckIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../components/icons';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import { ProjectColorDot } from '../components/ProjectColorDot';
+import { BreadcrumbNav } from '../components/BreadcrumbNav';
+import { EditableTitle } from '../components/EditableTitle';
+import { CountBadge } from '../components/CountBadge';
+import { CompletedSection } from '../components/CompletedSection';
+import { TaskCard } from '../components/TaskCard';
+import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
+import { ActionSheet } from '../components/ActionSheet';
+import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
+import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import {
   useTaskStore,
   useProjectTasks,
@@ -18,6 +33,14 @@ import {
   DeleteProjectPreview,
 } from '../lib/stores/task-store';
 import { useTemplateStore } from '../lib/stores/template-store';
+import {
+  useTimerStore,
+  startTimer,
+  stopTimer,
+} from '../lib/stores/timer-store';
+import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
+import { useTaskTimes } from '../lib/hooks/useTaskTimes';
+import { useProjectMetrics } from '../lib/hooks/useProjectMetrics';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet } from '../components/TemplatePickerSheet';
@@ -29,27 +52,56 @@ interface ProjectDetailProps {
 }
 
 export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetailProps) {
-  const { projects } = useTaskStore();
+  const { projects, tasks } = useTaskStore();
   const { templates } = useTemplateStore();
+  const { activeTimers } = useTimerStore();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
 
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showColorSheet, setShowColorSheet] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePreview, setDeletePreview] = useState<DeleteProjectPreview | null>(null);
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+
+  // Timer & completion hooks
+  const taskTimes = useTaskTimes(tasks, activeTimers);
+  const { durationByTask, personMsByTask } = taskTimes;
+  const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
+  const {
+    confirmTarget,
+    promptParent,
+    handleComplete,
+    handleConfirmCompleteAll,
+    handlePromptYes,
+    dismissConfirm,
+    dismissPrompt,
+    handlePromptCancel,
+  } = useCompletionFlow(tasks, activeTimerTaskIds);
+
+  // Project metrics
+  const metrics = useProjectMetrics(projectTasks, taskTimes);
+  const hasBudgetSummary = metrics.budgetOverCount > 0 || metrics.budgetApproachingCount > 0;
+  const budgetSummaryParts: string[] = [];
+  if (metrics.budgetOverCount > 0) budgetSummaryParts.push(`${metrics.budgetOverCount} over`);
+  if (metrics.budgetApproachingCount > 0) budgetSummaryParts.push(`${metrics.budgetApproachingCount} approaching`);
+  if (metrics.budgetUnderCount > 0) budgetSummaryParts.push(`${metrics.budgetUnderCount} under`);
+  const budgetSummaryText = budgetSummaryParts.join(' • ');
+  const workQuantitySummary = Array.from(metrics.workQuantityByUnit.entries())
+    .map(([unit, quantity]) => {
+      const rounded = Number.isInteger(quantity)
+        ? quantity.toString()
+        : quantity.toFixed(2).replace(/\.?0+$/, '');
+      return `${rounded} ${WORK_UNIT_LABELS[unit]}`;
+    })
+    .join(', ');
 
   if (!project) {
     return (
       <div className="project-detail">
-        <button className="project-detail__back" onClick={onBack}>
-          <BackIcon className="project-detail__icon" />
-          <span>Back</span>
-        </button>
+        <BreadcrumbNav onBack={onBack} segments={[]} />
         <p>Project not found.</p>
       </div>
     );
@@ -59,15 +111,9 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
   const completedTasks = projectTasks.filter((t) => t.status === 'completed');
   const blockedTasks = projectTasks.filter((t) => t.status === 'blocked');
 
-  const handleSaveName = async () => {
-    if (!editName.trim()) return;
-    await updateProjectName(project.id, editName.trim());
-    setIsEditingName(false);
-  };
-
   const handleColorChange = async (color: string) => {
     await updateProjectColor(project.id, color);
-    setShowColorPicker(false);
+    setShowColorSheet(false);
   };
 
   const handleDeleteClick = async () => {
@@ -88,68 +134,119 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
     onBack();
   };
 
+  const handleStartTimer = async (task: Task) => {
+    if (activeTimers.length > 0) {
+      for (const timer of activeTimers) {
+        await stopTimer(timer.taskId);
+      }
+    }
+    await startTimer(task.id);
+  };
+
+  const getSubtaskProgress = (parentId: string) => {
+    const subtasks = tasks.filter((t) => t.parentId === parentId);
+    if (subtasks.length === 0) return null;
+    const completed = subtasks.filter((t) => t.status === 'completed').length;
+    return { completed, total: subtasks.length };
+  };
+
+  const getSubtasks = (parentId: string) =>
+    tasks.filter((t) => t.parentId === parentId);
+
+  const toggleExpanded = (taskId: string) => {
+    setExpandedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
   return (
     <div className="project-detail">
-      {/* Header */}
-      <header className="project-detail__header">
-        <button className="project-detail__back" onClick={onBack}>
-          <BackIcon className="project-detail__icon" />
-          <span>Back</span>
-        </button>
-      </header>
-
-      {/* Project name + color */}
+      {/* Header: breadcrumb + editable name with color dot */}
       <div className="project-detail__title-section">
-        <button
-          className="project-detail__color-toggle"
-          onClick={() => setShowColorPicker(!showColorPicker)}
-          aria-label="Change project color"
-        >
-          <ProjectColorDot color={project.color} size="lg" />
-        </button>
-        {isEditingName ? (
-          <div className="project-detail__edit-name">
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="input"
-              autoFocus
-            />
-            <button className="btn btn--secondary" onClick={() => setIsEditingName(false)}>
-              Cancel
-            </button>
-            <button className="btn btn--primary" onClick={handleSaveName}>
-              Save
-            </button>
-          </div>
-        ) : (
-          <h1
-            className="project-detail__name"
-            onClick={() => {
-              setEditName(project.name);
-              setIsEditingName(true);
-            }}
+        <BreadcrumbNav
+          onBack={onBack}
+          segments={[{ label: 'Projects' }]}
+        />
+        <div className="project-detail__name-row">
+          <button
+            className="project-detail__color-toggle"
+            onClick={() => setShowColorSheet(true)}
+            aria-label="Change project color"
           >
-            {project.name}
-          </h1>
+            <ProjectColorDot color={project.color} size="lg" />
+          </button>
+          <EditableTitle
+            value={project.name}
+            onSave={(name) => updateProjectName(project.id, name)}
+          />
+        </div>
+      </div>
+
+      {/* Color picker sheet */}
+      <ActionSheet
+        isOpen={showColorSheet}
+        title="Project Color"
+        onClose={() => setShowColorSheet(false)}
+      >
+        <div className="project-detail__color-sheet-content">
+          <ProjectColorPicker
+            value={project.color}
+            onChange={handleColorChange}
+          />
+        </div>
+      </ActionSheet>
+
+      {/* Metric cards */}
+      <div className="project-detail__metrics">
+        <div className="project-detail__metric-card">
+          <TaskListIcon className="project-detail__metric-icon project-detail__metric-icon--tasks" />
+          <span className="project-detail__metric-value">{metrics.totalTasks}</span>
+          <span className="project-detail__metric-label">Tasks</span>
+        </div>
+        <div className="project-detail__metric-card">
+          <CheckIcon className="project-detail__metric-icon project-detail__metric-icon--done" />
+          <span className="project-detail__metric-value">{metrics.doneCount}</span>
+          <span className="project-detail__metric-label">Done</span>
+        </div>
+        <div className="project-detail__metric-card">
+          <ClockIcon className="project-detail__metric-icon project-detail__metric-icon--time" />
+          <span className="project-detail__metric-value">{formatDurationShort(metrics.totalTimeMs)}</span>
+          <span className="project-detail__metric-label">Time</span>
+        </div>
+        <div className="project-detail__metric-card">
+          <PeopleIcon className="project-detail__metric-icon project-detail__metric-icon--people" />
+          <span className="project-detail__metric-value">{metrics.personHours}</span>
+          <span className="project-detail__metric-label">Person-Hrs</span>
+        </div>
+        <div className="project-detail__metric-card">
+          <WarningIcon className="project-detail__metric-icon project-detail__metric-icon--blocked" />
+          <span className="project-detail__metric-value">{metrics.blockedCount}</span>
+          <span className="project-detail__metric-label">Blocked</span>
+        </div>
+        {metrics.estimatedPersonHours !== null && (
+          <div className="project-detail__metric-card">
+            <PeopleIcon className="project-detail__metric-icon project-detail__metric-icon--estimate" />
+            <span className="project-detail__metric-value">{metrics.estimatedPersonHours}</span>
+            <span className="project-detail__metric-label">Est. Person-Hrs</span>
+            <span className="project-detail__metric-meta">
+              {metrics.tasksWithEstimate === 1 ? '1 task with estimate' : `${metrics.tasksWithEstimate} tasks with estimate`}
+            </span>
+          </div>
         )}
       </div>
-
-      {/* Color picker */}
-      {showColorPicker && (
-        <ProjectColorPicker
-          value={project.color}
-          onChange={handleColorChange}
-        />
+      {hasBudgetSummary && (
+        <p className="project-detail__metrics-note">
+          Budget: {budgetSummaryText}
+        </p>
       )}
-
-      {/* Stats */}
-      <div className="project-detail__stats">
-        <span>{activeTasks.length} active</span>
-        {completedTasks.length > 0 && <span>{completedTasks.length} completed</span>}
-        {blockedTasks.length > 0 && <span>{blockedTasks.length} blocked</span>}
-      </div>
+      {workQuantitySummary.length > 0 && (
+        <p className="project-detail__metrics-note">
+          Work Qty: {workQuantitySummary}
+        </p>
+      )}
 
       {/* FAB + Create Flow */}
       <button className="fab" onClick={() => {
@@ -179,17 +276,30 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       {/* Active tasks */}
       {activeTasks.length > 0 && (
         <section className="project-detail__section">
-          <h2 className="project-detail__section-title section-heading">Active</h2>
-          <div className="project-detail__task-list">
+          <h2 className="project-detail__section-title section-heading">
+            Active
+            <CountBadge count={activeTasks.length} variant="muted" />
+          </h2>
+          <div className="today-view__task-list">
             {activeTasks.map((task) => (
-              <button
+              <TaskCard
                 key={task.id}
-                className="project-detail__task-item"
-                onClick={() => onSelectTask(task)}
-              >
-                <span className="project-detail__task-title">{task.title}</span>
-                <ChevronIcon className="project-detail__chevron" />
-              </button>
+                task={task}
+                isTimerActive={activeTimerTaskIds.has(task.id)}
+                totalMs={durationByTask.get(task.id)}
+                totalPersonMs={personMsByTask.get(task.id)}
+                taskTimes={taskTimes}
+                progress={getSubtaskProgress(task.id)}
+                isExpanded={expandedTaskIds.has(task.id)}
+                subtasks={getSubtasks(task.id)}
+                onSelect={() => onSelectTask(task)}
+                onSelectTask={onSelectTask}
+                onStartTimer={() => handleStartTimer(task)}
+                onStartTimerForTask={handleStartTimer}
+                onComplete={() => handleComplete(task)}
+                onCompleteTask={handleComplete}
+                onExpandToggle={() => toggleExpanded(task.id)}
+              />
             ))}
           </div>
         </section>
@@ -197,18 +307,21 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
 
       {/* Blocked tasks */}
       {blockedTasks.length > 0 && (
-        <section className="project-detail__section">
-          <h2 className="project-detail__section-title section-heading section-heading--blocked">Blocked</h2>
-          <div className="project-detail__task-list">
+        <section className="project-detail__section project-detail__section--blocked">
+          <h2 className="project-detail__section-title section-heading section-heading--blocked">
+            <WarningIcon className="project-detail__section-icon" />
+            Blocked
+            <CountBadge count={blockedTasks.length} variant="muted" />
+          </h2>
+          <div className="today-view__task-list">
             {blockedTasks.map((task) => (
-              <button
+              <SwipeableTaskRow
                 key={task.id}
-                className="project-detail__task-item project-detail__task-item--blocked"
-                onClick={() => onSelectTask(task)}
-              >
-                <span className="project-detail__task-title">{task.title}</span>
-                <span className="project-detail__blocked-reason">{task.blockedReason}</span>
-              </button>
+                task={task}
+                totalMs={durationByTask.get(task.id)}
+                onSelect={onSelectTask}
+                onComplete={() => handleComplete(task)}
+              />
             ))}
           </div>
         </section>
@@ -216,40 +329,31 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
 
       {/* Completed tasks */}
       {completedTasks.length > 0 && (
-        <section className="project-detail__section">
-          <h2 className="project-detail__section-title section-heading section-heading--completed">Completed</h2>
-          <div className="project-detail__task-list">
-            {completedTasks.map((task) => (
-              <button
-                key={task.id}
-                className="project-detail__task-item project-detail__task-item--completed"
-                onClick={() => onSelectTask(task)}
-              >
-                <span className="project-detail__task-title">{task.title}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+        <CompletedSection
+          tasks={completedTasks}
+          getTotalMs={(t) => durationByTask.get(t.id)}
+          onSelectTask={onSelectTask}
+          sectionClassName="project-detail__section project-detail__section--completed section--completed"
+          contentId="project-detail__completed-list"
+        />
       )}
 
       {/* Empty state */}
       {projectTasks.length === 0 && (
         <div className="project-detail__empty">
           <p>No tasks in this project yet.</p>
-          <p>Add one above to get started.</p>
+          <p>Tap + to add one.</p>
         </div>
       )}
 
       {/* Delete project */}
-      <div className="project-detail__danger-zone">
-        <button
-          className="btn btn--ghost"
-          onClick={handleDeleteClick}
-        >
-          <TrashIcon className="project-detail__icon" />
-          Delete Project
-        </button>
-      </div>
+      <button
+        className="project-detail__delete-link"
+        onClick={handleDeleteClick}
+      >
+        <TrashIcon className="project-detail__delete-link-icon" />
+        Delete Project
+      </button>
 
       {/* Delete confirmation */}
       <DeleteProjectConfirm
@@ -260,6 +364,28 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
         onUnassign={handleDeleteUnassign}
         onDeleteTasks={handleDeleteTasks}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      {/* Completion dialogs */}
+      <CompleteParentConfirm
+        isOpen={confirmTarget !== null}
+        taskTitle={confirmTarget?.title ?? ''}
+        incompleteCount={
+          confirmTarget
+            ? tasks.filter(
+                (t) => t.parentId === confirmTarget.id && t.status !== 'completed'
+              ).length
+            : 0
+        }
+        onCompleteAll={handleConfirmCompleteAll}
+        onCancel={dismissConfirm}
+      />
+      <CompleteParentPrompt
+        isOpen={promptParent !== null}
+        parentTitle={promptParent?.title ?? ''}
+        onYes={handlePromptYes}
+        onNo={dismissPrompt}
+        onCancel={handlePromptCancel}
       />
     </div>
   );

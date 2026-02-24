@@ -53,7 +53,12 @@
 }
 
 .task-row--completed {
-  opacity: 0.6;
+  opacity: 0.85;
+  background: #e8e8e8;
+}
+
+.task-row--completed:hover {
+  background: #e0e0e0;
 }
 
 /* Status indicator */
