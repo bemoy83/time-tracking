@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ImportedWorkPackage } from '../../lib/interop/import';
-import { applyWorkPackageImportItems } from './SettingsInteropView';
+import { applyWorkPackageImportItems } from '../../lib/interop/work-package-import-apply';
 
 describe('applyWorkPackageImportItems', () => {
   it('auto-creates missing work type and applies created template with new workTypeId', async () => {

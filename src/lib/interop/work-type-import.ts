@@ -11,6 +11,7 @@ import {
   findWorkTypeByKey,
   updateWorkTypeFields,
 } from '../stores/work-type-store';
+import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
 
 export interface ImportedWorkType {
   mappingKey: string;
@@ -62,7 +63,8 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     };
   }
 
-  const headers = parseCsvLine(lines[0]).map((header) => header.trim().toLowerCase());
+  const delimiter = detectCsvDelimiter(lines[0]);
+  const headers = parseCsvLine(lines[0], delimiter).map((header) => header.trim().toLowerCase());
   const requiredHeaders = ['title', 'workunit', 'buildphase', 'expectedproductivity'];
   const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
   if (missingHeaders.length > 0) {
@@ -80,7 +82,7 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     const line = lines[index].trim();
     if (line === '') continue;
 
-    const fields = parseCsvLine(line);
+    const fields = parseCsvLine(line, delimiter);
     const row: Record<string, string> = {};
     headers.forEach((header, headerIndex) => {
       row[header] = (fields[headerIndex] ?? '').trim();
@@ -232,37 +234,4 @@ function parseRequiredNumber(
   }
 
   return num;
-}
-
-/** Parse a single CSV line, handling quoted fields. */
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"') {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ',') {
-      fields.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-
-  fields.push(current);
-  return fields;
 }

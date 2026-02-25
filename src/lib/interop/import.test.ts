@@ -52,6 +52,22 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].mappingKey).toBe('Install carpet::Carpet Tiles:m2:build-up');
   });
 
+  it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
+    const semicolonCsv = [
+      'title;workTypeTitle;workUnit;buildPhase;workQuantity;estimatedMinutes;defaultWorkers;targetProductivity',
+      'Install carpet;Carpet Tiles;m2;build-up;100;60;2;10',
+    ].join('\n');
+    const result = parseWorkPackageCsv(semicolonCsv);
+
+    expect(result.valid).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].title).toBe('Install carpet');
+    expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
+    expect(result.items[0].workUnit).toBe('m2');
+    expect(result.items[0].buildPhase).toBe('build-up');
+    expect(result.items[0].workQuantity).toBe(100);
+  });
+
   it('rejects missing required headers', () => {
     const result = parseWorkPackageCsv('title,workUnit\nFoo,m2');
 

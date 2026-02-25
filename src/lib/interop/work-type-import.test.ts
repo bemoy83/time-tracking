@@ -91,6 +91,23 @@ describe('parseWorkTypeCsv', () => {
     expect(result.valid).toBe(true);
     expect(result.items[0].title).toBe('Walls, phase 1');
   });
+
+  it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
+    const semicolonCsv = [
+      'title;workUnit;buildPhase;expectedProductivity',
+      'Carpet Tiles;m2;build-up;11.5',
+    ].join('\n');
+    const result = parseWorkTypeCsv(semicolonCsv);
+
+    expect(result.valid).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      title: 'Carpet Tiles',
+      workUnit: 'm2',
+      buildPhase: 'build-up',
+      expectedProductivity: 11.5,
+    });
+  });
 });
 
 describe('generateWorkTypeImportPreview', () => {

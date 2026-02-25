@@ -1,22 +1,6 @@
 import type { WorkType } from '../types';
 import { workTypeKeyString } from '../types';
-
-function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function csvRow(fields: (string | number | null)[]): string {
-  return fields
-    .map((field) => {
-      if (field == null) return '';
-      if (typeof field === 'number') return field.toString();
-      return csvEscape(field);
-    })
-    .join(',');
-}
+import { csvRow } from './csv-utils';
 
 /**
  * Export WorkType definitions to CSV.

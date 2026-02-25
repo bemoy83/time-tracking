@@ -13,26 +13,9 @@
 import type { WorkTypeKpi } from '../kpi';
 import { workTypeKeyString } from '../kpi';
 import { WORK_UNIT_LABELS } from '../types';
+import { csvRow } from './csv-utils';
 
 export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary';
-
-/** Escape a CSV field value (handles commas, quotes, newlines). */
-function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function csvRow(fields: (string | number | null)[]): string {
-  return fields
-    .map((f) => {
-      if (f == null) return '';
-      if (typeof f === 'number') return f.toString();
-      return csvEscape(f);
-    })
-    .join(',');
-}
 
 /**
  * Export KPIs using the ops_summary profile.

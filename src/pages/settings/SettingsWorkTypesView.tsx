@@ -5,27 +5,17 @@ import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
+import { downloadCsv } from '../../lib/interop/download-csv';
 import {
   applyWorkTypeImport,
   generateWorkTypeImportPreview,
   parseWorkTypeCsv,
   type WorkTypeImportPreview,
 } from '../../lib/interop/work-type-import';
+import { WorkTypeImportCard } from './WorkTypeImportCard';
 
 interface SettingsWorkTypesViewProps {
   onBack: () => void;
-}
-
-function downloadCsv(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
@@ -151,54 +141,18 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
         <p className="settings-view__helper">Export work type definitions as CSV.</p>
       </div>
 
-      <div className="settings-view__card">
-        <div className="settings-view__card-header">
-          <h2 className="settings-view__sub-header">Import Work Types</h2>
-          <button type="button" className="btn btn--secondary btn--sm" onClick={handleParseWorkTypes}>
-            Parse + Preview
-          </button>
-        </div>
-        <p className="settings-view__helper">Paste CSV (title, workUnit, buildPhase, expectedProductivity)</p>
-        <textarea
-          className="input"
-          rows={8}
-          value={workTypeCsvInput}
-          onChange={(event) => setWorkTypeCsvInput(event.target.value)}
-          placeholder="title,workUnit,buildPhase,expectedProductivity"
-        />
-
-        {workTypeParseErrors.length > 0 && (
-          <div className="settings-view__list" style={{ marginTop: 12 }}>
-            {workTypeParseErrors.slice(0, 8).map((error) => (
-              <div key={error} className="settings-view__row-detail">{error}</div>
-            ))}
-          </div>
-        )}
-
-        {workTypePreview && (
-          <div className="settings-view__list" style={{ marginTop: 12 }}>
-            <div className="settings-view__row-detail">
-              {workTypePreview.summary.create} create · {workTypePreview.summary.update} update
-            </div>
-            <button
-              type="button"
-              className="btn btn--primary btn--sm"
-              disabled={isApplyingImport}
-              onClick={() => {
-                void handleApplyImport();
-              }}
-            >
-              {isApplyingImport ? 'Applying...' : 'Apply Import'}
-            </button>
-          </div>
-        )}
-
-        {importSummary && (
-          <p className="settings-view__helper" style={{ marginTop: 12 }}>
-            {importSummary}
-          </p>
-        )}
-      </div>
+      <WorkTypeImportCard
+        summaryMessage={importSummary}
+        csvInput={workTypeCsvInput}
+        onCsvInputChange={setWorkTypeCsvInput}
+        onParse={handleParseWorkTypes}
+        parseErrors={workTypeParseErrors}
+        preview={workTypePreview}
+        isApplying={isApplyingImport}
+        onApply={() => {
+          void handleApplyImport();
+        }}
+      />
 
       <WorkTypeFormSheet
         isOpen={showWorkTypeForm}

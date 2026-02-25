@@ -14,6 +14,7 @@ import {
   type BuildPhase,
 } from '../types';
 import { findWorkTypeByKey } from '../stores/work-type-store';
+import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
 
 const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 const VALID_BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
@@ -66,7 +67,8 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
     return { items: [], errors: [{ row: 0, field: 'csv', message: 'CSV must have a header row and at least one data row' }], valid: false };
   }
 
-  const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+  const delimiter = detectCsvDelimiter(lines[0]);
+  const headers = parseCsvLine(lines[0], delimiter).map((h) => h.trim().toLowerCase());
   const requiredHeaders = ['title', 'worktypetitle', 'workunit', 'buildphase'];
   const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
   if (missingHeaders.length > 0) {
@@ -84,7 +86,7 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
     const line = lines[i].trim();
     if (line === '') continue;
 
-    const fields = parseCsvLine(line);
+    const fields = parseCsvLine(line, delimiter);
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => {
       row[h] = (fields[idx] ?? '').trim();
@@ -173,38 +175,4 @@ function parseOptionalNumber(
     return null;
   }
   return num;
-}
-
-/** Parse a single CSV line, handling quoted fields. */
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"') {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i++; // skip escaped quote
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += char;
-      }
-    } else {
-      if (char === '"') {
-        inQuotes = true;
-      } else if (char === ',') {
-        fields.push(current);
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-  }
-  fields.push(current);
-  return fields;
 }
