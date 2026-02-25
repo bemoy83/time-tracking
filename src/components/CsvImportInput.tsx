@@ -6,6 +6,8 @@ interface CsvImportInputProps {
   placeholder?: string;
   rows?: number;
   className?: string;
+  /** Called after file is loaded. Use to auto-trigger parse. */
+  onFileLoaded?: () => void;
 }
 
 export function CsvImportInput({
@@ -14,6 +16,7 @@ export function CsvImportInput({
   placeholder = '',
   rows = 8,
   className = 'input',
+  onFileLoaded,
 }: CsvImportInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,6 +29,7 @@ export function CsvImportInput({
       const text = reader.result;
       if (typeof text === 'string') {
         onChange(text);
+        onFileLoaded?.();
       }
     };
     reader.onerror = () => {

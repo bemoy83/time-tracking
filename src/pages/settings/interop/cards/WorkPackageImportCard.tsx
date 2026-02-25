@@ -1,3 +1,4 @@
+import { CsvImportInput } from '../../../../components/CsvImportInput';
 import type { ImportPreview } from '../../../../lib/interop/import-preview';
 
 interface WorkPackageImportCardProps {
@@ -31,13 +32,13 @@ export function WorkPackageImportCard({
           Parse + Preview
         </button>
       </div>
-      <p className="settings-view__helper">Paste CSV (title, workTypeTitle, workUnit, buildPhase, ...)</p>
-      <textarea
-        className="input"
-        rows={8}
+      <p className="settings-view__helper">Paste CSV or choose a file (title, workTypeTitle, workUnit, buildPhase, ...)</p>
+      <CsvImportInput
         value={csvInput}
-        onChange={(event) => onCsvInputChange(event.target.value)}
+        onChange={onCsvInputChange}
+        onFileLoaded={onParse}
         placeholder="title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity"
+        rows={8}
       />
 
       {parseErrors.length > 0 && (

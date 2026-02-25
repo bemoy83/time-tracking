@@ -47,6 +47,8 @@ export interface WorkTypeImportPreview {
     create: number;
     update: number;
   };
+  /** Duplicate mapping keys within the import set. Resolve before apply. */
+  duplicateKeys: string[];
 }
 
 /**
@@ -158,6 +160,14 @@ export function generateWorkTypeImportPreview(
     existingWorkTypes.map((workType) => [workTypeKeyString(workType.title, workType.workUnit, workType.buildPhase), workType]),
   );
 
+  const keyCounts = new Map<string, number>();
+  for (const item of items) {
+    keyCounts.set(item.mappingKey, (keyCounts.get(item.mappingKey) ?? 0) + 1);
+  }
+  const duplicateKeys = Array.from(keyCounts.entries())
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key);
+
   const previewItems: WorkTypeImportPreviewItem[] = items.map((item) => {
     const existing = existingByKey.get(item.mappingKey);
     if (!existing) {
@@ -181,6 +191,7 @@ export function generateWorkTypeImportPreview(
       create: previewItems.filter((item) => item.action === 'create').length,
       update: previewItems.filter((item) => item.action === 'update').length,
     },
+    duplicateKeys,
   };
 }
 

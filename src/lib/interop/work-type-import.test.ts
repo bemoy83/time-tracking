@@ -123,6 +123,20 @@ describe('generateWorkTypeImportPreview', () => {
     expect(preview.summary).toEqual({ create: 1, update: 1 });
     expect(preview.items[0].action).toBe('update');
     expect(preview.items[1].action).toBe('create');
+    expect(preview.duplicateKeys).toEqual([]);
+  });
+
+  it('detects duplicate mapping keys within import set', () => {
+    const parsed = parseWorkTypeCsv(csv([
+      'Carpet Tiles,m2,build-up,12',
+      'Carpet Tiles,m2,build-up,14',
+      'Furniture,pcs,tear-down,5',
+    ]));
+
+    const preview = generateWorkTypeImportPreview(parsed.items, []);
+
+    expect(preview.duplicateKeys).toContain('carpet tiles:m2:build-up');
+    expect(preview.duplicateKeys).toHaveLength(1);
   });
 });
 

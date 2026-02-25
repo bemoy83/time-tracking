@@ -34,6 +34,7 @@ export function WorkTypeImportCard({
       <CsvImportInput
         value={csvInput}
         onChange={onCsvInputChange}
+        onFileLoaded={onParse}
         placeholder="title,workUnit,buildPhase,expectedProductivity"
         rows={8}
       />
@@ -51,10 +52,15 @@ export function WorkTypeImportCard({
           <div className="settings-view__row-detail">
             {preview.summary.create} create · {preview.summary.update} update
           </div>
+          {preview.duplicateKeys.length > 0 && (
+            <div className="settings-view__row-detail">
+              Duplicate mapping keys: {preview.duplicateKeys.length}. Resolve before apply.
+            </div>
+          )}
           <button
             type="button"
             className="btn btn--primary btn--sm"
-            disabled={isApplying}
+            disabled={isApplying || preview.duplicateKeys.length > 0}
             onClick={onApply}
           >
             {isApplying ? 'Applying...' : 'Apply Import'}
