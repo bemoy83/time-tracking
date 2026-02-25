@@ -1,26 +1,21 @@
 import { useState } from 'react';
-import { runMaintenanceScanFromDb, type MaintenanceReport } from '../../../../lib/archive/maintenance';
-import { recomputeArchivedKpisByVersion, type RecomputedArchiveKpiGroup } from '../../../../lib/archive/recompute';
-import { createRecomputeChangeReport, type RecomputeChangeReport } from '../../../../lib/archive/recompute-report';
-import { getFeatureFlag } from '../../../../lib/flags/feature-flags';
-import { isRolloutGateOpen, ARCHIVE_RECOMPUTE_GATE } from '../../../../lib/flags/rollout-gates';
-import { getAttributionPolicy } from '../../../../lib/stores/attribution-settings';
-import { getOutlierHandlingMode } from '../../../../lib/stores/kpi-settings';
-import { trackTelemetryEvent } from '../../../../lib/telemetry/telemetry';
+import { runMaintenanceScanFromDb, type MaintenanceReport } from '../../../lib/archive/maintenance';
+import { recomputeArchivedKpisByVersion, type RecomputedArchiveKpiGroup } from '../../../lib/archive/recompute';
+import { createRecomputeChangeReport, type RecomputeChangeReport } from '../../../lib/archive/recompute-report';
+import { getAttributionPolicy } from '../../../lib/stores/attribution-settings';
+import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
+import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 
-interface UseInteropArchiveMaintenanceOptions {
+interface UseArchiveMaintenanceOptions {
   onSummary: (summary: string) => void;
 }
 
-export function useInteropArchiveMaintenance({ onSummary }: UseInteropArchiveMaintenanceOptions) {
+export function useArchiveMaintenance({ onSummary }: UseArchiveMaintenanceOptions) {
   const [maintenanceReport, setMaintenanceReport] = useState<MaintenanceReport | null>(null);
   const [isRunningMaintenance, setIsRunningMaintenance] = useState(false);
   const [archiveGroups, setArchiveGroups] = useState<RecomputedArchiveKpiGroup[] | null>(null);
   const [recomputeReport, setRecomputeReport] = useState<RecomputeChangeReport | null>(null);
   const [isRecomputingArchive, setIsRecomputingArchive] = useState(false);
-
-  const archiveToolsEnabled = getFeatureFlag('archiveMaintenanceTools');
-  const archiveRecomputeGateOpen = isRolloutGateOpen(ARCHIVE_RECOMPUTE_GATE);
 
   const handleRunMaintenance = async () => {
     setIsRunningMaintenance(true);
@@ -59,13 +54,11 @@ export function useInteropArchiveMaintenance({ onSummary }: UseInteropArchiveMai
   };
 
   return {
-    archiveToolsEnabled,
     maintenanceReport,
     isRunningMaintenance,
     archiveGroups,
     recomputeReport,
     isRecomputingArchive,
-    archiveRecomputeGateOpen,
     handleRunMaintenance,
     handleRecomputeArchivedKpis,
   };

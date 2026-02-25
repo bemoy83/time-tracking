@@ -1,7 +1,8 @@
-import { CsvImportInput } from '../../../../components/CsvImportInput';
-import type { ImportPreview } from '../../../../lib/interop/import-preview';
+import { CsvImportInput } from '../../../components/CsvImportInput';
+import type { ImportPreview } from '../../../lib/interop/import-preview';
 
 interface WorkPackageImportCardProps {
+  title?: string;
   csvInput: string;
   onCsvInputChange: (value: string) => void;
   onParse: () => void;
@@ -14,6 +15,7 @@ interface WorkPackageImportCardProps {
 }
 
 export function WorkPackageImportCard({
+  title = 'Import Work Packages',
   csvInput,
   onCsvInputChange,
   onParse,
@@ -27,7 +29,7 @@ export function WorkPackageImportCard({
   return (
     <div className="settings-view__card">
       <div className="settings-view__card-header">
-        <h2 className="settings-view__sub-header">Import Work Packages</h2>
+        <h2 className="settings-view__sub-header">{title}</h2>
         <button type="button" className="btn btn--secondary btn--sm" onClick={onParse}>
           Parse + Preview
         </button>

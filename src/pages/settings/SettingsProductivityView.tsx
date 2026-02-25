@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../lib/stores/task-store';
+import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { KpiSection } from '../../components/KpiSection';
 import { CalculatorSheet } from '../../components/CalculatorSheet';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { getOutlierHandlingMode, setOutlierHandlingMode } from '../../lib/stores/kpi-settings';
 import type { OutlierHandlingMode } from '../../lib/kpi';
+import { KpiExportCard } from './cards/KpiExportCard';
+import { ArchiveMaintenanceCard } from './cards/ArchiveMaintenanceCard';
+import { useKpiExport } from './hooks/useKpiExport';
+import { useArchiveMaintenance } from './hooks/useArchiveMaintenance';
 
 interface SettingsProductivityViewProps {
   onBack: () => void;
@@ -12,8 +17,20 @@ interface SettingsProductivityViewProps {
 
 export function SettingsProductivityView({ onBack }: SettingsProductivityViewProps) {
   const { tasks } = useTaskStore();
+  const { workTypes } = useWorkTypeStore();
   const [showCalculator, setShowCalculator] = useState(false);
   const [outlierMode, setOutlierMode] = useState<OutlierHandlingMode>(getOutlierHandlingMode);
+  const [exportSummary, setExportSummary] = useState<string | null>(null);
+
+  const kpiExport = useKpiExport({
+    tasks,
+    workTypes,
+    onSummary: setExportSummary,
+  });
+
+  const archiveMaintenance = useArchiveMaintenance({
+    onSummary: setExportSummary,
+  });
 
   return (
     <SettingsDetailLayout title="Productivity" onBack={onBack}>
@@ -34,8 +51,8 @@ export function SettingsProductivityView({ onBack }: SettingsProductivityViewPro
           <select
             className="input"
             value={outlierMode}
-            onChange={(e) => {
-              const next = e.target.value as OutlierHandlingMode;
+            onChange={(event) => {
+              const next = event.target.value as OutlierHandlingMode;
               setOutlierMode(next);
               setOutlierHandlingMode(next);
             }}
@@ -46,6 +63,35 @@ export function SettingsProductivityView({ onBack }: SettingsProductivityViewPro
         </label>
         <KpiSection tasks={tasks} outlierMode={outlierMode} />
       </div>
+
+      <KpiExportCard
+        exportProfile={kpiExport.exportProfile}
+        isExporting={kpiExport.isExporting}
+        onExport={() => {
+          void kpiExport.handleExport();
+        }}
+        onExportProfileChange={kpiExport.setExportProfile}
+      />
+
+      <ArchiveMaintenanceCard
+        maintenanceReport={archiveMaintenance.maintenanceReport}
+        isRunningMaintenance={archiveMaintenance.isRunningMaintenance}
+        onRunMaintenance={() => {
+          void archiveMaintenance.handleRunMaintenance();
+        }}
+        archiveGroups={archiveMaintenance.archiveGroups}
+        recomputeReport={archiveMaintenance.recomputeReport}
+        isRecomputingArchive={archiveMaintenance.isRecomputingArchive}
+        onRecomputeArchivedKpis={() => {
+          void archiveMaintenance.handleRecomputeArchivedKpis();
+        }}
+      />
+
+      {exportSummary && (
+        <p className="settings-view__helper" style={{ marginTop: 12 }}>
+          {exportSummary}
+        </p>
+      )}
 
       <CalculatorSheet
         isOpen={showCalculator}

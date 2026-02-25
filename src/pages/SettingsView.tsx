@@ -19,7 +19,6 @@ type SettingsSection =
   | 'productivity'
   | 'attribution'
   | 'remediation'
-  | 'interop'
   | 'telemetry';
 
 interface SettingsViewProps {
@@ -57,7 +56,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
-    { key: 'interop', label: 'Interop', helper: 'Export KPI profiles and import work packages' },
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
 
@@ -110,7 +108,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
       <section className="settings-view__section">
         <div className="settings-view__card">
           <h2 className="settings-view__sub-header">Feature Flags</h2>
-          <p className="settings-view__helper">Gate risky planning/interop/archive features for rollout safety</p>
+          <p className="settings-view__helper">Gate risky planning features for rollout safety</p>
           <label className="settings-view__row settings-view__row--toggle">
             <span className="settings-view__row-label">Planning scenario compare</span>
             <input
@@ -119,39 +117,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
               checked={featureFlags.planningScenarioCompare}
               onChange={(e) => {
                 handleToggleFeatureFlag('planningScenarioCompare', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Interop stale import guard</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.interopStaleImportGuard}
-              onChange={(e) => {
-                handleToggleFeatureFlag('interopStaleImportGuard', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Archive maintenance tools</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.archiveMaintenanceTools}
-              onChange={(e) => {
-                handleToggleFeatureFlag('archiveMaintenanceTools', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Archive KPI recompute</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.archiveKpiRecompute}
-              onChange={(e) => {
-                handleToggleFeatureFlag('archiveKpiRecompute', e.target.checked);
               }}
             />
           </label>

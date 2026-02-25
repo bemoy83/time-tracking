@@ -94,38 +94,3 @@ export function evaluateRolloutGate(config: RolloutGateConfig): RolloutGateResul
 export function isRolloutGateOpen(config: RolloutGateConfig): boolean {
   return evaluateRolloutGate(config).allowed;
 }
-
-// ── Pre-defined gates for risky flows ─────────────────────────────
-
-/**
- * Gate for import-apply: requires the import guard flag and that
- * previous imports haven't produced excessive conflicts.
- */
-export const IMPORT_APPLY_GATE: RolloutGateConfig = {
-  flag: 'interopStaleImportGuard',
-  thresholds: [
-    { event: 'interop_import_conflict', minCount: 0, maxCount: 50 },
-  ],
-};
-
-/**
- * Gate for archive KPI recompute: requires the recompute flag and
- * at least one maintenance scan (ensures data integrity checked first).
- */
-export const ARCHIVE_RECOMPUTE_GATE: RolloutGateConfig = {
-  flag: 'archiveKpiRecompute',
-  thresholds: [
-    { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
-  ],
-};
-
-/**
- * Gate for bulk remediation apply: requires archive tools flag and
- * caps total bulk applies to prevent runaway automated changes.
- */
-export const REMEDIATION_BULK_GATE: RolloutGateConfig = {
-  flag: 'archiveMaintenanceTools',
-  thresholds: [
-    { event: 'remediation_bulk_apply', minCount: 0, maxCount: 200 },
-  ],
-};

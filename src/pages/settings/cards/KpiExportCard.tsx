@@ -1,4 +1,4 @@
-import type { ExportProfile } from '../../../../lib/interop/export';
+import type { ExportProfile } from '../../../lib/interop/export';
 
 interface KpiExportCardProps {
   exportProfile: ExportProfile;
@@ -26,7 +26,7 @@ export function KpiExportCard({
           {isExporting ? 'Exporting...' : 'Export'}
         </button>
       </div>
-      <p className="settings-view__helper">Export archive-grade KPI profiles for planner interop</p>
+      <p className="settings-view__helper">Export archive-grade KPI profiles</p>
       <label className="settings-view__row">
         <span className="settings-view__row-label">Profile</span>
         <select

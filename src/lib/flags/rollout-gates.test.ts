@@ -2,9 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   evaluateRolloutGate,
   isRolloutGateOpen,
-  IMPORT_APPLY_GATE,
-  ARCHIVE_RECOMPUTE_GATE,
-  REMEDIATION_BULK_GATE,
   type RolloutGateConfig,
 } from './rollout-gates';
 
@@ -30,7 +27,7 @@ beforeEach(() => {
 
 describe('evaluateRolloutGate', () => {
   const gate: RolloutGateConfig = {
-    flag: 'interopStaleImportGuard',
+    flag: 'planningScenarioCompare',
     thresholds: [
       { event: 'interop_import_conflict', minCount: 0, maxCount: 10 },
     ],
@@ -68,7 +65,7 @@ describe('evaluateRolloutGate', () => {
 
   it('blocks when count is below minCount', () => {
     const gateWithMin: RolloutGateConfig = {
-      flag: 'archiveKpiRecompute',
+      flag: 'planningScenarioCompare',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
       ],
@@ -87,7 +84,7 @@ describe('evaluateRolloutGate', () => {
     });
 
     const gateWithMin: RolloutGateConfig = {
-      flag: 'archiveKpiRecompute',
+      flag: 'planningScenarioCompare',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
       ],
@@ -101,7 +98,7 @@ describe('evaluateRolloutGate', () => {
 
   it('evaluates multiple thresholds — all must pass', () => {
     const multiGate: RolloutGateConfig = {
-      flag: 'archiveMaintenanceTools',
+      flag: 'planningScenarioCompare',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
         { event: 'remediation_bulk_apply', minCount: 0, maxCount: 100 },
@@ -137,41 +134,5 @@ describe('isRolloutGateOpen', () => {
   it('returns false when flag is off', () => {
     mockGetFeatureFlag.mockReturnValue(false);
     expect(isRolloutGateOpen({ flag: 'planningScenarioCompare', thresholds: [] })).toBe(false);
-  });
-});
-
-describe('pre-defined gates', () => {
-  it('IMPORT_APPLY_GATE blocks on excessive conflicts', () => {
-    mockGetTelemetrySnapshot.mockReturnValue({
-      interop_import_conflict: { count: 51, lastAt: '2024-01-01T00:00:00.000Z' },
-    });
-
-    expect(isRolloutGateOpen(IMPORT_APPLY_GATE)).toBe(false);
-  });
-
-  it('IMPORT_APPLY_GATE allows when conflicts are within bounds', () => {
-    mockGetTelemetrySnapshot.mockReturnValue({
-      interop_import_conflict: { count: 5, lastAt: '2024-01-01T00:00:00.000Z' },
-    });
-
-    expect(isRolloutGateOpen(IMPORT_APPLY_GATE)).toBe(true);
-  });
-
-  it('ARCHIVE_RECOMPUTE_GATE requires at least one maintenance scan', () => {
-    expect(isRolloutGateOpen(ARCHIVE_RECOMPUTE_GATE)).toBe(false);
-
-    mockGetTelemetrySnapshot.mockReturnValue({
-      archive_maintenance_scan: { count: 1, lastAt: '2024-01-01T00:00:00.000Z' },
-    });
-
-    expect(isRolloutGateOpen(ARCHIVE_RECOMPUTE_GATE)).toBe(true);
-  });
-
-  it('REMEDIATION_BULK_GATE caps total bulk applies', () => {
-    mockGetTelemetrySnapshot.mockReturnValue({
-      remediation_bulk_apply: { count: 201, lastAt: '2024-01-01T00:00:00.000Z' },
-    });
-
-    expect(isRolloutGateOpen(REMEDIATION_BULK_GATE)).toBe(false);
   });
 });

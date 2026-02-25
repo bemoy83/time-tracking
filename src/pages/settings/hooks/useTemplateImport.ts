@@ -1,40 +1,28 @@
 import { useState } from 'react';
-import { getFeatureFlag } from '../../../../lib/flags/feature-flags';
-import { isRolloutGateOpen, IMPORT_APPLY_GATE } from '../../../../lib/flags/rollout-gates';
-import { parseWorkPackageCsv } from '../../../../lib/interop/import';
-import { generateImportPreview, type ImportPreview } from '../../../../lib/interop/import-preview';
-import { applyWorkPackageImportItems } from '../../../../lib/interop/work-package-import-apply';
-import { trackTelemetryEvent } from '../../../../lib/telemetry/telemetry';
-import type { Task, TaskTemplate } from '../../../../lib/types';
+import { generateImportPreview, type ImportPreview } from '../../../lib/interop/import-preview';
+import { parseWorkPackageCsv } from '../../../lib/interop/import';
+import { applyWorkPackageImportItems } from '../../../lib/interop/work-package-import-apply';
+import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
+import type { Task, TaskTemplate } from '../../../lib/types';
 
-interface UseInteropWorkPackageImportOptions {
+interface UseTemplateImportOptions {
   tasks: Task[];
   templates: TaskTemplate[];
   workTypeTitleById: Map<string, string>;
 }
 
-function previewItemSignature(item: ImportPreview['items'][number]): string {
-  return [
-    item.action,
-    item.existingId ?? '',
-    item.existingType ?? '',
-    item.changedFields.join('|'),
-  ].join('::');
-}
-
-export function useInteropWorkPackageImport({
+export function useTemplateImport({
   tasks,
   templates,
   workTypeTitleById,
-}: UseInteropWorkPackageImportOptions) {
+}: UseTemplateImportOptions) {
   const [csvInput, setCsvInput] = useState('');
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [applySummary, setApplySummary] = useState<string | null>(null);
 
-  const staleGuardEnabled = getFeatureFlag('interopStaleImportGuard');
-  const importApplyGateOpen = isRolloutGateOpen(IMPORT_APPLY_GATE);
+  const importApplyGateOpen = true;
 
   const handleParse = () => {
     const parsed = parseWorkPackageCsv(csvInput);
@@ -63,17 +51,11 @@ export function useInteropWorkPackageImport({
         workTypeTitleById,
       );
 
-      const staleItems = preview.items.filter((item, index) => {
-        const latest = revalidated.items[index];
-        if (!latest) return true;
-        return previewItemSignature(item) !== previewItemSignature(latest);
-      });
-
-      if (revalidated.duplicateKeys.length > 0 || (staleGuardEnabled && staleItems.length > 0)) {
+      if (revalidated.duplicateKeys.length > 0) {
         setPreview(revalidated);
-        conflicts = (staleGuardEnabled ? staleItems.length : 0) + revalidated.duplicateKeys.length;
+        conflicts = revalidated.duplicateKeys.length;
         setApplySummary(
-          `Import conflicts detected: ${staleGuardEnabled ? staleItems.length : 0} stale item(s), ${revalidated.duplicateKeys.length} duplicate key issue(s). Re-review preview before apply.`,
+          `Import conflicts detected: ${revalidated.duplicateKeys.length} duplicate key issue(s). Re-review preview before apply.`,
         );
         trackTelemetryEvent('interop_import_conflict');
         return;
@@ -97,7 +79,6 @@ export function useInteropWorkPackageImport({
     preview,
     isApplying,
     applySummary,
-    setApplySummary,
     importApplyGateOpen,
     handleParse,
     handleApply,

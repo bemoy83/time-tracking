@@ -1,6 +1,6 @@
-import type { MaintenanceReport } from '../../../../lib/archive/maintenance';
-import type { RecomputedArchiveKpiGroup } from '../../../../lib/archive/recompute';
-import type { RecomputeChangeReport } from '../../../../lib/archive/recompute-report';
+import type { MaintenanceReport } from '../../../lib/archive/maintenance';
+import type { RecomputedArchiveKpiGroup } from '../../../lib/archive/recompute';
+import type { RecomputeChangeReport } from '../../../lib/archive/recompute-report';
 
 interface ArchiveMaintenanceCardProps {
   maintenanceReport: MaintenanceReport | null;
@@ -9,7 +9,6 @@ interface ArchiveMaintenanceCardProps {
   archiveGroups: RecomputedArchiveKpiGroup[] | null;
   recomputeReport: RecomputeChangeReport | null;
   isRecomputingArchive: boolean;
-  archiveRecomputeGateOpen: boolean;
   onRecomputeArchivedKpis: () => void;
 }
 
@@ -20,7 +19,6 @@ export function ArchiveMaintenanceCard({
   archiveGroups,
   recomputeReport,
   isRecomputingArchive,
-  archiveRecomputeGateOpen,
   onRecomputeArchivedKpis,
 }: ArchiveMaintenanceCardProps) {
   return (
@@ -60,9 +58,9 @@ export function ArchiveMaintenanceCard({
           type="button"
           className="btn btn--primary btn--sm"
           onClick={onRecomputeArchivedKpis}
-          disabled={isRecomputingArchive || !archiveRecomputeGateOpen}
+          disabled={isRecomputingArchive}
         >
-          {isRecomputingArchive ? 'Recomputing...' : !archiveRecomputeGateOpen ? 'Blocked by quality gate' : 'Recompute KPIs'}
+          {isRecomputingArchive ? 'Recomputing...' : 'Recompute KPIs'}
         </button>
       </div>
       <p className="settings-view__helper">Recompute archive-grade KPIs by archive engine version and report what changed.</p>

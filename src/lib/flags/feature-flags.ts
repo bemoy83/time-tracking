@@ -4,9 +4,6 @@
 
 export type FeatureFlagKey =
   | 'planningScenarioCompare'
-  | 'interopStaleImportGuard'
-  | 'archiveMaintenanceTools'
-  | 'archiveKpiRecompute'
   | 'calculatorMultiScenarioCards';
 
 export type FeatureFlagState = Record<FeatureFlagKey, boolean>;
@@ -15,9 +12,6 @@ const FLAGS_STORAGE_KEY = 'featureFlags';
 
 const DEFAULT_FLAGS: FeatureFlagState = {
   planningScenarioCompare: true,
-  interopStaleImportGuard: true,
-  archiveMaintenanceTools: true,
-  archiveKpiRecompute: true,
   calculatorMultiScenarioCards: true,
 };
 

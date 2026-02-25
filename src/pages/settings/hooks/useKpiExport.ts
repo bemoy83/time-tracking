@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import { buildAttributedRollup } from '../../../../lib/attributed-rollup';
-import { computeWorkTypeKpis } from '../../../../lib/kpi';
-import { downloadCsv } from '../../../../lib/interop/download-csv';
-import { exportKpis, type ExportProfile } from '../../../../lib/interop/export';
-import { getOutlierHandlingMode } from '../../../../lib/stores/kpi-settings';
-import type { Task, WorkType } from '../../../../lib/types';
+import { buildAttributedRollup } from '../../../lib/attributed-rollup';
+import { computeWorkTypeKpis } from '../../../lib/kpi';
+import { downloadCsv } from '../../../lib/interop/download-csv';
+import { exportKpis, type ExportProfile } from '../../../lib/interop/export';
+import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
+import type { Task, WorkType } from '../../../lib/types';
 
-interface UseInteropKpiExportOptions {
+interface UseKpiExportOptions {
   tasks: Task[];
   workTypes: WorkType[];
   onSummary: (summary: string) => void;
 }
 
-export function useInteropKpiExport({
+export function useKpiExport({
   tasks,
   workTypes,
   onSummary,
-}: UseInteropKpiExportOptions) {
+}: UseKpiExportOptions) {
   const [exportProfile, setExportProfile] = useState<ExportProfile>('ops_summary');
   const [isExporting, setIsExporting] = useState(false);
 
