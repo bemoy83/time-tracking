@@ -274,11 +274,88 @@
   }
 
   /* Plan picker */
+  .plan-picker__plan-header {
+    background: #252525;
+  }
+
+  .plan-picker__item {
+    background: #1e1e1e;
+  }
+
   .plan-picker__item--selected {
     background: rgba(37, 99, 235, 0.15);
   }
 
   .plan-picker__item--selected:active {
     background: rgba(37, 99, 235, 0.25);
+  }
+
+  /* --- Planning View --- */
+  .planning-view__list {
+    background: #252525;
+  }
+
+  .planning-view__item-btn:hover {
+    background: #2a2a2a;
+  }
+
+  .planning-view__item-btn:active {
+    background: #2f2f2f;
+  }
+
+  .planning-view__item-delete:hover {
+    background: rgba(220, 38, 38, 0.15);
+  }
+
+  .planning-view__stat {
+    background: #252525;
+  }
+
+  .planning-view__line-item {
+    background: #252525;
+  }
+
+  .planning-view__suggestion {
+    background: rgba(37, 99, 235, 0.12);
+  }
+
+  .planning-view__risk-reason {
+    background: rgba(220, 38, 38, 0.15);
+  }
+
+  .planning-view__add-form {
+    background: #252525;
+  }
+
+  .planning-view__compare-summary {
+    background: #252525;
+  }
+
+  .planning-view__compare-item {
+    background: #252525;
+  }
+
+  .planning-view__compare-change {
+    background: #1e1e1e;
+  }
+
+  .planning-view__status--draft {
+    background: rgba(217, 119, 6, 0.2);
+  }
+
+  .planning-view__status--locked {
+    background: rgba(22, 163, 74, 0.15);
+  }
+
+  .planning-view__confidence--high {
+    background: rgba(22, 163, 74, 0.15);
+  }
+
+  .planning-view__confidence--medium {
+    background: rgba(217, 119, 6, 0.2);
+  }
+
+  .planning-view__confidence--low {
+    background: rgba(220, 38, 38, 0.15);
   }
 }

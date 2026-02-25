@@ -34,6 +34,10 @@ import { buildAttributedRollup } from '../lib/attributed-rollup';
 import { getOutlierHandlingMode } from '../lib/stores/kpi-settings';
 import { getFeatureFlag } from '../lib/flags/feature-flags';
 import { trackTelemetryEvent } from '../lib/telemetry/telemetry';
+import { computeProductivityResult } from '../lib/calculator';
+
+/** Select all text on focus so typing replaces the value. */
+const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
 
 type PlanningSubView = 'list' | 'edit' | 'compare';
 
@@ -159,6 +163,67 @@ export function PlanningView() {
   return null;
 }
 
+// --- SVG Icons ---
+
+function ChevronLeftIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 6 15 12 9 18" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function CalculatorIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <line x1="8" y1="6" x2="16" y2="6" />
+      <line x1="8" y1="10" x2="8" y2="10.01" />
+      <line x1="12" y1="10" x2="12" y2="10.01" />
+      <line x1="16" y1="10" x2="16" y2="10.01" />
+      <line x1="8" y1="14" x2="8" y2="14.01" />
+      <line x1="12" y1="14" x2="12" y2="14.01" />
+      <line x1="16" y1="14" x2="16" y2="14.01" />
+      <line x1="8" y1="18" x2="8" y2="18.01" />
+      <line x1="12" y1="18" x2="16" y2="18" />
+    </svg>
+  );
+}
+
+function SparklesIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
+    </svg>
+  );
+}
+
 // --- Plan List ---
 
 function PlanList({
@@ -191,22 +256,26 @@ function PlanList({
                 className="planning-view__item-btn"
                 onClick={() => onSelect(plan)}
               >
-                <span className="planning-view__item-title">{plan.title}</span>
+                <span className="planning-view__item-content">
+                  <span className="planning-view__item-title">{plan.title}</span>
+                  <span className="planning-view__item-meta">
+                    {plan.lineItems.length} {plan.lineItems.length === 1 ? 'package' : 'packages'}
+                  </span>
+                </span>
                 <span className={`planning-view__status planning-view__status--${plan.status}`}>
                   {plan.status}
                 </span>
-                <span className="planning-view__item-meta">
-                  {plan.lineItems.length} items
-                </span>
+                <ChevronRightIcon className="planning-view__item-chevron" />
               </button>
               <button
-                className="btn btn--secondary btn--sm"
+                className="planning-view__item-delete"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(plan.id);
                 }}
+                aria-label={`Delete ${plan.title}`}
               >
-                Delete
+                <TrashIcon className="planning-view__item-delete-icon" />
               </button>
             </li>
           ))}
@@ -278,22 +347,53 @@ function PlanEditor({
 
   return (
     <div className="planning-view">
-      <header className="planning-view__header">
-        <button className="btn btn--secondary" onClick={onBack}>Back</button>
+      <header className="planning-view__editor-header">
+        <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
+          <ChevronLeftIcon className="planning-view__back-icon" />
+          Plans
+        </button>
+      </header>
+
+      <div className="planning-view__editor-header">
         <input
           className="planning-view__title-input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={handleSave}
           disabled={isLocked}
+          aria-label="Plan title"
         />
         <span className={`planning-view__status planning-view__status--${currentPlan.status}`}>
           {currentPlan.status}
         </span>
-      </header>
+      </div>
 
+      {/* Summary stats */}
+      <div className="planning-view__summary">
+        <div className="planning-view__stat">
+          <span className="planning-view__stat-value">{currentPlan.lineItems.length}</span>
+          <span className="planning-view__stat-label">Work packages</span>
+        </div>
+        <div className="planning-view__stat">
+          <span className="planning-view__stat-value">
+            {formatDurationShort(totalPersonHours * 3_600_000)}
+          </span>
+          <span className="planning-view__stat-label">Person-hours</span>
+        </div>
+        {suggestions.highRiskCount > 0 && (
+          <div className="planning-view__stat planning-view__stat--risk">
+            <span className="planning-view__stat-value">{suggestions.highRiskCount}</span>
+            <span className="planning-view__stat-label">High risk</span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
       <div className="planning-view__actions">
-        <button className="btn btn--secondary" onClick={handleToggleLock}>
+        <button
+          className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`}
+          onClick={handleToggleLock}
+        >
           {isLocked ? 'Unlock' : 'Lock Plan'}
         </button>
         {!isLocked && (
@@ -317,17 +417,7 @@ function PlanEditor({
         )}
       </div>
 
-      {/* Summary */}
-      <div className="planning-view__summary">
-        <span>{currentPlan.lineItems.length} work packages</span>
-        <span>{formatDurationShort(totalPersonHours * 3_600_000)} total person-hours</span>
-        {suggestions.highRiskCount > 0 && (
-          <span className="planning-view__risk-badge planning-view__risk-badge--high">
-            {suggestions.highRiskCount} high risk
-          </span>
-        )}
-      </div>
-
+      {/* Add form */}
       {showAddItem && !isLocked && (
         <AddLineItemForm
           onAdd={handleAddLineItem}
@@ -336,21 +426,28 @@ function PlanEditor({
       )}
 
       {/* Line items */}
-      <div className="planning-view__items">
-        {currentPlan.lineItems.map((item) => {
-          const suggestion = suggestions.items.find((s) => s.lineItemId === item.id);
-          return (
-            <LineItemCard
-              key={item.id}
-              item={item}
-              suggestion={suggestion ?? null}
-              isLocked={isLocked}
-              onUpdate={(updates) => handleUpdateItem(item.id, updates)}
-              onRemove={() => handleRemoveItem(item.id)}
-            />
-          );
-        })}
-      </div>
+      {currentPlan.lineItems.length > 0 && (
+        <div>
+          <div className="planning-view__items-header">
+            <h2 className="planning-view__items-title">Work Packages</h2>
+          </div>
+          <div className="planning-view__items">
+            {currentPlan.lineItems.map((item) => {
+              const suggestion = suggestions.items.find((s) => s.lineItemId === item.id);
+              return (
+                <LineItemCard
+                  key={item.id}
+                  item={item}
+                  suggestion={suggestion ?? null}
+                  isLocked={isLocked}
+                  onUpdate={(updates) => handleUpdateItem(item.id, updates)}
+                  onRemove={() => handleRemoveItem(item.id)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -373,74 +470,151 @@ function LineItemCard({
   const [rationale, setRationale] = useState(item.rationale ?? '');
   const riskClass = suggestion ? `planning-view__risk--${suggestion.risk}` : '';
 
+  const canRecomputeTime = item.workQuantity > 0 && item.crew > 0 && item.productivityRate > 0;
+  const handleRecomputeTime = () => {
+    const result = computeProductivityResult('time', item.workQuantity, item.productivityRate, 0, item.crew);
+    if (result?.timeHours != null) {
+      onUpdate({ timeHours: Math.round(result.timeHours * 100) / 100 });
+    }
+  };
+
+  const canRecomputeCrew = item.workQuantity > 0 && item.timeHours > 0 && item.productivityRate > 0;
+  const handleRecomputeCrew = () => {
+    const result = computeProductivityResult('crew', item.workQuantity, item.productivityRate, item.timeHours, 0);
+    if (result?.crew != null) {
+      onUpdate({ crew: result.crew });
+    }
+  };
+
+  const workTypeLabel = (() => {
+    const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
+    return wt
+      ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+      : `${resolveLineItemWorkTypeTitle(item)} · ${BUILD_PHASE_LABELS[item.buildPhase]} · ${WORK_UNIT_LABELS[item.workUnit]}`;
+  })();
+
   return (
     <div className={`planning-view__line-item ${riskClass}`}>
       <div className="planning-view__line-item-header">
-        <span className="planning-view__line-item-title">{item.title}</span>
-        <span className="planning-view__line-item-type">
-          {(() => {
-            const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
-            return wt
-              ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-              : `${resolveLineItemWorkTypeTitle(item)} · ${BUILD_PHASE_LABELS[item.buildPhase]} · ${WORK_UNIT_LABELS[item.workUnit]}`;
-          })()}
-        </span>
+        <div className="planning-view__line-item-info">
+          <span className="planning-view__line-item-title">{item.title}</span>
+          <span className="planning-view__line-item-type">{workTypeLabel}</span>
+        </div>
         {!isLocked && (
-          <button className="btn btn--secondary btn--sm" onClick={onRemove}>Remove</button>
+          <button
+            className="planning-view__line-item-remove"
+            onClick={onRemove}
+            aria-label={`Remove ${item.title}`}
+          >
+            <XIcon className="planning-view__line-item-remove-icon" />
+          </button>
         )}
       </div>
 
-      <div className="planning-view__line-item-fields">
-        <label>
-          Quantity
-          <input
-            type="number"
-            className="input"
-            value={item.workQuantity}
-            onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
-            disabled={isLocked}
-          />
-        </label>
-        <label>
-          Crew
-          <input
-            type="number"
-            className="input"
-            value={item.crew}
-            min={1}
-            max={20}
-            onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
-            disabled={isLocked}
-          />
-        </label>
-        <label>
-          Time (hrs)
-          <input
-            type="number"
-            className="input"
-            value={item.timeHours}
-            step={0.5}
-            onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
-            disabled={isLocked}
-          />
-        </label>
-        <label>
-          Rate ({WORK_UNIT_LABELS[item.workUnit]}/person-hr)
-          <input
-            type="number"
-            className="input"
-            value={item.productivityRate}
-            step={0.1}
-            onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
-            disabled={isLocked}
-          />
-        </label>
-      </div>
+      {isLocked ? (
+        <div className="planning-view__line-item-fields">
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">Quantity</span>
+            <span className="planning-view__field-value">{item.workQuantity}</span>
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">Crew</span>
+            <span className="planning-view__field-value">{item.crew}</span>
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">Time (hrs)</span>
+            <span className="planning-view__field-value">{item.timeHours}</span>
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">Rate</span>
+            <span className="planning-view__field-value">
+              {item.productivityRate} {WORK_UNIT_LABELS[item.workUnit]}/ph
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="planning-view__line-item-fields">
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">Quantity</span>
+            <input
+              type="number"
+              className="input"
+              value={item.workQuantity}
+              onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
+              onFocus={selectOnFocus}
+            />
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">
+              Crew
+              <button
+                className="planning-view__recompute-btn"
+                onClick={handleRecomputeCrew}
+                disabled={!canRecomputeCrew}
+                aria-label="Recompute crew from quantity, time, and rate"
+                title="Recompute crew"
+              >
+                <CalculatorIcon className="planning-view__recompute-icon" />
+              </button>
+            </span>
+            <input
+              type="number"
+              className="input"
+              value={item.crew}
+              min={1}
+              max={20}
+              onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
+              onFocus={selectOnFocus}
+            />
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">
+              Time (hrs)
+              <button
+                className="planning-view__recompute-btn"
+                onClick={handleRecomputeTime}
+                disabled={!canRecomputeTime}
+                aria-label="Recompute time from quantity, crew, and rate"
+                title="Recompute time"
+              >
+                <CalculatorIcon className="planning-view__recompute-icon" />
+              </button>
+            </span>
+            <input
+              type="number"
+              className="input"
+              value={item.timeHours}
+              step={0.5}
+              onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
+              onFocus={selectOnFocus}
+            />
+          </div>
+          <div className="planning-view__field">
+            <span className="planning-view__field-label">
+              Rate ({WORK_UNIT_LABELS[item.workUnit]}/ph)
+            </span>
+            <input
+              type="number"
+              className="input"
+              value={item.productivityRate}
+              step={0.1}
+              onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
+              onFocus={selectOnFocus}
+            />
+          </div>
+        </div>
+      )}
 
       {/* KPI Suggestion */}
       {suggestion && suggestion.suggestedRate != null && (
         <div className="planning-view__suggestion">
-          <span>KPI suggests {suggestion.suggestedRate.toFixed(1)} {WORK_UNIT_LABELS[item.workUnit]}/person-hr</span>
+          <SparklesIcon className="planning-view__suggestion-icon" />
+          <span className="planning-view__suggestion-text">
+            KPI suggests{' '}
+            <span className="planning-view__suggestion-rate">
+              {suggestion.suggestedRate.toFixed(1)} {WORK_UNIT_LABELS[item.workUnit]}/ph
+            </span>
+          </span>
           {suggestion.confidence && (
             <span className={`planning-view__confidence planning-view__confidence--${suggestion.confidence}`}>
               {suggestion.confidence}
@@ -448,7 +622,7 @@ function LineItemCard({
           )}
           {!isLocked && (
             <button
-              className="btn btn--secondary btn--sm"
+              className="btn btn--primary btn--sm"
               onClick={() => onUpdate({
                 productivityRate: suggestion.suggestedRate!,
                 rateSource: 'historical',
@@ -471,17 +645,23 @@ function LineItemCard({
       )}
 
       {/* Rationale note */}
-      <div className="planning-view__rationale">
-        <input
-          type="text"
-          className="input"
-          placeholder="Add rationale note..."
-          value={rationale}
-          onChange={(e) => setRationale(e.target.value)}
-          onBlur={() => onUpdate({ rationale: rationale || null })}
-          disabled={isLocked}
-        />
-      </div>
+      {!isLocked && (
+        <div className="planning-view__rationale">
+          <input
+            type="text"
+            className="input"
+            placeholder="Add rationale note..."
+            value={rationale}
+            onChange={(e) => setRationale(e.target.value)}
+            onBlur={() => onUpdate({ rationale: rationale || null })}
+          />
+        </div>
+      )}
+      {isLocked && rationale && (
+        <div className="planning-view__line-item-type">
+          {rationale}
+        </div>
+      )}
     </div>
   );
 }
@@ -498,7 +678,7 @@ function AddLineItemForm({
   const { workTypes } = useWorkTypeStore();
   const [title, setTitle] = useState('');
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>(workTypes[0]?.id ?? '');
-  const [workQuantity, setWorkQuantity] = useState(100);
+  const [workQuantity, setWorkQuantity] = useState(0);
   const [rate, setRate] = useState(workTypes[0]?.expectedProductivity ?? 10);
 
   const selectedWorkType = selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null;
@@ -528,14 +708,20 @@ function AddLineItemForm({
 
   return (
     <div className="planning-view__add-form">
-      <h3>Add Work Package</h3>
+      <h3 className="planning-view__add-form-title">Add Work Package</h3>
       <div className="planning-view__add-fields">
-        <label>
-          Title
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label>
-          Work Type
+        <div className="planning-view__field">
+          <span className="planning-view__field-label">Title</span>
+          <input
+            className="input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Install drywall"
+            autoFocus
+          />
+        </div>
+        <div className="planning-view__field">
+          <span className="planning-view__field-label">Work Type</span>
           <select
             className="input"
             value={selectedWorkTypeId}
@@ -548,19 +734,42 @@ function AddLineItemForm({
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Quantity{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
-          <input className="input" type="number" value={workQuantity} onChange={(e) => setWorkQuantity(Number(e.target.value))} />
-        </label>
-        <label>
-          Rate{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr)` : ''}
-          <input className="input" type="number" value={rate} step={0.1} onChange={(e) => setRate(Number(e.target.value))} />
-        </label>
+        </div>
+        <div className="planning-view__field">
+          <span className="planning-view__field-label">
+            Quantity{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
+          </span>
+          <input
+            className="input"
+            type="number"
+            value={workQuantity}
+            onChange={(e) => setWorkQuantity(Number(e.target.value))}
+            onFocus={selectOnFocus}
+          />
+        </div>
+        <div className="planning-view__field">
+          <span className="planning-view__field-label">
+            Rate{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]}/ph)` : ''}
+          </span>
+          <input
+            className="input"
+            type="number"
+            value={rate}
+            step={0.1}
+            onChange={(e) => setRate(Number(e.target.value))}
+            onFocus={selectOnFocus}
+          />
+        </div>
       </div>
       <div className="planning-view__add-actions">
         <button className="btn btn--secondary" onClick={onCancel}>Cancel</button>
-        <button className="btn btn--primary" onClick={handleSubmit} disabled={!title.trim() || !selectedWorkType}>Add</button>
+        <button
+          className="btn btn--primary"
+          onClick={handleSubmit}
+          disabled={!title.trim() || !selectedWorkType}
+        >
+          Add
+        </button>
       </div>
     </div>
   );
@@ -577,40 +786,54 @@ function CompareView({
 }) {
   return (
     <div className="planning-view">
-      <header className="planning-view__header">
-        <button className="btn btn--secondary" onClick={onBack}>Back</button>
-        <h2 className="planning-view__title">
-          {comparison.planATitle} vs {comparison.planBTitle}
+      <header className="planning-view__editor-header">
+        <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+          <ChevronLeftIcon className="planning-view__back-icon" />
+          Back
+        </button>
+        <h2 className="planning-view__title" style={{ flex: 1 }}>
+          Compare
         </h2>
       </header>
 
       <div className="planning-view__compare-summary">
-        <div>
-          <strong>{comparison.planATitle}</strong>: {comparison.totalDelta.lineItemsA} items,{' '}
-          {formatDurationShort(comparison.totalDelta.personHoursA * 3_600_000)} person-hrs
+        <div className="planning-view__compare-row">
+          <span className="planning-view__compare-plan-name">{comparison.planATitle}</span>
+          <span className="planning-view__compare-plan-stat">
+            {comparison.totalDelta.lineItemsA} items · {formatDurationShort(comparison.totalDelta.personHoursA * 3_600_000)}
+          </span>
         </div>
-        <div>
-          <strong>{comparison.planBTitle}</strong>: {comparison.totalDelta.lineItemsB} items,{' '}
-          {formatDurationShort(comparison.totalDelta.personHoursB * 3_600_000)} person-hrs
+        <div className="planning-view__compare-row">
+          <span className="planning-view__compare-plan-name">{comparison.planBTitle}</span>
+          <span className="planning-view__compare-plan-stat">
+            {comparison.totalDelta.lineItemsB} items · {formatDurationShort(comparison.totalDelta.personHoursB * 3_600_000)}
+          </span>
         </div>
-        <div className={comparison.totalDelta.personHoursDelta > 0 ? 'planning-view__delta--increase' : 'planning-view__delta--decrease'}>
-          Delta: {comparison.totalDelta.personHoursDelta > 0 ? '+' : ''}
-          {formatDurationShort(Math.abs(comparison.totalDelta.personHoursDelta) * 3_600_000)} person-hrs
+        <div className="planning-view__compare-delta">
+          <span>Delta</span>
+          <span className={comparison.totalDelta.personHoursDelta > 0 ? 'planning-view__delta--increase' : 'planning-view__delta--decrease'}>
+            {comparison.totalDelta.personHoursDelta > 0 ? '+' : ''}
+            {formatDurationShort(Math.abs(comparison.totalDelta.personHoursDelta) * 3_600_000)} person-hrs
+          </span>
         </div>
       </div>
 
       <div className="planning-view__compare-items">
         {comparison.lineItems.map((item) => (
           <div key={item.lineItemId} className={`planning-view__compare-item planning-view__compare-item--${item.status}`}>
-            <span className="planning-view__compare-title">{item.title}</span>
-            <span className={`planning-view__compare-status planning-view__compare-status--${item.status}`}>
-              {item.status}
-            </span>
+            <div className="planning-view__compare-item-header">
+              <span className="planning-view__compare-title">{item.title}</span>
+              <span className={`planning-view__compare-status planning-view__compare-status--${item.status}`}>
+                {item.status}
+              </span>
+            </div>
             {item.changes.length > 0 && (
               <div className="planning-view__compare-changes">
                 {item.changes.map((change) => (
                   <span key={change.field} className="planning-view__compare-change">
-                    {change.field}: {change.valueA} → {change.valueB}
+                    {change.field}: {change.valueA}{' '}
+                    <span className="planning-view__compare-change-arrow">&rarr;</span>{' '}
+                    {change.valueB}
                     {change.percentChange != null && (
                       <span className={change.percentChange > 0 ? 'planning-view__delta--increase' : 'planning-view__delta--decrease'}>
                         {' '}({change.percentChange > 0 ? '+' : ''}{(change.percentChange * 100).toFixed(0)}%)

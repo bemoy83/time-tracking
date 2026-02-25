@@ -60,6 +60,30 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     });
   };
 
+  const toggleAllInPlan = (plan: Plan) => {
+    const planItemIds = plan.lineItems.map((i) => i.id);
+    const allSelected = planItemIds.every((id) => selectedItemIds.has(id));
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      for (const id of planItemIds) {
+        if (allSelected) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+    // Auto-expand when selecting all
+    if (!allSelected) {
+      setExpandedPlanIds((prev) => {
+        const next = new Set(prev);
+        next.add(plan.id);
+        return next;
+      });
+    }
+  };
+
   const handleConfirm = async () => {
     if (selectedItemIds.size === 0 || isCreating) return;
     setIsCreating(true);
@@ -100,24 +124,47 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
             const selectedCount = plan.lineItems.filter((i) =>
               selectedItemIds.has(i.id),
             ).length;
+            const allSelected = hasItems && selectedCount === plan.lineItems.length;
+            const someSelected = selectedCount > 0 && !allSelected;
 
             return (
               <div key={plan.id} className="plan-picker__plan">
-                <button
-                  type="button"
-                  className="plan-picker__plan-header"
-                  onClick={() => togglePlan(plan.id)}
-                  aria-expanded={isExpanded}
-                >
-                  <ChevronRightIcon
-                    className={`plan-picker__chevron${isExpanded ? ' plan-picker__chevron--open' : ''}`}
-                  />
-                  <span className="plan-picker__plan-title">{plan.title}</span>
-                  <span className="plan-picker__plan-count">
-                    {plan.lineItems.length} item{plan.lineItems.length !== 1 ? 's' : ''}
-                    {selectedCount > 0 && ` · ${selectedCount} selected`}
-                  </span>
-                </button>
+                <div className="plan-picker__plan-header">
+                  {hasItems && (
+                    <button
+                      type="button"
+                      className="plan-picker__select-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleAllInPlan(plan);
+                      }}
+                      aria-label={allSelected ? `Deselect all in ${plan.title}` : `Select all in ${plan.title}`}
+                    >
+                      <span
+                        className={`plan-picker__checkbox${allSelected ? ' plan-picker__checkbox--checked' : ''}${someSelected ? ' plan-picker__checkbox--partial' : ''}`}
+                        aria-hidden="true"
+                      >
+                        {allSelected && <CheckIcon className="plan-picker__check-icon" />}
+                        {someSelected && <span className="plan-picker__partial-icon" />}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="plan-picker__plan-toggle"
+                    onClick={() => togglePlan(plan.id)}
+                    aria-expanded={isExpanded}
+                  >
+                    <ChevronRightIcon
+                      className={`plan-picker__chevron${isExpanded ? ' plan-picker__chevron--open' : ''}`}
+                    />
+                    <span className="plan-picker__plan-title">{plan.title}</span>
+                    <span className="plan-picker__plan-count">
+                      {plan.lineItems.length} item{plan.lineItems.length !== 1 ? 's' : ''}
+                      {selectedCount > 0 && ` · ${selectedCount} selected`}
+                    </span>
+                  </button>
+                </div>
 
                 {isExpanded && (
                   <div className="plan-picker__items">
