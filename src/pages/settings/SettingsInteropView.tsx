@@ -2,12 +2,19 @@ import { useMemo, useState } from 'react';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { useTaskStore, updateTaskFields } from '../../lib/stores/task-store';
 import { useTemplateStore, createTemplate, updateTemplate } from '../../lib/stores/template-store';
-import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { ensureWorkTypeExistsOrCreate, useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { buildAttributedRollup } from '../../lib/attributed-rollup';
 import { computeWorkTypeKpis } from '../../lib/kpi';
 import { exportKpis, type ExportProfile } from '../../lib/interop/export';
-import { parseWorkPackageCsv } from '../../lib/interop/import';
+import { parseWorkPackageCsv, type ImportedWorkPackage } from '../../lib/interop/import';
 import { generateImportPreview, type ImportPreview } from '../../lib/interop/import-preview';
+import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
+import {
+  applyWorkTypeImport,
+  generateWorkTypeImportPreview,
+  parseWorkTypeCsv,
+  type WorkTypeImportPreview,
+} from '../../lib/interop/work-type-import';
 import { getOutlierHandlingMode } from '../../lib/stores/kpi-settings';
 import { runMaintenanceScanFromDb, type MaintenanceReport } from '../../lib/archive/maintenance';
 import { recomputeArchivedKpisByVersion, type RecomputedArchiveKpiGroup } from '../../lib/archive/recompute';
@@ -42,6 +49,98 @@ function downloadCsv(filename: string, content: string): void {
   URL.revokeObjectURL(url);
 }
 
+export interface WorkPackageImportApplyResult {
+  created: number;
+  updated: number;
+  skipped: number;
+}
+
+interface WorkPackageImportApplyDeps {
+  ensureWorkTypeExistsOrCreateFn?: (
+    title: string,
+    workUnit: ImportedWorkPackage['workUnit'],
+    buildPhase: ImportedWorkPackage['buildPhase'],
+    defaultExpectedProductivity: number,
+  ) => Promise<string>;
+  updateTemplateFn?: typeof updateTemplate;
+  updateTaskFieldsFn?: typeof updateTaskFields;
+  createTemplateFn?: typeof createTemplate;
+}
+
+export async function applyWorkPackageImportItems(
+  items: ImportPreview['items'],
+  deps: WorkPackageImportApplyDeps = {},
+): Promise<WorkPackageImportApplyResult> {
+  const ensureWorkTypeExistsOrCreateFn = deps.ensureWorkTypeExistsOrCreateFn ?? ensureWorkTypeExistsOrCreate;
+  const updateTemplateFn = deps.updateTemplateFn ?? updateTemplate;
+  const updateTaskFieldsFn = deps.updateTaskFieldsFn ?? updateTaskFields;
+  const createTemplateFn = deps.createTemplateFn ?? createTemplate;
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const item of items) {
+    const payload = item.item;
+
+    if (item.action === 'skip') {
+      skipped += 1;
+      continue;
+    }
+
+    const resolvedWorkTypeId = payload.workTypeId ?? await ensureWorkTypeExistsOrCreateFn(
+      payload.workTypeTitle,
+      payload.workUnit,
+      payload.buildPhase,
+      0,
+    );
+
+    if (item.action === 'update' && item.existingId && item.existingType === 'template') {
+      await updateTemplateFn(item.existingId, {
+        title: payload.title,
+        workTypeId: resolvedWorkTypeId,
+        workUnit: payload.workUnit,
+        buildPhase: payload.buildPhase,
+        workQuantity: payload.workQuantity,
+        estimatedMinutes: payload.estimatedMinutes,
+        defaultWorkers: payload.defaultWorkers,
+        targetProductivity: payload.targetProductivity,
+      });
+      updated += 1;
+      continue;
+    }
+
+    if (item.action === 'update' && item.existingId && item.existingType === 'task') {
+      await updateTaskFieldsFn(item.existingId, {
+        title: payload.title,
+        workTypeId: resolvedWorkTypeId,
+        workUnit: payload.workUnit,
+        buildPhase: payload.buildPhase,
+        workQuantity: payload.workQuantity,
+        estimatedMinutes: payload.estimatedMinutes,
+        defaultWorkers: payload.defaultWorkers,
+        targetProductivity: payload.targetProductivity,
+      });
+      updated += 1;
+      continue;
+    }
+
+    await createTemplateFn({
+      title: payload.title,
+      workTypeId: resolvedWorkTypeId,
+      workUnit: payload.workUnit,
+      buildPhase: payload.buildPhase,
+      workQuantity: payload.workQuantity,
+      estimatedMinutes: payload.estimatedMinutes,
+      defaultWorkers: payload.defaultWorkers,
+      targetProductivity: payload.targetProductivity,
+    });
+    created += 1;
+  }
+
+  return { created, updated, skipped };
+}
+
 export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
   const { tasks } = useTaskStore();
   const { templates } = useTemplateStore();
@@ -53,6 +152,13 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [isApplying, setIsApplying] = useState(false);
   const [applySummary, setApplySummary] = useState<string | null>(null);
+  const [isExportingWorkTypes, setIsExportingWorkTypes] = useState(false);
+  const [workTypeCsvInput, setWorkTypeCsvInput] = useState('');
+  const [workTypeParseErrors, setWorkTypeParseErrors] = useState<string[]>([]);
+  const [workTypePreview, setWorkTypePreview] = useState<WorkTypeImportPreview | null>(null);
+  const [isApplyingWorkTypeImport, setIsApplyingWorkTypeImport] = useState(false);
+  const [workTypeExportSummary, setWorkTypeExportSummary] = useState<string | null>(null);
+  const [workTypeImportSummary, setWorkTypeImportSummary] = useState<string | null>(null);
   const [maintenanceReport, setMaintenanceReport] = useState<MaintenanceReport | null>(null);
   const [isRunningMaintenance, setIsRunningMaintenance] = useState(false);
   const [archiveGroups, setArchiveGroups] = useState<RecomputedArchiveKpiGroup[] | null>(null);
@@ -102,12 +208,48 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
     setPreview(nextPreview);
   };
 
+  const handleWorkTypeExport = () => {
+    setIsExportingWorkTypes(true);
+    try {
+      const csv = exportWorkTypesCsv(workTypes);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadCsv(`work-types-${stamp}.csv`, csv);
+      setWorkTypeExportSummary(`Exported ${workTypes.length} work type definitions.`);
+    } finally {
+      setIsExportingWorkTypes(false);
+    }
+  };
+
+  const handleParseWorkTypeImport = () => {
+    const parsed = parseWorkTypeCsv(workTypeCsvInput);
+    if (!parsed.valid) {
+      setWorkTypePreview(null);
+      setWorkTypeParseErrors(parsed.errors.map((error) => `Row ${error.row}: ${error.field} - ${error.message}`));
+      return;
+    }
+
+    setWorkTypeParseErrors([]);
+    setWorkTypeImportSummary(null);
+    setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, workTypes));
+  };
+
+  const handleApplyWorkTypeImport = async () => {
+    if (!workTypePreview) return;
+    setIsApplyingWorkTypeImport(true);
+    try {
+      const result = await applyWorkTypeImport(workTypePreview.items.map((item) => item.item));
+      setWorkTypeImportSummary(`Applied import: ${result.created} created, ${result.updated} updated.`);
+      setWorkTypePreview(null);
+      setWorkTypeCsvInput('');
+      setWorkTypeParseErrors([]);
+    } finally {
+      setIsApplyingWorkTypeImport(false);
+    }
+  };
+
   const handleApply = async () => {
     if (!preview || preview.duplicateKeys.length > 0) return;
     setIsApplying(true);
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
     let conflicts = 0;
 
     try {
@@ -134,56 +276,7 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
         return;
       }
 
-      for (const item of revalidated.items) {
-        const payload = item.item;
-
-        if (item.action === 'skip') {
-          skipped += 1;
-          continue;
-        }
-
-        if (item.action === 'update' && item.existingId && item.existingType === 'template') {
-          await updateTemplate(item.existingId, {
-            title: payload.title,
-            workTypeId: payload.workTypeId,
-            workUnit: payload.workUnit,
-            buildPhase: payload.buildPhase,
-            workQuantity: payload.workQuantity,
-            estimatedMinutes: payload.estimatedMinutes,
-            defaultWorkers: payload.defaultWorkers,
-            targetProductivity: payload.targetProductivity,
-          });
-          updated += 1;
-          continue;
-        }
-
-        if (item.action === 'update' && item.existingId && item.existingType === 'task') {
-          await updateTaskFields(item.existingId, {
-            title: payload.title,
-            workTypeId: payload.workTypeId,
-            workUnit: payload.workUnit,
-            buildPhase: payload.buildPhase,
-            workQuantity: payload.workQuantity,
-            estimatedMinutes: payload.estimatedMinutes,
-            defaultWorkers: payload.defaultWorkers,
-            targetProductivity: payload.targetProductivity,
-          });
-          updated += 1;
-          continue;
-        }
-
-        await createTemplate({
-          title: payload.title,
-          workTypeId: payload.workTypeId,
-          workUnit: payload.workUnit,
-          buildPhase: payload.buildPhase,
-          workQuantity: payload.workQuantity,
-          estimatedMinutes: payload.estimatedMinutes,
-          defaultWorkers: payload.defaultWorkers,
-          targetProductivity: payload.targetProductivity,
-        });
-        created += 1;
-      }
+      const { created, updated, skipped } = await applyWorkPackageImportItems(revalidated.items);
 
       setApplySummary(`Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${conflicts} conflicts.`);
       trackTelemetryEvent('interop_import_apply');
@@ -261,6 +354,26 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
 
       <div className="settings-view__card">
         <div className="settings-view__card-header">
+          <h2 className="settings-view__sub-header">Export Work Types</h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={handleWorkTypeExport}
+            disabled={isExportingWorkTypes}
+          >
+            {isExportingWorkTypes ? 'Exporting...' : 'Export'}
+          </button>
+        </div>
+        <p className="settings-view__helper">Export work type definitions as CSV.</p>
+        {workTypeExportSummary && (
+          <p className="settings-view__helper" style={{ marginTop: 12 }}>
+            {workTypeExportSummary}
+          </p>
+        )}
+      </div>
+
+      <div className="settings-view__card">
+        <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Import Work Packages</h2>
           <button type="button" className="btn btn--secondary btn--sm" onClick={handleParse}>
             Parse + Preview
@@ -307,6 +420,55 @@ export function SettingsInteropView({ onBack }: SettingsInteropViewProps) {
         {applySummary && (
           <p className="settings-view__helper" style={{ marginTop: 12 }}>
             {applySummary}
+          </p>
+        )}
+      </div>
+
+      <div className="settings-view__card">
+        <div className="settings-view__card-header">
+          <h2 className="settings-view__sub-header">Import Work Types</h2>
+          <button type="button" className="btn btn--secondary btn--sm" onClick={handleParseWorkTypeImport}>
+            Parse + Preview
+          </button>
+        </div>
+        <p className="settings-view__helper">Paste CSV (title, workUnit, buildPhase, expectedProductivity)</p>
+        <textarea
+          className="input"
+          rows={8}
+          value={workTypeCsvInput}
+          onChange={(event) => setWorkTypeCsvInput(event.target.value)}
+          placeholder="title,workUnit,buildPhase,expectedProductivity"
+        />
+
+        {workTypeParseErrors.length > 0 && (
+          <div className="settings-view__list" style={{ marginTop: 12 }}>
+            {workTypeParseErrors.slice(0, 8).map((error) => (
+              <div key={error} className="settings-view__row-detail">{error}</div>
+            ))}
+          </div>
+        )}
+
+        {workTypePreview && (
+          <div className="settings-view__list" style={{ marginTop: 12 }}>
+            <div className="settings-view__row-detail">
+              {workTypePreview.summary.create} create · {workTypePreview.summary.update} update
+            </div>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={isApplyingWorkTypeImport}
+              onClick={() => {
+                void handleApplyWorkTypeImport();
+              }}
+            >
+              {isApplyingWorkTypeImport ? 'Applying...' : 'Apply Import'}
+            </button>
+          </div>
+        )}
+
+        {workTypeImportSummary && (
+          <p className="settings-view__helper" style={{ marginTop: 12 }}>
+            {workTypeImportSummary}
           </p>
         )}
       </div>

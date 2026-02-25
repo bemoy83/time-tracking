@@ -165,6 +165,24 @@ export function findWorkTypeByKey(
   return findWorkTypeByCompositeKey(title, workUnit, buildPhase);
 }
 
+export async function ensureWorkTypeExistsOrCreate(
+  title: string,
+  workUnit: WorkUnit,
+  buildPhase: BuildPhase,
+  defaultExpectedProductivity: number = 0,
+): Promise<string> {
+  const existing = findWorkTypeByKey(title, workUnit, buildPhase);
+  if (existing) return existing.id;
+
+  const created = await createWorkType({
+    title,
+    workUnit,
+    buildPhase,
+    expectedProductivity: defaultExpectedProductivity,
+  });
+  return created.id;
+}
+
 // ============================================================
 // React Integration
 // ============================================================
