@@ -15,7 +15,7 @@ import { Task, Project, TaskTemplate } from '../lib/types';
 import {
   useTaskStore,
 } from '../lib/stores/task-store';
-import { useTemplateStore } from '../lib/stores/template-store';
+// template-store no longer needed directly — TemplatePickerSheet handles its own data
 import {
   useTimerStore,
   startTimer,
@@ -32,7 +32,8 @@ import { WarningIcon, TaskListIcon } from '../components/icons';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { CompletedSection } from '../components/CompletedSection';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
-import { TemplatePickerSheet } from '../components/TemplatePickerSheet';
+import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
+import { AddFromPlanSheet } from '../components/AddFromPlanSheet';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -40,10 +41,10 @@ interface TodayViewProps {
 
 export function TodayView({ onSelectTask }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
-  const { templates } = useTemplateStore();
   const { activeTimers } = useTimerStore();
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showPlanSheet, setShowPlanSheet] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const taskTimes = useTaskTimes(tasks, activeTimers);
@@ -146,26 +147,29 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
       {/* FAB + Create Flow */}
       <button className="fab" onClick={() => {
-        if (templates.length > 0) {
-          setShowTemplatePicker(true);
-        } else {
-          setSelectedTemplate(null);
-          setShowCreateSheet(true);
-        }
+        setShowTemplatePicker(true);
       }} aria-label="New task">+</button>
       <TemplatePickerSheet
         isOpen={showTemplatePicker}
         onClose={() => setShowTemplatePicker(false)}
-        onSelect={(template) => {
-          setSelectedTemplate(template);
+        onSelect={(selection) => {
           setShowTemplatePicker(false);
-          setShowCreateSheet(true);
+          if (selection === FROM_PLAN_SENTINEL) {
+            setShowPlanSheet(true);
+          } else {
+            setSelectedTemplate(selection);
+            setShowCreateSheet(true);
+          }
         }}
       />
       <CreateTaskSheet
         isOpen={showCreateSheet}
         onClose={() => { setShowCreateSheet(false); setSelectedTemplate(null); }}
         template={selectedTemplate}
+      />
+      <AddFromPlanSheet
+        isOpen={showPlanSheet}
+        onClose={() => setShowPlanSheet(false)}
       />
 
       {/* Active — section header when there are active tasks */}

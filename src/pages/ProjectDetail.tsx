@@ -43,7 +43,7 @@ import { useTaskTimes } from '../lib/hooks/useTaskTimes';
 import { useProjectMetrics } from '../lib/hooks/useProjectMetrics';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
-import { TemplatePickerSheet } from '../components/TemplatePickerSheet';
+import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -260,8 +260,9 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       <TemplatePickerSheet
         isOpen={showTemplatePicker}
         onClose={() => setShowTemplatePicker(false)}
-        onSelect={(template) => {
-          setSelectedTemplate(template);
+        onSelect={(selection) => {
+          if (selection === FROM_PLAN_SENTINEL) return; // not supported in project context
+          setSelectedTemplate(selection);
           setShowTemplatePicker(false);
           setShowCreateSheet(true);
         }}

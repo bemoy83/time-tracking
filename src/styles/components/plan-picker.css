@@ -1,0 +1,151 @@
+/* ============================================================
+   Plan Picker Sheet (AddFromPlanSheet)
+   ============================================================ */
+
+.plan-picker {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* Plan header row */
+.plan-picker__plan-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--touch-min);
+  padding: var(--space-md);
+  background: var(--color-surface-subtle);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-body);
+  width: 100%;
+  transition: background-color 0.15s;
+}
+
+.plan-picker__plan-header:active {
+  background: var(--color-surface-hover);
+}
+
+.plan-picker__chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.plan-picker__chevron--open {
+  transform: rotate(90deg);
+}
+
+.plan-picker__plan-title {
+  font-weight: 500;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.plan-picker__plan-count {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* Line items container */
+.plan-picker__items {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-picker__empty {
+  margin: 0;
+  padding: var(--space-md);
+  padding-left: calc(var(--space-md) + 24px);
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+/* Line item row */
+.plan-picker__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  padding-left: calc(var(--space-md) + 24px);
+  background: var(--color-surface);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-body);
+  width: 100%;
+  transition: background-color 0.15s;
+}
+
+.plan-picker__item:last-child {
+  border-bottom: none;
+}
+
+.plan-picker__item:active {
+  background: var(--color-surface-hover);
+}
+
+.plan-picker__item--selected {
+  background: #eff6ff;
+}
+
+.plan-picker__item--selected:active {
+  background: #dbeafe;
+}
+
+/* Checkbox */
+.plan-picker__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  transition: all 0.15s;
+}
+
+.plan-picker__checkbox--checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.plan-picker__check-icon {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+/* Item content */
+.plan-picker__item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-picker__item-title {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.plan-picker__item--selected .plan-picker__item-title {
+  color: var(--color-primary);
+}
+
+.plan-picker__item-detail {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}

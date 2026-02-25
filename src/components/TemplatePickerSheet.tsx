@@ -1,9 +1,10 @@
 /**
- * TemplatePickerSheet — ActionSheet for choosing a blank task or a template.
+ * TemplatePickerSheet — ActionSheet for choosing a blank task, template, or plan.
  *
- * - Segmented control: [Blank] [From Template]
+ * - Segmented control: [Blank] [From Template] [From Plan]
  * - Blank mode: description + Create button
- * - Template mode: scrollable list with tap-to-select + Continue button (enabled once selection made)
+ * - Template mode: scrollable list with tap-to-select + Continue button
+ * - Plan mode: signals 'from-plan' sentinel to caller
  */
 
 import { useState, useEffect } from 'react';
@@ -16,12 +17,14 @@ import { useTemplateStore } from '../lib/stores/template-store';
 import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { ActionSheet } from './ActionSheet';
 
-type Mode = 'blank' | 'template';
+export const FROM_PLAN_SENTINEL = 'from-plan' as const;
+
+type Mode = 'blank' | 'template' | 'plan';
 
 interface TemplatePickerSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (template: TaskTemplate | null) => void;
+  onSelect: (template: TaskTemplate | null | typeof FROM_PLAN_SENTINEL) => void;
 }
 
 export function TemplatePickerSheet({
@@ -44,14 +47,18 @@ export function TemplatePickerSheet({
 
   const handleModeChange = (next: Mode) => {
     setMode(next);
-    if (next === 'blank') setSelected(null);
+    if (next !== 'template') setSelected(null);
   };
 
-  const canContinue = mode === 'blank' || selected !== null;
+  const canContinue = mode === 'blank' || mode === 'plan' || selected !== null;
 
   const handleConfirm = () => {
     if (!canContinue) return;
-    onSelect(mode === 'blank' ? null : selected);
+    if (mode === 'plan') {
+      onSelect(FROM_PLAN_SENTINEL);
+    } else {
+      onSelect(mode === 'blank' ? null : selected);
+    }
   };
 
   return (
@@ -78,7 +85,16 @@ export function TemplatePickerSheet({
           className={`task-work-quantity__unit-pill${mode === 'template' ? ' task-work-quantity__unit-pill--active' : ''}`}
           onClick={() => handleModeChange('template')}
         >
-          From Template
+          Template
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === 'plan'}
+          className={`task-work-quantity__unit-pill${mode === 'plan' ? ' task-work-quantity__unit-pill--active' : ''}`}
+          onClick={() => handleModeChange('plan')}
+        >
+          From Plan
         </button>
       </div>
 
@@ -86,6 +102,10 @@ export function TemplatePickerSheet({
       {mode === 'blank' ? (
         <p className="template-picker__blank-desc">
           Start from scratch with a blank task.
+        </p>
+      ) : mode === 'plan' ? (
+        <p className="template-picker__blank-desc">
+          Add work packages from a locked plan as tasks.
         </p>
       ) : (
         <div className="template-picker">
@@ -128,7 +148,7 @@ export function TemplatePickerSheet({
             disabled={!canContinue}
             onClick={handleConfirm}
           >
-            {mode === 'blank' ? 'Create' : 'Continue'}
+            {mode === 'blank' ? 'Create' : mode === 'plan' ? 'Continue' : 'Continue'}
           </button>
         </div>
       </div>
