@@ -163,6 +163,14 @@ export function PeopleIcon({ className, 'aria-hidden': ariaHidden = true }: Icon
   );
 }
 
+export function ChevronLeftIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M14 6l1.41 1.41L10.83 12l4.58 4.59L14 18l-6-6z" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
@@ -181,6 +189,22 @@ export function TaskListIcon({ className, 'aria-hidden': ariaHidden = true }: Ic
       <line x1="11" y1="6" x2="20" y2="6" />
       <line x1="11" y1="12" x2="20" y2="12" />
       <line x1="11" y1="18" x2="20" y2="18" />
+    </svg>
+  );
+}
+
+export function XIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  );
+}
+
+export function SparklesIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
+      <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
     </svg>
   );
 }

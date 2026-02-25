@@ -35,6 +35,14 @@ import { getOutlierHandlingMode } from '../lib/stores/kpi-settings';
 import { getFeatureFlag } from '../lib/flags/feature-flags';
 import { trackTelemetryEvent } from '../lib/telemetry/telemetry';
 import { computeProductivityResult } from '../lib/calculator';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  TrashIcon,
+  XIcon,
+  CalculatorIcon,
+  SparklesIcon,
+} from '../components/icons';
 
 /** Select all text on focus so typing replaces the value. */
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
@@ -161,67 +169,6 @@ export function PlanningView() {
   }
 
   return null;
-}
-
-// --- SVG Icons ---
-
-function ChevronLeftIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 6 15 12 9 18" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function CalculatorIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <line x1="8" y1="6" x2="16" y2="6" />
-      <line x1="8" y1="10" x2="8" y2="10.01" />
-      <line x1="12" y1="10" x2="12" y2="10.01" />
-      <line x1="16" y1="10" x2="16" y2="10.01" />
-      <line x1="8" y1="14" x2="8" y2="14.01" />
-      <line x1="12" y1="14" x2="12" y2="14.01" />
-      <line x1="16" y1="14" x2="16" y2="14.01" />
-      <line x1="8" y1="18" x2="8" y2="18.01" />
-      <line x1="12" y1="18" x2="16" y2="18" />
-    </svg>
-  );
-}
-
-function SparklesIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
-    </svg>
-  );
 }
 
 // --- Plan List ---
