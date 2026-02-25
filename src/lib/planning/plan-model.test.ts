@@ -19,6 +19,7 @@ describe('createPlan', () => {
     expect(plan.title).toBe('Test Plan');
     expect(plan.status).toBe('draft');
     expect(plan.lineItems).toHaveLength(0);
+    expect(plan.projectId).toBeNull();
     expect(plan.lockedAt).toBeNull();
     expect(plan.id).toBeTruthy();
   });

@@ -39,6 +39,8 @@ export interface Plan {
   title: string;
   status: PlanStatus;
   lineItems: PlanLineItem[];
+  /** Event/project this plan belongs to. null = unassigned. */
+  projectId: string | null;
   createdAt: string;
   updatedAt: string;
   /** ISO timestamp when plan was locked. null if draft. */
@@ -90,6 +92,7 @@ export function createPlan(title: string): Plan {
     title,
     status: 'draft',
     lineItems: [],
+    projectId: null,
     createdAt: now,
     updatedAt: now,
     lockedAt: null,

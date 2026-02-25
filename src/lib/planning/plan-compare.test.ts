@@ -8,6 +8,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     title: 'Plan A',
     status: 'draft',
     lineItems: [],
+    projectId: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     lockedAt: null,

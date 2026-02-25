@@ -19,7 +19,7 @@ import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 17;
+const DB_VERSION = 18;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -366,6 +366,20 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
             const templateNotesStore = db.createObjectStore('templateNotes', { keyPath: 'id' });
             templateNotesStore.createIndex('by-template', 'templateId');
           }
+        }
+
+        // Version 18: Add projectId field to plans
+        if (oldVersion < 18 && db.objectStoreNames.contains('plans')) {
+          const planStore = transaction.objectStore('plans');
+          planStore.getAll().then((plans) => {
+            for (const plan of plans) {
+              const p = plan as unknown as Record<string, unknown>;
+              if (p.projectId === undefined) {
+                p.projectId = null;
+                planStore.put(plan);
+              }
+            }
+          });
         }
       },
     });

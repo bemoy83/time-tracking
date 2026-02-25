@@ -11,6 +11,7 @@ import {
   BUILD_PHASES,
   formatDurationShort,
   type BuildPhase,
+  type Project,
 } from '../lib/types';
 import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { getAllPlans, addPlan, updatePlan, deletePlan } from '../lib/db';
@@ -46,6 +47,8 @@ import {
   CalculatorIcon,
   SparklesIcon,
 } from '../components/icons';
+import { ProjectColorDot } from '../components/ProjectColorDot';
+import { ProjectPicker } from '../components/ProjectPicker';
 
 /** Select all text on focus so typing replaces the value. */
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
@@ -58,7 +61,7 @@ export function PlanningView() {
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [comparePlanId, setComparePlanId] = useState<string | null>(null);
   const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
-  const { tasks } = useTaskStore();
+  const { tasks, projects } = useTaskStore();
   const { workTypes } = useWorkTypeStore();
   const canComparePlans = getFeatureFlag('planningScenarioCompare');
 
@@ -159,6 +162,7 @@ export function PlanningView() {
         plan={activePlan}
         kpis={kpis}
         plans={plans}
+        projects={projects}
         canComparePlans={canComparePlans}
         onSave={handleSavePlan}
         onBack={handleBack}
@@ -241,6 +245,7 @@ function PlanEditor({
   plan,
   kpis,
   plans,
+  projects,
   canComparePlans,
   onSave,
   onBack,
@@ -249,6 +254,7 @@ function PlanEditor({
   plan: Plan;
   kpis: WorkTypeKpi[];
   plans: Plan[];
+  projects: Project[];
   canComparePlans: boolean;
   onSave: (plan: Plan) => void;
   onBack: () => void;
@@ -258,10 +264,14 @@ function PlanEditor({
   const [title, setTitle] = useState(plan.title);
   const [showAddItem, setShowAddItem] = useState(false);
   const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
   const isLocked = currentPlan.status === 'locked';
+  const selectedProject = currentPlan.projectId
+    ? projects.find((project) => project.id === currentPlan.projectId) ?? null
+    : null;
 
   const handleSave = () => {
     const updated = { ...currentPlan, title };
@@ -273,6 +283,12 @@ function PlanEditor({
     setCurrentPlan(updated);
     onSave(updated);
     trackTelemetryEvent('planning_lock_toggle');
+  };
+
+  const handleAssignProject = (projectId: string | null) => {
+    const updated = { ...currentPlan, projectId };
+    setCurrentPlan(updated);
+    onSave(updated);
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
@@ -300,6 +316,14 @@ function PlanEditor({
     onSave(updated);
   };
 
+  useEffect(() => {
+    if (!currentPlan.projectId) return;
+    if (projects.some((project) => project.id === currentPlan.projectId)) return;
+    const updated = { ...currentPlan, projectId: null };
+    setCurrentPlan(updated);
+    onSave(updated);
+  }, [currentPlan, projects, onSave]);
+
   const otherPlans = plans.filter((p) => p.id !== plan.id);
 
   return (
@@ -323,6 +347,25 @@ function PlanEditor({
         <span className={`planning-view__status planning-view__status--${currentPlan.status}`}>
           {currentPlan.status}
         </span>
+      </div>
+
+      <div className="planning-view__project-row">
+        <span className="planning-view__project-label">Event</span>
+        <button
+          type="button"
+          className="planning-view__project-button"
+          onClick={() => setShowProjectPicker(true)}
+          disabled={isLocked}
+        >
+          {selectedProject ? (
+            <span className="planning-view__project-selected">
+              <ProjectColorDot color={selectedProject.color} />
+              <span>{selectedProject.name}</span>
+            </span>
+          ) : (
+            <span className="planning-view__project-none">None</span>
+          )}
+        </button>
       </div>
 
       {/* Summary stats */}
@@ -423,6 +466,13 @@ function PlanEditor({
           </div>
         </div>
       )}
+
+      <ProjectPicker
+        isOpen={showProjectPicker}
+        onClose={() => setShowProjectPicker(false)}
+        onSelect={(projectId) => handleAssignProject(projectId)}
+        currentProjectId={currentPlan.projectId}
+      />
     </div>
   );
 }
