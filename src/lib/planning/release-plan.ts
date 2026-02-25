@@ -9,9 +9,13 @@ import type { CreateTaskInput } from '../stores/task-store';
  * Map a PlanLineItem to a CreateTaskInput for task-store.createTask().
  * Keeps planning ↔ task boundary clean and testable.
  */
-export function lineItemToCreateTaskInput(item: PlanLineItem): CreateTaskInput {
+export function lineItemToCreateTaskInput(
+  item: PlanLineItem,
+  overrides?: { projectId?: string | null },
+): CreateTaskInput {
   return {
     title: item.title,
+    projectId: overrides?.projectId ?? undefined,
     workTypeId: item.workTypeId ?? undefined,
     workQuantity: item.workQuantity,
     workUnit: item.workUnit,

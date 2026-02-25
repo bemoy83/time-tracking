@@ -50,4 +50,16 @@ describe('lineItemToCreateTaskInput', () => {
 
     expect(input.workTypeId).toBeUndefined();
   });
+
+  it('applies projectId override when provided', () => {
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const input = lineItemToCreateTaskInput(item, { projectId: 'proj-1' });
+    expect(input.projectId).toBe('proj-1');
+  });
+
+  it('maps null projectId override to undefined', () => {
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const input = lineItemToCreateTaskInput(item, { projectId: null });
+    expect(input.projectId).toBeUndefined();
+  });
 });

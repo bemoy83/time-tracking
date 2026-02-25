@@ -124,6 +124,28 @@ export function createLineItem(
   };
 }
 
+/** Duplicate a line item, preserving work-type fields and assumptions. */
+export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
+  const trimmedTitle = item.title.trim();
+  const baseTitle = trimmedTitle.replace(/\s*\(copy\)\s*$/i, '').trim();
+  const duplicateTitle = `${baseTitle || trimmedTitle} (copy)`.trim();
+
+  return {
+    id: generateId(),
+    title: duplicateTitle,
+    workTypeTitle: item.workTypeTitle,
+    workUnit: item.workUnit,
+    buildPhase: item.buildPhase,
+    workTypeId: item.workTypeId,
+    workQuantity: item.workQuantity,
+    crew: item.crew,
+    timeHours: item.timeHours,
+    productivityRate: item.productivityRate,
+    rateSource: item.rateSource,
+    rationale: null,
+  };
+}
+
 /** Lock a plan (freeze for execution). */
 export function lockPlan(plan: Plan): Plan {
   const now = nowUtc();

@@ -4,11 +4,13 @@
  * risk highlights, lock/save controls, and rationale notes.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
+  BUILD_PHASES,
   formatDurationShort,
+  type BuildPhase,
 } from '../lib/types';
 import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
 import { getAllPlans, addPlan, updatePlan, deletePlan } from '../lib/db';
@@ -22,6 +24,7 @@ import {
   addLineItemToPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
+  duplicateLineItem,
   planTotalPersonHours,
   resolveLineItemWorkTypeTitle,
 } from '../lib/planning/plan-model';
@@ -254,6 +257,7 @@ function PlanEditor({
   const [currentPlan, setCurrentPlan] = useState(plan);
   const [title, setTitle] = useState(plan.title);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
@@ -286,6 +290,12 @@ function PlanEditor({
 
   const handleUpdateItem = (itemId: string, updates: Partial<PlanLineItem>) => {
     const updated = updatePlanLineItem(currentPlan, itemId, updates);
+    setCurrentPlan(updated);
+    onSave(updated);
+  };
+
+  const handleDuplicateItem = (item: PlanLineItem) => {
+    const updated = addLineItemToPlan(currentPlan, duplicateLineItem(item));
     setCurrentPlan(updated);
     onSave(updated);
   };
@@ -335,6 +345,22 @@ function PlanEditor({
         )}
       </div>
 
+      {!isLocked && (
+        <div className="planning-view__phase-toggle" role="group" aria-label="Build phase filter">
+          {BUILD_PHASES.map((phase) => (
+            <button
+              key={phase}
+              type="button"
+              className={`planning-view__phase-toggle-btn${phaseFilter === phase ? ' planning-view__phase-toggle-btn--active' : ''}`}
+              onClick={() => setPhaseFilter(phase)}
+              aria-pressed={phaseFilter === phase}
+            >
+              {BUILD_PHASE_LABELS[phase]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="planning-view__actions">
         <button
@@ -367,6 +393,7 @@ function PlanEditor({
       {/* Add form */}
       {showAddItem && !isLocked && (
         <AddLineItemForm
+          phaseFilter={phaseFilter}
           onAdd={handleAddLineItem}
           onCancel={() => setShowAddItem(false)}
         />
@@ -388,6 +415,7 @@ function PlanEditor({
                   suggestion={suggestion ?? null}
                   isLocked={isLocked}
                   onUpdate={(updates) => handleUpdateItem(item.id, updates)}
+                  onDuplicate={handleDuplicateItem}
                   onRemove={() => handleRemoveItem(item.id)}
                 />
               );
@@ -406,12 +434,14 @@ function LineItemCard({
   suggestion,
   isLocked,
   onUpdate,
+  onDuplicate,
   onRemove,
 }: {
   item: PlanLineItem;
   suggestion: LineItemSuggestion | null;
   isLocked: boolean;
   onUpdate: (updates: Partial<PlanLineItem>) => void;
+  onDuplicate?: (item: PlanLineItem) => void;
   onRemove: () => void;
 }) {
   const [rationale, setRationale] = useState(item.rationale ?? '');
@@ -448,13 +478,23 @@ function LineItemCard({
           <span className="planning-view__line-item-type">{workTypeLabel}</span>
         </div>
         {!isLocked && (
-          <button
-            className="planning-view__line-item-remove"
-            onClick={onRemove}
-            aria-label={`Remove ${item.title}`}
-          >
-            <XIcon className="planning-view__line-item-remove-icon" />
-          </button>
+          <div className="planning-view__line-item-actions">
+            <button
+              type="button"
+              className="planning-view__line-item-duplicate"
+              onClick={() => onDuplicate?.(item)}
+              aria-label={`Duplicate ${item.title}`}
+            >
+              Duplicate
+            </button>
+            <button
+              className="planning-view__line-item-remove"
+              onClick={onRemove}
+              aria-label={`Remove ${item.title}`}
+            >
+              <XIcon className="planning-view__line-item-remove-icon" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -616,23 +656,45 @@ function LineItemCard({
 // --- Add Line Item Form ---
 
 function AddLineItemForm({
+  phaseFilter,
   onAdd,
   onCancel,
 }: {
+  phaseFilter: BuildPhase;
   onAdd: (item: PlanLineItem) => void;
   onCancel: () => void;
 }) {
   const { workTypes } = useWorkTypeStore();
+  const filteredWorkTypes = useMemo(
+    () => workTypes.filter((wt) => wt.buildPhase === phaseFilter),
+    [workTypes, phaseFilter],
+  );
   const [title, setTitle] = useState('');
-  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>(workTypes[0]?.id ?? '');
+  const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>('');
   const [workQuantity, setWorkQuantity] = useState(0);
-  const [rate, setRate] = useState(workTypes[0]?.expectedProductivity ?? 10);
+  const [rate, setRate] = useState(10);
 
-  const selectedWorkType = selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null;
+  useEffect(() => {
+    if (filteredWorkTypes.length === 0) {
+      if (selectedWorkTypeId) {
+        setSelectedWorkTypeId('');
+      }
+      return;
+    }
+    const isCurrentSelectionValid = filteredWorkTypes.some((wt) => wt.id === selectedWorkTypeId);
+    if (!isCurrentSelectionValid) {
+      setSelectedWorkTypeId(filteredWorkTypes[0].id);
+      setRate(filteredWorkTypes[0].expectedProductivity);
+    }
+  }, [filteredWorkTypes, selectedWorkTypeId]);
+
+  const selectedWorkType = selectedWorkTypeId
+    ? filteredWorkTypes.find((wt) => wt.id === selectedWorkTypeId) ?? null
+    : null;
 
   const handleWorkTypeChange = (wtId: string) => {
     setSelectedWorkTypeId(wtId);
-    const wt = getWorkTypeById(wtId);
+    const wt = filteredWorkTypes.find((candidate) => candidate.id === wtId);
     if (wt) {
       setRate(wt.expectedProductivity);
     }
@@ -653,6 +715,8 @@ function AddLineItemForm({
     onAdd(item);
   };
 
+  const noWorkTypesMessage = `No work types for ${BUILD_PHASE_LABELS[phaseFilter]}. Add work types in Settings.`;
+
   return (
     <div className="planning-view__add-form">
       <h3 className="planning-view__add-form-title">Add Work Package</h3>
@@ -672,10 +736,11 @@ function AddLineItemForm({
           <select
             className="input"
             value={selectedWorkTypeId}
+            disabled={filteredWorkTypes.length === 0}
             onChange={(e) => handleWorkTypeChange(e.target.value)}
           >
-            {workTypes.length === 0 && <option value="">No work types available</option>}
-            {workTypes.map((wt) => (
+            {filteredWorkTypes.length === 0 && <option value="">{noWorkTypesMessage}</option>}
+            {filteredWorkTypes.map((wt) => (
               <option key={wt.id} value={wt.id}>
                 {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
               </option>

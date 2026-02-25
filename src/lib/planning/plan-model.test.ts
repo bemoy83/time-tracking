@@ -10,6 +10,7 @@ import {
   planTotalPersonHours,
   planTotalsByUnit,
   lineItemWorkTypeKey,
+  duplicateLineItem,
 } from './plan-model';
 
 describe('createPlan', () => {
@@ -111,5 +112,35 @@ describe('lineItemWorkTypeKey', () => {
     expect(key.workTypeTitle).toBe('Carpet Tiles');
     expect(key.workUnit).toBe('m2');
     expect(key.buildPhase).toBe('build-up');
+  });
+});
+
+describe('duplicateLineItem', () => {
+  it('copies work-type and assumption fields with a normalized copy title', () => {
+    const original = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10, 'historical', 'wt-1');
+    original.crew = 3;
+    original.timeHours = 12.5;
+    original.rationale = 'Keep a note';
+
+    const duplicate = duplicateLineItem(original);
+
+    expect(duplicate.id).not.toBe(original.id);
+    expect(duplicate.title).toBe('Install carpet (copy)');
+    expect(duplicate.workTypeTitle).toBe(original.workTypeTitle);
+    expect(duplicate.workUnit).toBe(original.workUnit);
+    expect(duplicate.buildPhase).toBe(original.buildPhase);
+    expect(duplicate.workTypeId).toBe(original.workTypeId);
+    expect(duplicate.workQuantity).toBe(original.workQuantity);
+    expect(duplicate.crew).toBe(original.crew);
+    expect(duplicate.timeHours).toBe(original.timeHours);
+    expect(duplicate.productivityRate).toBe(original.productivityRate);
+    expect(duplicate.rateSource).toBe(original.rateSource);
+    expect(duplicate.rationale).toBeNull();
+  });
+
+  it('does not accumulate repeated copy suffixes', () => {
+    const original = createLineItem('Install carpet (copy)', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const duplicate = duplicateLineItem(original);
+    expect(duplicate.title).toBe('Install carpet (copy)');
   });
 });
