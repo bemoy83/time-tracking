@@ -81,7 +81,7 @@ describe('executePlanWrapUp', () => {
     const plan = makePlan();
     mockGetTask.mockResolvedValue(makeTask({ id: 'task-excluded' }));
 
-    const updatedPlan = await executePlanWrapUp({
+    const result = await executePlanWrapUp({
       plan,
       excludeTaskIds: ['task-excluded'],
       archiveTaskIds: ['task-a', 'task-b'],
@@ -97,7 +97,11 @@ describe('executePlanWrapUp', () => {
     expect(mockArchiveTask).toHaveBeenNthCalledWith(1, 'task-a');
     expect(mockArchiveTask).toHaveBeenNthCalledWith(2, 'task-b');
     expect(mockUpdatePlan).toHaveBeenCalledTimes(1);
-    expect(updatedPlan.reviewedAt).not.toBeNull();
+    expect(result.updatedPlan.reviewedAt).not.toBeNull();
+    expect(result.success).toBe(true);
+    expect(result.archivedTaskIds).toEqual(['task-a', 'task-b']);
+    expect(result.failedArchiveTaskIds).toEqual([]);
+    expect(result.reviewedAtSet).toBe(true);
     expect(mockInvalidateAttributionCache).toHaveBeenCalledTimes(1);
   });
 
@@ -105,16 +109,52 @@ describe('executePlanWrapUp', () => {
     const plan = makePlan();
     mockGetTask.mockResolvedValue(makeTask({ id: 'task-excluded' }));
 
-    const updatedPlan = await executePlanWrapUp({
+    const result = await executePlanWrapUp({
       plan,
       excludeTaskIds: ['task-excluded'],
       archiveTaskIds: ['task-a'],
       markReviewed: false,
     });
 
-    expect(updatedPlan).toEqual(plan);
+    expect(result.updatedPlan).toEqual(plan);
+    expect(result.reviewedAtSet).toBe(false);
     expect(mockUpdatePlan).not.toHaveBeenCalled();
     expect(mockArchiveTask).toHaveBeenCalledWith('task-a');
+    expect(mockInvalidateAttributionCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports partial failures and does not set reviewedAt when archive fails', async () => {
+    const plan = makePlan();
+    mockGetTask.mockResolvedValue(makeTask({ id: 'task-excluded' }));
+    mockArchiveTask
+      .mockResolvedValueOnce({ success: true, taskId: 'task-a', issues: [] })
+      .mockResolvedValueOnce({
+        success: false,
+        taskId: 'task-b',
+        issues: [
+          {
+            type: 'broken_parent_link',
+            severity: 'error',
+            taskId: 'task-b',
+            entryId: null,
+            message: 'blocked',
+          },
+        ],
+      });
+
+    const result = await executePlanWrapUp({
+      plan,
+      excludeTaskIds: ['task-excluded'],
+      archiveTaskIds: ['task-a', 'task-b'],
+      markReviewed: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.archivedTaskIds).toEqual(['task-a']);
+    expect(result.failedArchiveTaskIds).toEqual([{ taskId: 'task-b', reason: 'blocked' }]);
+    expect(result.reviewedAtSet).toBe(false);
+    expect(result.updatedPlan).toEqual(plan);
+    expect(mockUpdatePlan).not.toHaveBeenCalled();
     expect(mockInvalidateAttributionCache).toHaveBeenCalledTimes(1);
   });
 });

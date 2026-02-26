@@ -15,6 +15,7 @@ import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
 import { getFeatureFlag } from '../../../lib/flags/feature-flags';
 import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
+import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
 
 export type PlanningSubView = 'list' | 'edit' | 'compare' | 'progress' | 'insights';
 
@@ -45,9 +46,14 @@ export function usePlanningWorkspaceState({
     getAllPlans().then(setPlans);
   }, []);
 
+  const reloadTimeEntries = useCallback(async () => {
+    const entries = await getAllTimeEntries();
+    setTimeEntries(entries);
+  }, []);
+
   useEffect(() => {
-    getAllTimeEntries().then(setTimeEntries);
-  }, [tasks]);
+    void reloadTimeEntries();
+  }, [reloadTimeEntries]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +112,10 @@ export function usePlanningWorkspaceState({
     if (!activePlan) return false;
     return tasks.some((task) => task.sourcePlanId === activePlan.id);
   }, [activePlan, tasks]);
+  const timeEntriesByTask = useMemo(
+    () => buildTimeEntriesByTask(timeEntries),
+    [timeEntries],
+  );
 
   const handleCreatePlan = useCallback(async () => {
     const plan = createPlan('New Plan');
@@ -151,13 +161,15 @@ export function usePlanningWorkspaceState({
     setSubView('compare');
   }, []);
 
-  const openProgress = useCallback(() => {
+  const openProgress = useCallback(async () => {
+    await reloadTimeEntries();
     setSubView('progress');
-  }, []);
+  }, [reloadTimeEntries]);
 
-  const openWrapUp = useCallback((plan: Plan) => {
+  const openWrapUp = useCallback(async (plan: Plan) => {
+    await reloadTimeEntries();
     setWrapUpPlan(plan);
-  }, []);
+  }, [reloadTimeEntries]);
 
   const closeWrapUp = useCallback(() => {
     setWrapUpPlan(null);
@@ -172,6 +184,7 @@ export function usePlanningWorkspaceState({
   return {
     plans,
     timeEntries,
+    timeEntriesByTask,
     subView,
     activePlan,
     comparePlanId,
@@ -193,6 +206,7 @@ export function usePlanningWorkspaceState({
     openCompare,
     openProgress,
     openWrapUp,
+    reloadTimeEntries,
     closeWrapUp,
     handleWrapUpCompleted,
   };

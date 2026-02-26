@@ -11,14 +11,33 @@ export interface WrapUpInput {
   markReviewed?: boolean;
 }
 
+export interface WrapUpArchiveFailure {
+  taskId: string;
+  reason: string;
+}
+
+export interface WrapUpResult {
+  updatedPlan: Plan;
+  success: boolean;
+  excludeAttemptedTaskIds: string[];
+  excludedTaskIds: string[];
+  archiveAttemptedTaskIds: string[];
+  archivedTaskIds: string[];
+  failedArchiveTaskIds: WrapUpArchiveFailure[];
+  reviewedAtSet: boolean;
+}
+
 export async function executePlanWrapUp({
   plan,
   excludeTaskIds,
   archiveTaskIds,
   markReviewed = true,
-}: WrapUpInput): Promise<Plan> {
+}: WrapUpInput): Promise<WrapUpResult> {
   const uniqueExcludeIds = [...new Set(excludeTaskIds)];
   const uniqueArchiveIds = [...new Set(archiveTaskIds)];
+  const excludedTaskIds: string[] = [];
+  const archivedTaskIds: string[] = [];
+  const failedArchiveTaskIds: WrapUpArchiveFailure[] = [];
 
   for (const taskId of uniqueExcludeIds) {
     const task = await getTask(taskId);
@@ -29,17 +48,26 @@ export async function executePlanWrapUp({
       excludeFromKpi: true,
       updatedAt: nowUtc(),
     });
+    excludedTaskIds.push(taskId);
   }
 
   for (const taskId of uniqueArchiveIds) {
     const result = await archiveTask(taskId);
-    if (!result.success) {
-      throw new Error(`Failed to archive task ${taskId}`);
+    if (result.success) {
+      archivedTaskIds.push(taskId);
+    } else {
+      failedArchiveTaskIds.push({
+        taskId,
+        reason: result.issues.length > 0
+          ? result.issues.map((issue) => issue.message).join('; ')
+          : 'Unknown archive failure',
+      });
     }
   }
 
+  const canMarkReviewed = markReviewed && failedArchiveTaskIds.length === 0;
   let updatedPlan = plan;
-  if (markReviewed) {
+  if (canMarkReviewed) {
     const now = nowUtc();
     updatedPlan = {
       ...plan,
@@ -51,5 +79,14 @@ export async function executePlanWrapUp({
 
   await invalidateAttributionCache();
 
-  return updatedPlan;
+  return {
+    updatedPlan,
+    success: failedArchiveTaskIds.length === 0,
+    excludeAttemptedTaskIds: uniqueExcludeIds,
+    excludedTaskIds,
+    archiveAttemptedTaskIds: uniqueArchiveIds,
+    archivedTaskIds,
+    failedArchiveTaskIds,
+    reviewedAtSet: canMarkReviewed,
+  };
 }

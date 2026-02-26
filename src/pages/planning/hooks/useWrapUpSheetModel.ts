@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getTimeEntriesByTask } from '../../../lib/db';
 import { detectOutliers } from '../../../lib/kpi';
 import {
   getPlanLinkedTasks,
@@ -8,7 +7,7 @@ import {
 } from '../../../lib/planning/plan-lifecycle';
 import type { Plan } from '../../../lib/planning/plan-model';
 import { executePlanWrapUp } from '../../../lib/planning/wrap-up';
-import { durationMs, type Task } from '../../../lib/types';
+import { durationMs, type Task, type TimeEntry } from '../../../lib/types';
 
 type WrapUpMode = 'archive-and-complete' | 'save-review-only';
 
@@ -61,9 +60,13 @@ function resolveTaskGroups(plan: Plan, projectTasks: Task[]): WrapUpTaskGroup[] 
   return [...groupsById.values()].sort((a, b) => a.title.localeCompare(b.title));
 }
 
-async function loadTaskRates(projectTasks: Task[]): Promise<Map<string, number | null>> {
-  const rates = await Promise.all(projectTasks.map(async (task) => {
-    const entries = await getTimeEntriesByTask(task.id);
+function buildTaskRates(
+  projectTasks: Task[],
+  timeEntriesByTask: Map<string, TimeEntry[]>,
+): Map<string, number | null> {
+  const rateByTaskId = new Map<string, number | null>();
+  for (const task of projectTasks) {
+    const entries = timeEntriesByTask.get(task.id) ?? [];
     const personHours = entries.reduce((sum, entry) => {
       const durationHours = durationMs(entry.startUtc, entry.endUtc) / 3_600_000;
       return sum + durationHours * (entry.workers ?? 1);
@@ -73,10 +76,9 @@ async function loadTaskRates(projectTasks: Task[]): Promise<Map<string, number |
       task.workQuantity != null && task.workQuantity > 0 && personHours > 0
         ? task.workQuantity / personHours
         : null;
-    return [task.id, rate] as const;
-  }));
-
-  return new Map(rates);
+    rateByTaskId.set(task.id, rate);
+  }
+  return rateByTaskId;
 }
 
 function detectOutlierTaskIds(
@@ -102,20 +104,22 @@ interface UseWrapUpSheetModelParams {
   isOpen: boolean;
   plan: Plan;
   tasks: Task[];
+  timeEntriesByTask: Map<string, TimeEntry[]>;
   onClose: () => void;
-  onCompleted: (updatedPlan: Plan) => void;
+  onCompleted: (updatedPlan: Plan) => void | Promise<void>;
 }
 
 export function useWrapUpSheetModel({
   isOpen,
   plan,
   tasks,
+  timeEntriesByTask,
   onClose,
   onCompleted,
 }: UseWrapUpSheetModelParams) {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
-  const [rateByTaskId, setRateByTaskId] = useState<Map<string, number | null>>(new Map());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const linkedTasks = useMemo(() => getPlanLinkedTasks(plan, tasks), [plan, tasks]);
   const unplannedTasks = useMemo(() => getUnplannedProjectTasks(plan, tasks), [plan, tasks]);
@@ -129,28 +133,16 @@ export function useWrapUpSheetModel({
   }, [linkedTasks, plan.projectId, unplannedTasks]);
   const reviewReady = useMemo(() => isPlanReviewReady(plan, tasks), [plan, tasks]);
   const groups = useMemo(() => resolveTaskGroups(plan, projectTasks), [plan, projectTasks]);
+  const rateByTaskId = useMemo(
+    () => buildTaskRates(projectTasks, timeEntriesByTask),
+    [projectTasks, timeEntriesByTask],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
     setSelectedTaskIds(new Set(projectTasks.map((task) => task.id)));
     setIsSubmitting(false);
-  }, [isOpen, projectTasks]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-
-    async function loadRates() {
-      const rates = await loadTaskRates(projectTasks);
-      if (!cancelled) {
-        setRateByTaskId(rates);
-      }
-    }
-
-    void loadRates();
-    return () => {
-      cancelled = true;
-    };
+    setSubmitError(null);
   }, [isOpen, projectTasks]);
 
   const outlierTaskIds = useMemo(
@@ -182,15 +174,23 @@ export function useWrapUpSheetModel({
           ? allProjectTaskIds
           : allProjectTaskIds.filter((taskId) => selectedIds.has(taskId));
 
-      const updatedPlan = await executePlanWrapUp({
+      const result = await executePlanWrapUp({
         plan,
         excludeTaskIds,
         archiveTaskIds,
         markReviewed: mode === 'archive-and-complete',
       });
 
-      onCompleted(updatedPlan);
-      onClose();
+      await onCompleted(result.updatedPlan);
+      if (result.success) {
+        setSubmitError(null);
+        onClose();
+      } else {
+        setSubmitError(
+          `Wrap-up partial: ${result.archivedTaskIds.length}/${result.archiveAttemptedTaskIds.length} tasks archived. ` +
+            `${result.failedArchiveTaskIds.length} failed.`,
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -199,6 +199,7 @@ export function useWrapUpSheetModel({
   return {
     selectedTaskIds,
     rateByTaskId,
+    submitError,
     isSubmitting,
     reviewReady,
     projectTasks,

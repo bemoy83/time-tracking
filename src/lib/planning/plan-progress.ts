@@ -69,9 +69,25 @@ export function computePlanProgress(
   const linkedTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
   const entryTotalsByTask = buildEntryTotals(timeEntries);
   const lineItemIds = new Set(plan.lineItems.map((item) => item.id));
+  const linkedTasksByLineItemId = new Map<string, Task[]>();
+  const orphanTasks: Task[] = [];
+
+  for (const task of linkedTasks) {
+    if (task.sourceLineItemId == null || !lineItemIds.has(task.sourceLineItemId)) {
+      orphanTasks.push(task);
+      continue;
+    }
+
+    const existing = linkedTasksByLineItemId.get(task.sourceLineItemId);
+    if (existing) {
+      existing.push(task);
+    } else {
+      linkedTasksByLineItemId.set(task.sourceLineItemId, [task]);
+    }
+  }
 
   const lineItems: LineItemProgress[] = plan.lineItems.map((item) => {
-    const tasksForItem = linkedTasks.filter((task) => task.sourceLineItemId === item.id);
+    const tasksForItem = linkedTasksByLineItemId.get(item.id) ?? [];
     let actualHours = 0;
     let actualPersonHours = 0;
     let totalTaskQuantity = 0;
@@ -125,11 +141,6 @@ export function computePlanProgress(
 
   const linkedCompletedCount = linkedTasks.filter((task) => task.status === 'completed').length;
   const completionRatio = linkedTasks.length > 0 ? linkedCompletedCount / linkedTasks.length : 0;
-
-  const orphanTasks = linkedTasks.filter((task) => {
-    if (task.sourceLineItemId == null) return true;
-    return !lineItemIds.has(task.sourceLineItemId);
-  });
 
   return {
     lineItems,

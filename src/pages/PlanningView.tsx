@@ -31,11 +31,18 @@ export function PlanningView({
         isOpen
         plan={workspace.wrapUpPlan}
         tasks={workspace.tasks}
+        timeEntriesByTask={workspace.timeEntriesByTask}
         onClose={workspace.closeWrapUp}
         onCompleted={workspace.handleWrapUpCompleted}
       />
     );
-  }, [workspace.closeWrapUp, workspace.handleWrapUpCompleted, workspace.tasks, workspace.wrapUpPlan]);
+  }, [
+    workspace.closeWrapUp,
+    workspace.handleWrapUpCompleted,
+    workspace.tasks,
+    workspace.timeEntriesByTask,
+    workspace.wrapUpPlan,
+  ]);
 
   if (workspace.subView === 'list') {
     return (

@@ -1,6 +1,6 @@
 import { ActionSheet } from '../../components/ActionSheet';
 import type { Plan } from '../../lib/planning/plan-model';
-import type { Task } from '../../lib/types';
+import type { Task, TimeEntry } from '../../lib/types';
 import { WORK_UNIT_LABELS } from '../../lib/types';
 import { useWrapUpSheetModel } from './hooks/useWrapUpSheetModel';
 
@@ -8,6 +8,7 @@ interface WrapUpSheetProps {
   isOpen: boolean;
   plan: Plan;
   tasks: Task[];
+  timeEntriesByTask: Map<string, TimeEntry[]>;
   onClose: () => void;
   onCompleted: (updatedPlan: Plan) => void;
 }
@@ -18,11 +19,19 @@ function toRateLabel(rate: number | null, task: Task): string {
   return `${rate.toFixed(1)} ${unit}/person-hr`;
 }
 
-export function WrapUpSheet({ isOpen, plan, tasks, onClose, onCompleted }: WrapUpSheetProps) {
+export function WrapUpSheet({
+  isOpen,
+  plan,
+  tasks,
+  timeEntriesByTask,
+  onClose,
+  onCompleted,
+}: WrapUpSheetProps) {
   const model = useWrapUpSheetModel({
     isOpen,
     plan,
     tasks,
+    timeEntriesByTask,
     onClose,
     onCompleted,
   });
@@ -63,6 +72,12 @@ export function WrapUpSheet({ isOpen, plan, tasks, onClose, onCompleted }: WrapU
             </section>
           ))}
         </div>
+      )}
+
+      {model.submitError && (
+        <p className="wrap-up-sheet__error" role="alert">
+          {model.submitError}
+        </p>
       )}
 
       <div className="action-sheet__actions">
