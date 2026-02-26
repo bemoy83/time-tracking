@@ -21,6 +21,7 @@ describe('createPlan', () => {
     expect(plan.lineItems).toHaveLength(0);
     expect(plan.projectId).toBeNull();
     expect(plan.lockedAt).toBeNull();
+    expect(plan.reviewedAt).toBeNull();
     expect(plan.id).toBeTruthy();
   });
 });
@@ -34,6 +35,9 @@ describe('createLineItem', () => {
     expect(item.timeHours).toBe(10); // 100 / 10
     expect(item.crew).toBe(1);
     expect(item.rateSource).toBe('manual');
+    expect(item.reviewNote).toBeNull();
+    expect(item.scheduledStart).toBeNull();
+    expect(item.scheduledEnd).toBeNull();
   });
 
   it('handles zero productivity rate', () => {
@@ -137,6 +141,9 @@ describe('duplicateLineItem', () => {
     expect(duplicate.productivityRate).toBe(original.productivityRate);
     expect(duplicate.rateSource).toBe(original.rateSource);
     expect(duplicate.rationale).toBeNull();
+    expect(duplicate.reviewNote).toBeNull();
+    expect(duplicate.scheduledStart).toBe(original.scheduledStart);
+    expect(duplicate.scheduledEnd).toBe(original.scheduledEnd);
   });
 
   it('does not accumulate repeated copy suffixes', () => {

@@ -168,7 +168,7 @@
   }
 
   /* --- Project Detail --- */
-  .project-detail__metric-card {
+  .metric-card {
     background: #1e1e1e;
   }
 
@@ -303,15 +303,11 @@
     background: #2f2f2f;
   }
 
-  .planning-view__item-delete:hover {
-    background: rgba(220, 38, 38, 0.15);
-  }
-
-  .planning-view__stat {
+  .planning-view__line-item {
     background: #252525;
   }
 
-  .planning-view__line-item {
+  .insights-view__row {
     background: #252525;
   }
 
@@ -324,17 +320,17 @@
     border-color: #404040;
   }
 
+  .planning-view__project-button--empty {
+    background: none;
+    border: none;
+  }
+
   .planning-view__project-button:hover:not(:disabled) {
     background: #2a2a2a;
   }
 
-  .planning-view__phase-toggle {
-    background: #404040;
-  }
-
-  .planning-view__line-item-duplicate {
-    background: #1e1e1e;
-    border-color: #404040;
+  .planning-view__project-button--empty:hover:not(:disabled) {
+    background: none;
   }
 
   .planning-view__line-item-duplicate:hover {
@@ -363,25 +359,5 @@
 
   .planning-view__compare-change {
     background: #1e1e1e;
-  }
-
-  .planning-view__status--draft {
-    background: rgba(217, 119, 6, 0.2);
-  }
-
-  .planning-view__status--locked {
-    background: rgba(22, 163, 74, 0.15);
-  }
-
-  .planning-view__confidence--high {
-    background: rgba(22, 163, 74, 0.15);
-  }
-
-  .planning-view__confidence--medium {
-    background: rgba(217, 119, 6, 0.2);
-  }
-
-  .planning-view__confidence--low {
-    background: rgba(220, 38, 38, 0.15);
   }
 }

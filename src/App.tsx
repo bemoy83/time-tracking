@@ -45,6 +45,10 @@ function App() {
   // Sync status disabled until sync is implemented
   // const { isOnline, pendingCount, isSyncing, lastError } = useSyncState();
   const [view, setView] = useState<View>({ type: 'tab', tab: 'today' });
+  const [planningLaunch, setPlanningLaunch] = useState<{
+    planId: string;
+    subView: 'edit' | 'progress' | 'insights';
+  } | null>(null);
 
   // Initialize stores and sync queue on mount
   useEffect(() => {
@@ -106,6 +110,9 @@ function App() {
   };
 
   const handleTabChange = (tab: Tab) => {
+    if (tab !== 'planning') {
+      setPlanningLaunch(null);
+    }
     setView({ type: 'tab', tab });
   };
 
@@ -136,7 +143,11 @@ function App() {
           <ProjectList onSelectProject={handleNavigateToProject} />
         )}
         {view.type === 'tab' && view.tab === 'planning' && (
-          <PlanningView />
+          <PlanningView
+            initialPlanId={planningLaunch?.planId ?? null}
+            initialSubView={planningLaunch?.subView}
+            onInitialNavigationHandled={() => setPlanningLaunch(null)}
+          />
         )}
         {view.type === 'tab' && view.tab === 'settings' && (
           <SettingsView
@@ -158,6 +169,10 @@ function App() {
             projectId={view.projectId}
             onBack={handleBack}
             onSelectTask={handleSelectTask}
+            onOpenPlanReview={(planId) => {
+              setPlanningLaunch({ planId, subView: 'progress' });
+              setView({ type: 'tab', tab: 'planning' });
+            }}
           />
         )}
         {view.type === 'settingsDetail' && view.section === 'workTypes' && (

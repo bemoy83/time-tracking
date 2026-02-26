@@ -1,0 +1,83 @@
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+}
+
+.metric-card__icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  color: inherit;
+}
+
+.metric-card__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.metric-card__icon--tasks {
+  color: var(--color-primary);
+}
+
+.metric-card__icon--done {
+  color: var(--color-ready);
+}
+
+.metric-card__icon--time {
+  color: var(--color-amber);
+}
+
+.metric-card__icon--people {
+  color: var(--color-primary);
+}
+
+.metric-card__icon--blocked {
+  color: var(--color-recording);
+}
+
+.metric-card__icon--estimate {
+  color: var(--color-amber);
+}
+
+.metric-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.metric-card__value--risk {
+  color: var(--color-recording);
+}
+
+.metric-card__label {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.metric-card__meta {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.metric-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.metric-card-row {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.metric-card-row > .metric-card {
+  flex: 1;
+  min-width: 100px;
+}

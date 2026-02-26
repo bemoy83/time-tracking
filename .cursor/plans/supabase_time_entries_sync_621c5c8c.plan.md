@@ -72,19 +72,19 @@ create policy "Users can manage own entries" on public.time_entries
 
 ## 3. Supabase client module
 
-**New file: [src/lib/supabase/client.ts**](src/lib/supabase/client.ts)
+**New file: [src/lib/supabase/client.ts*](src/lib/supabase/client.ts)*
 
 - Create Supabase client with `createClient(url, anonKey)`
 - Export typed client; return `null` if env vars are missing (graceful no-op when Supabase is not configured)
 
-**New file: [src/lib/supabase/types.ts**](src/lib/supabase/types.ts)
+**New file: [src/lib/supabase/types.ts](src/lib/supabase/types.ts)**
 
 - Define `SupabaseTimeEntry` type: `id`, `task_id`, `start_utc`, `end_utc`, `source`, `created_at`, `updated_at`, `user_id`
 - Map to/from app `TimeEntry` (camelCase ↔ snake_case); `syncStatus` stays client-side only
 
 ## 4. Supabase auth (anonymous)
 
-**New file: [src/lib/supabase/auth.ts**](src/lib/supabase/auth.ts)
+**New file: [src/lib/supabase/auth.ts](src/lib/supabase/auth.ts)**
 
 - `ensureAnonymousSession()`: call `supabase.auth.signInAnonymously()` if no session; return session or null
 - Export `getSession()` for use by sync
@@ -92,7 +92,7 @@ create policy "Users can manage own entries" on public.time_entries
 
 ## 5. Sync implementation
 
-**New file: [src/lib/sync/supabase-sync.ts**](src/lib/sync/supabase-sync.ts)
+**New file: [src/lib/sync/supabase-sync.ts](src/lib/sync/supabase-sync.ts)**
 
 - `createSupabaseSyncFunction()`: returns a `SyncFunction` for [sync-queue.ts](src/lib/sync/sync-queue.ts)
 - Logic:
@@ -106,7 +106,7 @@ create policy "Users can manage own entries" on public.time_entries
 
 ## 6. App wiring
 
-**File: [src/App.tsx**](src/App.tsx)
+**File: [src/App.tsx](src/App.tsx)**
 
 - Import `registerSyncFunction` and `createSupabaseSyncFunction`
 - After `initializeSyncQueue()`, call `registerSyncFunction(createSupabaseSyncFunction())`

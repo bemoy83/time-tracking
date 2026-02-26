@@ -115,22 +115,35 @@
   width: 36px;
   height: 36px;
   margin-right: var(--space-sm);
+  padding: 0;
   background: none;
   border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  border-radius: var(--radius-md);
+  border-radius: 50%;
   transition: background-color 0.15s, color 0.15s;
   flex-shrink: 0;
+}
+
+.planning-view__item-action {
+  border: none;
+  background: var(--color-ready-bg);
+  color: var(--color-ready);
+  border-radius: var(--radius-xl);
+  padding: 6px 10px;
+  margin-right: var(--space-sm);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.planning-view__item-action:hover {
+  filter: brightness(0.98);
 }
 
 .planning-view__item-delete:hover {
   background: var(--color-recording-bg);
   color: var(--color-recording);
-}
-
-.planning-view__item-delete:active {
-  background: var(--color-danger-bg-hover);
 }
 
 .planning-view__item-delete:focus-visible {
@@ -150,30 +163,20 @@
   flex-shrink: 0;
 }
 
-/* Status badge */
-.planning-view__status {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-
-.planning-view__status--draft {
-  background: rgba(217, 119, 6, 0.15);
-  color: var(--color-amber);
-}
-
-.planning-view__status--locked {
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
-}
-
 /* ============================================================
    Plan Editor — edit/detail view
    ============================================================ */
+
+.planning-view__sticky-summary {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  padding-bottom: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
 
 .planning-view__editor-header {
   display: flex;
@@ -255,9 +258,9 @@
   align-items: center;
   gap: var(--space-xs);
   min-height: 32px;
-  padding: 0 var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
-  border-radius: 9999px;
+  border-radius: var(--radius-xl);
   background: var(--color-bg);
   color: var(--color-text);
   cursor: pointer;
@@ -266,8 +269,32 @@
   transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
 }
 
+.planning-view__project-button--selected {
+  border: none;
+}
+
+.planning-view__project-button--empty {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.planning-view__project-button--empty .planning-view__project-none {
+  color: inherit;
+}
+
+.planning-view__project-button--empty:hover:not(:disabled) {
+  background: none;
+  opacity: 1;
+}
+
 .planning-view__project-button:hover:not(:disabled) {
   background: var(--color-surface-hover);
+}
+
+.planning-view__project-button--selected:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .planning-view__project-button:focus-visible {
@@ -297,44 +324,13 @@
   flex-wrap: wrap;
 }
 
-.planning-view__phase-toggle {
-  display: inline-flex;
-  gap: 0;
-  padding: 3px;
-  border-radius: 9999px;
-  background: var(--color-border);
-  align-self: flex-start;
-}
-
-.planning-view__phase-toggle-btn {
-  min-height: 36px;
-  padding: 0 var(--space-md);
-  border: none;
-  border-radius: 9999px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-small);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.planning-view__phase-toggle-btn:hover:not(.planning-view__phase-toggle-btn--active) {
-  color: var(--color-text);
-}
-
-.planning-view__phase-toggle-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
-.planning-view__phase-toggle-btn--active {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.planning-view__compare-select {
+.planning-view__compare-trigger {
   max-width: 200px;
+  min-height: 38px;
+  border-radius: var(--radius-xl);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
 }
 
 /* ============================================================
@@ -345,32 +341,6 @@
   display: flex;
   gap: var(--space-md);
   flex-wrap: wrap;
-}
-
-.planning-view__stat {
-  flex: 1;
-  min-width: 100px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-md);
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-}
-
-.planning-view__stat-value {
-  font-size: var(--font-large);
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.planning-view__stat-label {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-}
-
-.planning-view__stat--risk .planning-view__stat-value {
-  color: var(--color-recording);
 }
 
 /* Risk badges */
@@ -386,6 +356,42 @@
 .planning-view__risk-badge--high {
   background: var(--color-recording-bg);
   color: var(--color-recording);
+}
+
+/* ============================================================
+   Phase filter pills — segmented control
+   ============================================================ */
+
+.planning-view__phase-pills {
+  display: flex;
+  gap: 0;
+  background: var(--color-border);
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.planning-view__phase-pill {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planning-view__phase-pill:hover:not(.planning-view__phase-pill--active) {
+  color: var(--color-text);
+}
+
+.planning-view__phase-pill--active {
+  background: #1f1f1f;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 /* ============================================================
@@ -412,6 +418,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+}
+
+.planning-view__empty-items {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
 }
 
 /* ============================================================
@@ -468,17 +480,21 @@
   gap: var(--space-xs);
 }
 
-.planning-view__line-item-duplicate {
-  min-height: 28px;
-  padding: 0 var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: var(--font-small);
-  font-weight: 500;
+.planning-view__line-item-duplicate,
+.planning-view__line-item-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  border-radius: 50%;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
 
 .planning-view__line-item-duplicate:hover {
@@ -488,21 +504,6 @@
 .planning-view__line-item-duplicate:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
-}
-
-.planning-view__line-item-remove {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.15s, color 0.15s;
-  flex-shrink: 0;
 }
 
 .planning-view__line-item-remove:hover {
@@ -515,9 +516,9 @@
   outline-offset: -2px;
 }
 
-.planning-view__line-item-remove-icon {
-  width: 16px;
-  height: 16px;
+.planning-view__line-item-action-icon {
+  width: 18px;
+  height: 18px;
 }
 
 /* Line item fields — grid */
@@ -632,32 +633,6 @@
 
 .planning-view__suggestion-rate {
   font-weight: 600;
-}
-
-/* Confidence badge */
-.planning-view__confidence {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-
-.planning-view__confidence--high {
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
-}
-
-.planning-view__confidence--medium {
-  background: rgba(217, 119, 6, 0.15);
-  color: var(--color-amber);
-}
-
-.planning-view__confidence--low {
-  background: var(--color-recording-bg);
-  color: var(--color-recording);
 }
 
 /* ============================================================

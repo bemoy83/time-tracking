@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Project } from '../lib/types';
 import { useTaskStore } from '../lib/stores/task-store';
 import { ChevronIcon, TaskListIcon } from '../components/icons';
+import { Fab } from '../components/Fab';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { CreateProjectSheet } from '../components/CreateProjectSheet';
 
@@ -32,11 +33,7 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
       </header>
 
       {/* FAB + Create Flow */}
-      <button
-        className="fab"
-        onClick={() => setShowCreateSheet(true)}
-        aria-label="New project"
-      >+</button>
+      <Fab onClick={() => setShowCreateSheet(true)} aria-label="New project" />
       <CreateProjectSheet
         isOpen={showCreateSheet}
         onClose={() => setShowCreateSheet(false)}

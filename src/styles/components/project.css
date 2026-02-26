@@ -174,62 +174,6 @@
   gap: var(--space-sm);
 }
 
-.project-detail__metric-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-lg);
-}
-
-.project-detail__metric-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.project-detail__metric-icon--tasks {
-  color: var(--color-primary);
-}
-
-.project-detail__metric-icon--done {
-  color: var(--color-ready);
-}
-
-.project-detail__metric-icon--time {
-  color: var(--color-amber);
-}
-
-.project-detail__metric-icon--people {
-  color: var(--color-primary);
-}
-
-.project-detail__metric-icon--blocked {
-  color: var(--color-recording);
-}
-
-.project-detail__metric-icon--estimate {
-  color: var(--color-amber);
-}
-
-.project-detail__metric-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--color-text);
-}
-
-.project-detail__metric-label {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.project-detail__metric-meta {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-}
-
 .project-detail__metrics-note {
   margin: 0;
   font-size: var(--font-small);

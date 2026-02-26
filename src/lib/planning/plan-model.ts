@@ -32,6 +32,12 @@ export interface PlanLineItem {
   rateSource: 'template' | 'historical' | 'manual';
   /** Optional rationale note for this line item. */
   rationale: string | null;
+  /** Optional post-execution review note for this line item. */
+  reviewNote?: string | null;
+  /** Scheduled start time (ISO UTC). null until scheduling feature is implemented. */
+  scheduledStart: string | null;
+  /** Scheduled end time (ISO UTC). null until scheduling feature is implemented. */
+  scheduledEnd: string | null;
 }
 
 export interface Plan {
@@ -45,6 +51,8 @@ export interface Plan {
   updatedAt: string;
   /** ISO timestamp when plan was locked. null if draft. */
   lockedAt: string | null;
+  /** ISO timestamp when plan wrap-up review was finalized. */
+  reviewedAt?: string | null;
 }
 
 /**
@@ -96,6 +104,7 @@ export function createPlan(title: string): Plan {
     createdAt: now,
     updatedAt: now,
     lockedAt: null,
+    reviewedAt: null,
   };
 }
 
@@ -124,6 +133,9 @@ export function createLineItem(
     productivityRate,
     rateSource,
     rationale: null,
+    reviewNote: null,
+    scheduledStart: null,
+    scheduledEnd: null,
   };
 }
 
@@ -146,6 +158,9 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     productivityRate: item.productivityRate,
     rateSource: item.rateSource,
     rationale: null,
+    reviewNote: null,
+    scheduledStart: item.scheduledStart,
+    scheduledEnd: item.scheduledEnd,
   };
 }
 

@@ -34,6 +34,7 @@ import { CompletedSection } from '../components/CompletedSection';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
 import { AddFromPlanSheet } from '../components/AddFromPlanSheet';
+import { Fab } from '../components/Fab';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -146,9 +147,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       </header>
 
       {/* FAB + Create Flow */}
-      <button className="fab" onClick={() => {
-        setShowTemplatePicker(true);
-      }} aria-label="New task">+</button>
+      <Fab onClick={() => setShowTemplatePicker(true)} aria-label="New task" />
       <TemplatePickerSheet
         isOpen={showTemplatePicker}
         onClose={() => setShowTemplatePicker(false)}

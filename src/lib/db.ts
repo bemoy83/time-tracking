@@ -19,7 +19,7 @@ import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 18;
+const DB_VERSION = 21;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -137,17 +137,28 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
           db.createObjectStore('projects', { keyPath: 'id' });
         }
 
-        // Version 2: Add color to existing projects
-        if (oldVersion < 2) {
-          const projectStore = transaction.objectStore('projects');
-          projectStore.getAll().then((projects) => {
-            projects.forEach((project, index) => {
-              const p = project as unknown as Record<string, unknown>;
-              if (!p.color) {
-                p.color = PROJECT_COLORS[index % PROJECT_COLORS.length];
-                projectStore.put(project);
+        type StoreKey = Extract<keyof TimeTrackingDBSchema, string>;
+        const backfillStore = <StoreName extends StoreKey>(
+          storeName: StoreName,
+          mutate: (record: TimeTrackingDBSchema[StoreName]['value'], index: number) => boolean,
+        ) => {
+          const store = transaction.objectStore(storeName as never);
+          store.getAll().then((records) => {
+            records.forEach((record, index) => {
+              if (mutate(record, index)) {
+                store.put(record);
               }
             });
+          });
+        };
+
+        // Version 2: Add color to existing projects
+        if (oldVersion < 2) {
+          backfillStore('projects', (project, index) => {
+            const p = project as unknown as Record<string, unknown>;
+            if (p.color) return false;
+            p.color = PROJECT_COLORS[index % PROJECT_COLORS.length];
+            return true;
           });
         }
 
@@ -164,15 +175,11 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 
         // Version 4: Add workers field to timeEntries and activeTimer
         if (oldVersion < 4 && oldVersion >= 1) {
-          const entryStore = transaction.objectStore('timeEntries');
-          entryStore.getAll().then((entries) => {
-            entries.forEach((entry) => {
-              const e = entry as unknown as Record<string, unknown>;
-              if (e.workers === undefined) {
-                e.workers = 1;
-                entryStore.put(entry);
-              }
-            });
+          backfillStore('timeEntries', (entry) => {
+            const e = entry as unknown as Record<string, unknown>;
+            if (e.workers !== undefined) return false;
+            e.workers = 1;
+            return true;
           });
           // Only touch old activeTimer store if it exists (pre-v6)
           if (db.objectStoreNames.contains('activeTimer' as never)) {
@@ -222,30 +229,22 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 
         // Version 7: Add estimatedMinutes field to tasks
         if (oldVersion < 7 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.estimatedMinutes === undefined) {
-                t.estimatedMinutes = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.estimatedMinutes !== undefined) return false;
+            t.estimatedMinutes = null;
+            return true;
           });
         }
 
         // Version 8: Add workQuantity and workUnit fields to tasks
         if (oldVersion < 8 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.workQuantity === undefined) {
-                t.workQuantity = null;
-                t.workUnit = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.workQuantity !== undefined) return false;
+            t.workQuantity = null;
+            t.workUnit = null;
+            return true;
           });
         }
 
@@ -259,29 +258,21 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 
         // Version 9: Add defaultWorkers field to tasks
         if (oldVersion < 9 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.defaultWorkers === undefined) {
-                t.defaultWorkers = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.defaultWorkers !== undefined) return false;
+            t.defaultWorkers = null;
+            return true;
           });
         }
 
         // Version 11: Add targetProductivity field to tasks
         if (oldVersion < 11 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.targetProductivity === undefined) {
-                t.targetProductivity = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.targetProductivity !== undefined) return false;
+            t.targetProductivity = null;
+            return true;
           });
         }
 
@@ -294,30 +285,22 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 
         // Version 12: Add buildPhase field to tasks
         if (oldVersion < 12 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.buildPhase === undefined) {
-                t.buildPhase = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.buildPhase !== undefined) return false;
+            t.buildPhase = null;
+            return true;
           });
         }
 
         // Version 14: Add archivedAt and archiveVersion fields to tasks
         if (oldVersion < 14 && oldVersion >= 1) {
-          const taskStore = transaction.objectStore('tasks');
-          taskStore.getAll().then((tasks) => {
-            tasks.forEach((task) => {
-              const t = task as unknown as Record<string, unknown>;
-              if (t.archivedAt === undefined) {
-                t.archivedAt = null;
-                t.archiveVersion = null;
-                taskStore.put(task);
-              }
-            });
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.archivedAt !== undefined) return false;
+            t.archivedAt = null;
+            t.archiveVersion = null;
+            return true;
           });
         }
 
@@ -333,29 +316,21 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
 
           // Backfill workTypeId on existing templates
           if (db.objectStoreNames.contains('taskTemplates')) {
-            const tplStore = transaction.objectStore('taskTemplates');
-            tplStore.getAll().then((templates) => {
-              for (const tpl of templates) {
-                const t = tpl as unknown as Record<string, unknown>;
-                if (t.workTypeId === undefined) {
-                  t.workTypeId = null;
-                  tplStore.put(tpl);
-                }
-              }
+            backfillStore('taskTemplates', (template) => {
+              const t = template as unknown as Record<string, unknown>;
+              if (t.workTypeId !== undefined) return false;
+              t.workTypeId = null;
+              return true;
             });
           }
 
           // Backfill workTypeId on existing tasks
           if (oldVersion >= 1) {
-            const taskStore = transaction.objectStore('tasks');
-            taskStore.getAll().then((tasks) => {
-              for (const task of tasks) {
-                const t = task as unknown as Record<string, unknown>;
-                if (t.workTypeId === undefined) {
-                  t.workTypeId = null;
-                  taskStore.put(task);
-                }
-              }
+            backfillStore('tasks', (task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (t.workTypeId !== undefined) return false;
+              t.workTypeId = null;
+              return true;
             });
           }
         }
@@ -368,17 +343,72 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
           }
         }
 
-        // Version 18: Add projectId field to plans
-        if (oldVersion < 18 && db.objectStoreNames.contains('plans')) {
-          const planStore = transaction.objectStore('plans');
-          planStore.getAll().then((plans) => {
-            for (const plan of plans) {
+        // Version 19: Add scheduledStart and scheduledEnd to plan line items
+        if (oldVersion < 19 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            let changed = false;
+            for (const item of plan.lineItems) {
+              const i = item as unknown as Record<string, unknown>;
+              if (i.scheduledStart === undefined) { i.scheduledStart = null; changed = true; }
+              if (i.scheduledEnd === undefined) { i.scheduledEnd = null; changed = true; }
+            }
+            return changed;
+          });
+        }
+
+        // Version 20: Add task lineage and KPI exclusion + plan reviewedAt
+        if (oldVersion < 20) {
+          if (oldVersion >= 1) {
+            backfillStore('tasks', (task) => {
+              const t = task as unknown as Record<string, unknown>;
+              let changed = false;
+              if (t.sourcePlanId === undefined) {
+                t.sourcePlanId = null;
+                changed = true;
+              }
+              if (t.sourceLineItemId === undefined) {
+                t.sourceLineItemId = null;
+                changed = true;
+              }
+              if (t.excludeFromKpi === undefined) {
+                t.excludeFromKpi = false;
+                changed = true;
+              }
+              return changed;
+            });
+          }
+          if (db.objectStoreNames.contains('plans')) {
+            backfillStore('plans', (plan) => {
               const p = plan as unknown as Record<string, unknown>;
-              if (p.projectId === undefined) {
-                p.projectId = null;
-                planStore.put(plan);
+              if (p.reviewedAt !== undefined) return false;
+              p.reviewedAt = null;
+              return true;
+            });
+          }
+        }
+
+        // Version 21: Add reviewNote field to plan line items
+        if (oldVersion < 21 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            let changed = false;
+            for (const item of plan.lineItems) {
+              const i = item as unknown as Record<string, unknown>;
+              if (i.reviewNote === undefined) {
+                i.reviewNote = null;
+                changed = true;
               }
             }
+            return changed;
+          });
+        }
+
+        // Version 18: Add projectId field to plans
+        if (oldVersion < 18 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            const p = plan as unknown as Record<string, unknown>;
+            if (p.projectId !== undefined) return false;
+            p.projectId = null;
+            return true;
           });
         }
       },

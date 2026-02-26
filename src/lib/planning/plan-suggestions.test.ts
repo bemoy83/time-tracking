@@ -17,6 +17,8 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     productivityRate: 10,
     rateSource: 'manual',
     rationale: null,
+    scheduledStart: null,
+    scheduledEnd: null,
     ...overrides,
   };
 }

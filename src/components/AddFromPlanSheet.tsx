@@ -8,9 +8,9 @@
 import { useState, useEffect } from 'react';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
-import { lineItemToCreateTaskInput } from '../lib/planning/release-plan';
 import { createTask } from '../lib/stores/task-store';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../lib/types';
+import { selectedPlanItemsToCreateTaskInputs } from '../lib/planning/release-selection';
 import { ActionSheet } from './ActionSheet';
 import { ChevronRightIcon, CheckIcon } from './icons';
 
@@ -32,7 +32,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     setSelectedItemIds(new Set());
     setIsCreating(false);
     getAllPlans().then((all) => {
-      setPlans(all.filter((p) => p.status === 'locked'));
+      setPlans(all.filter((p) => p.status === 'locked' || p.reviewedAt != null));
     });
   }, [isOpen]);
 
@@ -88,15 +88,10 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     if (selectedItemIds.size === 0 || isCreating) return;
     setIsCreating(true);
     try {
-      // Create selected line items across all plans sequentially (no batch API)
-      for (const plan of plans) {
-        for (const item of plan.lineItems) {
-          if (selectedItemIds.has(item.id)) {
-            await createTask(
-              lineItemToCreateTaskInput(item, { projectId: plan.projectId ?? undefined }),
-            );
-          }
-        }
+      const taskInputs = selectedPlanItemsToCreateTaskInputs(plans, selectedItemIds);
+      // Create tasks sequentially (no batch API)
+      for (const input of taskInputs) {
+        await createTask(input);
       }
       onClose();
     } finally {

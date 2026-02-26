@@ -1,0 +1,29 @@
+/* ============================================================
+   FAB — Floating action button, shared across views
+   ============================================================ */
+
+.fab {
+  position: fixed;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-md));
+  right: var(--space-md);
+  z-index: 200;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  font-size: 1.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.fab:hover {
+  background: var(--color-primary-hover);
+}
+
+.fab:active {
+  transform: scale(0.98);
+}

@@ -109,6 +109,8 @@ export interface CreateTaskInput {
   title: string;
   projectId?: string | null;
   parentId?: string | null;
+  sourcePlanId?: string | null;
+  sourceLineItemId?: string | null;
   estimatedMinutes?: number | null;
   workQuantity?: number | null;
   workUnit?: WorkUnit | null;
@@ -129,6 +131,8 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     status: 'active',
     projectId: input.projectId ?? null,
     parentId: input.parentId ?? null,
+    sourcePlanId: input.sourcePlanId ?? null,
+    sourceLineItemId: input.sourceLineItemId ?? null,
     blockedReason: null,
     estimatedMinutes: input.estimatedMinutes ?? null,
     workQuantity: input.workQuantity ?? null,
@@ -141,6 +145,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     updatedAt: now,
     archivedAt: null,
     archiveVersion: null,
+    excludeFromKpi: false,
   };
 
   await dbAddTask(task);

@@ -1,0 +1,152 @@
+.progress-view {
+  gap: var(--space-md);
+}
+
+.progress-view__summary {
+  display: grid;
+  gap: var(--space-sm);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+}
+
+.progress-view__summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-small);
+}
+
+.progress-view__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.progress-view__item {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.progress-view__item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.progress-view__item-title {
+  margin: 0;
+  font-size: var(--font-body);
+}
+
+.progress-view__item-meta {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.progress-view__status {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.progress-view__status--completed {
+  background: rgba(22, 163, 74, 0.16);
+  color: var(--color-ready);
+}
+
+.progress-view__status--in-progress {
+  background: rgba(217, 119, 6, 0.16);
+  color: #8a4b00;
+}
+
+.progress-view__status--not-started,
+.progress-view__status--unreleased {
+  background: rgba(107, 114, 128, 0.16);
+  color: var(--color-text-muted);
+}
+
+.progress-view__item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (max-width: 520px) {
+  .progress-view__item-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.progress-view__label {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.progress-view__value {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-small);
+}
+
+.progress-view__variance--under {
+  color: var(--color-ready);
+}
+
+.progress-view__variance--near {
+  color: #8a4b00;
+}
+
+.progress-view__variance--over {
+  color: var(--color-recording);
+}
+
+.progress-view__block {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+}
+
+.progress-view__block-title {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--font-body);
+}
+
+.progress-view__block-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.progress-view__orphan-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.progress-view__orphan-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--font-small);
+}
+
+.progress-view__orphan-meta {
+  color: var(--color-text-muted);
+}

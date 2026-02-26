@@ -16,9 +16,11 @@ describe('lineItemToCreateTaskInput', () => {
     );
     item.crew = 3;
 
-    const input = lineItemToCreateTaskInput(item);
+    const input = lineItemToCreateTaskInput(item, { planId: 'plan-1' });
 
     expect(input.title).toBe('Install carpet');
+    expect(input.sourcePlanId).toBe('plan-1');
+    expect(input.sourceLineItemId).toBe(item.id);
     expect(input.workTypeId).toBe('wt-123');
     expect(input.workQuantity).toBe(100);
     expect(input.workUnit).toBe('m2');
@@ -61,5 +63,12 @@ describe('lineItemToCreateTaskInput', () => {
     const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
     const input = lineItemToCreateTaskInput(item, { projectId: null });
     expect(input.projectId).toBeUndefined();
+  });
+
+  it('maps missing planId override to undefined sourcePlanId while retaining sourceLineItemId', () => {
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const input = lineItemToCreateTaskInput(item);
+    expect(input.sourcePlanId).toBeUndefined();
+    expect(input.sourceLineItemId).toBe(item.id);
   });
 });

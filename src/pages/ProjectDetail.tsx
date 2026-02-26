@@ -4,7 +4,7 @@
  * CountBadge section headings, and FAB + sheet create flow.
  */
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Task,
   TaskTemplate,
@@ -12,11 +12,13 @@ import {
   formatDurationShort,
 } from '../lib/types';
 import { TrashIcon, WarningIcon, CheckIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../components/icons';
+import { Fab } from '../components/Fab';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import { ProjectColorDot } from '../components/ProjectColorDot';
 import { BreadcrumbNav } from '../components/BreadcrumbNav';
 import { EditableTitle } from '../components/EditableTitle';
 import { CountBadge } from '../components/CountBadge';
+import { MetricCard } from '../components/MetricCard';
 import { CompletedSection } from '../components/CompletedSection';
 import { TaskCard } from '../components/TaskCard';
 import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
@@ -44,14 +46,23 @@ import { useProjectMetrics } from '../lib/hooks/useProjectMetrics';
 import { DeleteProjectConfirm } from '../components/DeleteProjectConfirm';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
+import { getAllPlans } from '../lib/db';
+import type { Plan } from '../lib/planning/plan-model';
+import { isPlanReviewReady } from '../lib/planning/plan-lifecycle';
 
 interface ProjectDetailProps {
   projectId: string;
   onBack: () => void;
   onSelectTask: (task: Task) => void;
+  onOpenPlanReview: (planId: string) => void;
 }
 
-export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetailProps) {
+export function ProjectDetail({
+  projectId,
+  onBack,
+  onSelectTask,
+  onOpenPlanReview,
+}: ProjectDetailProps) {
   const { projects, tasks } = useTaskStore();
   const { templates } = useTemplateStore();
   const { activeTimers } = useTimerStore();
@@ -65,6 +76,7 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePreview, setDeletePreview] = useState<DeleteProjectPreview | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [plans, setPlans] = useState<Plan[]>([]);
 
   // Timer & completion hooks
   const taskTimes = useTaskTimes(tasks, activeTimers);
@@ -97,6 +109,17 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       return `${rounded} ${WORK_UNIT_LABELS[unit]}`;
     })
     .join(', ');
+
+  useEffect(() => {
+    getAllPlans().then(setPlans);
+  }, []);
+
+  const reviewReadyPlan = useMemo(() => {
+    const candidates = plans.filter((plan) => plan.projectId === projectId && plan.status === 'locked');
+    const ready = candidates.filter((plan) => isPlanReviewReady(plan, tasks));
+    ready.sort((a, b) => (b.lockedAt ?? '').localeCompare(a.lockedAt ?? ''));
+    return ready[0] ?? null;
+  }, [plans, projectId, tasks]);
 
   if (!project) {
     return (
@@ -200,41 +223,45 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
       </ActionSheet>
 
       {/* Metric cards */}
-      <div className="project-detail__metrics">
-        <div className="project-detail__metric-card">
-          <TaskListIcon className="project-detail__metric-icon project-detail__metric-icon--tasks" />
-          <span className="project-detail__metric-value">{metrics.totalTasks}</span>
-          <span className="project-detail__metric-label">Tasks</span>
-        </div>
-        <div className="project-detail__metric-card">
-          <CheckIcon className="project-detail__metric-icon project-detail__metric-icon--done" />
-          <span className="project-detail__metric-value">{metrics.doneCount}</span>
-          <span className="project-detail__metric-label">Done</span>
-        </div>
-        <div className="project-detail__metric-card">
-          <ClockIcon className="project-detail__metric-icon project-detail__metric-icon--time" />
-          <span className="project-detail__metric-value">{formatDurationShort(metrics.totalTimeMs)}</span>
-          <span className="project-detail__metric-label">Time</span>
-        </div>
-        <div className="project-detail__metric-card">
-          <PeopleIcon className="project-detail__metric-icon project-detail__metric-icon--people" />
-          <span className="project-detail__metric-value">{metrics.personHours}</span>
-          <span className="project-detail__metric-label">Person-Hrs</span>
-        </div>
-        <div className="project-detail__metric-card">
-          <WarningIcon className="project-detail__metric-icon project-detail__metric-icon--blocked" />
-          <span className="project-detail__metric-value">{metrics.blockedCount}</span>
-          <span className="project-detail__metric-label">Blocked</span>
-        </div>
+      <div className="project-detail__metrics metric-card-grid">
+        <MetricCard
+          icon={<TaskListIcon />}
+          iconVariant="tasks"
+          value={metrics.totalTasks}
+          label="Tasks"
+        />
+        <MetricCard
+          icon={<CheckIcon />}
+          iconVariant="done"
+          value={metrics.doneCount}
+          label="Done"
+        />
+        <MetricCard
+          icon={<ClockIcon />}
+          iconVariant="time"
+          value={formatDurationShort(metrics.totalTimeMs)}
+          label="Time"
+        />
+        <MetricCard
+          icon={<PeopleIcon />}
+          iconVariant="people"
+          value={metrics.personHours}
+          label="Person-Hrs"
+        />
+        <MetricCard
+          icon={<WarningIcon />}
+          iconVariant="blocked"
+          value={metrics.blockedCount}
+          label="Blocked"
+        />
         {metrics.estimatedPersonHours !== null && (
-          <div className="project-detail__metric-card">
-            <PeopleIcon className="project-detail__metric-icon project-detail__metric-icon--estimate" />
-            <span className="project-detail__metric-value">{metrics.estimatedPersonHours}</span>
-            <span className="project-detail__metric-label">Est. Person-Hrs</span>
-            <span className="project-detail__metric-meta">
-              {metrics.tasksWithEstimate === 1 ? '1 task with estimate' : `${metrics.tasksWithEstimate} tasks with estimate`}
-            </span>
-          </div>
+          <MetricCard
+            icon={<PeopleIcon />}
+            iconVariant="estimate"
+            value={metrics.estimatedPersonHours}
+            label="Est. Person-Hrs"
+            meta={metrics.tasksWithEstimate === 1 ? '1 task with estimate' : `${metrics.tasksWithEstimate} tasks with estimate`}
+          />
         )}
       </div>
       {hasBudgetSummary && (
@@ -247,16 +274,31 @@ export function ProjectDetail({ projectId, onBack, onSelectTask }: ProjectDetail
           Work Qty: {workQuantitySummary}
         </p>
       )}
+      {reviewReadyPlan && (
+        <div className="project-detail__metrics-note">
+          This project has a completed plan.{' '}
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => onOpenPlanReview(reviewReadyPlan.id)}
+          >
+            View review
+          </button>
+        </div>
+      )}
 
       {/* FAB + Create Flow */}
-      <button className="fab" onClick={() => {
-        if (templates.length > 0) {
-          setShowTemplatePicker(true);
-        } else {
-          setSelectedTemplate(null);
-          setShowCreateSheet(true);
-        }
-      }} aria-label="New task">+</button>
+      <Fab
+        onClick={() => {
+          if (templates.length > 0) {
+            setShowTemplatePicker(true);
+          } else {
+            setSelectedTemplate(null);
+            setShowCreateSheet(true);
+          }
+        }}
+        aria-label="New task"
+      />
       <TemplatePickerSheet
         isOpen={showTemplatePicker}
         onClose={() => setShowTemplatePicker(false)}

@@ -142,6 +142,12 @@ export interface Task {
   archivedAt: string | null;
   /** Engine version used when archiving (e.g. 'v1'). null = not yet archived. */
   archiveVersion: string | null;
+  /** Plan lineage: which plan released this task. null = ad-hoc/unplanned. */
+  sourcePlanId?: string | null;
+  /** Plan lineage: which plan line item released this task. null = ad-hoc/unplanned. */
+  sourceLineItemId?: string | null;
+  /** Excluded from KPI computation by review flow. */
+  excludeFromKpi?: boolean;
 }
 
 /**

@@ -19,6 +19,8 @@
 
 /* Components */
 @import './styles/components/count-badge.css';
+@import './styles/components/metric-card.css';
+@import './styles/components/status-badge.css';
 @import './styles/components/tracked-vs-estimate-badge.css';
 @import './styles/components/timer.css';
 @import './styles/components/_task-shared.css';
@@ -45,6 +47,7 @@
 @import './styles/components/stepper-pill.css';
 @import './styles/components/entry-modal.css';
 @import './styles/components/action-sheet.css';
+@import './styles/components/fab.css';
 @import './styles/components/create-task-sheet.css';
 @import './styles/components/breadcrumb-nav.css';
 @import './styles/components/editable-title.css';
@@ -56,6 +59,9 @@
 @import './styles/components/plan-picker.css';
 @import './styles/components/calculator.css';
 @import './styles/components/planning.css';
+@import './styles/components/progress-view.css';
+@import './styles/components/wrap-up-sheet.css';
+@import './styles/components/insights-view.css';
 @import './styles/components/task-attribution-breakdown.css';
 @import './styles/components/settings-remediation.css';
 @import './styles/components/settings-productivity.css';

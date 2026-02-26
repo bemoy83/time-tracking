@@ -119,7 +119,8 @@ export function computeWorkTypeKpis(
       t.workQuantity != null &&
       t.workQuantity > 0 &&
       t.workTypeId != null &&
-      (!archiveOnly || t.archivedAt != null)
+      (!archiveOnly || t.archivedAt != null) &&
+      !t.excludeFromKpi
   );
 
   // Accumulate per Work Type, tracking per-task rates for stability

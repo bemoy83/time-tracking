@@ -11,11 +11,13 @@ import type { CreateTaskInput } from '../stores/task-store';
  */
 export function lineItemToCreateTaskInput(
   item: PlanLineItem,
-  overrides?: { projectId?: string | null },
+  overrides?: { projectId?: string | null; planId?: string },
 ): CreateTaskInput {
   return {
     title: item.title,
     projectId: overrides?.projectId ?? undefined,
+    sourcePlanId: overrides?.planId ?? undefined,
+    sourceLineItemId: item.id,
     workTypeId: item.workTypeId ?? undefined,
     workQuantity: item.workQuantity,
     workUnit: item.workUnit,

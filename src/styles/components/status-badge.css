@@ -1,0 +1,50 @@
+/* ============================================================
+   Status Badge — pill-shaped chip, shareable across views
+   ============================================================ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.status-badge--draft {
+  background: var(--color-amber);
+  color: white;
+}
+
+.status-badge--locked {
+  background: var(--color-ready);
+  color: white;
+}
+
+.status-badge--review-ready {
+  background: rgba(217, 119, 6, 0.2);
+  color: #8a4b00;
+}
+
+.status-badge--reviewed {
+  background: rgba(22, 163, 74, 0.16);
+  color: var(--color-ready);
+}
+
+.status-badge--high {
+  background: var(--color-ready);
+  color: white;
+}
+
+.status-badge--medium {
+  background: var(--color-amber);
+  color: white;
+}
+
+.status-badge--low {
+  background: var(--color-recording);
+  color: white;
+}
