@@ -71,6 +71,7 @@ export async function executePlanWrapUp({
     const now = nowUtc();
     updatedPlan = {
       ...plan,
+      status: 'reviewed',
       reviewedAt: now,
       updatedAt: now,
     };

@@ -40,6 +40,16 @@
   color: var(--color-ready);
 }
 
+.status-badge--received {
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--color-primary);
+}
+
+.status-badge--session-closed {
+  background: rgba(107, 114, 128, 0.16);
+  color: var(--color-text-muted);
+}
+
 .status-badge--high {
   background: var(--color-ready);
   color: white;

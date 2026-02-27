@@ -10,7 +10,7 @@
  * - Minimal metadata in list rows
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Task, Project, TaskTemplate } from '../lib/types';
 import {
   useTaskStore,
@@ -35,6 +35,10 @@ import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
 import { AddFromPlanSheet } from '../components/AddFromPlanSheet';
 import { Fab } from '../components/Fab';
+import { getFeatureFlag } from '../lib/flags/feature-flags';
+import { getAllPlans } from '../lib/db';
+import type { Plan } from '../lib/planning/plan-model';
+import { FieldPlanOverlay } from './field-plan/FieldPlanOverlay';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -43,11 +47,14 @@ interface TodayViewProps {
 export function TodayView({ onSelectTask }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
   const { activeTimers } = useTimerStore();
+  const fieldPlanEnabled = getFeatureFlag('fieldPlanExecution');
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showPlanSheet, setShowPlanSheet] = useState(false);
+  const [showFieldPlan, setShowFieldPlan] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [executorPlans, setExecutorPlans] = useState<Plan[]>([]);
   const taskTimes = useTaskTimes(tasks, activeTimers);
   const { durationByTask, personMsByTask } = taskTimes;
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
@@ -137,6 +144,25 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     });
   };
 
+  useEffect(() => {
+    if (!fieldPlanEnabled) return;
+    getAllPlans().then((allPlans) => {
+      setExecutorPlans(allPlans.filter((plan) => (
+        plan.status === 'received' || plan.status === 'session-closed'
+      )));
+    });
+  }, [fieldPlanEnabled, showFieldPlan]);
+
+  const receivedPlans = executorPlans.filter((plan) => plan.status === 'received');
+  const sessionClosedPlans = executorPlans.filter((plan) => plan.status === 'session-closed');
+  const fieldPlanIndicator = receivedPlans.length > 0
+    ? receivedPlans.length === 1
+      ? `Plan: ${receivedPlans[0].title}`
+      : `Plans: ${receivedPlans.length}`
+    : sessionClosedPlans.length > 0
+      ? 'Past plans'
+      : 'Field Plan';
+
   if (error) return <div className="today-view__error">Error: {error}</div>;
   if (isLoading) return <div className="today-view__loading">Loading tasks...</div>;
 
@@ -144,7 +170,23 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     <div className="today-view">
       <header className="today-view__header">
         <h1 className="today-view__title">Tasks</h1>
+        {fieldPlanEnabled && (
+          <button
+            type="button"
+            className="today-view__plan-indicator"
+            onClick={() => setShowFieldPlan(true)}
+          >
+            {fieldPlanIndicator}
+          </button>
+        )}
       </header>
+
+      {fieldPlanEnabled && (
+        <FieldPlanOverlay
+          isOpen={showFieldPlan}
+          onClose={() => setShowFieldPlan(false)}
+        />
+      )}
 
       {/* FAB + Create Flow */}
       <Fab onClick={() => setShowTemplatePicker(true)} aria-label="New task" />

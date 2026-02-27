@@ -20,6 +20,7 @@ interface SettingsWorkTypesViewProps {
 
 export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
   const { workTypes } = useWorkTypeStore();
+  const editableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -54,10 +55,10 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
   const handleExportWorkTypes = () => {
     setIsExporting(true);
     try {
-      const csv = exportWorkTypesCsv(workTypes);
+      const csv = exportWorkTypesCsv(editableWorkTypes);
       const stamp = new Date().toISOString().slice(0, 10);
       downloadCsv(`work-types-${stamp}.csv`, csv);
-      setImportSummary(`Exported ${workTypes.length} work type definitions.`);
+      setImportSummary(`Exported ${editableWorkTypes.length} work type definitions.`);
     } finally {
       setIsExporting(false);
     }
@@ -72,7 +73,7 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
     }
 
     setWorkTypeParseErrors([]);
-    setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, workTypes));
+    setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, editableWorkTypes));
   };
 
   const handleApplyImport = async () => {
@@ -104,11 +105,11 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
         </div>
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
 
-        {workTypes.length === 0 ? (
+        {editableWorkTypes.length === 0 ? (
           <p className="settings-view__empty">No work types yet. Add one to categorise tasks.</p>
         ) : (
           <div className="settings-view__list">
-            {workTypes.map((wt) => (
+            {editableWorkTypes.map((wt) => (
               <button
                 key={wt.id}
                 className="settings-view__row"

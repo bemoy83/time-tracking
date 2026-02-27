@@ -39,6 +39,7 @@
 @import './styles/components/section-heading.css';
 @import './styles/components/collapsible-section.css';
 @import './styles/components/today-view.css';
+@import './styles/components/field-plan.css';
 @import './styles/components/tab-nav.css';
 @import './styles/components/network-status.css';
 @import './styles/components/install-prompt.css';

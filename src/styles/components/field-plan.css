@@ -1,0 +1,328 @@
+/* ============================================================
+   Field Plan View Overlay
+   ============================================================ */
+
+.field-plan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.field-plan-overlay__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.field-plan-overlay__back {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-min);
+  padding: 0;
+  cursor: pointer;
+}
+
+.field-plan-overlay__back-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.field-plan-overlay__title {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 700;
+  flex: 1;
+}
+
+.field-plan-overlay__content {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  padding: var(--space-md);
+  padding-bottom: calc(var(--space-xl) + 64px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-plan-overlay__message {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.field-plan-overlay__empty {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.field-plan-overlay__empty h3,
+.field-plan-overlay__empty p {
+  margin: 0;
+}
+
+.field-plan-overlay__plan-selector {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-plan-overlay__plan-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.field-plan-overlay__plan-group h3 {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-plan-overlay__plan-btn,
+.field-plan-overlay__past-toggle {
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-body);
+  color: var(--color-text);
+}
+
+.field-plan-overlay__plan-btn:hover,
+.field-plan-overlay__past-toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.field-plan-overlay__plan-btn--active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.field-plan-overlay__plan-chevron,
+.field-plan-overlay__past-chevron {
+  width: 16px;
+  height: 16px;
+}
+
+.field-plan-overlay__past-chevron {
+  transition: transform 0.15s ease;
+}
+
+.field-plan-overlay__past-chevron--open {
+  transform: rotate(90deg);
+}
+
+.field-plan-overlay__past-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-plan-detail {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-plan-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-plan-detail__title {
+  margin: 0;
+  font-size: var(--font-large);
+}
+
+.field-plan-detail__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.field-plan-detail__progress-track {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.field-plan-detail__progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+}
+
+.field-plan-detail__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.field-plan-detail__toolbar {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.field-plan-detail__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field-plan-detail__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.field-plan-detail__group-title {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-plan-detail__empty-group {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.field-plan-detail__unplanned {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.field-plan-detail__unplanned summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.field-plan-detail__close-session {
+  width: 100%;
+}
+
+.field-plan-detail__closed-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.field-line-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-line-item--blocked {
+  border-color: var(--color-amber);
+  background: #fffaf2;
+}
+
+.field-line-item--deferred {
+  opacity: 0.85;
+}
+
+.field-line-item--completed {
+  background: #f4fbf4;
+}
+
+.field-line-item--removed {
+  border-style: dashed;
+}
+
+.field-line-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.field-line-item__title {
+  margin: 0;
+  font-size: var(--font-body);
+}
+
+.field-line-item__status {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.field-line-item__meta,
+.field-line-item__notice,
+.field-line-item__note {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.field-line-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.field-plan-import-card {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-plan-import-card__title,
+.field-plan-import-card__meta {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.field-plan-import-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.field-plan-overlay__empty-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}

@@ -61,7 +61,7 @@ describe('normalizePlan', () => {
     expect(plan.activatedAt).toBeNull();
   });
 
-  it('leaves reviewed plans unchanged', () => {
+  it('normalizes reviewedAt plans to reviewed status', () => {
     const raw: Record<string, unknown> = {
       id: 'plan-5',
       status: 'active',
@@ -73,7 +73,7 @@ describe('normalizePlan', () => {
       updatedAt: '2024-01-01T00:00:00.000Z',
     };
     const plan = normalizePlan(raw);
-    expect(plan.status).toBe('active');
+    expect(plan.status).toBe('reviewed');
     expect(plan.activatedAt).toBe('2024-02-01T00:00:00.000Z');
     expect(plan.reviewedAt).toBe('2024-06-01T00:00:00.000Z');
   });

@@ -19,7 +19,8 @@ type SettingsSection =
   | 'productivity'
   | 'attribution'
   | 'remediation'
-  | 'telemetry';
+  | 'telemetry'
+  | 'dataTransfer';
 
 interface SettingsViewProps {
   onNavigateToSection?: (section: SettingsSection) => void;
@@ -56,6 +57,9 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
+    ...(featureFlags.fieldPlanExecution
+      ? [{ key: 'dataTransfer' as const, label: 'Data Transfer', helper: 'Import planner package exports for field execution' }]
+      : []),
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
 
@@ -128,6 +132,17 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
               checked={featureFlags.calculatorMultiScenarioCards}
               onChange={(e) => {
                 handleToggleFeatureFlag('calculatorMultiScenarioCards', e.target.checked);
+              }}
+            />
+          </label>
+          <label className="settings-view__row settings-view__row--toggle">
+            <span className="settings-view__row-label">Field plan import + execution</span>
+            <input
+              type="checkbox"
+              className="settings-view__toggle"
+              checked={featureFlags.fieldPlanExecution}
+              onChange={(e) => {
+                handleToggleFeatureFlag('fieldPlanExecution', e.target.checked);
               }}
             />
           </label>

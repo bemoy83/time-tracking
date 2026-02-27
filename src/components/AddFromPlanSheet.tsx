@@ -32,7 +32,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     setSelectedItemIds(new Set());
     setIsCreating(false);
     getAllPlans().then((all) => {
-      setPlans(all.filter((p) => p.status === 'active' || p.reviewedAt != null));
+      setPlans(all.filter((p) => p.status === 'active' || p.status === 'reviewed' || p.reviewedAt != null));
     });
   }, [isOpen]);
 

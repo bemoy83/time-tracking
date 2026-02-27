@@ -20,6 +20,7 @@ import { SettingsProductivityView } from './pages/settings/SettingsProductivityV
 import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
 import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
 import { SettingsTelemetryView } from './pages/settings/SettingsTelemetryView';
+import { SettingsDataTransferView } from './pages/settings/SettingsDataTransferView';
 import { getFeatureFlag } from './lib/flags/feature-flags';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 
@@ -30,7 +31,8 @@ type SettingsSection =
   | 'productivity'
   | 'attribution'
   | 'remediation'
-  | 'telemetry';
+  | 'telemetry'
+  | 'dataTransfer';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab };
@@ -224,6 +226,9 @@ function App() {
         )}
         {view.type === 'settingsDetail' && view.section === 'telemetry' && (
           <SettingsTelemetryView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
+          <SettingsDataTransferView onBack={handleBack} />
         )}
       </main>
 

@@ -51,4 +51,13 @@ describe('feature flags', () => {
     setFeatureFlag('planningWorkspaceDesktop', false);
     expect(getFeatureFlag('planningWorkspaceDesktop')).toBe(false);
   });
+
+  it('defaults fieldPlanExecution to true', () => {
+    expect(getFeatureFlag('fieldPlanExecution')).toBe(true);
+  });
+
+  it('disables fieldPlanExecution when toggled off', () => {
+    setFeatureFlag('fieldPlanExecution', false);
+    expect(getFeatureFlag('fieldPlanExecution')).toBe(false);
+  });
 });

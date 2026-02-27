@@ -17,7 +17,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
 }
 
 function makeItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
-  return {
+  const base: PlanLineItem = {
     id: 'li-1',
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
@@ -30,9 +30,25 @@ function makeItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     productivityRate: 10,
     rateSource: 'manual',
     rationale: null,
+    executionStatus: 'pending',
+    blockReason: null,
+    blockCategory: null,
+    executorNote: null,
+    deferredNote: null,
+    removedFromSource: false,
     scheduledStart: null,
     scheduledEnd: null,
+  };
+
+  return {
+    ...base,
     ...overrides,
+    executionStatus: overrides.executionStatus ?? base.executionStatus,
+    blockReason: overrides.blockReason ?? base.blockReason,
+    blockCategory: overrides.blockCategory ?? base.blockCategory,
+    executorNote: overrides.executorNote ?? base.executorNote,
+    deferredNote: overrides.deferredNote ?? base.deferredNote,
+    removedFromSource: overrides.removedFromSource ?? base.removedFromSource,
   };
 }
 

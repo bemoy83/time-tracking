@@ -2,7 +2,8 @@
  * Planning workspace data model.
  *
  * A Plan is a collection of work packages (line items) with editable
- * assumptions. Plans can be in 'draft' or 'active' status.
+ * assumptions. Plans can be in planner states ('draft' | 'active' | 'reviewed')
+ * or executor states ('received' | 'session-closed').
  *
  * Each line item maps to a WorkType key for KPI-backed suggestions.
  */
@@ -11,7 +12,26 @@ import type { WorkUnit, BuildPhase } from '../types';
 import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 
-export type PlanStatus = 'draft' | 'active';
+export type PlanStatus =
+  | 'draft'
+  | 'active'
+  | 'reviewed'
+  | 'received'
+  | 'session-closed';
+
+export type LineItemExecutionStatus =
+  | 'pending'
+  | 'in-progress'
+  | 'completed'
+  | 'blocked'
+  | 'deferred';
+
+export type BlockCategory =
+  | 'access'
+  | 'materials'
+  | 'crew'
+  | 'dependency'
+  | 'other';
 
 export interface PlanLineItem {
   id: string;
@@ -34,6 +54,21 @@ export interface PlanLineItem {
   rationale: string | null;
   /** Optional post-execution review note for this line item. */
   reviewNote?: string | null;
+  /** Executor-side execution state for Field Plan View. */
+  executionStatus: LineItemExecutionStatus;
+  /** Free-text blocked reason from executor. */
+  blockReason: string | null;
+  /** Optional normalized blocked reason category. */
+  blockCategory: BlockCategory | null;
+  /** Executor annotation from field context. */
+  executorNote: string | null;
+  /** Executor note when line item is deferred. */
+  deferredNote: string | null;
+  /**
+   * True when the source line item was removed in an upstream re-import merge.
+   * Kept visible as historical context on executor device.
+   */
+  removedFromSource: boolean;
   /** Scheduled start time (ISO UTC). null until scheduling feature is implemented. */
   scheduledStart: string | null;
   /** Scheduled end time (ISO UTC). null until scheduling feature is implemented. */
@@ -53,6 +88,10 @@ export interface Plan {
   activatedAt: string | null;
   /** ISO timestamp when plan wrap-up review was finalized. */
   reviewedAt?: string | null;
+  /** ISO timestamp when plan was imported onto executor device. */
+  importedAt?: string | null;
+  /** ISO timestamp when executor closed the session. */
+  sessionClosedAt?: string | null;
 }
 
 /**
@@ -105,6 +144,8 @@ export function createPlan(title: string): Plan {
     updatedAt: now,
     activatedAt: null,
     reviewedAt: null,
+    importedAt: null,
+    sessionClosedAt: null,
   };
 }
 
@@ -134,6 +175,12 @@ export function createLineItem(
     rateSource,
     rationale: null,
     reviewNote: null,
+    executionStatus: 'pending',
+    blockReason: null,
+    blockCategory: null,
+    executorNote: null,
+    deferredNote: null,
+    removedFromSource: false,
     scheduledStart: null,
     scheduledEnd: null,
   };
@@ -159,6 +206,12 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     rateSource: item.rateSource,
     rationale: null,
     reviewNote: null,
+    executionStatus: item.executionStatus,
+    blockReason: null,
+    blockCategory: null,
+    executorNote: null,
+    deferredNote: null,
+    removedFromSource: item.removedFromSource,
     scheduledStart: item.scheduledStart,
     scheduledEnd: item.scheduledEnd,
   };
@@ -171,6 +224,8 @@ export function activatePlan(plan: Plan): Plan {
     ...plan,
     status: 'active',
     activatedAt: now,
+    reviewedAt: null,
+    sessionClosedAt: null,
     updatedAt: now,
   };
 }
@@ -181,6 +236,7 @@ export function revertToDraft(plan: Plan): Plan {
     ...plan,
     status: 'draft',
     activatedAt: null,
+    reviewedAt: null,
     updatedAt: nowUtc(),
   };
 }

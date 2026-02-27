@@ -65,6 +65,8 @@ export interface CreateWorkTypeInput {
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
   expectedProductivity: number;
+  readOnly?: boolean;
+  importedForPlanId?: string | null;
 }
 
 /**
@@ -72,13 +74,30 @@ export interface CreateWorkTypeInput {
  * Throws if duplicate exists.
  */
 export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkType> {
-  // Check uniqueness in local state first
-  const existing = state.workTypes.find(
-    (wt) =>
-      normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(input.title) &&
+  const normalizedTitle = normalizeWorkTypeTitle(input.title);
+  const importedPlanId = input.importedForPlanId ?? null;
+  const isReadOnlyImport = input.readOnly === true;
+
+  const existing = state.workTypes.find((wt) => {
+    const sameKey =
+      normalizeWorkTypeTitle(wt.title) === normalizedTitle &&
       wt.workUnit === input.workUnit &&
-      wt.buildPhase === input.buildPhase,
-  );
+      wt.buildPhase === input.buildPhase;
+    if (!sameKey) return false;
+
+    if (!isReadOnlyImport) {
+      // Editable library work types ignore read-only imported copies.
+      return wt.readOnly !== true;
+    }
+
+    // Imported read-only work types are scoped per plan and should not
+    // overwrite global library definitions.
+    if (wt.readOnly === true) {
+      return (wt.importedForPlanId ?? null) === importedPlanId;
+    }
+    return true;
+  });
+
   if (existing) {
     throw new Error(`Work type "${input.title}" with unit ${input.workUnit} and phase ${input.buildPhase} already exists`);
   }
@@ -90,6 +109,8 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
     workUnit: input.workUnit,
     buildPhase: input.buildPhase,
     expectedProductivity: input.expectedProductivity,
+    readOnly: input.readOnly ?? false,
+    importedForPlanId: input.importedForPlanId ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -105,19 +126,24 @@ export async function updateWorkTypeFields(
 ): Promise<void> {
   const workType = state.workTypes.find((wt) => wt.id === id);
   if (!workType) return;
+  if (workType.readOnly) {
+    throw new Error('Imported read-only work types cannot be edited');
+  }
 
   // If title/unit/phase are changing, check uniqueness
   const newTitle = updates.title ?? workType.title;
   const newUnit = updates.workUnit ?? workType.workUnit;
   const newPhase = updates.buildPhase ?? workType.buildPhase;
 
-  const duplicate = state.workTypes.find(
-    (wt) =>
-      wt.id !== id &&
+  const duplicate = state.workTypes.find((wt) => {
+    if (wt.id === id) return false;
+    if (wt.readOnly) return false;
+    return (
       normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(newTitle) &&
       wt.workUnit === newUnit &&
-      wt.buildPhase === newPhase,
-  );
+      wt.buildPhase === newPhase
+    );
+  });
   if (duplicate) {
     throw new Error(`Work type "${newTitle}" with unit ${newUnit} and phase ${newPhase} already exists`);
   }
@@ -149,12 +175,17 @@ export function findWorkTypeByCompositeKey(
   workUnit: WorkUnit,
   buildPhase: BuildPhase,
 ): WorkType | undefined {
-  return state.workTypes.find(
+  const matches = state.workTypes.filter(
     (wt) =>
       normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(title) &&
       wt.workUnit === workUnit &&
       wt.buildPhase === buildPhase,
   );
+
+  const editable = matches.find((wt) => wt.readOnly !== true);
+  if (editable) return editable;
+
+  return matches[0];
 }
 
 export function findWorkTypeByKey(

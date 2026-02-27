@@ -19,7 +19,7 @@ import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 22;
+const DB_VERSION = 23;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -430,6 +430,59 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               p.activatedAt = null;
               changed = true;
             }
+            return changed;
+          });
+        }
+
+        // Version 23: Backfill executor lifecycle fields and line-item execution annotations
+        if (oldVersion < 23 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            const p = plan as unknown as Record<string, unknown>;
+            let changed = false;
+
+            if (p.importedAt === undefined) {
+              p.importedAt = null;
+              changed = true;
+            }
+
+            if (p.sessionClosedAt === undefined) {
+              p.sessionClosedAt = null;
+              changed = true;
+            }
+
+            if (p.reviewedAt != null && p.status !== 'reviewed' && p.status !== 'session-closed') {
+              p.status = 'reviewed';
+              changed = true;
+            }
+
+            for (const item of plan.lineItems) {
+              const i = item as unknown as Record<string, unknown>;
+              if (i.executionStatus === undefined) {
+                i.executionStatus = 'pending';
+                changed = true;
+              }
+              if (i.blockReason === undefined) {
+                i.blockReason = null;
+                changed = true;
+              }
+              if (i.blockCategory === undefined) {
+                i.blockCategory = null;
+                changed = true;
+              }
+              if (i.executorNote === undefined) {
+                i.executorNote = null;
+                changed = true;
+              }
+              if (i.deferredNote === undefined) {
+                i.deferredNote = null;
+                changed = true;
+              }
+              if (i.removedFromSource === undefined) {
+                i.removedFromSource = false;
+                changed = true;
+              }
+            }
+
             return changed;
           });
         }
@@ -909,6 +962,33 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
   // Map legacy 'lockedAt' → 'activatedAt' if the new field is absent
   if (raw.lockedAt !== undefined && raw.activatedAt === undefined) {
     raw.activatedAt = raw.lockedAt;
+  }
+
+  if (raw.activatedAt === undefined) {
+    raw.activatedAt = null;
+  }
+
+  if (raw.importedAt === undefined) {
+    raw.importedAt = null;
+  }
+
+  if (raw.sessionClosedAt === undefined) {
+    raw.sessionClosedAt = null;
+  }
+
+  if (raw.reviewedAt != null && raw.status !== 'reviewed' && raw.status !== 'session-closed') {
+    raw.status = 'reviewed';
+  }
+
+  if (Array.isArray(raw.lineItems)) {
+    for (const lineItem of raw.lineItems as Array<Record<string, unknown>>) {
+      if (lineItem.executionStatus === undefined) lineItem.executionStatus = 'pending';
+      if (lineItem.blockReason === undefined) lineItem.blockReason = null;
+      if (lineItem.blockCategory === undefined) lineItem.blockCategory = null;
+      if (lineItem.executorNote === undefined) lineItem.executorNote = null;
+      if (lineItem.deferredNote === undefined) lineItem.deferredNote = null;
+      if (lineItem.removedFromSource === undefined) lineItem.removedFromSource = false;
+    }
   }
 
   return raw as unknown as Plan;

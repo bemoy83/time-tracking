@@ -39,6 +39,7 @@ export function PlanList({
     const active: Plan[] = [];
     const archived: Plan[] = [];
     for (const plan of plans) {
+      if (plan.status === 'received' || plan.status === 'session-closed') continue;
       if (isPlanArchived(plan)) {
         archived.push(plan);
       } else {

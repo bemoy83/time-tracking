@@ -16,6 +16,10 @@ import { getFeatureFlag } from '../../../lib/flags/feature-flags';
 import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
 import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
 
+function isPlannerVisiblePlan(plan: Plan): boolean {
+  return plan.status === 'draft' || plan.status === 'active' || plan.status === 'reviewed';
+}
+
 /**
  * Shared planning data layer — owns loading, CRUD, and derived state.
  * Consumed by both desktop workspace and mobile stack navigation layers.
@@ -32,7 +36,9 @@ export function usePlanningData() {
   // --- Data loading ---
 
   useEffect(() => {
-    getAllPlans().then(setPlans);
+    getAllPlans().then((loaded) => {
+      setPlans(loaded.filter(isPlannerVisiblePlan));
+    });
   }, []);
 
   const reloadTimeEntries = useCallback(async () => {

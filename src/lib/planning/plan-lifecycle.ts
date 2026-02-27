@@ -23,7 +23,7 @@ export function isPlanReviewReady(plan: Plan, tasks: Task[]): boolean {
 
 /** A plan is archived once its wrap-up review has been completed. */
 export function isPlanArchived(plan: Plan): boolean {
-  return plan.reviewedAt != null;
+  return plan.status === 'reviewed' || plan.reviewedAt != null;
 }
 
 /**
@@ -39,7 +39,7 @@ export function sortPlansForSidebar(plans: Plan[], tasks: Task[]): Plan[] {
     const bReviewReady = isPlanReviewReady(b, tasks) ? 1 : 0;
     if (aReviewReady !== bReviewReady) return bReviewReady - aReviewReady;
 
-    const statusOrder = { active: 0, draft: 1 };
+    const statusOrder = { active: 0, draft: 1, reviewed: 2, received: 3, 'session-closed': 4 };
     const aOrder = statusOrder[a.status] ?? 2;
     const bOrder = statusOrder[b.status] ?? 2;
     if (aOrder !== bOrder) return aOrder - bOrder;

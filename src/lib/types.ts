@@ -46,6 +46,10 @@ export interface WorkType {
   workUnit: WorkUnit;              // m2 | m | pcs | orders
   buildPhase: BuildPhase;          // build-up | tear-down
   expectedProductivity: number;    // units/person-hr (required)
+  /** Read-only imported definitions are scoped to plan handoff on executor device. */
+  readOnly?: boolean;
+  /** Source plan ID for imported read-only work types. null/undefined for regular library types. */
+  importedForPlanId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
