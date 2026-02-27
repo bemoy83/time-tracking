@@ -47,7 +47,15 @@ export function buildFieldPlanLineItemSummaries(
   timeEntries: TimeEntry[],
 ): FieldPlanLineItemSummary[] {
   const linkedByLineItem = new Map<string, Task[]>();
+  const entriesByTaskId = new Map<string, TimeEntry[]>();
   const todayDate = new Date().toISOString().slice(0, 10);
+
+  for (const entry of timeEntries) {
+    if (!entriesByTaskId.has(entry.taskId)) {
+      entriesByTaskId.set(entry.taskId, []);
+    }
+    entriesByTaskId.get(entry.taskId)?.push(entry);
+  }
 
   for (const task of tasks) {
     if (task.sourcePlanId !== plan.id || task.sourceLineItemId == null) {
@@ -63,8 +71,7 @@ export function buildFieldPlanLineItemSummaries(
   return plan.lineItems
     .map((item) => {
       const linkedTasks = linkedByLineItem.get(item.id) ?? [];
-      const taskIds = new Set(linkedTasks.map((task) => task.id));
-      const linkedEntries = timeEntries.filter((entry) => taskIds.has(entry.taskId));
+      const linkedEntries = linkedTasks.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
       const deadline = evaluateLineItemDeadline(item, linkedTasks, linkedEntries, todayDate);
       return {
         item,

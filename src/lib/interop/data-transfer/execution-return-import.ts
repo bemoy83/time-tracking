@@ -7,7 +7,6 @@ import {
 } from '../../db';
 import { durationMs, generateId, nowUtc, type Task } from '../../types';
 import {
-  DATA_TRANSFER_SCHEMA_COMPAT,
   type DataTransferEnvelope,
   type ExecutionReturnImportPreview,
   type ExecutionReturnImportResult,
@@ -16,6 +15,10 @@ import {
   type ImportedExecutionReturnRecord,
   type ImportedExecutionReturnUnplannedTaskRecord,
 } from './contracts';
+import {
+  isSupportedSchemaVersion,
+  unsupportedSchemaVersionMessage,
+} from './schema-version';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -65,10 +68,10 @@ export function parseExecutionReturnJson(
     if (!isExecutionReturnEnvelope(parsed)) {
       return { ok: false, error: 'Selected file is not a valid execution return export.' };
     }
-    if (!DATA_TRANSFER_SCHEMA_COMPAT.includes(parsed.schemaVersion as (typeof DATA_TRANSFER_SCHEMA_COMPAT)[number])) {
+    if (!isSupportedSchemaVersion(String(parsed.schemaVersion))) {
       return {
         ok: false,
-        error: `Unsupported schema version: ${String(parsed.schemaVersion)} (supported: ${DATA_TRANSFER_SCHEMA_COMPAT.join(', ')}).`,
+        error: unsupportedSchemaVersionMessage(String(parsed.schemaVersion), 'execution-return'),
       };
     }
 

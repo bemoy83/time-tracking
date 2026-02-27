@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import type { Plan } from '../../lib/planning/plan-model';
-import type { DeadlineStatus } from '../../lib/planning/scheduling/deadline';
 import type { Task, TimeEntry } from '../../lib/types';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS, formatDurationShort } from '../../lib/types';
 import { computePlanProgress } from '../../lib/planning/plan-progress';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
 
 interface ProgressViewProps {
   plan: Plan;
@@ -31,31 +31,19 @@ function varianceClassName(variancePercent: number | null): string {
   return 'progress-view__variance--over';
 }
 
-function deadlineLabel(status: DeadlineStatus): string {
-  switch (status) {
-    case 'due-today': return 'Due today';
-    case 'on-track': return 'On track';
-    case 'at-risk': return 'At risk';
-    case 'overdue': return 'Overdue';
-    case 'done-on-time': return 'Done on time';
-    case 'done-late': return 'Done late';
-    case 'needs-replanning': return 'Needs replanning';
-    case 'unscheduled':
-    default:
-      return 'Unscheduled';
-  }
-}
-
 export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: ProgressViewProps) {
   const progress = useMemo(
     () => computePlanProgress(plan, tasks, timeEntries),
     [plan, tasks, timeEntries],
   );
+  const hadRiskRef = useRef(false);
 
   useEffect(() => {
-    if (progress.deadline.enabled && progress.deadline.status && progress.deadline.status !== 'on-track') {
+    const hasRisk = progress.deadline.enabled && progress.deadline.status != null && progress.deadline.status !== 'on-track';
+    if (hasRisk && !hadRiskRef.current) {
       trackTelemetryEvent('schedule_deadline_risk_visible');
     }
+    hadRiskRef.current = hasRisk;
   }, [progress.deadline.enabled, progress.deadline.status]);
 
   return (
@@ -111,7 +99,7 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
                     {item.taskCount === 1 ? '' : 's'}
                   </p>
                   <p className="progress-view__item-meta">
-                    {deadlineLabel(item.deadlineStatus)}
+                    {formatDeadlineStatusLabel(item.deadlineStatus)}
                     {item.dueDate ? ` · Due ${item.dueDate}` : ''}
                   </p>
                 </div>

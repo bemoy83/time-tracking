@@ -26,6 +26,23 @@ export function buildExecutionReturnEnvelope(
 ): DataTransferEnvelope<ExecutionReturnPayload> {
   const todayDate = new Date().toISOString().slice(0, 10);
   const planTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
+  const planTasksByLineItem = new Map<string, Task[]>();
+  for (const task of planTasks) {
+    if (task.sourceLineItemId == null) continue;
+    if (!planTasksByLineItem.has(task.sourceLineItemId)) {
+      planTasksByLineItem.set(task.sourceLineItemId, []);
+    }
+    planTasksByLineItem.get(task.sourceLineItemId)?.push(task);
+  }
+
+  const entriesByTaskId = new Map<string, TimeEntry[]>();
+  for (const entry of timeEntries) {
+    if (!entriesByTaskId.has(entry.taskId)) {
+      entriesByTaskId.set(entry.taskId, []);
+    }
+    entriesByTaskId.get(entry.taskId)?.push(entry);
+  }
+
   const unplannedTasks = tasks.filter(
     (task) => task.projectId === plan.projectId && task.sourcePlanId == null,
   );
@@ -44,9 +61,8 @@ export function buildExecutionReturnEnvelope(
   };
 
   const lineItems = plan.lineItems.map((item) => {
-    const linked = planTasks.filter((task) => task.sourceLineItemId === item.id);
-    const taskIdSet = new Set(linked.map((task) => task.id));
-    const linkedEntries = timeEntries.filter((entry) => taskIdSet.has(entry.taskId));
+    const linked = planTasksByLineItem.get(item.id) ?? [];
+    const linkedEntries = linked.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
     const status = deriveStatusFromTasks(item.executionStatus, linked);
     const deadline = evaluateLineItemDeadline(item, linked, linkedEntries, todayDate);
     if (status === 'pending') summaryByStatus.pending += 1;

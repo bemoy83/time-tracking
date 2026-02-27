@@ -22,7 +22,10 @@ import {
   planTotalPersonHours,
 } from '../../lib/planning/plan-model';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
-import { reconcileWorkCalendar } from '../../lib/planning/scheduling/work-calendar';
+import {
+  setPlanDefaultCrewSize,
+  setPlanEventDate,
+} from '../../lib/planning/scheduling/plan-schedule-update';
 import { ChevronLeftIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -31,6 +34,7 @@ import { MetricCard } from '../../components/MetricCard';
 import { AddLineItemForm } from './AddLineItemForm';
 import { LineItemCard } from './LineItemCard';
 import { shouldClearPlanProjectId } from './plan-editor-state';
+import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 
 interface PlanEditorProps {
   plan: Plan;
@@ -102,40 +106,11 @@ export function PlanEditor({
   };
 
   const handleSetEventDate = (field: 'eventStartDate' | 'eventEndDate', value: string) => {
-    mutatePlan((prev) => {
-      const next = {
-        ...prev,
-        [field]: value || null,
-      };
-      return {
-        ...next,
-        workCalendar: reconcileWorkCalendar(
-          next.workCalendar,
-          next.eventStartDate,
-          next.eventEndDate,
-          next.defaultCrewSize,
-        ),
-      };
-    });
+    mutatePlan((prev) => setPlanEventDate(prev, field, value));
   };
 
   const handleSetDefaultCrewSize = (value: string) => {
-    const parsed = value.trim() === '' ? null : Math.max(0, Math.floor(Number(value)));
-    mutatePlan((prev) => {
-      const next = {
-        ...prev,
-        defaultCrewSize: Number.isFinite(parsed as number) ? parsed : null,
-      };
-      return {
-        ...next,
-        workCalendar: reconcileWorkCalendar(
-          next.workCalendar,
-          next.eventStartDate,
-          next.eventEndDate,
-          next.defaultCrewSize,
-        ),
-      };
-    });
+    mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
@@ -207,40 +182,14 @@ export function PlanEditor({
           </button>
         </div>
 
-        <div className="planning-view__schedule-inputs">
-          <label className="planning-view__schedule-input">
-            <span>Event start</span>
-            <input
-              className="input"
-              type="date"
-              value={currentPlan.eventStartDate ?? ''}
-              disabled={readOnly}
-              onChange={(e) => handleSetEventDate('eventStartDate', e.target.value)}
-            />
-          </label>
-          <label className="planning-view__schedule-input">
-            <span>Event end</span>
-            <input
-              className="input"
-              type="date"
-              value={currentPlan.eventEndDate ?? ''}
-              disabled={readOnly}
-              onChange={(e) => handleSetEventDate('eventEndDate', e.target.value)}
-            />
-          </label>
-          <label className="planning-view__schedule-input">
-            <span>Default crew</span>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              step={1}
-              value={currentPlan.defaultCrewSize ?? ''}
-              disabled={readOnly}
-              onChange={(e) => handleSetDefaultCrewSize(e.target.value)}
-            />
-          </label>
-        </div>
+        <PlanScheduleInputs
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
+          defaultCrewSize={currentPlan.defaultCrewSize}
+          readOnly={readOnly}
+          onEventDateChange={handleSetEventDate}
+          onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+        />
 
         {/* Summary stats */}
         <div className="planning-view__summary metric-card-row">

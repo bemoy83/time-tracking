@@ -8,13 +8,16 @@ import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store'
 import { nowUtc } from '../../types';
 import type { WorkType } from '../../types';
 import {
-  DATA_TRANSFER_SCHEMA_COMPAT,
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type PlanPackageImportPreview,
   type PlanPackagePayload,
 } from './contracts';
 import { reconcileWorkCalendar } from '../../planning/scheduling/work-calendar';
+import {
+  isSupportedSchemaVersion,
+  unsupportedSchemaVersionMessage,
+} from './schema-version';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -121,10 +124,10 @@ export function parsePlanPackageJson(
     if (parsed.exportType !== 'plan-package') {
       return { ok: false, error: 'Selected file is not a plan package export' };
     }
-    if (!DATA_TRANSFER_SCHEMA_COMPAT.includes(parsed.schemaVersion as (typeof DATA_TRANSFER_SCHEMA_COMPAT)[number])) {
+    if (!isSupportedSchemaVersion(String(parsed.schemaVersion))) {
       return {
         ok: false,
-        error: `Unsupported schema version: ${String(parsed.schemaVersion)} (supported: ${DATA_TRANSFER_SCHEMA_COMPAT.join(', ')})`,
+        error: unsupportedSchemaVersionMessage(String(parsed.schemaVersion), 'plan-package'),
       };
     }
     if (!isRecord(parsed.payload)) {

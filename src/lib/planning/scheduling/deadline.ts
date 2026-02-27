@@ -30,12 +30,16 @@ function toDatePart(iso: string): string {
 
 function dateFromEntry(entries: TimeEntry[], pick: 'start' | 'end'): string | null {
   if (entries.length === 0) return null;
-  const sorted = [...entries].sort((a, b) =>
-    pick === 'start'
-      ? a.startUtc.localeCompare(b.startUtc)
-      : a.endUtc.localeCompare(b.endUtc),
-  );
-  return pick === 'start' ? toDatePart(sorted[0].startUtc) : toDatePart(sorted[sorted.length - 1].endUtc);
+  let best = pick === 'start' ? entries[0].startUtc : entries[0].endUtc;
+  for (let i = 1; i < entries.length; i += 1) {
+    const candidate = pick === 'start' ? entries[i].startUtc : entries[i].endUtc;
+    if (pick === 'start') {
+      if (candidate < best) best = candidate;
+    } else if (candidate > best) {
+      best = candidate;
+    }
+  }
+  return toDatePart(best);
 }
 
 function computeHoursSpent(entries: TimeEntry[]): number {

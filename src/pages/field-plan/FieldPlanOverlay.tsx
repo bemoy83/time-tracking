@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackIcon, ChevronRightIcon } from '../../components/icons';
 import { getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
 import { lineItemToCreateTaskInput } from '../../lib/planning/release-plan';
@@ -10,12 +10,6 @@ import {
 } from '../../lib/planning/plan-model';
 import { createTask, useTaskStore } from '../../lib/stores/task-store';
 import { nowUtc, WORK_UNIT_LABELS, BUILD_PHASE_LABELS, type TimeEntry } from '../../lib/types';
-import {
-  applyPlanPackageImport,
-  parsePlanPackageJson,
-  previewPlanPackageImport,
-} from '../../lib/interop/data-transfer/plan-package';
-import type { PlanPackageImportPreview } from '../../lib/interop/data-transfer/contracts';
 import { buildExecutionReturnEnvelope } from '../../lib/interop/data-transfer/execution-return';
 import { downloadJson } from '../../lib/interop/download-json';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
@@ -24,6 +18,8 @@ import {
   summarizeLineItemStatuses,
   type FieldPlanLineItemSummary,
 } from './field-plan-model';
+import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
+import { useFieldPlanImport } from './useFieldPlanImport';
 
 type GroupMode = 'phase' | 'flat';
 
@@ -92,21 +88,6 @@ function getStatusLabel(status: FieldPlanLineItemSummary['status']): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function getDeadlineLabel(status: FieldPlanLineItemSummary['deadlineStatus']): string {
-  switch (status) {
-    case 'due-today': return 'Due today';
-    case 'on-track': return 'On track';
-    case 'at-risk': return 'At risk';
-    case 'overdue': return 'Overdue';
-    case 'done-on-time': return 'Done on time';
-    case 'done-late': return 'Done late';
-    case 'needs-replanning': return 'Needs replanning';
-    case 'unscheduled':
-    default:
-      return 'Unscheduled';
-  }
-}
-
 function getGroupModeInitialValue(): GroupMode {
   try {
     const stored = sessionStorage.getItem(GROUP_MODE_STORAGE_KEY);
@@ -128,9 +109,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
   const [groupMode, setGroupMode] = useState<GroupMode>(getGroupModeInitialValue);
   const [message, setMessage] = useState<string | null>(null);
 
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [preview, setPreview] = useState<PlanPackageImportPreview | null>(null);
-  const [isApplyingImport, setIsApplyingImport] = useState(false);
+  const hadDeadlineRiskRef = useRef(false);
 
   const reloadData = useCallback(async () => {
     const [allPlans, allTimeEntries] = await Promise.all([getAllPlans(), getAllTimeEntries()]);
@@ -138,12 +117,29 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     setTimeEntries(allTimeEntries);
   }, []);
 
+  const handleImportApplied = useCallback(async (planId: string) => {
+    await reloadData();
+    setSelectedPlanId(planId);
+  }, [reloadData]);
+
+  const {
+    isLoadingPreview,
+    preview,
+    isApplyingImport,
+    handleFileChange,
+    handleApplyImport,
+    resetImportPreview,
+  } = useFieldPlanImport({
+    onMessage: setMessage,
+    onImportApplied: handleImportApplied,
+  });
+
   useEffect(() => {
     if (!isOpen) return;
     setMessage(null);
-    setPreview(null);
+    resetImportPreview();
     void reloadData();
-  }, [isOpen, reloadData]);
+  }, [isOpen, reloadData, resetImportPreview]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -225,9 +221,11 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
   useEffect(() => {
     if (!isOpen) return;
-    if (deadlineSummary.overdue > 0 || deadlineSummary.atRisk > 0) {
+    const hasRisk = deadlineSummary.overdue > 0 || deadlineSummary.atRisk > 0;
+    if (hasRisk && !hadDeadlineRiskRef.current) {
       trackTelemetryEvent('schedule_deadline_risk_visible');
     }
+    hadDeadlineRiskRef.current = hasRisk;
   }, [deadlineSummary.atRisk, deadlineSummary.overdue, isOpen]);
 
   const unplannedTasks = useMemo(() => {
@@ -380,54 +378,6 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
       trackTelemetryEvent('interop_session_close_failed');
     }
   }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
-
-  const handleFileChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    event.target.value = '';
-    setMessage(null);
-    setPreview(null);
-    setIsLoadingPreview(true);
-
-    try {
-      const text = await file.text();
-      const parsed = parsePlanPackageJson(text);
-      if (!parsed.ok) {
-        setMessage(parsed.error);
-        return;
-      }
-
-      const nextPreview = await previewPlanPackageImport(parsed.envelope);
-      setPreview(nextPreview);
-      trackTelemetryEvent('interop_plan_package_preview');
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  }, []);
-
-  const handleApplyImport = useCallback(async (resolution: 'replace' | 'skip' = 'replace') => {
-    if (!preview) return;
-    setIsApplyingImport(true);
-    try {
-      const result = await applyPlanPackageImport(preview, resolution);
-      setMessage(result.reason);
-      if (result.applied) {
-        setPreview(null);
-        await reloadData();
-        setSelectedPlanId(preview.planId);
-        trackTelemetryEvent(result.merged ? 'interop_plan_package_merge' : 'interop_plan_package_import');
-        if (preview.envelope.schemaVersion === '1.0') {
-          trackTelemetryEvent('schedule_import_defaulted');
-        }
-      } else if (resolution === 'skip') {
-        trackTelemetryEvent('interop_plan_package_skip');
-      } else {
-        trackTelemetryEvent('interop_plan_package_conflict');
-      }
-    } finally {
-      setIsApplyingImport(false);
-    }
-  }, [preview, reloadData]);
 
   if (!isOpen) return null;
 
@@ -732,7 +682,7 @@ function LineItemCard({
         {item.workTypeTitle} · {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {item.crew} workers · {item.timeHours.toFixed(1)}h
       </p>
       <p className="field-line-item__meta">
-        {getDeadlineLabel(lineItem.deadlineStatus)}
+        {formatDeadlineStatusLabel(lineItem.deadlineStatus)}
         {lineItem.dueDate ? ` · Due ${lineItem.dueDate}` : ''}
       </p>
 
