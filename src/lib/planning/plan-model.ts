@@ -2,7 +2,7 @@
  * Planning workspace data model.
  *
  * A Plan is a collection of work packages (line items) with editable
- * assumptions. Plans can be in 'draft' or 'locked' status.
+ * assumptions. Plans can be in 'draft' or 'active' status.
  *
  * Each line item maps to a WorkType key for KPI-backed suggestions.
  */
@@ -11,7 +11,7 @@ import type { WorkUnit, BuildPhase } from '../types';
 import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 
-export type PlanStatus = 'draft' | 'locked';
+export type PlanStatus = 'draft' | 'active';
 
 export interface PlanLineItem {
   id: string;
@@ -49,8 +49,8 @@ export interface Plan {
   projectId: string | null;
   createdAt: string;
   updatedAt: string;
-  /** ISO timestamp when plan was locked. null if draft. */
-  lockedAt: string | null;
+  /** ISO timestamp when plan was activated. null if draft. */
+  activatedAt: string | null;
   /** ISO timestamp when plan wrap-up review was finalized. */
   reviewedAt?: string | null;
 }
@@ -103,7 +103,7 @@ export function createPlan(title: string): Plan {
     projectId: null,
     createdAt: now,
     updatedAt: now,
-    lockedAt: null,
+    activatedAt: null,
     reviewedAt: null,
   };
 }
@@ -164,23 +164,23 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
   };
 }
 
-/** Lock a plan (freeze for execution). */
-export function lockPlan(plan: Plan): Plan {
+/** Activate a plan (freeze for execution). */
+export function activatePlan(plan: Plan): Plan {
   const now = nowUtc();
   return {
     ...plan,
-    status: 'locked',
-    lockedAt: now,
+    status: 'active',
+    activatedAt: now,
     updatedAt: now,
   };
 }
 
-/** Unlock a plan back to draft. */
-export function unlockPlan(plan: Plan): Plan {
+/** Revert an active plan back to draft. */
+export function revertToDraft(plan: Plan): Plan {
   return {
     ...plan,
     status: 'draft',
-    lockedAt: null,
+    activatedAt: null,
     updatedAt: nowUtc(),
   };
 }

@@ -105,7 +105,7 @@ export function TemplatePickerSheet({
         </p>
       ) : mode === 'plan' ? (
         <p className="template-picker__blank-desc">
-          Add work packages from a locked plan as tasks.
+          Add work packages from an active plan as tasks.
         </p>
       ) : (
         <div className="template-picker">

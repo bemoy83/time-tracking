@@ -41,3 +41,8 @@
   width: 24px;
   height: 24px;
 }
+
+/* Hidden when workspace mode is active */
+.tab-nav--hidden {
+  display: none;
+}

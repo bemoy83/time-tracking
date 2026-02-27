@@ -13,8 +13,8 @@ import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
-  lockPlan,
-  unlockPlan,
+  activatePlan,
+  revertToDraft,
   addLineItemToPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
@@ -38,6 +38,8 @@ interface PlanEditorProps {
   projects: Project[];
   canComparePlans: boolean;
   canOpenProgress: boolean;
+  /** When true, all editing controls are disabled (reviewed/archived plans). */
+  readOnly?: boolean;
   onSave: (plan: Plan) => void;
   onBack: () => void;
   onCompare: (planId: string) => void;
@@ -51,6 +53,7 @@ export function PlanEditor({
   projects,
   canComparePlans,
   canOpenProgress,
+  readOnly = false,
   onSave,
   onBack,
   onCompare,
@@ -74,7 +77,8 @@ export function PlanEditor({
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
-  const isLocked = currentPlan.status === 'locked';
+  const isLocked = currentPlan.status === 'active';
+  const isEditable = !readOnly && !isLocked;
   const selectedProject = currentPlan.projectId
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
@@ -84,7 +88,7 @@ export function PlanEditor({
   };
 
   const handleToggleLock = () => {
-    mutatePlan((prev) => (isLocked ? unlockPlan(prev) : lockPlan(prev)));
+    mutatePlan((prev) => (isLocked ? revertToDraft(prev) : activatePlan(prev)));
     trackTelemetryEvent('planning_lock_toggle');
   };
 
@@ -132,7 +136,7 @@ export function PlanEditor({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleSave}
-            disabled={isLocked}
+            disabled={readOnly || isLocked}
             aria-label="Plan title"
           />
           <StatusBadge variant={currentPlan.status} />
@@ -144,7 +148,7 @@ export function PlanEditor({
             type="button"
             className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
             onClick={() => setShowProjectPicker(true)}
-            disabled={isLocked}
+            disabled={readOnly || isLocked}
             style={
               selectedProject
                 ? { backgroundColor: selectedProject.color, color: 'white' }
@@ -184,7 +188,7 @@ export function PlanEditor({
           )}
         </div>
 
-        {!isLocked && (
+        {isEditable && (
           <div className="planning-view__phase-pills" role="group" aria-label="Build phase filter">
             {BUILD_PHASES.map((phase) => (
               <button
@@ -201,39 +205,41 @@ export function PlanEditor({
         )}
 
         {/* Actions */}
-        <div className="planning-view__actions">
-          {isLocked && canOpenProgress && (
-            <button className="btn btn--secondary" onClick={onOpenProgress}>
-              Progress
+        {!readOnly && (
+          <div className="planning-view__actions">
+            {isLocked && canOpenProgress && (
+              <button className="btn btn--secondary" onClick={onOpenProgress}>
+                Progress
+              </button>
+            )}
+            <button className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`} onClick={handleToggleLock}>
+              {isLocked ? 'Revert to Draft' : 'Activate'}
             </button>
-          )}
-          <button className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`} onClick={handleToggleLock}>
-            {isLocked ? 'Unlock' : 'Lock Plan'}
-          </button>
-          {canComparePlans && otherPlans.length > 0 && (
-            <select
-              className="input planning-view__compare-trigger"
-              onChange={(e) => {
-                if (e.target.value) onCompare(e.target.value);
-              }}
-              value=""
-            >
-              <option value="">Compare with...</option>
-              {otherPlans.map((p) => (
-                <option key={p.id} value={p.id}>{p.title}</option>
-              ))}
-            </select>
-          )}
-        </div>
+            {canComparePlans && otherPlans.length > 0 && (
+              <select
+                className="input planning-view__compare-trigger"
+                onChange={(e) => {
+                  if (e.target.value) onCompare(e.target.value);
+                }}
+                value=""
+              >
+                <option value="">Compare with...</option>
+                {otherPlans.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* FAB — Add Work Package (when not locked) */}
-      {!isLocked && (
+      {/* FAB — Add Work Package (when editable) */}
+      {isEditable && (
         <Fab onClick={() => setShowAddItem(true)} aria-label="Add work package" />
       )}
 
       {/* Add form */}
-      {showAddItem && !isLocked && (
+      {showAddItem && isEditable && (
         <AddLineItemForm
           phaseFilter={phaseFilter}
           onAdd={handleAddLineItem}
@@ -256,7 +262,7 @@ export function PlanEditor({
                   key={item.id}
                   item={item}
                   suggestion={suggestion}
-                  isLocked={isLocked}
+                  isLocked={readOnly || isLocked}
                   onUpdate={(updates) => handleUpdateItem(item.id, updates)}
                   onDuplicate={handleDuplicateItem}
                   onRemove={() => handleRemoveItem(item.id)}

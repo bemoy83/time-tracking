@@ -1,6 +1,6 @@
 /**
  * Pill-shaped status badge/chip, shareable across views.
- * Used for plan status (draft, locked), confidence levels, and similar labels.
+ * Used for plan status (draft, active), confidence levels, and similar labels.
  */
 
 import type { PlanStatus } from '../lib/planning/plan-model';

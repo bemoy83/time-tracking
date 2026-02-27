@@ -59,6 +59,7 @@
 @import './styles/components/plan-picker.css';
 @import './styles/components/calculator.css';
 @import './styles/components/planning.css';
+@import './styles/components/planning-workspace.css';
 @import './styles/components/progress-view.css';
 @import './styles/components/wrap-up-sheet.css';
 @import './styles/components/insights-view.css';

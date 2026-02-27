@@ -19,6 +19,12 @@
   color: white;
 }
 
+.status-badge--active {
+  background: var(--color-ready);
+  color: white;
+}
+
+/* Legacy compat — may still be referenced in tests or old renders */
 .status-badge--locked {
   background: var(--color-ready);
   color: white;

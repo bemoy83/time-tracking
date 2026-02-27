@@ -1,7 +1,7 @@
 /**
- * AddFromPlanSheet — ActionSheet for releasing locked plan line items as tasks.
+ * AddFromPlanSheet — ActionSheet for releasing active plan line items as tasks.
  *
- * Displays locked plans with expandable line-item sections.
+ * Displays active plans with expandable line-item sections.
  * Users multi-select line items via checkboxes, then confirm to create tasks.
  */
 
@@ -32,7 +32,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     setSelectedItemIds(new Set());
     setIsCreating(false);
     getAllPlans().then((all) => {
-      setPlans(all.filter((p) => p.status === 'locked' || p.reviewedAt != null));
+      setPlans(all.filter((p) => p.status === 'active' || p.reviewedAt != null));
     });
   }, [isOpen]);
 
@@ -105,7 +105,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
     <ActionSheet isOpen={isOpen} title="Add from Plan" onClose={onClose}>
       {plans.length === 0 ? (
         <p className="template-picker__blank-desc">
-          No locked plans. Lock a plan in Planning to add work here.
+          No active plans. Activate a plan in Planning to add work here.
         </p>
       ) : (
         <div className="plan-picker">

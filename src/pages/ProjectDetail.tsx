@@ -115,9 +115,9 @@ export function ProjectDetail({
   }, []);
 
   const reviewReadyPlan = useMemo(() => {
-    const candidates = plans.filter((plan) => plan.projectId === projectId && plan.status === 'locked');
+    const candidates = plans.filter((plan) => plan.projectId === projectId && plan.status === 'active');
     const ready = candidates.filter((plan) => isPlanReviewReady(plan, tasks));
-    ready.sort((a, b) => (b.lockedAt ?? '').localeCompare(a.lockedAt ?? ''));
+    ready.sort((a, b) => (b.activatedAt ?? '').localeCompare(a.activatedAt ?? ''));
     return ready[0] ?? null;
   }, [plans, projectId, tasks]);
 

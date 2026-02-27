@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeTemplateStore } from './lib/stores/template-store';
@@ -20,6 +20,8 @@ import { SettingsProductivityView } from './pages/settings/SettingsProductivityV
 import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
 import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
 import { SettingsTelemetryView } from './pages/settings/SettingsTelemetryView';
+import { getFeatureFlag } from './lib/flags/feature-flags';
+import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 
 type Tab = 'today' | 'projects' | 'planning' | 'settings';
 type SettingsSection =
@@ -78,6 +80,18 @@ function App() {
   // Show network status bar when offline or has pending/errors (disabled until sync implemented)
   const showNetworkStatus = false;
 
+  // Track the tab the user was on before entering the planning workspace
+  const previousTabRef = useRef<Tab>('today');
+
+  // Workspace mode detection
+  const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
+  const workspaceEnabled = getFeatureFlag('planningWorkspaceDesktop');
+  const isPlanningWorkspaceActive =
+    workspaceEnabled &&
+    isWideScreen &&
+    view.type === 'tab' &&
+    view.tab === 'planning';
+
   const isLoading = !initialized || timerLoading || tasksLoading;
 
   if (isLoading) {
@@ -113,7 +127,16 @@ function App() {
     if (tab !== 'planning') {
       setPlanningLaunch(null);
     }
+    // Track the previous tab so workspace exit can return to it
+    if (tab === 'planning' && currentTab !== 'planning') {
+      previousTabRef.current = currentTab;
+    }
     setView({ type: 'tab', tab });
+  };
+
+  const handleExitWorkspace = () => {
+    setPlanningLaunch(null);
+    setView({ type: 'tab', tab: previousTabRef.current });
   };
 
   const handleNavigateToProject = (project: Project) => {
@@ -135,7 +158,12 @@ function App() {
       {/* Network status bar - disabled until sync is implemented */}
       {/* <NetworkStatus /> */}
 
-      <main id="main-content" role="main" aria-label="Main content">
+      <main
+        id="main-content"
+        role="main"
+        aria-label="Main content"
+        className={isPlanningWorkspaceActive ? 'main--workspace' : undefined}
+      >
         {view.type === 'tab' && view.tab === 'today' && (
           <TodayView onSelectTask={handleSelectTask} />
         )}
@@ -147,6 +175,7 @@ function App() {
             initialPlanId={planningLaunch?.planId ?? null}
             initialSubView={planningLaunch?.subView}
             onInitialNavigationHandled={() => setPlanningLaunch(null)}
+            onExitWorkspace={handleExitWorkspace}
           />
         )}
         {view.type === 'tab' && view.tab === 'settings' && (
@@ -200,7 +229,7 @@ function App() {
 
       {/* Tab Navigation */}
       {view.type === 'tab' && (
-        <nav className="tab-nav" role="navigation" aria-label="Main navigation">
+        <nav className={`tab-nav${isPlanningWorkspaceActive ? ' tab-nav--hidden' : ''}`} role="navigation" aria-label="Main navigation">
           <button
             className={`tab-nav__btn ${currentTab === 'today' ? 'tab-nav__btn--active' : ''}`}
             onClick={() => handleTabChange('today')}

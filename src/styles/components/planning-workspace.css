@@ -1,0 +1,283 @@
+/* ============================================================
+   Planning Workspace — desktop/tablet two-pane layout
+   ============================================================ */
+
+.planning-workspace {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* --- Sidebar --- */
+
+.planning-workspace__sidebar {
+  width: 320px;
+  min-width: 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.planning-workspace__sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.planning-workspace__exit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  margin: 0 calc(-1 * var(--space-sm));
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s;
+}
+
+.planning-workspace__exit:hover {
+  background: var(--color-surface-hover);
+}
+
+.planning-workspace__exit:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.planning-workspace__exit-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.planning-workspace__sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+/* Override plan list styles inside sidebar: remove outer padding since sidebar provides it */
+.planning-workspace__sidebar-content .planning-view {
+  gap: var(--space-sm);
+}
+
+/* --- Sidebar actions (create + insights) --- */
+
+.planning-sidebar__actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.planning-sidebar__create-btn,
+.planning-sidebar__insights-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: 1;
+  padding: var(--space-sm) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--font-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+.planning-sidebar__create-btn:hover,
+.planning-sidebar__insights-btn:hover {
+  background: var(--color-surface-hover);
+}
+
+.planning-sidebar__create-btn:focus-visible,
+.planning-sidebar__insights-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.planning-sidebar__create-btn {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.planning-sidebar__action-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* --- Sidebar zones (Active / Archive) --- */
+
+.planning-sidebar__zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.planning-sidebar__zone-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-xs) var(--space-sm);
+  margin: 0;
+}
+
+/* Compact list variant for sidebar */
+.planning-view__list--compact {
+  border-radius: var(--radius-lg);
+}
+
+.planning-view__list--compact .planning-view__item-btn {
+  padding: var(--space-sm) var(--space-sm);
+  min-height: 40px;
+}
+
+.planning-view__list--compact .planning-view__item-delete {
+  width: 28px;
+  height: 28px;
+  margin-right: var(--space-xs);
+}
+
+.planning-view__list--compact .planning-view__item-delete-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.planning-view__list--compact .planning-view__item-action {
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  margin-right: var(--space-xs);
+}
+
+/* --- Selected plan highlight in sidebar --- */
+
+.planning-view__item--selected {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__item--selected .planning-view__item-btn {
+  font-weight: 600;
+}
+
+/* --- Mobile zone heading (full-page list) --- */
+
+.planning-view__zone-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-sm) 0 var(--space-xs);
+  margin: var(--space-md) 0 0;
+}
+
+.planning-view__list--archive {
+  opacity: 0.75;
+}
+
+/* --- Main pane --- */
+
+.planning-workspace__main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.planning-workspace__main-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.planning-workspace__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  color: var(--color-text-muted);
+  font-size: var(--font-body);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+/* --- Tab strip --- */
+
+.planning-workspace__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-md);
+  flex-shrink: 0;
+  background: var(--color-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.planning-workspace__tab {
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.planning-workspace__tab:hover {
+  color: var(--color-text);
+}
+
+.planning-workspace__tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.planning-workspace__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* --- Tab content --- */
+
+.planning-workspace__tab-content {
+  flex: 1;
+  padding: var(--space-md);
+  overflow-y: auto;
+}
+
+/* Override back buttons inside workspace main pane — navigation is via tabs */
+.planning-workspace__tab-content .planning-view__back {
+  display: none;
+}
+
+/* --- Reviewed/archived banner --- */
+
+.planning-workspace__reviewed-banner {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+}

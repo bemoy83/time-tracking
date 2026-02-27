@@ -42,4 +42,13 @@ describe('feature flags', () => {
     setFeatureFlag('calculatorMultiScenarioCards', false);
     expect(getFeatureFlag('calculatorMultiScenarioCards')).toBe(false);
   });
+
+  it('defaults planningWorkspaceDesktop to true', () => {
+    expect(getFeatureFlag('planningWorkspaceDesktop')).toBe(true);
+  });
+
+  it('disables planningWorkspaceDesktop when toggled off', () => {
+    setFeatureFlag('planningWorkspaceDesktop', false);
+    expect(getFeatureFlag('planningWorkspaceDesktop')).toBe(false);
+  });
 });

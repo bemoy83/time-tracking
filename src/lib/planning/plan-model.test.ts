@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   createPlan,
   createLineItem,
-  lockPlan,
-  unlockPlan,
+  activatePlan,
+  revertToDraft,
   addLineItemToPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
@@ -20,7 +20,7 @@ describe('createPlan', () => {
     expect(plan.status).toBe('draft');
     expect(plan.lineItems).toHaveLength(0);
     expect(plan.projectId).toBeNull();
-    expect(plan.lockedAt).toBeNull();
+    expect(plan.activatedAt).toBeNull();
     expect(plan.reviewedAt).toBeNull();
     expect(plan.id).toBeTruthy();
   });
@@ -46,19 +46,19 @@ describe('createLineItem', () => {
   });
 });
 
-describe('lockPlan / unlockPlan', () => {
-  it('locks a plan', () => {
+describe('activatePlan / revertToDraft', () => {
+  it('activates a plan', () => {
     const plan = createPlan('Test');
-    const locked = lockPlan(plan);
-    expect(locked.status).toBe('locked');
-    expect(locked.lockedAt).toBeTruthy();
+    const active = activatePlan(plan);
+    expect(active.status).toBe('active');
+    expect(active.activatedAt).toBeTruthy();
   });
 
-  it('unlocks a plan', () => {
-    const locked = lockPlan(createPlan('Test'));
-    const unlocked = unlockPlan(locked);
-    expect(unlocked.status).toBe('draft');
-    expect(unlocked.lockedAt).toBeNull();
+  it('reverts a plan to draft', () => {
+    const active = activatePlan(createPlan('Test'));
+    const reverted = revertToDraft(active);
+    expect(reverted.status).toBe('draft');
+    expect(reverted.activatedAt).toBeNull();
   });
 });
 

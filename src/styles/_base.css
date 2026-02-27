@@ -42,6 +42,13 @@ main {
   transition: padding-bottom 0.25s ease-out;
 }
 
+/* Remove content constraint when in workspace mode (planning desktop) */
+main.main--workspace {
+  max-width: none;
+  padding: 0;
+  padding-bottom: 0;
+}
+
 main:target {
   outline: 2px solid var(--color-primary);
 }

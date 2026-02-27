@@ -56,7 +56,7 @@ function makePlan(): Plan {
   return {
     ...createPlan('Plan'),
     id: 'plan-1',
-    status: 'locked',
+    status: 'active',
     projectId: 'project-1',
     reviewedAt: null,
   };

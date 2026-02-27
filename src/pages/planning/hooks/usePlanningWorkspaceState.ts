@@ -1,202 +1,244 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWorkTypeStore } from '../../../lib/stores/work-type-store';
-import {
-  addPlan,
-  deletePlan,
-  getAllPlans,
-  getAllTimeEntries,
-  updatePlan,
-} from '../../../lib/db';
-import { comparePlans } from '../../../lib/planning/plan-compare';
-import { createPlan, type Plan } from '../../../lib/planning/plan-model';
-import { computeWorkTypeKpis, type WorkTypeKpi } from '../../../lib/kpi';
-import { buildAttributedRollup } from '../../../lib/attributed-rollup';
-import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
-import { getFeatureFlag } from '../../../lib/flags/feature-flags';
 import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
-import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
-import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
+import type { Plan } from '../../../lib/planning/plan-model';
+import { usePlanningData, type PlanningData } from './usePlanningData';
+import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
 
+/**
+ * Navigation mode determines layout and navigation behavior.
+ * - 'stack': mobile — full-screen sub-views pushed onto a stack
+ * - 'workspace': desktop/tablet — persistent sidebar + main pane
+ */
+export type NavigationMode = 'stack' | 'workspace';
+
+/** Sub-views for stack (mobile) navigation. */
 export type PlanningSubView = 'list' | 'edit' | 'compare' | 'progress' | 'insights';
 
+/** Tabs available in the workspace main pane. */
+export type WorkspaceTab = 'edit' | 'progress' | 'compare' | 'insights';
+
 interface PlanningWorkspaceOptions {
+  /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
+  mode?: NavigationMode;
   initialPlanId?: string | null;
   initialSubView?: 'edit' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
 }
 
 export function usePlanningWorkspaceState({
+  mode = 'stack',
   initialPlanId,
   initialSubView,
   onInitialNavigationHandled,
 }: PlanningWorkspaceOptions = {}) {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [timeEntries, setTimeEntries] = useState<Awaited<ReturnType<typeof getAllTimeEntries>>>([]);
-  const [subView, setSubView] = useState<PlanningSubView>('list');
+  const data: PlanningData = usePlanningData();
+
+  // --- Session restoration (workspace mode only) ---
+  const session = useRef(mode === 'workspace' ? loadPlanningSession() : null).current;
+
+  // --- Shared selection state ---
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [comparePlanId, setComparePlanId] = useState<string | null>(null);
-  const [wrapUpPlan, setWrapUpPlan] = useState<Plan | null>(null);
-  const [kpis, setKpis] = useState<WorkTypeKpi[]>([]);
-  const { tasks, projects } = useTaskStore();
-  const { workTypes } = useWorkTypeStore();
-  const canComparePlans = getFeatureFlag('planningScenarioCompare');
+
+  // --- Stack navigation state (mobile) ---
+  const [subView, setSubView] = useState<PlanningSubView>('list');
+
+  // --- Workspace navigation state (desktop) ---
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(
+    session?.activeTab ?? 'edit',
+  );
+
   const initialNavigationAppliedRef = useRef(false);
+  const sessionRestoredRef = useRef(false);
 
+  // --- Restore session (workspace mode): re-select last plan once plans load ---
   useEffect(() => {
-    getAllPlans().then(setPlans);
-  }, []);
+    if (mode !== 'workspace') return;
+    if (sessionRestoredRef.current) return;
+    if (data.plans.length === 0) return;
+    // Don't restore if an external initial navigation was requested
+    if (initialPlanId) return;
 
-  const reloadTimeEntries = useCallback(async () => {
-    const entries = await getAllTimeEntries();
-    setTimeEntries(entries);
-  }, []);
+    sessionRestoredRef.current = true;
+    if (!session?.selectedPlanId) return;
 
-  useEffect(() => {
-    void reloadTimeEntries();
-  }, [reloadTimeEntries]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadKpis() {
-      const completedTasks = tasks.filter((task) => task.status === 'completed');
-      if (completedTasks.length === 0) {
-        if (!cancelled) setKpis([]);
-        return;
-      }
-      const rollup = await buildAttributedRollup(completedTasks, tasks);
-      const outlierMode = getOutlierHandlingMode();
-      const computed = computeWorkTypeKpis(completedTasks, rollup.entriesByTask, {
-        workTypes,
-        archiveOnly: true,
-        outlierMode,
-      });
-      if (!cancelled) setKpis(computed);
+    const restoredPlan = data.plans.find((p) => p.id === session.selectedPlanId);
+    if (restoredPlan) {
+      setActivePlan(restoredPlan);
     }
+  }, [mode, data.plans, session, initialPlanId]);
 
-    void loadKpis();
-    return () => {
-      cancelled = true;
-    };
-  }, [tasks, workTypes]);
+  // --- Persist session on selection/tab changes (workspace mode) ---
+  useEffect(() => {
+    if (mode !== 'workspace') return;
+    savePlanningSession({
+      selectedPlanId: activePlan?.id ?? null,
+      activeTab,
+    });
+  }, [mode, activePlan, activeTab]);
 
+  // --- Sync activePlan with plans list (handle updates/deletes) ---
+  useEffect(() => {
+    if (!activePlan) return;
+    const updated = data.plans.find((p) => p.id === activePlan.id);
+    if (!updated) {
+      setActivePlan(null);
+      if (mode === 'stack') setSubView('list');
+    }
+  }, [activePlan, data.plans, mode]);
+
+  // --- Handle initial navigation from external launch ---
   useEffect(() => {
     if (initialNavigationAppliedRef.current) return;
     if (!initialPlanId) return;
-    if (plans.length === 0) return;
+    if (data.plans.length === 0) return;
 
-    const requestedPlan = plans.find((plan) => plan.id === initialPlanId);
+    const requestedPlan = data.plans.find((plan) => plan.id === initialPlanId);
     initialNavigationAppliedRef.current = true;
     onInitialNavigationHandled?.();
 
     if (!requestedPlan) return;
     setActivePlan(requestedPlan);
-    setSubView(initialSubView ?? 'edit');
-  }, [initialPlanId, initialSubView, onInitialNavigationHandled, plans]);
 
+    if (mode === 'stack') {
+      setSubView(initialSubView ?? 'edit');
+    } else {
+      setActiveTab(initialSubView === 'insights' ? 'insights' : initialSubView === 'progress' ? 'progress' : 'edit');
+    }
+  }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans, mode]);
+
+  // --- Guard: compare view disabled mid-session ---
   useEffect(() => {
-    if (!canComparePlans && subView === 'compare') {
-      setSubView('edit');
+    if (!data.canComparePlans) {
+      if (mode === 'stack' && subView === 'compare') {
+        setSubView('edit');
+      }
+      if (mode === 'workspace' && activeTab === 'compare') {
+        setActiveTab('edit');
+      }
       setComparePlanId(null);
     }
-  }, [canComparePlans, subView]);
+  }, [data.canComparePlans, subView, activeTab, mode]);
 
+  // --- Derived ---
   const comparison = useMemo(() => {
     if (!activePlan || !comparePlanId) return null;
-    const comparePlan = plans.find((plan) => plan.id === comparePlanId);
-    if (!comparePlan) return null;
-    return comparePlans(activePlan, comparePlan);
-  }, [activePlan, comparePlanId, plans]);
+    return data.getComparison(activePlan, comparePlanId);
+  }, [activePlan, comparePlanId, data]);
 
   const hasLinkedTasks = useMemo(() => {
     if (!activePlan) return false;
-    return tasks.some((task) => task.sourcePlanId === activePlan.id);
-  }, [activePlan, tasks]);
-  const timeEntriesByTask = useMemo(
-    () => buildTimeEntriesByTask(timeEntries),
-    [timeEntries],
-  );
+    return data.hasLinkedTasksForPlan(activePlan.id);
+  }, [activePlan, data]);
 
-  const handleCreatePlan = useCallback(async () => {
-    const plan = createPlan('New Plan');
-    await addPlan(plan);
-    setPlans((prev) => [...prev, plan]);
-    setActivePlan(plan);
-    setSubView('edit');
-  }, []);
+  // --- Navigation actions ---
 
   const handleSelectPlan = useCallback((plan: Plan) => {
     setActivePlan(plan);
-    setSubView('edit');
-  }, []);
+    setComparePlanId(null);
+    if (mode === 'stack') {
+      setSubView('edit');
+    } else {
+      setActiveTab('edit');
+    }
+  }, [mode]);
 
-  const handleSavePlan = useCallback(async (plan: Plan) => {
-    await updatePlan(plan);
-    setPlans((prev) => prev.map((p) => (p.id === plan.id ? plan : p)));
+  const handleCreatePlan = useCallback(async () => {
+    const plan = await data.handleCreatePlan();
     setActivePlan(plan);
-  }, []);
+    if (mode === 'stack') {
+      setSubView('edit');
+    } else {
+      setActiveTab('edit');
+    }
+  }, [data, mode]);
 
   const handleDeletePlan = useCallback(async (planId: string) => {
-    await deletePlan(planId);
-    setPlans((prev) => prev.filter((plan) => plan.id !== planId));
+    await data.handleDeletePlan(planId);
     if (activePlan?.id === planId) {
       setActivePlan(null);
-      setSubView('list');
+      setComparePlanId(null);
+      if (mode === 'stack') setSubView('list');
     }
-  }, [activePlan]);
+  }, [activePlan, data, mode]);
+
+  const handleSavePlan = useCallback(async (plan: Plan) => {
+    await data.handleSavePlan(plan);
+    setActivePlan(plan);
+  }, [data]);
 
   const handleBack = useCallback(() => {
-    setSubView('list');
-    setActivePlan(null);
-    setComparePlanId(null);
-  }, []);
+    if (mode === 'stack') {
+      setSubView('list');
+      setActivePlan(null);
+      setComparePlanId(null);
+    }
+    // Workspace mode: back is a no-op (sidebar is always visible)
+  }, [mode]);
 
   const openInsights = useCallback(() => {
-    setSubView('insights');
-  }, []);
+    if (mode === 'stack') {
+      setSubView('insights');
+    } else {
+      setActivePlan(null);
+      setActiveTab('insights');
+    }
+  }, [mode]);
 
   const openCompare = useCallback((planId: string) => {
     trackTelemetryEvent('planning_compare_open');
     setComparePlanId(planId);
-    setSubView('compare');
-  }, []);
+    if (mode === 'stack') {
+      setSubView('compare');
+    } else {
+      setActiveTab('compare');
+    }
+  }, [mode]);
 
   const openProgress = useCallback(async () => {
-    await reloadTimeEntries();
-    setSubView('progress');
-  }, [reloadTimeEntries]);
-
-  const openWrapUp = useCallback(async (plan: Plan) => {
-    await reloadTimeEntries();
-    setWrapUpPlan(plan);
-  }, [reloadTimeEntries]);
-
-  const closeWrapUp = useCallback(() => {
-    setWrapUpPlan(null);
-  }, []);
+    await data.reloadTimeEntries();
+    if (mode === 'stack') {
+      setSubView('progress');
+    } else {
+      setActiveTab('progress');
+    }
+  }, [data, mode]);
 
   const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan) => {
-    setPlans((prev) => prev.map((plan) => (plan.id === updatedPlan.id ? updatedPlan : plan)));
+    await data.handleWrapUpCompleted(updatedPlan);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
-    await refreshTasks();
-  }, []);
+  }, [data]);
 
   return {
-    plans,
-    timeEntries,
-    timeEntriesByTask,
-    subView,
+    // Navigation mode
+    mode,
+
+    // Data (pass-through from usePlanningData)
+    plans: data.plans,
+    timeEntries: data.timeEntries,
+    timeEntriesByTask: data.timeEntriesByTask,
+    kpis: data.kpis,
+    tasks: data.tasks,
+    projects: data.projects,
+    workTypes: data.workTypes,
+    canComparePlans: data.canComparePlans,
+    wrapUpPlan: data.wrapUpPlan,
+
+    // Selection state
     activePlan,
     comparePlanId,
-    wrapUpPlan,
-    kpis,
-    tasks,
-    projects,
-    workTypes,
-    canComparePlans,
     comparison,
     hasLinkedTasks,
+
+    // Stack navigation (mobile)
+    subView,
     setSubView,
+
+    // Workspace navigation (desktop)
+    activeTab,
+    setActiveTab,
+
+    // Actions
     handleCreatePlan,
     handleSelectPlan,
     handleSavePlan,
@@ -205,9 +247,9 @@ export function usePlanningWorkspaceState({
     openInsights,
     openCompare,
     openProgress,
-    openWrapUp,
-    reloadTimeEntries,
-    closeWrapUp,
+    openWrapUp: data.openWrapUp,
+    reloadTimeEntries: data.reloadTimeEntries,
+    closeWrapUp: data.closeWrapUp,
     handleWrapUpCompleted,
   };
 }

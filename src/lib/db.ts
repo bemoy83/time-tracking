@@ -19,7 +19,7 @@ import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 21;
+const DB_VERSION = 22;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -409,6 +409,28 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
             if (p.projectId !== undefined) return false;
             p.projectId = null;
             return true;
+          });
+        }
+
+        // Version 22: Migrate plan status 'locked' → 'active', lockedAt → activatedAt
+        if (oldVersion < 22 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            const p = plan as unknown as Record<string, unknown>;
+            let changed = false;
+            if (p.status === 'locked') {
+              p.status = 'active';
+              changed = true;
+            }
+            if (p.lockedAt !== undefined) {
+              p.activatedAt = p.lockedAt;
+              delete p.lockedAt;
+              changed = true;
+            }
+            if (p.activatedAt === undefined) {
+              p.activatedAt = null;
+              changed = true;
+            }
+            return changed;
           });
         }
       },
@@ -872,6 +894,26 @@ export async function clearAttributionSnapshots(): Promise<void> {
 // Plans (Planning Workspace)
 // ============================================================
 
+/**
+ * Normalize a plan read from DB for forward-compatibility.
+ * Legacy records may have status 'locked' / field 'lockedAt';
+ * the canonical model now uses 'active' / 'activatedAt'.
+ * This shim lets both old and new records coexist safely.
+ */
+export function normalizePlan(raw: Record<string, unknown>): Plan {
+  // Map legacy 'locked' → 'active'
+  if (raw.status === 'locked') {
+    raw.status = 'active';
+  }
+
+  // Map legacy 'lockedAt' → 'activatedAt' if the new field is absent
+  if (raw.lockedAt !== undefined && raw.activatedAt === undefined) {
+    raw.activatedAt = raw.lockedAt;
+  }
+
+  return raw as unknown as Plan;
+}
+
 export async function addPlan(plan: Plan): Promise<void> {
   const db = await getDB();
   await db.add('plans', plan);
@@ -879,13 +921,15 @@ export async function addPlan(plan: Plan): Promise<void> {
 
 export async function getPlan(id: string): Promise<Plan | null> {
   const db = await getDB();
-  const plan = await db.get('plans', id);
-  return plan ?? null;
+  const raw = await db.get('plans', id);
+  if (!raw) return null;
+  return normalizePlan(raw as unknown as Record<string, unknown>);
 }
 
 export async function getAllPlans(): Promise<Plan[]> {
   const db = await getDB();
-  return db.getAll('plans');
+  const raws = await db.getAll('plans');
+  return raws.map((r) => normalizePlan(r as unknown as Record<string, unknown>));
 }
 
 export async function updatePlan(plan: Plan): Promise<void> {

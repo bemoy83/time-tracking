@@ -8,7 +8,7 @@ function makePlan(): Plan {
   const lineItemB = createLineItem('Install lights', 'Lighting', 'pcs', 'build-up', 20, 5);
   return {
     ...createPlan('Launch plan'),
-    status: 'locked',
+    status: 'active',
     projectId: 'project-1',
     lineItems: [lineItemA, lineItemB],
   };

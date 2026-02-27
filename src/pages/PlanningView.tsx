@@ -5,44 +5,83 @@ import { ProgressView } from './planning/ProgressView';
 import { WrapUpSheet } from './planning/WrapUpSheet';
 import { PlanningListRoute } from './planning/PlanningListRoute';
 import { PlanningInsightsRoute } from './planning/PlanningInsightsRoute';
-import { usePlanningWorkspaceState } from './planning/hooks/usePlanningWorkspaceState';
+import { PlanningWorkspaceShell } from './planning/workspace/PlanningWorkspaceShell';
+import {
+  usePlanningWorkspaceState,
+  type NavigationMode,
+} from './planning/hooks/usePlanningWorkspaceState';
+import { useMediaQuery, WORKSPACE_MIN_WIDTH } from '../lib/hooks/useMediaQuery';
+import { getFeatureFlag } from '../lib/flags/feature-flags';
 
 interface PlanningViewProps {
   initialPlanId?: string | null;
   initialSubView?: 'edit' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
+  /** Called when the workspace exit control is clicked. */
+  onExitWorkspace?: () => void;
 }
 
 export function PlanningView({
   initialPlanId,
   initialSubView,
   onInitialNavigationHandled,
+  onExitWorkspace,
 }: PlanningViewProps = {}) {
+  const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
+  const workspaceEnabled = getFeatureFlag('planningWorkspaceDesktop');
+  const mode: NavigationMode = workspaceEnabled && isWideScreen ? 'workspace' : 'stack';
+
   const workspace = usePlanningWorkspaceState({
+    mode,
     initialPlanId,
     initialSubView,
     onInitialNavigationHandled,
   });
 
-  const wrapUpSheet = useMemo(() => {
-    if (!workspace.wrapUpPlan) return null;
+  // --- Workspace (desktop/tablet) rendering ---
+  if (mode === 'workspace') {
     return (
-      <WrapUpSheet
-        isOpen
-        plan={workspace.wrapUpPlan}
+      <PlanningWorkspaceShell
+        plans={workspace.plans}
         tasks={workspace.tasks}
+        projects={workspace.projects}
+        workTypes={workspace.workTypes}
+        kpis={workspace.kpis}
+        timeEntries={workspace.timeEntries}
         timeEntriesByTask={workspace.timeEntriesByTask}
-        onClose={workspace.closeWrapUp}
-        onCompleted={workspace.handleWrapUpCompleted}
+        canComparePlans={workspace.canComparePlans}
+        activePlan={workspace.activePlan}
+        activeTab={workspace.activeTab}
+        comparison={workspace.comparison}
+        hasLinkedTasks={workspace.hasLinkedTasks}
+        wrapUpPlan={workspace.wrapUpPlan}
+        onSelectPlan={workspace.handleSelectPlan}
+        onCreatePlan={workspace.handleCreatePlan}
+        onDeletePlan={workspace.handleDeletePlan}
+        onSavePlan={workspace.handleSavePlan}
+        onSetActiveTab={workspace.setActiveTab}
+        onOpenInsights={workspace.openInsights}
+        onOpenCompare={workspace.openCompare}
+        onOpenProgress={workspace.openProgress}
+        onOpenWrapUp={workspace.openWrapUp}
+        onCloseWrapUp={workspace.closeWrapUp}
+        onWrapUpCompleted={workspace.handleWrapUpCompleted}
+        onExit={onExitWorkspace ?? (() => {})}
       />
     );
-  }, [
-    workspace.closeWrapUp,
-    workspace.handleWrapUpCompleted,
-    workspace.tasks,
-    workspace.timeEntriesByTask,
-    workspace.wrapUpPlan,
-  ]);
+  }
+
+  // --- Stack (mobile) rendering ---
+
+  const wrapUpSheet = (
+    <WrapUpSheetMemo
+      wrapUpPlan={workspace.wrapUpPlan}
+      tasks={workspace.tasks}
+      timeEntriesByTask={workspace.timeEntriesByTask}
+      closeWrapUp={workspace.closeWrapUp}
+      handleWrapUpCompleted={workspace.handleWrapUpCompleted}
+    />
+  );
 
   if (workspace.subView === 'list') {
     return (
@@ -123,4 +162,33 @@ export function PlanningView({
   }
 
   return wrapUpSheet;
+}
+
+// Extracted to avoid re-creating the memo on every render path
+function WrapUpSheetMemo({
+  wrapUpPlan,
+  tasks,
+  timeEntriesByTask,
+  closeWrapUp,
+  handleWrapUpCompleted,
+}: {
+  wrapUpPlan: ReturnType<typeof usePlanningWorkspaceState>['wrapUpPlan'];
+  tasks: ReturnType<typeof usePlanningWorkspaceState>['tasks'];
+  timeEntriesByTask: ReturnType<typeof usePlanningWorkspaceState>['timeEntriesByTask'];
+  closeWrapUp: ReturnType<typeof usePlanningWorkspaceState>['closeWrapUp'];
+  handleWrapUpCompleted: ReturnType<typeof usePlanningWorkspaceState>['handleWrapUpCompleted'];
+}) {
+  return useMemo(() => {
+    if (!wrapUpPlan) return null;
+    return (
+      <WrapUpSheet
+        isOpen
+        plan={wrapUpPlan}
+        tasks={tasks}
+        timeEntriesByTask={timeEntriesByTask}
+        onClose={closeWrapUp}
+        onCompleted={handleWrapUpCompleted}
+      />
+    );
+  }, [wrapUpPlan, tasks, timeEntriesByTask, closeWrapUp, handleWrapUpCompleted]);
 }
