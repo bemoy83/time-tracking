@@ -5,7 +5,6 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useMemo } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -18,11 +17,11 @@ import { ScheduleView } from '../ScheduleView';
 import { CompareView } from '../CompareView';
 import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
-import { WrapUpSheet } from '../WrapUpSheet';
 import { EventReportView } from '../EventReportView';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { ChevronLeftIcon } from '../../../components/icons';
 import { getFeatureFlag } from '../../../lib/flags/feature-flags';
+import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -86,20 +85,6 @@ export function PlanningWorkspaceShell({
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
-  const wrapUpSheet = useMemo(() => {
-    if (!wrapUpPlan) return null;
-    return (
-      <WrapUpSheet
-        isOpen
-        plan={wrapUpPlan}
-        tasks={tasks}
-        timeEntriesByTask={timeEntriesByTask}
-        onClose={onCloseWrapUp}
-        onCompleted={onWrapUpCompleted}
-      />
-    );
-  }, [wrapUpPlan, tasks, timeEntriesByTask, onCloseWrapUp, onWrapUpCompleted]);
-
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
@@ -160,7 +145,13 @@ export function PlanningWorkspaceShell({
         )}
       </section>
 
-      {wrapUpSheet}
+      <PlanningWrapUpSheet
+        wrapUpPlan={wrapUpPlan}
+        tasks={tasks}
+        timeEntriesByTask={timeEntriesByTask}
+        onClose={onCloseWrapUp}
+        onCompleted={onWrapUpCompleted}
+      />
     </div>
   );
 }
@@ -210,41 +201,39 @@ function WorkspaceMainPane({
   const showScheduleTab = scheduleEnabled && !isReviewed;
   const effectiveActiveTab: WorkspaceTab =
     activeTab === 'schedule' && !showScheduleTab ? 'edit' : activeTab;
+  const tabs = buildWorkspaceTabs({
+    canComparePlans,
+    hasLinkedTasks,
+    isReviewed,
+    onOpenProgress,
+    onSetActiveTab,
+    showScheduleTab,
+  });
+  const reviewedDateText = plan.reviewedAt
+    ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}`
+    : '';
 
   return (
     <div className="planning-workspace__main-inner">
       {/* Context-aware tab strip */}
       <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
-        <TabButton tab="edit" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
-          {isReviewed ? 'Plan' : 'Edit'}
-        </TabButton>
-        {showScheduleTab && (
-          <TabButton tab="schedule" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
-            Schedule
+        {tabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            tab={tab.id}
+            activeTab={effectiveActiveTab}
+            onClick={tab.onSelect}
+          >
+            {tab.label}
           </TabButton>
-        )}
-        {hasLinkedTasks && (
-          <TabButton tab="progress" activeTab={effectiveActiveTab} onSetActiveTab={() => onOpenProgress()}>
-            Progress
-          </TabButton>
-        )}
-        {canComparePlans && (
-          <TabButton tab="compare" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
-            Compare
-          </TabButton>
-        )}
-        {isReviewed && (
-          <TabButton tab="report" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
-            Report
-          </TabButton>
-        )}
+        ))}
       </nav>
 
       {/* Tab content */}
       <div className="planning-workspace__tab-content" role="tabpanel">
         {isReviewed && (
           <div className="planning-workspace__reviewed-banner">
-            This plan was reviewed and archived{plan.reviewedAt ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}` : ''}.
+            This plan was reviewed and archived{reviewedDateText}.
           </div>
         )}
         {effectiveActiveTab === 'edit' && (
@@ -300,16 +289,80 @@ function WorkspaceMainPane({
   );
 }
 
+interface WorkspaceTabItem {
+  id: WorkspaceTab;
+  label: string;
+  onSelect: () => void;
+}
+
+function buildWorkspaceTabs({
+  canComparePlans,
+  hasLinkedTasks,
+  isReviewed,
+  onOpenProgress,
+  onSetActiveTab,
+  showScheduleTab,
+}: {
+  canComparePlans: boolean;
+  hasLinkedTasks: boolean;
+  isReviewed: boolean;
+  onOpenProgress: () => void;
+  onSetActiveTab: (tab: WorkspaceTab) => void;
+  showScheduleTab: boolean;
+}): WorkspaceTabItem[] {
+  const tabs: WorkspaceTabItem[] = [
+    {
+      id: 'edit',
+      label: isReviewed ? 'Plan' : 'Edit',
+      onSelect: () => onSetActiveTab('edit'),
+    },
+  ];
+
+  if (showScheduleTab) {
+    tabs.push({
+      id: 'schedule',
+      label: 'Schedule',
+      onSelect: () => onSetActiveTab('schedule'),
+    });
+  }
+
+  if (hasLinkedTasks) {
+    tabs.push({
+      id: 'progress',
+      label: 'Progress',
+      onSelect: onOpenProgress,
+    });
+  }
+
+  if (canComparePlans) {
+    tabs.push({
+      id: 'compare',
+      label: 'Compare',
+      onSelect: () => onSetActiveTab('compare'),
+    });
+  }
+
+  if (isReviewed) {
+    tabs.push({
+      id: 'report',
+      label: 'Report',
+      onSelect: () => onSetActiveTab('report'),
+    });
+  }
+
+  return tabs;
+}
+
 /** Reusable tab button to reduce repetition in the tab strip. */
 function TabButton({
   tab,
   activeTab,
-  onSetActiveTab,
+  onClick,
   children,
 }: {
   tab: WorkspaceTab;
   activeTab: WorkspaceTab;
-  onSetActiveTab: (tab: WorkspaceTab) => void;
+  onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -317,7 +370,7 @@ function TabButton({
       role="tab"
       aria-selected={activeTab === tab}
       className={`planning-workspace__tab${activeTab === tab ? ' planning-workspace__tab--active' : ''}`}
-      onClick={() => onSetActiveTab(tab)}
+      onClick={onClick}
     >
       {children}
     </button>

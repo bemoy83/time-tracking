@@ -25,6 +25,15 @@ interface PlanningWorkspaceOptions {
   onInitialNavigationHandled?: () => void;
 }
 
+function toWorkspaceTab(
+  subView: PlanningWorkspaceOptions['initialSubView'],
+): WorkspaceTab {
+  if (subView === 'insights') return 'insights';
+  if (subView === 'progress') return 'progress';
+  if (subView === 'schedule') return 'schedule';
+  return 'edit';
+}
+
 export function usePlanningWorkspaceState({
   mode = 'stack',
   initialPlanId,
@@ -103,15 +112,7 @@ export function usePlanningWorkspaceState({
     if (mode === 'stack') {
       setSubView(initialSubView ?? 'edit');
     } else {
-      setActiveTab(
-        initialSubView === 'insights'
-          ? 'insights'
-          : initialSubView === 'progress'
-            ? 'progress'
-            : initialSubView === 'schedule'
-              ? 'schedule'
-              : 'edit',
-      );
+      setActiveTab(toWorkspaceTab(initialSubView));
     }
   }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans, mode]);
 

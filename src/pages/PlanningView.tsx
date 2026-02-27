@@ -1,19 +1,19 @@
-import { useMemo } from 'react';
 import { PlanEditor } from './planning/PlanEditor';
 import { ScheduleView } from './planning/ScheduleView';
 import { CompareView } from './planning/CompareView';
 import { ProgressView } from './planning/ProgressView';
-import { WrapUpSheet } from './planning/WrapUpSheet';
 import { PlanningListRoute } from './planning/PlanningListRoute';
 import { PlanningInsightsRoute } from './planning/PlanningInsightsRoute';
 import { PlanningWorkspaceShell } from './planning/workspace/PlanningWorkspaceShell';
 import { EventReportView } from './planning/EventReportView';
+import { PlanningWrapUpSheet } from './planning/PlanningWrapUpSheet';
 import {
   usePlanningWorkspaceState,
   type NavigationMode,
 } from './planning/hooks/usePlanningWorkspaceState';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from '../lib/hooks/useMediaQuery';
 import { getFeatureFlag } from '../lib/flags/feature-flags';
+import { isPlanArchived } from '../lib/planning/plan-lifecycle';
 
 interface PlanningViewProps {
   initialPlanId?: string | null;
@@ -77,12 +77,12 @@ export function PlanningView({
   // --- Stack (mobile) rendering ---
 
   const wrapUpSheet = (
-    <WrapUpSheetMemo
+    <PlanningWrapUpSheet
       wrapUpPlan={workspace.wrapUpPlan}
       tasks={workspace.tasks}
       timeEntriesByTask={workspace.timeEntriesByTask}
-      closeWrapUp={workspace.closeWrapUp}
-      handleWrapUpCompleted={workspace.handleWrapUpCompleted}
+      onClose={workspace.closeWrapUp}
+      onCompleted={workspace.handleWrapUpCompleted}
     />
   );
 
@@ -138,12 +138,12 @@ export function PlanningView({
           projects={workspace.projects}
           canComparePlans={workspace.canComparePlans}
           canOpenProgress={workspace.hasLinkedTasks}
-          readOnly={workspace.activePlan.status === 'reviewed' || workspace.activePlan.reviewedAt != null}
+          readOnly={isPlanArchived(workspace.activePlan)}
           onSave={workspace.handleSavePlan}
           onBack={workspace.handleBack}
           onCompare={workspace.openCompare}
           onOpenSchedule={
-            scheduleEnabled && workspace.activePlan.status !== 'reviewed' && workspace.activePlan.reviewedAt == null
+            canShowScheduleTab(workspace.activePlan, scheduleEnabled)
               ? workspace.openSchedule
               : undefined
           }
@@ -158,9 +158,7 @@ export function PlanningView({
   if (
     workspace.subView === 'schedule'
     && workspace.activePlan
-    && scheduleEnabled
-    && workspace.activePlan.status !== 'reviewed'
-    && workspace.activePlan.reviewedAt == null
+    && canShowScheduleTab(workspace.activePlan, scheduleEnabled)
   ) {
     return (
       <>
@@ -168,7 +166,7 @@ export function PlanningView({
           plan={workspace.activePlan}
           onSave={workspace.handleSavePlan}
           onBack={() => workspace.setSubView('edit')}
-          readOnly={workspace.activePlan.reviewedAt != null}
+          readOnly={isPlanArchived(workspace.activePlan)}
         />
         {wrapUpSheet}
       </>
@@ -208,31 +206,10 @@ export function PlanningView({
   return wrapUpSheet;
 }
 
-// Extracted to avoid re-creating the memo on every render path
-function WrapUpSheetMemo({
-  wrapUpPlan,
-  tasks,
-  timeEntriesByTask,
-  closeWrapUp,
-  handleWrapUpCompleted,
-}: {
-  wrapUpPlan: ReturnType<typeof usePlanningWorkspaceState>['wrapUpPlan'];
-  tasks: ReturnType<typeof usePlanningWorkspaceState>['tasks'];
-  timeEntriesByTask: ReturnType<typeof usePlanningWorkspaceState>['timeEntriesByTask'];
-  closeWrapUp: ReturnType<typeof usePlanningWorkspaceState>['closeWrapUp'];
-  handleWrapUpCompleted: ReturnType<typeof usePlanningWorkspaceState>['handleWrapUpCompleted'];
-}) {
-  return useMemo(() => {
-    if (!wrapUpPlan) return null;
-    return (
-      <WrapUpSheet
-        isOpen
-        plan={wrapUpPlan}
-        tasks={tasks}
-        timeEntriesByTask={timeEntriesByTask}
-        onClose={closeWrapUp}
-        onCompleted={handleWrapUpCompleted}
-      />
-    );
-  }, [wrapUpPlan, tasks, timeEntriesByTask, closeWrapUp, handleWrapUpCompleted]);
+function canShowScheduleTab(
+  plan: ReturnType<typeof usePlanningWorkspaceState>['activePlan'],
+  scheduleEnabled: boolean,
+): boolean {
+  if (!plan) return false;
+  return scheduleEnabled && !isPlanArchived(plan);
 }
