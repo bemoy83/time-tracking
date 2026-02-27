@@ -25,6 +25,10 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     removedFromSource: false,
     scheduledStart: null,
     scheduledEnd: null,
+    originalScheduledStart: null,
+    originalScheduledEnd: null,
+    amendmentNote: null,
+    amendedAt: null,
   };
 
   return {

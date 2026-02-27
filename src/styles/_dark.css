@@ -11,6 +11,7 @@
     --color-text-muted: #a0a0a0;
     --color-border: #333333;
     --color-surface-hover: #4a4a4a;
+    --color-surface-subtle: #252525;
     --color-recording-bg: #2d1f1f;
     --color-recording-border: #5c2929;
     --color-ready-bg: #1f2d1f;
@@ -359,5 +360,15 @@
 
   .planning-view__compare-change {
     background: #1e1e1e;
+  }
+
+  /* --- Schedule View (Event Inputs, Work Calendar, Schedule Grid, Capacity Summary) --- */
+  .schedule-grid__cell--assigned {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .schedule-grid__cell--off {
+    background: rgba(255, 255, 255, 0.04);
   }
 }

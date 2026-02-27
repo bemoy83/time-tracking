@@ -1,6 +1,13 @@
 import { durationMs } from '../types';
 import type { Plan } from './plan-model';
 import type { Task, TimeEntry, BuildPhase, WorkUnit } from '../types';
+import {
+  computePlanDeadlineSummary,
+  evaluateLineItemDeadline,
+  type DeadlineStatus,
+  type DeadlineEvaluation,
+  type PlanDeadlineSummary,
+} from './scheduling/deadline';
 
 export type LineItemProgressStatus = 'completed' | 'in-progress' | 'not-started' | 'unreleased';
 
@@ -17,6 +24,12 @@ export interface LineItemProgress {
   actualProductivity: number | null;
   variancePercent: number | null;
   status: LineItemProgressStatus;
+  deadlineStatus: DeadlineStatus;
+  dueDate: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  actualStartDate: string | null;
+  actualEndDate: string | null;
   taskCount: number;
 }
 
@@ -31,6 +44,7 @@ export interface PlanProgress {
   unplannedWork: UnplannedWorkSummary;
   completionRatio: number;
   orphanTasks: Task[];
+  deadline: PlanDeadlineSummary;
 }
 
 interface TimeTotals {
@@ -66,6 +80,7 @@ export function computePlanProgress(
   tasks: Task[],
   timeEntries: TimeEntry[],
 ): PlanProgress {
+  const todayDate = new Date().toISOString().slice(0, 10);
   const linkedTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
   const entryTotalsByTask = buildEntryTotals(timeEntries);
   const lineItemIds = new Set(plan.lineItems.map((item) => item.id));
@@ -85,6 +100,8 @@ export function computePlanProgress(
       linkedTasksByLineItemId.set(task.sourceLineItemId, [task]);
     }
   }
+
+  const deadlineEvaluations: DeadlineEvaluation[] = [];
 
   const lineItems: LineItemProgress[] = plan.lineItems.map((item) => {
     const tasksForItem = linkedTasksByLineItemId.get(item.id) ?? [];
@@ -109,6 +126,10 @@ export function computePlanProgress(
       actualPersonHours > 0 && quantityForRate > 0 ? quantityForRate / actualPersonHours : null;
     const variancePercent =
       plannedPersonHours > 0 ? ((actualPersonHours - plannedPersonHours) / plannedPersonHours) * 100 : null;
+    const itemTaskIds = new Set(tasksForItem.map((task) => task.id));
+    const entriesForItem = timeEntries.filter((entry) => itemTaskIds.has(entry.taskId));
+    const deadline = evaluateLineItemDeadline(item, tasksForItem, entriesForItem, todayDate);
+    deadlineEvaluations.push(deadline);
 
     return {
       lineItemId: item.id,
@@ -123,6 +144,12 @@ export function computePlanProgress(
       actualProductivity,
       variancePercent,
       status: resolveLineItemStatus(tasksForItem, actualPersonHours),
+      deadlineStatus: deadline.status,
+      dueDate: deadline.dueDate,
+      scheduledStart: item.scheduledStart,
+      scheduledEnd: item.scheduledEnd,
+      actualStartDate: deadline.actualStartDate,
+      actualEndDate: deadline.actualEndDate,
       taskCount: tasksForItem.length,
     };
   });
@@ -141,6 +168,7 @@ export function computePlanProgress(
 
   const linkedCompletedCount = linkedTasks.filter((task) => task.status === 'completed').length;
   const completionRatio = linkedTasks.length > 0 ? linkedCompletedCount / linkedTasks.length : 0;
+  const deadline = computePlanDeadlineSummary(plan, deadlineEvaluations, todayDate);
 
   return {
     lineItems,
@@ -151,5 +179,6 @@ export function computePlanProgress(
     },
     completionRatio,
     orphanTasks,
+    deadline,
   };
 }

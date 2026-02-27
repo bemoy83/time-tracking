@@ -79,3 +79,56 @@
   color: var(--color-recording);
   font-size: var(--font-small);
 }
+
+.wrap-up-sheet--v2 {
+  max-height: 60vh;
+}
+
+.wrap-up-sheet__meta-block {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm);
+}
+
+.wrap-up-sheet__list--v2 {
+  gap: var(--space-sm);
+}
+
+.wrap-up-sheet__card-v2 {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.wrap-up-sheet__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.wrap-up-sheet__executor-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.wrap-up-sheet__decision-row {
+  display: inline-flex;
+  gap: var(--space-sm);
+  align-items: center;
+  font-size: var(--font-small);
+}
+
+.wrap-up-sheet__review-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

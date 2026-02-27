@@ -33,6 +33,19 @@ export type BlockCategory =
   | 'dependency'
   | 'other';
 
+export interface WorkCalendarDay {
+  /** Local calendar date (YYYY-MM-DD). */
+  date: string;
+  /** Workable day toggle (false = off day). */
+  isWorkDay: boolean;
+  /** Local access start time (HH:mm) for work day. */
+  accessStart: string | null;
+  /** Local access end time (HH:mm) for work day. */
+  accessEnd: string | null;
+  /** Per-day crew override; null falls back to plan default crew size. */
+  crewSize: number | null;
+}
+
 export interface PlanLineItem {
   id: string;
   /** Display name for the work package. */
@@ -69,10 +82,18 @@ export interface PlanLineItem {
    * Kept visible as historical context on executor device.
    */
   removedFromSource: boolean;
-  /** Scheduled start time (ISO UTC). null until scheduling feature is implemented. */
+  /** Scheduled start date (YYYY-MM-DD). */
   scheduledStart: string | null;
-  /** Scheduled end time (ISO UTC). null until scheduling feature is implemented. */
+  /** Scheduled end date (YYYY-MM-DD). */
   scheduledEnd: string | null;
+  /** Original scheduled start date captured at activation/amendment baseline. */
+  originalScheduledStart: string | null;
+  /** Original scheduled end date captured at activation/amendment baseline. */
+  originalScheduledEnd: string | null;
+  /** Optional planner amendment rationale for schedule change. */
+  amendmentNote: string | null;
+  /** Timestamp when schedule was amended after baseline. */
+  amendedAt: string | null;
 }
 
 export interface Plan {
@@ -82,6 +103,14 @@ export interface Plan {
   lineItems: PlanLineItem[];
   /** Event/project this plan belongs to. null = unassigned. */
   projectId: string | null;
+  /** Event start date (YYYY-MM-DD). */
+  eventStartDate: string | null;
+  /** Event end date (YYYY-MM-DD). */
+  eventEndDate: string | null;
+  /** Default crew size for schedule capacity math. */
+  defaultCrewSize: number | null;
+  /** Per-day work calendar across event period. */
+  workCalendar: WorkCalendarDay[];
   createdAt: string;
   updatedAt: string;
   /** ISO timestamp when plan was activated. null if draft. */
@@ -140,6 +169,10 @@ export function createPlan(title: string): Plan {
     status: 'draft',
     lineItems: [],
     projectId: null,
+    eventStartDate: null,
+    eventEndDate: null,
+    defaultCrewSize: null,
+    workCalendar: [],
     createdAt: now,
     updatedAt: now,
     activatedAt: null,
@@ -183,6 +216,10 @@ export function createLineItem(
     removedFromSource: false,
     scheduledStart: null,
     scheduledEnd: null,
+    originalScheduledStart: null,
+    originalScheduledEnd: null,
+    amendmentNote: null,
+    amendedAt: null,
   };
 }
 
@@ -214,6 +251,10 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     removedFromSource: item.removedFromSource,
     scheduledStart: item.scheduledStart,
     scheduledEnd: item.scheduledEnd,
+    originalScheduledStart: item.originalScheduledStart,
+    originalScheduledEnd: item.originalScheduledEnd,
+    amendmentNote: item.amendmentNote,
+    amendedAt: item.amendedAt,
   };
 }
 

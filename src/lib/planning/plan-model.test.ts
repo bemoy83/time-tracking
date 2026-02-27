@@ -20,6 +20,10 @@ describe('createPlan', () => {
     expect(plan.status).toBe('draft');
     expect(plan.lineItems).toHaveLength(0);
     expect(plan.projectId).toBeNull();
+    expect(plan.eventStartDate).toBeNull();
+    expect(plan.eventEndDate).toBeNull();
+    expect(plan.defaultCrewSize).toBeNull();
+    expect(plan.workCalendar).toEqual([]);
     expect(plan.activatedAt).toBeNull();
     expect(plan.reviewedAt).toBeNull();
     expect(plan.id).toBeTruthy();
@@ -38,6 +42,10 @@ describe('createLineItem', () => {
     expect(item.reviewNote).toBeNull();
     expect(item.scheduledStart).toBeNull();
     expect(item.scheduledEnd).toBeNull();
+    expect(item.originalScheduledStart).toBeNull();
+    expect(item.originalScheduledEnd).toBeNull();
+    expect(item.amendmentNote).toBeNull();
+    expect(item.amendedAt).toBeNull();
   });
 
   it('handles zero productivity rate', () => {
@@ -144,6 +152,10 @@ describe('duplicateLineItem', () => {
     expect(duplicate.reviewNote).toBeNull();
     expect(duplicate.scheduledStart).toBe(original.scheduledStart);
     expect(duplicate.scheduledEnd).toBe(original.scheduledEnd);
+    expect(duplicate.originalScheduledStart).toBe(original.originalScheduledStart);
+    expect(duplicate.originalScheduledEnd).toBe(original.originalScheduledEnd);
+    expect(duplicate.amendmentNote).toBe(original.amendmentNote);
+    expect(duplicate.amendedAt).toBe(original.amendedAt);
   });
 
   it('does not accumulate repeated copy suffixes', () => {

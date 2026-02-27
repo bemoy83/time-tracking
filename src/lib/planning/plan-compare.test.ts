@@ -9,9 +9,16 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     status: 'draft',
     lineItems: [],
     projectId: null,
+    eventStartDate: null,
+    eventEndDate: null,
+    defaultCrewSize: null,
+    workCalendar: [],
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     activatedAt: null,
+    reviewedAt: null,
+    importedAt: null,
+    sessionClosedAt: null,
     ...overrides,
   };
 }
@@ -38,6 +45,10 @@ function makeItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     removedFromSource: false,
     scheduledStart: null,
     scheduledEnd: null,
+    originalScheduledStart: null,
+    originalScheduledEnd: null,
+    amendmentNote: null,
+    amendedAt: null,
   };
 
   return {

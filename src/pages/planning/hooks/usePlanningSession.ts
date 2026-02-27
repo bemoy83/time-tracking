@@ -12,6 +12,15 @@ const DEFAULT_SESSION: PlanningSession = {
   activeTab: 'edit',
 };
 
+function isWorkspaceTab(value: unknown): value is WorkspaceTab {
+  return value === 'edit'
+    || value === 'schedule'
+    || value === 'progress'
+    || value === 'compare'
+    || value === 'insights'
+    || value === 'report';
+}
+
 export function loadPlanningSession(): PlanningSession {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -19,7 +28,7 @@ export function loadPlanningSession(): PlanningSession {
     const parsed = JSON.parse(raw) as Partial<PlanningSession>;
     return {
       selectedPlanId: parsed.selectedPlanId ?? null,
-      activeTab: parsed.activeTab ?? 'edit',
+      activeTab: isWorkspaceTab(parsed.activeTab) ? parsed.activeTab : 'edit',
     };
   } catch {
     return DEFAULT_SESSION;

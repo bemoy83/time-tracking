@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { PlanEditor } from './planning/PlanEditor';
+import { ScheduleView } from './planning/ScheduleView';
 import { CompareView } from './planning/CompareView';
 import { ProgressView } from './planning/ProgressView';
 import { WrapUpSheet } from './planning/WrapUpSheet';
 import { PlanningListRoute } from './planning/PlanningListRoute';
 import { PlanningInsightsRoute } from './planning/PlanningInsightsRoute';
 import { PlanningWorkspaceShell } from './planning/workspace/PlanningWorkspaceShell';
+import { EventReportView } from './planning/EventReportView';
 import {
   usePlanningWorkspaceState,
   type NavigationMode,
@@ -15,7 +17,7 @@ import { getFeatureFlag } from '../lib/flags/feature-flags';
 
 interface PlanningViewProps {
   initialPlanId?: string | null;
-  initialSubView?: 'edit' | 'progress' | 'insights';
+  initialSubView?: 'edit' | 'schedule' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
   /** Called when the workspace exit control is clicked. */
   onExitWorkspace?: () => void;
@@ -29,6 +31,7 @@ export function PlanningView({
 }: PlanningViewProps = {}) {
   const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
   const workspaceEnabled = getFeatureFlag('planningWorkspaceDesktop');
+  const scheduleEnabled = getFeatureFlag('planningScheduleV1');
   const mode: NavigationMode = workspaceEnabled && isWideScreen ? 'workspace' : 'stack';
 
   const workspace = usePlanningWorkspaceState({
@@ -135,10 +138,37 @@ export function PlanningView({
           projects={workspace.projects}
           canComparePlans={workspace.canComparePlans}
           canOpenProgress={workspace.hasLinkedTasks}
+          readOnly={workspace.activePlan.status === 'reviewed' || workspace.activePlan.reviewedAt != null}
           onSave={workspace.handleSavePlan}
           onBack={workspace.handleBack}
           onCompare={workspace.openCompare}
+          onOpenSchedule={
+            scheduleEnabled && workspace.activePlan.status !== 'reviewed' && workspace.activePlan.reviewedAt == null
+              ? workspace.openSchedule
+              : undefined
+          }
           onOpenProgress={workspace.openProgress}
+          onOpenReport={workspace.openReport}
+        />
+        {wrapUpSheet}
+      </>
+    );
+  }
+
+  if (
+    workspace.subView === 'schedule'
+    && workspace.activePlan
+    && scheduleEnabled
+    && workspace.activePlan.status !== 'reviewed'
+    && workspace.activePlan.reviewedAt == null
+  ) {
+    return (
+      <>
+        <ScheduleView
+          plan={workspace.activePlan}
+          onSave={workspace.handleSavePlan}
+          onBack={() => workspace.setSubView('edit')}
+          readOnly={workspace.activePlan.reviewedAt != null}
         />
         {wrapUpSheet}
       </>
@@ -155,6 +185,20 @@ export function PlanningView({
           timeEntries={workspace.timeEntries}
           onBack={() => workspace.setSubView('edit')}
           onWrapUp={() => workspace.openWrapUp(activePlan)}
+        />
+        {wrapUpSheet}
+      </>
+    );
+  }
+
+  if (workspace.subView === 'report' && workspace.activePlan) {
+    return (
+      <>
+        <EventReportView
+          plan={workspace.activePlan}
+          tasks={workspace.tasks}
+          timeEntriesByTask={workspace.timeEntriesByTask}
+          onBack={() => workspace.setSubView('edit')}
         />
         {wrapUpSheet}
       </>

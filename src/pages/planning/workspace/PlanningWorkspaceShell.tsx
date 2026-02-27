@@ -14,12 +14,15 @@ import type { Project, TimeEntry } from '../../../lib/types';
 import { isPlanArchived, isPlanReviewReady } from '../../../lib/planning/plan-lifecycle';
 import { PlanList } from '../PlanList';
 import { PlanEditor } from '../PlanEditor';
+import { ScheduleView } from '../ScheduleView';
 import { CompareView } from '../CompareView';
 import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
 import { WrapUpSheet } from '../WrapUpSheet';
+import { EventReportView } from '../EventReportView';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { ChevronLeftIcon } from '../../../components/icons';
+import { getFeatureFlag } from '../../../lib/flags/feature-flags';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -138,6 +141,7 @@ export function PlanningWorkspaceShell({
             projects={projects}
             kpis={kpis}
             timeEntries={timeEntries}
+            timeEntriesByTask={timeEntriesByTask}
             canComparePlans={canComparePlans}
             hasLinkedTasks={hasLinkedTasks}
             comparison={comparison}
@@ -171,6 +175,7 @@ interface WorkspaceMainPaneProps {
   projects: Project[];
   kpis: WorkTypeKpi[];
   timeEntries: TimeEntry[];
+  timeEntriesByTask: Map<string, TimeEntry[]>;
   canComparePlans: boolean;
   hasLinkedTasks: boolean;
   comparison: PlanComparison | null;
@@ -189,6 +194,7 @@ function WorkspaceMainPane({
   projects,
   kpis,
   timeEntries,
+  timeEntriesByTask,
   canComparePlans,
   hasLinkedTasks,
   comparison,
@@ -200,22 +206,36 @@ function WorkspaceMainPane({
 }: WorkspaceMainPaneProps) {
   const isReviewed = isPlanArchived(plan);
   const reviewReady = isPlanReviewReady(plan, tasks);
+  const scheduleEnabled = getFeatureFlag('planningScheduleV1');
+  const showScheduleTab = scheduleEnabled && !isReviewed;
+  const effectiveActiveTab: WorkspaceTab =
+    activeTab === 'schedule' && !showScheduleTab ? 'edit' : activeTab;
 
   return (
     <div className="planning-workspace__main-inner">
       {/* Context-aware tab strip */}
       <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
-        <TabButton tab="edit" activeTab={activeTab} onSetActiveTab={onSetActiveTab}>
+        <TabButton tab="edit" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
           {isReviewed ? 'Plan' : 'Edit'}
         </TabButton>
+        {showScheduleTab && (
+          <TabButton tab="schedule" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
+            Schedule
+          </TabButton>
+        )}
         {hasLinkedTasks && (
-          <TabButton tab="progress" activeTab={activeTab} onSetActiveTab={() => onOpenProgress()}>
+          <TabButton tab="progress" activeTab={effectiveActiveTab} onSetActiveTab={() => onOpenProgress()}>
             Progress
           </TabButton>
         )}
         {canComparePlans && (
-          <TabButton tab="compare" activeTab={activeTab} onSetActiveTab={onSetActiveTab}>
+          <TabButton tab="compare" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
             Compare
+          </TabButton>
+        )}
+        {isReviewed && (
+          <TabButton tab="report" activeTab={effectiveActiveTab} onSetActiveTab={onSetActiveTab}>
+            Report
           </TabButton>
         )}
       </nav>
@@ -227,7 +247,7 @@ function WorkspaceMainPane({
             This plan was reviewed and archived{plan.reviewedAt ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}` : ''}.
           </div>
         )}
-        {activeTab === 'edit' && (
+        {effectiveActiveTab === 'edit' && (
           <PlanEditor
             plan={plan}
             kpis={kpis}
@@ -239,10 +259,12 @@ function WorkspaceMainPane({
             onSave={onSavePlan}
             onBack={() => {}} // no-op in workspace mode
             onCompare={onOpenCompare}
+            onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
             onOpenProgress={onOpenProgress}
+            onOpenReport={() => onSetActiveTab('report')}
           />
         )}
-        {activeTab === 'progress' && (
+        {effectiveActiveTab === 'progress' && (
           <ProgressView
             plan={plan}
             tasks={tasks}
@@ -251,9 +273,25 @@ function WorkspaceMainPane({
             onWrapUp={!isReviewed && reviewReady ? () => onOpenWrapUp(plan) : undefined}
           />
         )}
-        {activeTab === 'compare' && comparison && (
+        {effectiveActiveTab === 'schedule' && showScheduleTab && (
+          <ScheduleView
+            plan={plan}
+            onSave={onSavePlan}
+            onBack={() => onSetActiveTab('edit')}
+            readOnly={isReviewed}
+          />
+        )}
+        {effectiveActiveTab === 'compare' && comparison && (
           <CompareView
             comparison={comparison}
+            onBack={() => onSetActiveTab('edit')}
+          />
+        )}
+        {effectiveActiveTab === 'report' && isReviewed && (
+          <EventReportView
+            plan={plan}
+            tasks={tasks}
+            timeEntriesByTask={timeEntriesByTask}
             onBack={() => onSetActiveTab('edit')}
           />
         )}

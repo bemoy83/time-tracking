@@ -1,6 +1,7 @@
 import type { Plan, LineItemExecutionStatus } from '../../planning/plan-model';
 import type { Task, TimeEntry } from '../../types';
 import { durationMs, nowUtc } from '../../types';
+import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
@@ -23,6 +24,7 @@ export function buildExecutionReturnEnvelope(
   tasks: Task[],
   timeEntries: TimeEntry[],
 ): DataTransferEnvelope<ExecutionReturnPayload> {
+  const todayDate = new Date().toISOString().slice(0, 10);
   const planTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
   const unplannedTasks = tasks.filter(
     (task) => task.projectId === plan.projectId && task.sourcePlanId == null,
@@ -43,7 +45,10 @@ export function buildExecutionReturnEnvelope(
 
   const lineItems = plan.lineItems.map((item) => {
     const linked = planTasks.filter((task) => task.sourceLineItemId === item.id);
+    const taskIdSet = new Set(linked.map((task) => task.id));
+    const linkedEntries = timeEntries.filter((entry) => taskIdSet.has(entry.taskId));
     const status = deriveStatusFromTasks(item.executionStatus, linked);
+    const deadline = evaluateLineItemDeadline(item, linked, linkedEntries, todayDate);
     if (status === 'pending') summaryByStatus.pending += 1;
     if (status === 'in-progress') summaryByStatus.inProgress += 1;
     if (status === 'completed') summaryByStatus.completed += 1;
@@ -58,6 +63,11 @@ export function buildExecutionReturnEnvelope(
       executorNote: item.executorNote,
       deferredNote: item.deferredNote,
       removedFromSource: item.removedFromSource,
+      scheduledStart: item.scheduledStart,
+      scheduledEnd: item.scheduledEnd,
+      actualStartDate: deadline.actualStartDate,
+      actualEndDate: deadline.actualEndDate,
+      deadlineStatusAtClose: deadline.status,
     };
   });
 

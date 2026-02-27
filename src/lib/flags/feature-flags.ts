@@ -6,7 +6,9 @@ export type FeatureFlagKey =
   | 'planningScenarioCompare'
   | 'calculatorMultiScenarioCards'
   | 'planningWorkspaceDesktop'
-  | 'fieldPlanExecution';
+  | 'planningScheduleV1'
+  | 'fieldPlanExecution'
+  | 'wrapUpReviewV2';
 
 export type FeatureFlagState = Record<FeatureFlagKey, boolean>;
 
@@ -16,7 +18,9 @@ const DEFAULT_FLAGS: FeatureFlagState = {
   planningScenarioCompare: true,
   calculatorMultiScenarioCards: true,
   planningWorkspaceDesktop: true,
+  planningScheduleV1: true,
   fieldPlanExecution: true,
+  wrapUpReviewV2: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

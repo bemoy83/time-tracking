@@ -77,4 +77,39 @@ describe('normalizePlan', () => {
     expect(plan.activatedAt).toBe('2024-02-01T00:00:00.000Z');
     expect(plan.reviewedAt).toBe('2024-06-01T00:00:00.000Z');
   });
+
+  it('adds scheduling defaults for legacy plans', () => {
+    const raw: Record<string, unknown> = {
+      id: 'plan-6',
+      status: 'draft',
+      title: 'Legacy schedule',
+      lineItems: [
+        {
+          id: 'li-1',
+          title: 'Install',
+          workTypeTitle: 'Carpet',
+          workUnit: 'm2',
+          buildPhase: 'build-up',
+          workTypeId: null,
+          workQuantity: 10,
+          crew: 1,
+          timeHours: 2,
+          productivityRate: 5,
+          rateSource: 'manual',
+          rationale: null,
+          reviewNote: null,
+        },
+      ],
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const plan = normalizePlan(raw);
+    expect(plan.eventStartDate).toBeNull();
+    expect(plan.eventEndDate).toBeNull();
+    expect(plan.defaultCrewSize).toBeNull();
+    expect(Array.isArray(plan.workCalendar)).toBe(true);
+    expect(plan.lineItems[0].originalScheduledStart).toBeNull();
+    expect(plan.lineItems[0].amendmentNote).toBeNull();
+  });
 });

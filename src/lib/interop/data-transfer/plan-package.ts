@@ -8,11 +8,13 @@ import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store'
 import { nowUtc } from '../../types';
 import type { WorkType } from '../../types';
 import {
+  DATA_TRANSFER_SCHEMA_COMPAT,
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type PlanPackageImportPreview,
   type PlanPackagePayload,
 } from './contracts';
+import { reconcileWorkCalendar } from '../../planning/scheduling/work-calendar';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -40,11 +42,23 @@ function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
     executorNote: raw.executorNote ?? null,
     deferredNote: raw.deferredNote ?? null,
     removedFromSource: raw.removedFromSource ?? false,
+    scheduledStart: raw.scheduledStart ?? null,
+    scheduledEnd: raw.scheduledEnd ?? null,
+    originalScheduledStart: raw.originalScheduledStart ?? null,
+    originalScheduledEnd: raw.originalScheduledEnd ?? null,
+    amendmentNote: raw.amendmentNote ?? null,
+    amendedAt: raw.amendedAt ?? null,
   };
 }
 
 function normalizeIncomingPlan(plan: Plan): Plan {
   const now = nowUtc();
+  const normalizedCalendar = reconcileWorkCalendar(
+    plan.workCalendar ?? [],
+    plan.eventStartDate ?? null,
+    plan.eventEndDate ?? null,
+    plan.defaultCrewSize ?? null,
+  );
   return {
     ...plan,
     status: 'received',
@@ -52,6 +66,10 @@ function normalizeIncomingPlan(plan: Plan): Plan {
     importedAt: now,
     sessionClosedAt: null,
     updatedAt: now,
+    eventStartDate: plan.eventStartDate ?? null,
+    eventEndDate: plan.eventEndDate ?? null,
+    defaultCrewSize: plan.defaultCrewSize ?? null,
+    workCalendar: normalizedCalendar,
     lineItems: plan.lineItems.map((item) =>
       normalizeImportedLineItem({
         ...item,
@@ -103,10 +121,10 @@ export function parsePlanPackageJson(
     if (parsed.exportType !== 'plan-package') {
       return { ok: false, error: 'Selected file is not a plan package export' };
     }
-    if (parsed.schemaVersion !== DATA_TRANSFER_SCHEMA_VERSION) {
+    if (!DATA_TRANSFER_SCHEMA_COMPAT.includes(parsed.schemaVersion as (typeof DATA_TRANSFER_SCHEMA_COMPAT)[number])) {
       return {
         ok: false,
-        error: `Unsupported schema version: ${String(parsed.schemaVersion)} (expected ${DATA_TRANSFER_SCHEMA_VERSION})`,
+        error: `Unsupported schema version: ${String(parsed.schemaVersion)} (supported: ${DATA_TRANSFER_SCHEMA_COMPAT.join(', ')})`,
       };
     }
     if (!isRecord(parsed.payload)) {
@@ -206,6 +224,12 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     importedAt: nowUtc(),
     status: existing.status === 'session-closed' ? 'session-closed' : 'received',
     sessionClosedAt: existing.sessionClosedAt ?? null,
+    workCalendar: reconcileWorkCalendar(
+      incoming.workCalendar,
+      incoming.eventStartDate ?? null,
+      incoming.eventEndDate ?? null,
+      incoming.defaultCrewSize ?? null,
+    ),
     lineItems: mergedItems,
   };
 }

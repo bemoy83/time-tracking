@@ -1,7 +1,9 @@
 import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
 import type { Task, TimeEntry, WorkType } from '../../types';
+import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
-export const DATA_TRANSFER_SCHEMA_VERSION = '1.0';
+export const DATA_TRANSFER_SCHEMA_VERSION = '1.1';
+export const DATA_TRANSFER_SCHEMA_COMPAT = ['1.0', '1.1'] as const;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -31,6 +33,11 @@ export interface ExecutionReturnLineItem {
   executorNote: string | null;
   deferredNote: string | null;
   removedFromSource: boolean;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  actualStartDate: string | null;
+  actualEndDate: string | null;
+  deadlineStatusAtClose: DeadlineStatus | null;
 }
 
 export interface ExecutionReturnPayload {
@@ -50,6 +57,63 @@ export interface ExecutionReturnPayload {
   tasks: Task[];
   unplannedTasks: Task[];
   timeEntries: TimeEntry[];
+}
+
+export type ExecutionReturnImportConflict = 'duplicate-time-entry-id';
+
+export interface ExecutionReturnImportPreview {
+  planId: string;
+  planTitle: string;
+  closedAt: string;
+  timeEntryCount: number;
+  duplicateTimeEntryIds: string[];
+  conflicts: ExecutionReturnImportConflict[];
+  unplannedTaskCount: number;
+  lineItemCount: number;
+  dateRangeStart: string | null;
+  dateRangeEnd: string | null;
+  envelope: DataTransferEnvelope<ExecutionReturnPayload>;
+}
+
+export interface ExecutionReturnImportResult {
+  importedEntryCount: number;
+  skippedDuplicateEntryCount: number;
+  executionReturnId: string;
+  lineItemCount: number;
+  unplannedTaskCount: number;
+  reason: string;
+}
+
+export interface ImportedExecutionReturnRecord {
+  id: string;
+  planId: string;
+  planTitle: string;
+  closedAt: string;
+  importedAt: string;
+  schemaVersion: string;
+  appVersion: string;
+  exportType: 'execution-return';
+  exportedAt: string;
+}
+
+export interface ImportedExecutionReturnLineItemRecord extends ExecutionReturnLineItem {
+  id: string;
+  executionReturnId: string;
+  planId: string;
+  importedAt: string;
+}
+
+export interface ImportedExecutionReturnUnplannedTaskRecord {
+  id: string;
+  executionReturnId: string;
+  planId: string;
+  importedAt: string;
+  taskId: string;
+  title: string;
+  workTypeId: string | null;
+  workUnit: Task['workUnit'];
+  buildPhase: Task['buildPhase'];
+  personHours: number;
 }
 
 export interface PlanPackageImportPreview {

@@ -15,6 +15,23 @@
   align-items: center;
   justify-content: space-between;
   font-size: var(--font-small);
+  gap: var(--space-sm);
+}
+
+.progress-view__deadline {
+  text-align: right;
+}
+
+.progress-view__deadline--on-track {
+  color: var(--color-ready);
+}
+
+.progress-view__deadline--at-risk {
+  color: #8a4b00;
+}
+
+.progress-view__deadline--behind {
+  color: var(--color-recording);
 }
 
 .progress-view__list {

@@ -60,4 +60,22 @@ describe('feature flags', () => {
     setFeatureFlag('fieldPlanExecution', false);
     expect(getFeatureFlag('fieldPlanExecution')).toBe(false);
   });
+
+  it('defaults planningScheduleV1 to true', () => {
+    expect(getFeatureFlag('planningScheduleV1')).toBe(true);
+  });
+
+  it('disables planningScheduleV1 when toggled off', () => {
+    setFeatureFlag('planningScheduleV1', false);
+    expect(getFeatureFlag('planningScheduleV1')).toBe(false);
+  });
+
+  it('defaults wrapUpReviewV2 to true', () => {
+    expect(getFeatureFlag('wrapUpReviewV2')).toBe(true);
+  });
+
+  it('disables wrapUpReviewV2 when toggled off', () => {
+    setFeatureFlag('wrapUpReviewV2', false);
+    expect(getFeatureFlag('wrapUpReviewV2')).toBe(false);
+  });
 });

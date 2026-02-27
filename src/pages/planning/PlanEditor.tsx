@@ -22,6 +22,7 @@ import {
   planTotalPersonHours,
 } from '../../lib/planning/plan-model';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { reconcileWorkCalendar } from '../../lib/planning/scheduling/work-calendar';
 import { ChevronLeftIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -43,7 +44,9 @@ interface PlanEditorProps {
   onSave: (plan: Plan) => void;
   onBack: () => void;
   onCompare: (planId: string) => void;
+  onOpenSchedule?: () => void;
   onOpenProgress: () => void;
+  onOpenReport?: () => void;
 }
 
 export function PlanEditor({
@@ -57,7 +60,9 @@ export function PlanEditor({
   onSave,
   onBack,
   onCompare,
+  onOpenSchedule,
   onOpenProgress,
+  onOpenReport,
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
@@ -94,6 +99,43 @@ export function PlanEditor({
 
   const handleAssignProject = (projectId: string | null) => {
     mutatePlan((prev) => ({ ...prev, projectId }));
+  };
+
+  const handleSetEventDate = (field: 'eventStartDate' | 'eventEndDate', value: string) => {
+    mutatePlan((prev) => {
+      const next = {
+        ...prev,
+        [field]: value || null,
+      };
+      return {
+        ...next,
+        workCalendar: reconcileWorkCalendar(
+          next.workCalendar,
+          next.eventStartDate,
+          next.eventEndDate,
+          next.defaultCrewSize,
+        ),
+      };
+    });
+  };
+
+  const handleSetDefaultCrewSize = (value: string) => {
+    const parsed = value.trim() === '' ? null : Math.max(0, Math.floor(Number(value)));
+    mutatePlan((prev) => {
+      const next = {
+        ...prev,
+        defaultCrewSize: Number.isFinite(parsed as number) ? parsed : null,
+      };
+      return {
+        ...next,
+        workCalendar: reconcileWorkCalendar(
+          next.workCalendar,
+          next.eventStartDate,
+          next.eventEndDate,
+          next.defaultCrewSize,
+        ),
+      };
+    });
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
@@ -165,6 +207,41 @@ export function PlanEditor({
           </button>
         </div>
 
+        <div className="planning-view__schedule-inputs">
+          <label className="planning-view__schedule-input">
+            <span>Event start</span>
+            <input
+              className="input"
+              type="date"
+              value={currentPlan.eventStartDate ?? ''}
+              disabled={readOnly}
+              onChange={(e) => handleSetEventDate('eventStartDate', e.target.value)}
+            />
+          </label>
+          <label className="planning-view__schedule-input">
+            <span>Event end</span>
+            <input
+              className="input"
+              type="date"
+              value={currentPlan.eventEndDate ?? ''}
+              disabled={readOnly}
+              onChange={(e) => handleSetEventDate('eventEndDate', e.target.value)}
+            />
+          </label>
+          <label className="planning-view__schedule-input">
+            <span>Default crew</span>
+            <input
+              className="input"
+              type="number"
+              min={0}
+              step={1}
+              value={currentPlan.defaultCrewSize ?? ''}
+              disabled={readOnly}
+              onChange={(e) => handleSetDefaultCrewSize(e.target.value)}
+            />
+          </label>
+        </div>
+
         {/* Summary stats */}
         <div className="planning-view__summary metric-card-row">
           <MetricCard
@@ -207,6 +284,11 @@ export function PlanEditor({
         {/* Actions */}
         {!readOnly && (
           <div className="planning-view__actions">
+            {onOpenSchedule && (
+              <button className="btn btn--secondary" onClick={onOpenSchedule}>
+                Schedule
+              </button>
+            )}
             {isLocked && canOpenProgress && (
               <button className="btn btn--secondary" onClick={onOpenProgress}>
                 Progress
@@ -229,6 +311,13 @@ export function PlanEditor({
                 ))}
               </select>
             )}
+          </div>
+        )}
+        {readOnly && currentPlan.reviewedAt != null && onOpenReport && (
+          <div className="planning-view__actions">
+            <button className="btn btn--secondary" onClick={onOpenReport}>
+              Event Report
+            </button>
           </div>
         )}
       </div>

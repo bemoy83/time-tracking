@@ -317,6 +317,26 @@
   color: var(--color-text-muted);
 }
 
+.planning-view__schedule-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (max-width: 640px) {
+  .planning-view__schedule-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.planning-view__schedule-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 /* Actions bar */
 .planning-view__actions {
   display: flex;

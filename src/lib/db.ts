@@ -17,9 +17,18 @@ import type {
 } from './types';
 import type { Plan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
+import type {
+  ImportedExecutionReturnLineItemRecord,
+  ImportedExecutionReturnRecord,
+  ImportedExecutionReturnUnplannedTaskRecord,
+} from './interop/data-transfer/contracts';
+import {
+  generateDefaultWorkCalendar,
+  reconcileWorkCalendar,
+} from './planning/scheduling/work-calendar';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 23;
+const DB_VERSION = 25;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -101,6 +110,35 @@ interface TimeTrackingDBSchema extends DBSchema {
     value: WorkType;
     indexes: {
       'by-title-unit-phase': [string, string, string];
+    };
+  };
+  // Imported execution-return envelopes (planner-side)
+  executionReturns: {
+    key: string;
+    value: ImportedExecutionReturnRecord;
+    indexes: {
+      'by-plan': string;
+      'by-imported-at': string;
+    };
+  };
+  // Imported execution-return line-item annotations
+  executionReturnLineItems: {
+    key: string;
+    value: ImportedExecutionReturnLineItemRecord;
+    indexes: {
+      'by-plan': string;
+      'by-return': string;
+      'by-imported-at': string;
+    };
+  };
+  // Imported execution-return unplanned task snapshots
+  executionReturnUnplannedTasks: {
+    key: string;
+    value: ImportedExecutionReturnUnplannedTaskRecord;
+    indexes: {
+      'by-plan': string;
+      'by-return': string;
+      'by-imported-at': string;
     };
   };
 }
@@ -479,6 +517,74 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
               }
               if (i.removedFromSource === undefined) {
                 i.removedFromSource = false;
+                changed = true;
+              }
+            }
+
+            return changed;
+          });
+        }
+
+        // Version 24: Add execution return import stores for planner-side wrap-up v2
+        if (oldVersion < 24) {
+          if (!db.objectStoreNames.contains('executionReturns')) {
+            const store = db.createObjectStore('executionReturns', { keyPath: 'id' });
+            store.createIndex('by-plan', 'planId');
+            store.createIndex('by-imported-at', 'importedAt');
+          }
+          if (!db.objectStoreNames.contains('executionReturnLineItems')) {
+            const store = db.createObjectStore('executionReturnLineItems', { keyPath: 'id' });
+            store.createIndex('by-plan', 'planId');
+            store.createIndex('by-return', 'executionReturnId');
+            store.createIndex('by-imported-at', 'importedAt');
+          }
+          if (!db.objectStoreNames.contains('executionReturnUnplannedTasks')) {
+            const store = db.createObjectStore('executionReturnUnplannedTasks', { keyPath: 'id' });
+            store.createIndex('by-plan', 'planId');
+            store.createIndex('by-return', 'executionReturnId');
+            store.createIndex('by-imported-at', 'importedAt');
+          }
+        }
+
+        // Version 25: Add scheduling/work-calendar and amendment metadata fields
+        if (oldVersion < 25 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            const p = plan as unknown as Record<string, unknown>;
+            let changed = false;
+
+            if (p.eventStartDate === undefined) {
+              p.eventStartDate = null;
+              changed = true;
+            }
+            if (p.eventEndDate === undefined) {
+              p.eventEndDate = null;
+              changed = true;
+            }
+            if (p.defaultCrewSize === undefined) {
+              p.defaultCrewSize = null;
+              changed = true;
+            }
+            if (!Array.isArray(p.workCalendar)) {
+              p.workCalendar = [];
+              changed = true;
+            }
+
+            for (const item of plan.lineItems) {
+              const i = item as unknown as Record<string, unknown>;
+              if (i.originalScheduledStart === undefined) {
+                i.originalScheduledStart = null;
+                changed = true;
+              }
+              if (i.originalScheduledEnd === undefined) {
+                i.originalScheduledEnd = null;
+                changed = true;
+              }
+              if (i.amendmentNote === undefined) {
+                i.amendmentNote = null;
+                changed = true;
+              }
+              if (i.amendedAt === undefined) {
+                i.amendedAt = null;
                 changed = true;
               }
             }
@@ -980,6 +1086,39 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.status = 'reviewed';
   }
 
+  if (raw.eventStartDate === undefined) {
+    raw.eventStartDate = null;
+  }
+
+  if (raw.eventEndDate === undefined) {
+    raw.eventEndDate = null;
+  }
+
+  if (raw.defaultCrewSize === undefined) {
+    raw.defaultCrewSize = null;
+  }
+
+  if (!Array.isArray(raw.workCalendar)) {
+    raw.workCalendar = generateDefaultWorkCalendar(
+      (raw.eventStartDate as string | null) ?? null,
+      (raw.eventEndDate as string | null) ?? null,
+      (raw.defaultCrewSize as number | null) ?? null,
+    );
+  } else {
+    raw.workCalendar = reconcileWorkCalendar(
+      raw.workCalendar as unknown as Array<{
+        date: string;
+        isWorkDay: boolean;
+        accessStart: string | null;
+        accessEnd: string | null;
+        crewSize: number | null;
+      }>,
+      (raw.eventStartDate as string | null) ?? null,
+      (raw.eventEndDate as string | null) ?? null,
+      (raw.defaultCrewSize as number | null) ?? null,
+    );
+  }
+
   if (Array.isArray(raw.lineItems)) {
     for (const lineItem of raw.lineItems as Array<Record<string, unknown>>) {
       if (lineItem.executionStatus === undefined) lineItem.executionStatus = 'pending';
@@ -988,6 +1127,12 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
       if (lineItem.executorNote === undefined) lineItem.executorNote = null;
       if (lineItem.deferredNote === undefined) lineItem.deferredNote = null;
       if (lineItem.removedFromSource === undefined) lineItem.removedFromSource = false;
+      if (lineItem.scheduledStart === undefined) lineItem.scheduledStart = null;
+      if (lineItem.scheduledEnd === undefined) lineItem.scheduledEnd = null;
+      if (lineItem.originalScheduledStart === undefined) lineItem.originalScheduledStart = null;
+      if (lineItem.originalScheduledEnd === undefined) lineItem.originalScheduledEnd = null;
+      if (lineItem.amendmentNote === undefined) lineItem.amendmentNote = null;
+      if (lineItem.amendedAt === undefined) lineItem.amendedAt = null;
     }
   }
 
@@ -1020,6 +1165,104 @@ export async function updatePlan(plan: Plan): Promise<void> {
 export async function deletePlan(id: string): Promise<void> {
   const db = await getDB();
   await db.delete('plans', id);
+}
+
+// ============================================================
+// Imported Execution Return Operations
+// ============================================================
+
+export async function addExecutionReturnRecord(
+  record: ImportedExecutionReturnRecord,
+): Promise<void> {
+  const db = await getDB();
+  await db.add('executionReturns', record);
+}
+
+export async function addExecutionReturnLineItems(
+  records: ImportedExecutionReturnLineItemRecord[],
+): Promise<void> {
+  if (records.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction('executionReturnLineItems', 'readwrite');
+  await Promise.all([
+    ...records.map((record) => tx.store.put(record)),
+    tx.done,
+  ]);
+}
+
+export async function addExecutionReturnUnplannedTasks(
+  records: ImportedExecutionReturnUnplannedTaskRecord[],
+): Promise<void> {
+  if (records.length === 0) return;
+  const db = await getDB();
+  const tx = db.transaction('executionReturnUnplannedTasks', 'readwrite');
+  await Promise.all([
+    ...records.map((record) => tx.store.put(record)),
+    tx.done,
+  ]);
+}
+
+export async function getExecutionReturnsByPlanId(
+  planId: string,
+): Promise<ImportedExecutionReturnRecord[]> {
+  const db = await getDB();
+  const records = await db.getAllFromIndex('executionReturns', 'by-plan', planId);
+  return records.sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+}
+
+export async function getLatestExecutionReturnByPlanId(
+  planId: string,
+): Promise<ImportedExecutionReturnRecord | null> {
+  const records = await getExecutionReturnsByPlanId(planId);
+  return records[0] ?? null;
+}
+
+export async function getExecutionReturnLineItemsByReturnId(
+  executionReturnId: string,
+): Promise<ImportedExecutionReturnLineItemRecord[]> {
+  const db = await getDB();
+  return db.getAllFromIndex('executionReturnLineItems', 'by-return', executionReturnId);
+}
+
+export async function getExecutionReturnUnplannedTasksByReturnId(
+  executionReturnId: string,
+): Promise<ImportedExecutionReturnUnplannedTaskRecord[]> {
+  const db = await getDB();
+  return db.getAllFromIndex('executionReturnUnplannedTasks', 'by-return', executionReturnId);
+}
+
+export async function getLatestExecutionReturnBundleByPlanId(
+  planId: string,
+): Promise<{
+  record: ImportedExecutionReturnRecord;
+  lineItems: ImportedExecutionReturnLineItemRecord[];
+  unplannedTasks: ImportedExecutionReturnUnplannedTaskRecord[];
+} | null> {
+  const record = await getLatestExecutionReturnByPlanId(planId);
+  if (!record) return null;
+  const [lineItems, unplannedTasks] = await Promise.all([
+    getExecutionReturnLineItemsByReturnId(record.id),
+    getExecutionReturnUnplannedTasksByReturnId(record.id),
+  ]);
+  return {
+    record,
+    lineItems,
+    unplannedTasks,
+  };
+}
+
+export async function deleteAllExecutionReturnImports(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(
+    ['executionReturns', 'executionReturnLineItems', 'executionReturnUnplannedTasks'],
+    'readwrite',
+  );
+  await Promise.all([
+    tx.objectStore('executionReturns').clear(),
+    tx.objectStore('executionReturnLineItems').clear(),
+    tx.objectStore('executionReturnUnplannedTasks').clear(),
+    tx.done,
+  ]);
 }
 
 // ============================================================

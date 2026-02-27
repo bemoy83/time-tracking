@@ -92,6 +92,21 @@ function getStatusLabel(status: FieldPlanLineItemSummary['status']): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function getDeadlineLabel(status: FieldPlanLineItemSummary['deadlineStatus']): string {
+  switch (status) {
+    case 'due-today': return 'Due today';
+    case 'on-track': return 'On track';
+    case 'at-risk': return 'At risk';
+    case 'overdue': return 'Overdue';
+    case 'done-on-time': return 'Done on time';
+    case 'done-late': return 'Done late';
+    case 'needs-replanning': return 'Needs replanning';
+    case 'unscheduled':
+    default:
+      return 'Unscheduled';
+  }
+}
+
 function getGroupModeInitialValue(): GroupMode {
   try {
     const stored = sessionStorage.getItem(GROUP_MODE_STORAGE_KEY);
@@ -174,8 +189,8 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
   const lineItems = useMemo(() => {
     if (!selectedPlan) return [];
-    return buildFieldPlanLineItemSummaries(selectedPlan, tasks);
-  }, [selectedPlan, tasks]);
+    return buildFieldPlanLineItemSummaries(selectedPlan, tasks, timeEntries);
+  }, [selectedPlan, tasks, timeEntries]);
 
   const lineItemStatusSummary = useMemo(
     () => summarizeLineItemStatuses(lineItems),
@@ -194,6 +209,26 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
     return grouped;
   }, [lineItems]);
+
+  const deadlineSummary = useMemo(() => {
+    const actionable = lineItems.filter((item) => item.deadlineStatus !== 'unscheduled');
+    const overdue = actionable.filter((item) => item.deadlineStatus === 'overdue').length;
+    const atRisk = actionable.filter((item) => item.deadlineStatus === 'at-risk').length;
+    const done = actionable.filter((item) => item.deadlineStatus === 'done-on-time' || item.deadlineStatus === 'done-late').length;
+    return {
+      total: actionable.length,
+      overdue,
+      atRisk,
+      done,
+    };
+  }, [lineItems]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (deadlineSummary.overdue > 0 || deadlineSummary.atRisk > 0) {
+      trackTelemetryEvent('schedule_deadline_risk_visible');
+    }
+  }, [deadlineSummary.atRisk, deadlineSummary.overdue, isOpen]);
 
   const unplannedTasks = useMemo(() => {
     if (!selectedPlan || selectedPlan.projectId == null) return [];
@@ -381,6 +416,9 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
         await reloadData();
         setSelectedPlanId(preview.planId);
         trackTelemetryEvent(result.merged ? 'interop_plan_package_merge' : 'interop_plan_package_import');
+        if (preview.envelope.schemaVersion === '1.0') {
+          trackTelemetryEvent('schedule_import_defaulted');
+        }
       } else if (resolution === 'skip') {
         trackTelemetryEvent('interop_plan_package_skip');
       } else {
@@ -539,6 +577,11 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                   <p className="field-plan-detail__meta">
                     {lineItemStatusSummary.completed} of {lineItems.length} completed · {formatPlanPersonHours(selectedPlan, tasks, timeEntries)}
                   </p>
+                  {deadlineSummary.total > 0 && (
+                    <p className="field-plan-detail__meta">
+                      {deadlineSummary.done} of {deadlineSummary.total} should be complete by now · {deadlineSummary.overdue} overdue · {deadlineSummary.atRisk} at risk
+                    </p>
+                  )}
                   <div className="field-plan-detail__progress-track" aria-hidden="true">
                     <div
                       className="field-plan-detail__progress-fill"
@@ -687,6 +730,10 @@ function LineItemCard({
 
       <p className="field-line-item__meta">
         {item.workTypeTitle} · {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {item.crew} workers · {item.timeHours.toFixed(1)}h
+      </p>
+      <p className="field-line-item__meta">
+        {getDeadlineLabel(lineItem.deadlineStatus)}
+        {lineItem.dueDate ? ` · Due ${lineItem.dueDate}` : ''}
       </p>
 
       {item.removedFromSource && (

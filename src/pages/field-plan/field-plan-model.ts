@@ -1,10 +1,16 @@
 import type { Plan, PlanLineItem, LineItemExecutionStatus } from '../../lib/planning/plan-model';
-import type { Task } from '../../lib/types';
+import type { Task, TimeEntry } from '../../lib/types';
+import {
+  evaluateLineItemDeadline,
+  type DeadlineStatus,
+} from '../../lib/planning/scheduling/deadline';
 
 export interface FieldPlanLineItemSummary {
   item: PlanLineItem;
   tasks: Task[];
   status: LineItemExecutionStatus;
+  deadlineStatus: DeadlineStatus;
+  dueDate: string | null;
 }
 
 const STATUS_PRIORITY: Record<LineItemExecutionStatus, number> = {
@@ -38,8 +44,10 @@ export function deriveLineItemStatus(item: PlanLineItem, tasks: Task[]): LineIte
 export function buildFieldPlanLineItemSummaries(
   plan: Plan,
   tasks: Task[],
+  timeEntries: TimeEntry[],
 ): FieldPlanLineItemSummary[] {
   const linkedByLineItem = new Map<string, Task[]>();
+  const todayDate = new Date().toISOString().slice(0, 10);
 
   for (const task of tasks) {
     if (task.sourcePlanId !== plan.id || task.sourceLineItemId == null) {
@@ -55,10 +63,15 @@ export function buildFieldPlanLineItemSummaries(
   return plan.lineItems
     .map((item) => {
       const linkedTasks = linkedByLineItem.get(item.id) ?? [];
+      const taskIds = new Set(linkedTasks.map((task) => task.id));
+      const linkedEntries = timeEntries.filter((entry) => taskIds.has(entry.taskId));
+      const deadline = evaluateLineItemDeadline(item, linkedTasks, linkedEntries, todayDate);
       return {
         item,
         tasks: linkedTasks,
         status: deriveLineItemStatus(item, linkedTasks),
+        deadlineStatus: deadline.status,
+        dueDate: deadline.dueDate,
       };
     })
     .sort((a, b) => {

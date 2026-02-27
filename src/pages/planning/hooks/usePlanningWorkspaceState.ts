@@ -12,16 +12,16 @@ import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
 export type NavigationMode = 'stack' | 'workspace';
 
 /** Sub-views for stack (mobile) navigation. */
-export type PlanningSubView = 'list' | 'edit' | 'compare' | 'progress' | 'insights';
+export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'compare' | 'progress' | 'insights' | 'report';
 
 /** Tabs available in the workspace main pane. */
-export type WorkspaceTab = 'edit' | 'progress' | 'compare' | 'insights';
+export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'compare' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
   /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
   mode?: NavigationMode;
   initialPlanId?: string | null;
-  initialSubView?: 'edit' | 'progress' | 'insights';
+  initialSubView?: 'edit' | 'schedule' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
 }
 
@@ -103,7 +103,15 @@ export function usePlanningWorkspaceState({
     if (mode === 'stack') {
       setSubView(initialSubView ?? 'edit');
     } else {
-      setActiveTab(initialSubView === 'insights' ? 'insights' : initialSubView === 'progress' ? 'progress' : 'edit');
+      setActiveTab(
+        initialSubView === 'insights'
+          ? 'insights'
+          : initialSubView === 'progress'
+            ? 'progress'
+            : initialSubView === 'schedule'
+              ? 'schedule'
+              : 'edit',
+      );
     }
   }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans, mode]);
 
@@ -204,6 +212,22 @@ export function usePlanningWorkspaceState({
     }
   }, [data, mode]);
 
+  const openSchedule = useCallback(() => {
+    if (mode === 'stack') {
+      setSubView('schedule');
+    } else {
+      setActiveTab('schedule');
+    }
+  }, [mode]);
+
+  const openReport = useCallback(() => {
+    if (mode === 'stack') {
+      setSubView('report');
+    } else {
+      setActiveTab('report');
+    }
+  }, [mode]);
+
   const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan) => {
     await data.handleWrapUpCompleted(updatedPlan);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
@@ -247,6 +271,8 @@ export function usePlanningWorkspaceState({
     openInsights,
     openCompare,
     openProgress,
+    openSchedule,
+    openReport,
     openWrapUp: data.openWrapUp,
     reloadTimeEntries: data.reloadTimeEntries,
     closeWrapUp: data.closeWrapUp,
