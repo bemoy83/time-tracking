@@ -153,14 +153,11 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     });
   }, [fieldPlanEnabled, showFieldPlan]);
 
-  const receivedPlans = executorPlans.filter((plan) => plan.status === 'received');
-  const sessionClosedPlans = executorPlans.filter((plan) => plan.status === 'session-closed');
-  const fieldPlanIndicator = receivedPlans.length > 0
-    ? receivedPlans.length === 1
-      ? `Plan: ${receivedPlans[0].title}`
-      : `Plans: ${receivedPlans.length}`
-    : sessionClosedPlans.length > 0
-      ? 'Past plans'
+  const fieldPlanIndicator =
+    executorPlans.length > 0
+      ? executorPlans.length === 1
+        ? `Plan: ${executorPlans[0].title}`
+        : `Plans: ${executorPlans.length}`
       : 'Field Plan';
 
   if (error) return <div className="today-view__error">Error: {error}</div>;

@@ -166,6 +166,19 @@ export function useWrapUpSheetModelV2({
     });
   }, []);
 
+  const setLineItemExecutionStatus = useCallback(
+    (lineItemId: string, executionStatus: import('../../../lib/planning/plan-model').LineItemExecutionStatus) => {
+      setLineItemDecisions((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(lineItemId);
+        if (!existing) return prev;
+        next.set(lineItemId, { ...existing, executionStatus });
+        return next;
+      });
+    },
+    [],
+  );
+
   const setDeferredDispositionConfirmed = useCallback((lineItemId: string, confirmed: boolean) => {
     setLineItemDecisions((prev) => {
       const next = new Map(prev);
@@ -252,6 +265,7 @@ export function useWrapUpSheetModelV2({
     canSubmit,
     setLineItemIncludeInKpi,
     setLineItemReviewNote,
+    setLineItemExecutionStatus,
     setDeferredDispositionConfirmed,
     setUnplannedIncludeInKpi,
     setUnplannedAssignedWorkType,

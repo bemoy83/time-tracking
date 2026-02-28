@@ -1227,6 +1227,13 @@ export async function getLatestExecutionReturnByPlanId(
   return records[0] ?? null;
 }
 
+/** Returns plan IDs that have at least one imported execution return (for wrap-up eligibility). */
+export async function getPlanIdsWithImportedExecutionReturns(): Promise<string[]> {
+  const db = await getDB();
+  const records = await db.getAll('executionReturns');
+  return [...new Set(records.map((r) => r.planId))];
+}
+
 export async function getExecutionReturnLineItemsByReturnId(
   executionReturnId: string,
 ): Promise<ImportedExecutionReturnLineItemRecord[]> {

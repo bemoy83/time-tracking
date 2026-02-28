@@ -91,6 +91,21 @@
   color: var(--color-text-muted);
 }
 
+.progress-view__status--blocked {
+  background: rgba(220, 38, 38, 0.16);
+  color: var(--color-recording);
+}
+
+.progress-view__status--deferred {
+  background: rgba(107, 114, 128, 0.2);
+  color: var(--color-text-muted);
+}
+
+.progress-view__item-meta--block {
+  color: var(--color-recording);
+  font-style: italic;
+}
+
 .progress-view__item-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

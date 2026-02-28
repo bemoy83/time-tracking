@@ -48,7 +48,8 @@ import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
-import { isPlanReviewReady } from '../lib/planning/plan-lifecycle';
+import { isPlanWrapUpEligible } from '../lib/planning/plan-lifecycle';
+import { usePlanIdsWithImportedExecutionReturns } from '../pages/planning/hooks/usePlanIdsWithImportedExecutionReturns';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -110,16 +111,20 @@ export function ProjectDetail({
     })
     .join(', ');
 
+  const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+
   useEffect(() => {
     getAllPlans().then(setPlans);
   }, []);
 
   const reviewReadyPlan = useMemo(() => {
     const candidates = plans.filter((plan) => plan.projectId === projectId && plan.status === 'active');
-    const ready = candidates.filter((plan) => isPlanReviewReady(plan, tasks));
+    const ready = candidates.filter((plan) =>
+      isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id)),
+    );
     ready.sort((a, b) => (b.activatedAt ?? '').localeCompare(a.activatedAt ?? ''));
     return ready[0] ?? null;
-  }, [plans, projectId, tasks]);
+  }, [plans, projectId, tasks, planIdsWithImportedExecutionReturns]);
 
   if (!project) {
     return (

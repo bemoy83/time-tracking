@@ -9,7 +9,7 @@ import {
   type PlanDeadlineSummary,
 } from './scheduling/deadline';
 
-export type LineItemProgressStatus = 'completed' | 'in-progress' | 'not-started' | 'unreleased';
+export type LineItemProgressStatus = 'completed' | 'in-progress' | 'not-started' | 'unreleased' | 'blocked' | 'deferred';
 
 export interface LineItemProgress {
   lineItemId: string;
@@ -17,6 +17,9 @@ export interface LineItemProgress {
   workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
+  blockReason: string | null;
+  blockCategory: string | null;
+  deferredNote: string | null;
   plannedHours: number;
   plannedPersonHours: number;
   plannedProductivity: number;
@@ -48,9 +51,16 @@ export interface PlanProgress {
   deadline: PlanDeadlineSummary;
 }
 
-/** Imported execution status from execution return (authoritative executor-reported state). */
+/** Imported execution status and block/defer info from execution return (authoritative executor-reported state). */
+export interface ImportedLineItemExecutionState {
+  status: 'completed' | 'in-progress' | 'pending' | 'blocked' | 'deferred';
+  blockReason: string | null;
+  blockCategory: string | null;
+  deferredNote: string | null;
+}
+
 export interface ImportedExecutionStatusByLineItem {
-  get(lineItemId: string): 'completed' | 'in-progress' | 'pending' | 'blocked' | 'deferred' | undefined;
+  get(lineItemId: string): ImportedLineItemExecutionState | undefined;
 }
 
 interface TimeTotals {
@@ -135,15 +145,31 @@ export function computePlanProgress(
       plannedPersonHours > 0 ? ((actualPersonHours - plannedPersonHours) / plannedPersonHours) * 100 : null;
     const itemTaskIds = new Set(tasksForItem.map((task) => task.id));
     const entriesForItem = timeEntries.filter((entry) => itemTaskIds.has(entry.taskId));
-    const importedStatus = importedExecutionStatus?.get(item.id);
+    const imported = importedExecutionStatus?.get(item.id);
+    const importedStatus = imported?.status;
 
-    // Prefer imported execution status (from execution return) — authoritative executor-reported state
+    // After wrap-up, planner-resolved status on the plan overrides imported. Otherwise prefer imported (executor-reported).
+    const usePlanStatus = plan.reviewedAt != null && item.executionStatus != null;
+    const planStatus = usePlanStatus ? (item.executionStatus as LineItemProgressStatus) : null;
+
     const resolvedStatus: LineItemProgressStatus =
-      importedStatus === 'completed'
-        ? 'completed'
-        : importedStatus === 'in-progress'
-          ? 'in-progress'
-          : resolveLineItemStatus(tasksForItem, actualPersonHours);
+      planStatus != null
+        ? (planStatus === 'completed' || planStatus === 'in-progress' || planStatus === 'blocked' || planStatus === 'deferred'
+            ? planStatus
+            : resolveLineItemStatus(tasksForItem, actualPersonHours))
+        : importedStatus === 'completed'
+          ? 'completed'
+          : importedStatus === 'in-progress'
+            ? 'in-progress'
+            : importedStatus === 'blocked'
+              ? 'blocked'
+              : importedStatus === 'deferred'
+                ? 'deferred'
+                : resolveLineItemStatus(tasksForItem, actualPersonHours);
+
+    const blockReason = usePlanStatus ? (item.blockReason ?? null) : (imported?.blockReason ?? item.blockReason ?? null);
+    const blockCategory = usePlanStatus ? (item.blockCategory ?? null) : (imported?.blockCategory ?? item.blockCategory ?? null);
+    const deferredNote = usePlanStatus ? (item.deferredNote ?? null) : (imported?.deferredNote ?? item.deferredNote ?? null);
 
     let deadline = evaluateLineItemDeadline(item, tasksForItem, entriesForItem, todayDate);
     if (importedStatus === 'completed') {
@@ -170,6 +196,9 @@ export function computePlanProgress(
       workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
       workUnit: item.workUnit,
       buildPhase: item.buildPhase,
+      blockReason,
+      blockCategory,
+      deferredNote,
       plannedHours: item.timeHours,
       plannedPersonHours,
       plannedProductivity: item.productivityRate,

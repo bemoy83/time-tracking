@@ -228,7 +228,8 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     );
   }, [selectedPlan, tasks]);
 
-  const canExecute = selectedPlan?.status === 'received';
+  const canExecute =
+    selectedPlan?.status === 'received' || selectedPlan?.status === 'session-closed';
 
   const patchLineItem = useCallback(
     async (lineItemId: string, updates: Partial<Omit<PlanLineItem, 'id'>>) => {
@@ -330,8 +331,8 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     [canExecute, patchLineItem],
   );
 
-  const handleCloseSession = useCallback(async () => {
-    if (!selectedPlan || selectedPlan.status !== 'received') return;
+  const handleExportExecutionReturn = useCallback(async () => {
+    if (!selectedPlan) return;
 
     const summary = summarizeLineItemStatuses(lineItems);
     const summaryText = [
@@ -341,7 +342,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
       `Unplanned tasks: ${unplannedTasks.length}`,
     ].join('\n');
 
-    const confirmed = window.confirm(`Close session and export execution return?\n\n${summaryText}`);
+    const confirmed = window.confirm(`Export execution return?\n\n${summaryText}\n\nYou can export again anytime until the plan is archived.`);
     if (!confirmed) return;
 
     try {
@@ -354,21 +355,19 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
       downloadJson(`execution-return-${titleKey}-${stamp}.json`, envelope);
       trackTelemetryEvent('interop_execution_return_export');
 
-      const closedAt = nowUtc();
-      const closedPlan: Plan = {
+      const now = nowUtc();
+      const updatedPlan: Plan = {
         ...selectedPlan,
-        status: 'session-closed',
-        sessionClosedAt: closedAt,
-        updatedAt: closedAt,
+        status: 'received',
+        sessionClosedAt: null,
+        updatedAt: now,
       };
-      await updatePlan(closedPlan);
-      setPlans((prev) => sortExecutorPlans(prev.map((plan) => (plan.id === closedPlan.id ? closedPlan : plan))));
-      setSelectedPlanId(closedPlan.id);
-      setMessage('Session closed and execution return exported.');
-      trackTelemetryEvent('interop_session_close');
+      await updatePlan(updatedPlan);
+      setPlans((prev) => sortExecutorPlans(prev.map((plan) => (plan.id === updatedPlan.id ? updatedPlan : plan))));
+      setSelectedPlanId(updatedPlan.id);
+      setMessage('Execution return exported. You can continue working and export again when needed.');
     } catch {
-      setMessage('Failed to close session. Please try again.');
-      trackTelemetryEvent('interop_session_close_failed');
+      setMessage('Failed to export. Please try again.');
     }
   }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
 
@@ -617,21 +616,15 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                   )}
                 </details>
 
-                {selectedPlan.status === 'received' ? (
-                  <button
-                    type="button"
-                    className="btn btn--primary field-plan-detail__close-session"
-                    onClick={() => {
-                      void handleCloseSession();
-                    }}
-                  >
-                    Close Session & Export Return
-                  </button>
-                ) : (
-                  <p className="field-plan-detail__closed-note">
-                    Session closed {selectedPlan.sessionClosedAt ? new Date(selectedPlan.sessionClosedAt).toLocaleString() : ''}.
-                  </p>
-                )}
+                <button
+                  type="button"
+                  className="btn btn--primary field-plan-detail__close-session"
+                  onClick={() => {
+                    void handleExportExecutionReturn();
+                  }}
+                >
+                  Export Execution Return
+                </button>
               </section>
             )}
           </>

@@ -170,4 +170,29 @@ describe('computePlanProgress', () => {
     expect(lineB.status).toBe('unreleased');
     expect(progress.completionRatio).toBe(0.5); // 1 / 2 linked tasks completed
   });
+
+  it('uses imported execution return status and block reason for blocked items', () => {
+    const plan = makePlan();
+    const [lineItemA, lineItemB] = plan.lineItems;
+    const importedStatus = {
+      get: (id: string) =>
+        id === lineItemB.id
+          ? {
+              status: 'blocked' as const,
+              blockReason: 'Materials not delivered',
+              blockCategory: 'materials' as const,
+              deferredNote: null,
+            }
+          : undefined,
+    };
+
+    const progress = computePlanProgress(plan, [], [], importedStatus);
+    const itemA = progress.lineItems.find((item) => item.lineItemId === lineItemA.id)!;
+    const itemB = progress.lineItems.find((item) => item.lineItemId === lineItemB.id)!;
+
+    expect(itemA.status).toBe('unreleased');
+    expect(itemB.status).toBe('blocked');
+    expect(itemB.blockReason).toBe('Materials not delivered');
+    expect(itemB.blockCategory).toBe('materials');
+  });
 });

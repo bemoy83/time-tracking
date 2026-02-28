@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getLatestExecutionReturnBundleByPlanId } from '../../../lib/db';
-import type { ImportedExecutionStatusByLineItem } from '../../../lib/planning/plan-progress';
+import type { ImportedExecutionStatusByLineItem, ImportedLineItemExecutionState } from '../../../lib/planning/plan-progress';
+
+const VALID_STATUSES = ['completed', 'in-progress', 'pending', 'blocked', 'deferred'] as const;
 
 export function useExecutionReturnForProgress(planId: string | null): ImportedExecutionStatusByLineItem | null {
   const [importedStatus, setImportedStatus] = useState<ImportedExecutionStatusByLineItem | null>(null);
@@ -17,16 +19,15 @@ export function useExecutionReturnForProgress(planId: string | null): ImportedEx
         setImportedStatus(null);
         return;
       }
-      const map = new Map<string, 'completed' | 'in-progress' | 'pending' | 'blocked' | 'deferred'>();
+      const map = new Map<string, ImportedLineItemExecutionState>();
       for (const li of bundle.lineItems) {
-        if (
-          li.executionStatus === 'completed' ||
-          li.executionStatus === 'in-progress' ||
-          li.executionStatus === 'pending' ||
-          li.executionStatus === 'blocked' ||
-          li.executionStatus === 'deferred'
-        ) {
-          map.set(li.lineItemId, li.executionStatus);
+        if (VALID_STATUSES.includes(li.executionStatus as (typeof VALID_STATUSES)[number])) {
+          map.set(li.lineItemId, {
+            status: li.executionStatus as ImportedLineItemExecutionState['status'],
+            blockReason: li.blockReason ?? null,
+            blockCategory: li.blockCategory ?? null,
+            deferredNote: li.deferredNote ?? null,
+          });
         }
       }
       setImportedStatus(map.size > 0 ? { get: (id) => map.get(id) } : null);

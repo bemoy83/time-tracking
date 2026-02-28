@@ -295,8 +295,8 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     ...incoming,
     createdAt: existing.createdAt,
     importedAt: nowUtc(),
-    status: existing.status === 'session-closed' ? 'session-closed' : 'received',
-    sessionClosedAt: existing.sessionClosedAt ?? null,
+    status: 'received',
+    sessionClosedAt: null,
     workCalendar: reconcileWorkCalendar(
       incoming.workCalendar,
       incoming.eventStartDate ?? null,

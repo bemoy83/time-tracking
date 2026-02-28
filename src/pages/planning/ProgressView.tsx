@@ -104,9 +104,15 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
                     {formatDeadlineStatusLabel(item.deadlineStatus)}
                     {item.dueDate ? ` · Due ${item.dueDate}` : ''}
                   </p>
+                  {(item.status === 'blocked' || item.status === 'deferred') && (item.blockReason || item.deferredNote) && (
+                    <p className="progress-view__item-meta progress-view__item-meta--block">
+                      {item.status === 'blocked' ? 'Blocked' : 'Deferred'}
+                      {item.blockCategory ? ` (${item.blockCategory})` : ''}: {item.blockReason || item.deferredNote}
+                    </p>
+                  )}
                 </div>
                 <span className={`progress-view__status progress-view__status--${item.status}`}>
-                  {item.status}
+                  {item.status.replace('-', ' ')}
                 </span>
               </div>
 

@@ -10,7 +10,8 @@ import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
 import type { Project, TimeEntry } from '../../../lib/types';
-import { isPlanArchived, isPlanReviewReady } from '../../../lib/planning/plan-lifecycle';
+import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
+import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithImportedExecutionReturns';
 import { PlanList } from '../PlanList';
 import { PlanEditor } from '../PlanEditor';
 import { ScheduleView } from '../ScheduleView';
@@ -89,6 +90,8 @@ export function PlanningWorkspaceShell({
 }: PlanningWorkspaceShellProps) {
   const isSidebarVisible = sidebarCollapsed !== 'hidden';
   const isSidebarIconsOnly = sidebarCollapsed === 'icons';
+  const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
@@ -161,6 +164,7 @@ export function PlanningWorkspaceShell({
             onSetActiveTab={onSetActiveTab}
             onOpenProgress={onOpenProgress}
             onOpenWrapUp={onOpenWrapUp}
+            planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           />
         ) : activeTab === 'insights' ? (
           <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} />
@@ -212,6 +216,7 @@ interface WorkspaceMainPaneProps {
   onSetActiveTab: (tab: WorkspaceTab) => void;
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
+  planIdsWithImportedExecutionReturns: Set<string>;
 }
 
 function WorkspaceMainPane({
@@ -228,11 +233,12 @@ function WorkspaceMainPane({
   onSetActiveTab,
   onOpenProgress,
   onOpenWrapUp,
+  planIdsWithImportedExecutionReturns,
 }: WorkspaceMainPaneProps) {
   const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
 
   const isReviewed = isPlanArchived(plan);
-  const reviewReady = isPlanReviewReady(plan, tasks);
+  const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
   const showScheduleTab = !isReviewed;
   const effectiveActiveTab: WorkspaceTab =
     activeTab === 'schedule' && !showScheduleTab ? 'edit' : activeTab;
@@ -254,7 +260,7 @@ function WorkspaceMainPane({
   const tabs = buildWorkspaceTabs({
     hasLinkedTasks,
     isReviewed,
-    reviewReady,
+    reviewReady: wrapUpEligible,
     onOpenProgress,
     onSetActiveTab: handleSetActiveTab,
     showScheduleTab,
@@ -309,7 +315,7 @@ function WorkspaceMainPane({
             tasks={tasks}
             timeEntries={timeEntries}
             onBack={() => onSetActiveTab('edit')}
-            onWrapUp={!isReviewed && reviewReady ? () => onOpenWrapUp(plan) : undefined}
+            onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
           />
         )}
         {effectiveActiveTab === 'insights' && (

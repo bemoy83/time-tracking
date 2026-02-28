@@ -155,7 +155,7 @@ export function WrapUpSheet({
                       <div>
                         <h4 className="wrap-up-sheet__row-title">{item.lineItem.title}</h4>
                         <p className="wrap-up-sheet__row-meta">
-                          Status: {item.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
+                          Status: {decision.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
                         </p>
                         {(item.lineItem.scheduledStart || item.lineItem.scheduledEnd) && (
                           <p className="wrap-up-sheet__row-meta">
@@ -194,7 +194,29 @@ export function WrapUpSheet({
                       <span>Include in KPI</span>
                     </label>
 
-                    {item.executionStatus === 'deferred' && (
+                    {decision.executionStatus === 'blocked' && (
+                      <div className="wrap-up-sheet__resolve-block">
+                        <span className="wrap-up-sheet__row-meta">Resolve block:</span>
+                        <div className="wrap-up-sheet__resolve-block-actions">
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            onClick={() => modelV2.setLineItemExecutionStatus(item.lineItem.id, 'completed')}
+                          >
+                            Mark completed
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--secondary btn--sm"
+                            onClick={() => modelV2.setLineItemExecutionStatus(item.lineItem.id, 'deferred')}
+                          >
+                            Mark deferred
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {decision.executionStatus === 'deferred' && (
                       <label className="wrap-up-sheet__decision-row">
                         <input
                           type="checkbox"

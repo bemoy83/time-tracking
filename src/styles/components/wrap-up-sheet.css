@@ -132,3 +132,15 @@
   flex-direction: column;
   gap: 4px;
 }
+
+.wrap-up-sheet__resolve-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.wrap-up-sheet__resolve-block-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}

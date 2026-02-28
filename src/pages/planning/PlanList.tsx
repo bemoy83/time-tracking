@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task } from '../../lib/types';
 import {
-  isPlanReviewReady,
+  isPlanWrapUpEligible,
   isPlanArchived,
   sortPlansForSidebar,
 } from '../../lib/planning/plan-lifecycle';
+import { usePlanIdsWithImportedExecutionReturns } from './hooks/usePlanIdsWithImportedExecutionReturns';
 import { ChevronIcon, ChevronRightIcon, TrashIcon, PlusIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -41,6 +42,8 @@ export function PlanList({
   archiveExpanded = false,
   onToggleArchive,
 }: PlanListProps) {
+  const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+
   const { activePlans, archivedPlans } = useMemo(() => {
     const active: Plan[] = [];
     const archived: Plan[] = [];
@@ -53,12 +56,12 @@ export function PlanList({
       }
     }
     return {
-      activePlans: sortPlansForSidebar(active, tasks),
+      activePlans: sortPlansForSidebar(active, tasks, planIdsWithImportedExecutionReturns),
       archivedPlans: archived.sort((a, b) =>
         (b.reviewedAt ?? '').localeCompare(a.reviewedAt ?? ''),
       ),
     };
-  }, [plans, tasks]);
+  }, [plans, tasks, planIdsWithImportedExecutionReturns]);
 
   if (sidebarMode) {
     return (
@@ -86,6 +89,7 @@ export function PlanList({
               onSelect={onSelect}
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
+              planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
               compact
             />
           </SidebarZone>
@@ -106,6 +110,7 @@ export function PlanList({
               onSelect={onSelect}
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
+              planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
               compact
             />
           </SidebarZone>
@@ -145,6 +150,7 @@ export function PlanList({
                   onSelect={onSelect}
                   onDelete={onDelete}
                   onOpenWrapUp={onOpenWrapUp}
+                  planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 />
               ))}
             </ul>
@@ -162,6 +168,7 @@ export function PlanList({
                     onSelect={onSelect}
                     onDelete={onDelete}
                     onOpenWrapUp={onOpenWrapUp}
+                    planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                   />
                 ))}
               </ul>
@@ -182,6 +189,7 @@ interface PlanItemsProps {
   onSelect: (plan: Plan) => void;
   onDelete: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
+  planIdsWithImportedExecutionReturns: Set<string>;
   compact?: boolean;
 }
 
@@ -192,6 +200,7 @@ function PlanItems({
   onSelect,
   onDelete,
   onOpenWrapUp,
+  planIdsWithImportedExecutionReturns,
   compact,
 }: PlanItemsProps) {
   return (
@@ -205,6 +214,7 @@ function PlanItems({
           onSelect={onSelect}
           onDelete={onDelete}
           onOpenWrapUp={onOpenWrapUp}
+          planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           compact={compact}
         />
       ))}
@@ -219,6 +229,7 @@ interface PlanListItemProps {
   onSelect: (plan: Plan) => void;
   onDelete: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
+  planIdsWithImportedExecutionReturns: Set<string>;
   compact?: boolean;
 }
 
@@ -229,12 +240,13 @@ function PlanListItem({
   onSelect,
   onDelete,
   onOpenWrapUp,
+  planIdsWithImportedExecutionReturns,
   compact,
 }: PlanListItemProps) {
-  const reviewReady = isPlanReviewReady(plan, tasks);
+  const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
   const badgeVariant = plan.reviewedAt != null
     ? 'reviewed'
-    : reviewReady
+    : wrapUpEligible
       ? 'review-ready'
       : plan.status;
 
@@ -252,7 +264,7 @@ function PlanListItem({
         <StatusBadge variant={badgeVariant} />
         {!compact && <ChevronRightIcon className="planning-view__item-chevron" />}
       </button>
-      {reviewReady && (
+      {wrapUpEligible && (
         <button
           className="planning-view__item-action"
           onClick={(e) => {

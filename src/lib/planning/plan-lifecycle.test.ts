@@ -5,6 +5,7 @@ import {
   getPlanLinkedTasks,
   getUnplannedProjectTasks,
   isPlanReviewReady,
+  isPlanWrapUpEligible,
   isPlanArchived,
   sortPlansForSidebar,
 } from './plan-lifecycle';
@@ -60,6 +61,23 @@ describe('isPlanReviewReady', () => {
     expect(
       isPlanReviewReady(plan, [makeTask({ sourcePlanId: plan.id, status: 'active' })]),
     ).toBe(false);
+  });
+
+  it('returns true when all tasks completed (wrap-up eligible)', () => {
+    const plan = makeActivePlan();
+    const tasks = [
+      makeTask({ id: 'a', sourcePlanId: plan.id, status: 'completed' }),
+      makeTask({ id: 'b', sourcePlanId: plan.id, status: 'completed' }),
+    ];
+    expect(isPlanWrapUpEligible(plan, tasks, false)).toBe(true);
+    expect(isPlanWrapUpEligible(plan, tasks, true)).toBe(true);
+  });
+
+  it('returns true when execution return imported but tasks not all completed (blocked items)', () => {
+    const plan = makeActivePlan();
+    const tasks = [makeTask({ id: 'a', sourcePlanId: plan.id, status: 'active' })];
+    expect(isPlanWrapUpEligible(plan, tasks, false)).toBe(false);
+    expect(isPlanWrapUpEligible(plan, tasks, true)).toBe(true);
   });
 
   it('returns false for reviewed or draft plans', () => {
