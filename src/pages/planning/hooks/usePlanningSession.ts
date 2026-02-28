@@ -44,3 +44,11 @@ export function savePlanningSession(session: Partial<PlanningSession>): void {
     // Silently ignore storage errors
   }
 }
+
+export function clearPlanningSession(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Silently ignore storage errors
+  }
+}

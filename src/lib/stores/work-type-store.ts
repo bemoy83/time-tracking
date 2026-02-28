@@ -162,6 +162,10 @@ export async function removeWorkType(id: string): Promise<void> {
   });
 }
 
+export function resetWorkTypeState(): void {
+  setState({ workTypes: [] });
+}
+
 // ============================================================
 // Selectors
 // ============================================================

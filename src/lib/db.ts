@@ -1167,6 +1167,16 @@ export async function deletePlan(id: string): Promise<void> {
   await db.delete('plans', id);
 }
 
+/**
+ * Delete all plans (workspace and field plans).
+ */
+export async function deleteAllPlans(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('plans', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
 // ============================================================
 // Imported Execution Return Operations
 // ============================================================
@@ -1293,6 +1303,16 @@ export async function updateWorkType(workType: WorkType): Promise<void> {
 export async function deleteWorkType(id: string): Promise<void> {
   const db = await getDB();
   await db.delete('workTypes', id);
+}
+
+/**
+ * Delete all work types.
+ */
+export async function deleteAllWorkTypes(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('workTypes', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
 }
 
 export async function findWorkTypeByKey(
