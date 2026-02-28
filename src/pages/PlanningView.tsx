@@ -1,6 +1,5 @@
 import { PlanEditor } from './planning/PlanEditor';
 import { ScheduleView } from './planning/ScheduleView';
-import { CompareView } from './planning/CompareView';
 import { ProgressView } from './planning/ProgressView';
 import { PlanningListRoute } from './planning/PlanningListRoute';
 import { PlanningInsightsRoute } from './planning/PlanningInsightsRoute';
@@ -31,7 +30,6 @@ export function PlanningView({
 }: PlanningViewProps = {}) {
   const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
   const workspaceEnabled = getFeatureFlag('planningWorkspaceDesktop');
-  const scheduleEnabled = getFeatureFlag('planningScheduleV1');
   const mode: NavigationMode = workspaceEnabled && isWideScreen ? 'workspace' : 'stack';
 
   const workspace = usePlanningWorkspaceState({
@@ -52,19 +50,20 @@ export function PlanningView({
         kpis={workspace.kpis}
         timeEntries={workspace.timeEntries}
         timeEntriesByTask={workspace.timeEntriesByTask}
-        canComparePlans={workspace.canComparePlans}
         activePlan={workspace.activePlan}
         activeTab={workspace.activeTab}
-        comparison={workspace.comparison}
         hasLinkedTasks={workspace.hasLinkedTasks}
         wrapUpPlan={workspace.wrapUpPlan}
+        archiveExpanded={workspace.archiveExpanded}
+        sidebarCollapsed={workspace.sidebarCollapsed}
+        onToggleArchive={workspace.toggleArchiveExpanded}
+        onToggleSidebar={workspace.toggleSidebarCollapsed}
         onSelectPlan={workspace.handleSelectPlan}
         onCreatePlan={workspace.handleCreatePlan}
         onDeletePlan={workspace.handleDeletePlan}
         onSavePlan={workspace.handleSavePlan}
         onSetActiveTab={workspace.setActiveTab}
         onOpenInsights={workspace.openInsights}
-        onOpenCompare={workspace.openCompare}
         onOpenProgress={workspace.openProgress}
         onOpenWrapUp={workspace.openWrapUp}
         onCloseWrapUp={workspace.closeWrapUp}
@@ -116,34 +115,19 @@ export function PlanningView({
     );
   }
 
-  if (workspace.canComparePlans && workspace.subView === 'compare' && workspace.activePlan && workspace.comparison) {
-    return (
-      <>
-        <CompareView
-          comparison={workspace.comparison}
-          onBack={() => workspace.setSubView('edit')}
-        />
-        {wrapUpSheet}
-      </>
-    );
-  }
-
   if (workspace.subView === 'edit' && workspace.activePlan) {
     return (
       <>
         <PlanEditor
           plan={workspace.activePlan}
           kpis={workspace.kpis}
-          plans={workspace.plans}
           projects={workspace.projects}
-          canComparePlans={workspace.canComparePlans}
           canOpenProgress={workspace.hasLinkedTasks}
           readOnly={isPlanArchived(workspace.activePlan)}
           onSave={workspace.handleSavePlan}
           onBack={workspace.handleBack}
-          onCompare={workspace.openCompare}
           onOpenSchedule={
-            canShowScheduleTab(workspace.activePlan, scheduleEnabled)
+            canShowScheduleTab(workspace.activePlan)
               ? workspace.openSchedule
               : undefined
           }
@@ -158,7 +142,7 @@ export function PlanningView({
   if (
     workspace.subView === 'schedule'
     && workspace.activePlan
-    && canShowScheduleTab(workspace.activePlan, scheduleEnabled)
+    && canShowScheduleTab(workspace.activePlan)
   ) {
     return (
       <>
@@ -208,8 +192,7 @@ export function PlanningView({
 
 function canShowScheduleTab(
   plan: ReturnType<typeof usePlanningWorkspaceState>['activePlan'],
-  scheduleEnabled: boolean,
 ): boolean {
   if (!plan) return false;
-  return scheduleEnabled && !isPlanArchived(plan);
+  return !isPlanArchived(plan);
 }

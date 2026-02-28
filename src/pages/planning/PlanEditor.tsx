@@ -39,15 +39,12 @@ import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 interface PlanEditorProps {
   plan: Plan;
   kpis: WorkTypeKpi[];
-  plans: Plan[];
   projects: Project[];
-  canComparePlans: boolean;
   canOpenProgress: boolean;
   /** When true, all editing controls are disabled (reviewed/archived plans). */
   readOnly?: boolean;
   onSave: (plan: Plan) => void;
   onBack: () => void;
-  onCompare: (planId: string) => void;
   onOpenSchedule?: () => void;
   onOpenProgress: () => void;
   onOpenReport?: () => void;
@@ -56,14 +53,11 @@ interface PlanEditorProps {
 export function PlanEditor({
   plan,
   kpis,
-  plans,
   projects,
-  canComparePlans,
   canOpenProgress,
   readOnly = false,
   onSave,
   onBack,
-  onCompare,
   onOpenSchedule,
   onOpenProgress,
   onOpenReport,
@@ -134,8 +128,6 @@ export function PlanEditor({
     if (!shouldClearPlanProjectId(currentPlan.projectId, projects)) return;
     mutatePlan((prev) => ({ ...prev, projectId: null }));
   }, [currentPlan, projects, mutatePlan]);
-
-  const otherPlans = plans.filter((p) => p.id !== plan.id);
 
   return (
     <div className="planning-view">
@@ -246,20 +238,6 @@ export function PlanEditor({
             <button className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`} onClick={handleToggleLock}>
               {isLocked ? 'Revert to Draft' : 'Activate'}
             </button>
-            {canComparePlans && otherPlans.length > 0 && (
-              <select
-                className="input planning-view__compare-trigger"
-                onChange={(e) => {
-                  if (e.target.value) onCompare(e.target.value);
-                }}
-                value=""
-              >
-                <option value="">Compare with...</option>
-                {otherPlans.map((p) => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
-                ))}
-              </select>
-            )}
           </div>
         )}
         {readOnly && currentPlan.reviewedAt != null && onOpenReport && (

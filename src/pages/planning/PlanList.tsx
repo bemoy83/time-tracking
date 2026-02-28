@@ -6,7 +6,7 @@ import {
   isPlanArchived,
   sortPlansForSidebar,
 } from '../../lib/planning/plan-lifecycle';
-import { ChevronRightIcon, TrashIcon, PlusIcon, SparklesIcon } from '../../components/icons';
+import { ChevronIcon, ChevronRightIcon, TrashIcon, PlusIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { StatusBadge } from '../../components/StatusBadge';
 
@@ -22,6 +22,10 @@ interface PlanListProps {
   selectedPlanId?: string | null;
   /** When true, renders compact sidebar variant without FAB. */
   sidebarMode?: boolean;
+  /** Controls archive zone collapsed state (sidebar mode). */
+  archiveExpanded?: boolean;
+  /** Callback to toggle archive zone collapsed state. */
+  onToggleArchive?: () => void;
 }
 
 export function PlanList({
@@ -34,6 +38,8 @@ export function PlanList({
   onOpenInsights,
   selectedPlanId,
   sidebarMode = false,
+  archiveExpanded = false,
+  onToggleArchive,
 }: PlanListProps) {
   const { activePlans, archivedPlans } = useMemo(() => {
     const active: Plan[] = [];
@@ -57,7 +63,7 @@ export function PlanList({
   if (sidebarMode) {
     return (
       <div className="planning-view planning-view--sidebar">
-        {/* Persistent create + insights actions */}
+        {/* Primary create action */}
         <div className="planning-sidebar__actions">
           <button
             type="button"
@@ -67,15 +73,6 @@ export function PlanList({
           >
             <PlusIcon className="planning-sidebar__action-icon" />
             <span>New Plan</span>
-          </button>
-          <button
-            type="button"
-            className="planning-sidebar__insights-btn"
-            onClick={onOpenInsights}
-            aria-label="Insights"
-          >
-            <SparklesIcon className="planning-sidebar__action-icon" />
-            <span>Insights</span>
           </button>
         </div>
 
@@ -94,9 +91,14 @@ export function PlanList({
           </SidebarZone>
         )}
 
-        {/* Archive zone */}
+        {/* Archive zone — collapsible */}
         {archivedPlans.length > 0 && (
-          <SidebarZone label="Archive">
+          <SidebarZone
+            label={`Archive (${archivedPlans.length})`}
+            collapsible
+            expanded={archiveExpanded}
+            onToggle={onToggleArchive}
+          >
             <PlanItems
               plans={archivedPlans}
               tasks={tasks}
@@ -278,7 +280,38 @@ function PlanListItem({
 
 // --- Sidebar zone heading ---
 
-function SidebarZone({ label, children }: { label: string; children: React.ReactNode }) {
+function SidebarZone({
+  label,
+  children,
+  collapsible = false,
+  expanded = true,
+  onToggle,
+}: {
+  label: string;
+  children: React.ReactNode;
+  collapsible?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
+  if (collapsible) {
+    return (
+      <div className="planning-sidebar__zone">
+        <button
+          type="button"
+          className="planning-sidebar__zone-toggle"
+          onClick={onToggle}
+          aria-expanded={expanded}
+        >
+          <ChevronIcon
+            className={`planning-sidebar__zone-chevron${expanded ? ' planning-sidebar__zone-chevron--expanded' : ''}`}
+          />
+          <span className="planning-sidebar__zone-heading">{label}</span>
+        </button>
+        {expanded && children}
+      </div>
+    );
+  }
+
   return (
     <div className="planning-sidebar__zone">
       <h3 className="planning-sidebar__zone-heading">{label}</h3>

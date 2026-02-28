@@ -17,6 +17,7 @@ function isWorkspaceTab(value: unknown): value is WorkspaceTab {
     || value === 'schedule'
     || value === 'progress'
     || value === 'compare'
+    || value === 'review'
     || value === 'insights'
     || value === 'report';
 }

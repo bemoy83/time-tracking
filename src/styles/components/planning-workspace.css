@@ -60,10 +60,96 @@
   height: 20px;
 }
 
+.planning-workspace__sidebar--icons {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+}
+
+.planning-workspace__sidebar--icons .planning-workspace__sidebar-header {
+  justify-content: center;
+  padding: var(--space-sm) var(--space-xs);
+}
+
+.planning-workspace__sidebar-collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+  margin-left: auto;
+  transition: background-color 0.15s;
+}
+
+.planning-workspace__sidebar-collapse:hover {
+  background: var(--color-surface-hover);
+}
+
+.planning-workspace__sidebar-collapse-icon {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s;
+}
+
+.planning-workspace__sidebar-collapse-icon--collapsed {
+  transform: rotate(180deg);
+}
+
 .planning-workspace__sidebar-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-md);
+  min-height: 0;
+}
+
+/* --- Sidebar footer (Insights) --- */
+
+.planning-workspace__sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.planning-workspace__sidebar-footer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-sm) var(--space-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.planning-workspace__sidebar-footer-item:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.planning-workspace__sidebar-footer-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.planning-workspace__sidebar-footer-item--active {
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.planning-workspace__sidebar-footer-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* Override plan list styles inside sidebar: remove outer padding since sidebar provides it */
@@ -79,38 +165,31 @@
   margin-bottom: var(--space-sm);
 }
 
-.planning-sidebar__create-btn,
-.planning-sidebar__insights-btn {
+.planning-sidebar__create-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-xs);
-  flex: 1;
-  padding: var(--space-sm) var(--space-sm);
-  border: 1px solid var(--color-border);
+  width: 100%;
+  padding: 10px var(--space-md);
+  border: none;
   border-radius: var(--radius-lg);
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-primary);
+  color: #fff;
   font-size: var(--font-small);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: opacity 0.15s;
   white-space: nowrap;
 }
 
-.planning-sidebar__create-btn:hover,
-.planning-sidebar__insights-btn:hover {
-  background: var(--color-surface-hover);
+.planning-sidebar__create-btn:hover {
+  opacity: 0.88;
 }
 
-.planning-sidebar__create-btn:focus-visible,
-.planning-sidebar__insights-btn:focus-visible {
+.planning-sidebar__create-btn:focus-visible {
   outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
-.planning-sidebar__create-btn {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  outline-offset: 2px;
 }
 
 .planning-sidebar__action-icon {
@@ -135,6 +214,34 @@
   letter-spacing: 0.04em;
   padding: var(--space-xs) var(--space-sm);
   margin: 0;
+}
+
+.planning-sidebar__zone-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.planning-sidebar__zone-toggle:hover .planning-sidebar__zone-heading {
+  color: var(--color-text);
+}
+
+.planning-sidebar__zone-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.planning-sidebar__zone-chevron--expanded {
+  transform: rotate(90deg);
 }
 
 /* Compact list variant for sidebar */
@@ -207,14 +314,35 @@
 
 .planning-workspace__empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-sm);
   height: 100%;
   min-height: 300px;
   color: var(--color-text-muted);
   font-size: var(--font-body);
   text-align: center;
   padding: var(--space-xl);
+}
+
+.planning-workspace__empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.4;
+}
+
+.planning-workspace__empty-heading {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.planning-workspace__empty-desc {
+  margin: 0;
+  font-size: var(--font-small);
+  max-width: 300px;
 }
 
 /* --- Tab strip --- */
@@ -229,6 +357,14 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.planning-workspace__tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .planning-workspace__tab {
@@ -269,6 +405,21 @@
 /* Override back buttons inside workspace main pane — navigation is via tabs */
 .planning-workspace__tab-content .planning-view__back {
   display: none;
+}
+
+/* --- Review tab prompt --- */
+
+.planning-workspace__review-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  text-align: center;
+  min-height: 200px;
+  color: var(--color-text-muted);
+  font-size: var(--font-body);
 }
 
 /* --- Reviewed/archived banner --- */

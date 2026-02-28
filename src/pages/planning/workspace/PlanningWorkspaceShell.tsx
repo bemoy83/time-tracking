@@ -8,19 +8,16 @@
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
-import type { PlanComparison } from '../../../lib/planning/plan-compare';
 import type { Project, TimeEntry } from '../../../lib/types';
 import { isPlanArchived, isPlanReviewReady } from '../../../lib/planning/plan-lifecycle';
 import { PlanList } from '../PlanList';
 import { PlanEditor } from '../PlanEditor';
 import { ScheduleView } from '../ScheduleView';
-import { CompareView } from '../CompareView';
 import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
 import { EventReportView } from '../EventReportView';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
-import { ChevronLeftIcon } from '../../../components/icons';
-import { getFeatureFlag } from '../../../lib/flags/feature-flags';
+import { ChevronLeftIcon, HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
 interface PlanningWorkspaceShellProps {
@@ -32,14 +29,18 @@ interface PlanningWorkspaceShellProps {
   kpis: WorkTypeKpi[];
   timeEntries: TimeEntry[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
-  canComparePlans: boolean;
 
   // Selection
   activePlan: Plan | null;
   activeTab: WorkspaceTab;
-  comparison: PlanComparison | null;
   hasLinkedTasks: boolean;
   wrapUpPlan: Plan | null;
+
+  // Sidebar preferences
+  archiveExpanded: boolean;
+  sidebarCollapsed: 'expanded' | 'icons' | 'hidden';
+  onToggleArchive: () => void;
+  onToggleSidebar: () => void;
 
   // Navigation
   onSelectPlan: (plan: Plan) => void;
@@ -48,7 +49,6 @@ interface PlanningWorkspaceShellProps {
   onSavePlan: (plan: Plan) => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
   onOpenInsights: () => void;
-  onOpenCompare: (planId: string) => void;
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
   onCloseWrapUp: () => void;
@@ -66,54 +66,82 @@ export function PlanningWorkspaceShell({
   kpis,
   timeEntries,
   timeEntriesByTask,
-  canComparePlans,
   activePlan,
   activeTab,
-  comparison,
   hasLinkedTasks,
   wrapUpPlan,
+  archiveExpanded,
+  sidebarCollapsed,
+  onToggleArchive,
+  onToggleSidebar,
   onSelectPlan,
   onCreatePlan,
   onDeletePlan,
   onSavePlan,
   onSetActiveTab,
   onOpenInsights,
-  onOpenCompare,
   onOpenProgress,
   onOpenWrapUp,
   onCloseWrapUp,
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
+  const isSidebarVisible = sidebarCollapsed !== 'hidden';
+  const isSidebarIconsOnly = sidebarCollapsed === 'icons';
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
-      <aside className="planning-workspace__sidebar">
-        <div className="planning-workspace__sidebar-header">
-          <button
-            type="button"
-            className="planning-workspace__exit"
-            onClick={onExit}
-            aria-label="Exit planning workspace"
-          >
-            <ChevronLeftIcon className="planning-workspace__exit-icon" />
-            <span>Exit</span>
-          </button>
-        </div>
-        <div className="planning-workspace__sidebar-content">
-          <PlanList
-            plans={plans}
-            tasks={tasks}
-            onSelect={onSelectPlan}
-            onCreate={onCreatePlan}
-            onDelete={onDeletePlan}
-            onOpenWrapUp={onOpenWrapUp}
-            onOpenInsights={onOpenInsights}
-            selectedPlanId={activePlan?.id ?? null}
-            sidebarMode
-          />
-        </div>
-      </aside>
+      {isSidebarVisible && (
+        <aside className={`planning-workspace__sidebar${isSidebarIconsOnly ? ' planning-workspace__sidebar--icons' : ''}`}>
+          <div className="planning-workspace__sidebar-header">
+            <button
+              type="button"
+              className="planning-workspace__exit"
+              onClick={onExit}
+              aria-label="Back to all plans"
+            >
+              <HomeIcon className="planning-workspace__exit-icon" />
+              {!isSidebarIconsOnly && <span>All Plans</span>}
+            </button>
+            <button
+              type="button"
+              className="planning-workspace__sidebar-collapse"
+              onClick={onToggleSidebar}
+              aria-label={isSidebarIconsOnly ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <ChevronLeftIcon className={`planning-workspace__sidebar-collapse-icon${isSidebarIconsOnly ? ' planning-workspace__sidebar-collapse-icon--collapsed' : ''}`} />
+            </button>
+          </div>
+          {!isSidebarIconsOnly && (
+            <div className="planning-workspace__sidebar-content">
+              <PlanList
+                plans={plans}
+                tasks={tasks}
+                onSelect={onSelectPlan}
+                onCreate={onCreatePlan}
+                onDelete={onDeletePlan}
+                onOpenWrapUp={onOpenWrapUp}
+                onOpenInsights={onOpenInsights}
+                selectedPlanId={activePlan?.id ?? null}
+                sidebarMode
+                archiveExpanded={archiveExpanded}
+                onToggleArchive={onToggleArchive}
+              />
+            </div>
+          )}
+          <div className="planning-workspace__sidebar-footer">
+            <button
+              type="button"
+              className={`planning-workspace__sidebar-footer-item${activeTab === 'insights' ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
+              onClick={onOpenInsights}
+              aria-label="Insights"
+            >
+              <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
+              {!isSidebarIconsOnly && <span>Insights</span>}
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* Main pane */}
       <section className="planning-workspace__main">
@@ -121,18 +149,14 @@ export function PlanningWorkspaceShell({
           <WorkspaceMainPane
             plan={activePlan}
             activeTab={activeTab}
-            plans={plans}
             tasks={tasks}
             projects={projects}
             kpis={kpis}
             timeEntries={timeEntries}
             timeEntriesByTask={timeEntriesByTask}
-            canComparePlans={canComparePlans}
             hasLinkedTasks={hasLinkedTasks}
-            comparison={comparison}
             onSavePlan={onSavePlan}
             onSetActiveTab={onSetActiveTab}
-            onOpenCompare={onOpenCompare}
             onOpenProgress={onOpenProgress}
             onOpenWrapUp={onOpenWrapUp}
           />
@@ -140,7 +164,21 @@ export function PlanningWorkspaceShell({
           <InsightsView tasks={tasks} workTypes={workTypes} />
         ) : (
           <div className="planning-workspace__empty">
-            <p>Select a plan from the sidebar to begin editing.</p>
+            <TaskListIcon className="planning-workspace__empty-icon" />
+            {plans.length === 0 ? (
+              <>
+                <p className="planning-workspace__empty-heading">Create your first plan</p>
+                <p className="planning-workspace__empty-desc">Get started by creating a plan to organise your work packages.</p>
+                <button type="button" className="btn btn--primary" onClick={onCreatePlan}>
+                  New Plan
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="planning-workspace__empty-heading">Select a plan to edit</p>
+                <p className="planning-workspace__empty-desc">Choose a plan from the sidebar, or create a new one.</p>
+              </>
+            )}
           </div>
         )}
       </section>
@@ -161,18 +199,14 @@ export function PlanningWorkspaceShell({
 interface WorkspaceMainPaneProps {
   plan: Plan;
   activeTab: WorkspaceTab;
-  plans: Plan[];
   tasks: Task[];
   projects: Project[];
   kpis: WorkTypeKpi[];
   timeEntries: TimeEntry[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
-  canComparePlans: boolean;
   hasLinkedTasks: boolean;
-  comparison: PlanComparison | null;
   onSavePlan: (plan: Plan) => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
-  onOpenCompare: (planId: string) => void;
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
 }
@@ -180,31 +214,26 @@ interface WorkspaceMainPaneProps {
 function WorkspaceMainPane({
   plan,
   activeTab,
-  plans,
   tasks,
   projects,
   kpis,
   timeEntries,
   timeEntriesByTask,
-  canComparePlans,
   hasLinkedTasks,
-  comparison,
   onSavePlan,
   onSetActiveTab,
-  onOpenCompare,
   onOpenProgress,
   onOpenWrapUp,
 }: WorkspaceMainPaneProps) {
   const isReviewed = isPlanArchived(plan);
   const reviewReady = isPlanReviewReady(plan, tasks);
-  const scheduleEnabled = getFeatureFlag('planningScheduleV1');
-  const showScheduleTab = scheduleEnabled && !isReviewed;
+  const showScheduleTab = !isReviewed;
   const effectiveActiveTab: WorkspaceTab =
     activeTab === 'schedule' && !showScheduleTab ? 'edit' : activeTab;
   const tabs = buildWorkspaceTabs({
-    canComparePlans,
     hasLinkedTasks,
     isReviewed,
+    reviewReady,
     onOpenProgress,
     onSetActiveTab,
     showScheduleTab,
@@ -240,14 +269,11 @@ function WorkspaceMainPane({
           <PlanEditor
             plan={plan}
             kpis={kpis}
-            plans={plans}
             projects={projects}
-            canComparePlans={canComparePlans}
             canOpenProgress={hasLinkedTasks}
             readOnly={isReviewed}
             onSave={onSavePlan}
             onBack={() => {}} // no-op in workspace mode
-            onCompare={onOpenCompare}
             onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
             onOpenProgress={onOpenProgress}
             onOpenReport={() => onSetActiveTab('report')}
@@ -270,11 +296,17 @@ function WorkspaceMainPane({
             readOnly={isReviewed}
           />
         )}
-        {effectiveActiveTab === 'compare' && comparison && (
-          <CompareView
-            comparison={comparison}
-            onBack={() => onSetActiveTab('edit')}
-          />
+        {effectiveActiveTab === 'review' && (
+          <div className="planning-workspace__review-prompt">
+            <p>This plan is ready for review and wrap-up.</p>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => onOpenWrapUp(plan)}
+            >
+              Start Wrap Up
+            </button>
+          </div>
         )}
         {effectiveActiveTab === 'report' && isReviewed && (
           <EventReportView
@@ -296,16 +328,16 @@ interface WorkspaceTabItem {
 }
 
 function buildWorkspaceTabs({
-  canComparePlans,
   hasLinkedTasks,
   isReviewed,
+  reviewReady,
   onOpenProgress,
   onSetActiveTab,
   showScheduleTab,
 }: {
-  canComparePlans: boolean;
   hasLinkedTasks: boolean;
   isReviewed: boolean;
+  reviewReady: boolean;
   onOpenProgress: () => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
   showScheduleTab: boolean;
@@ -334,11 +366,11 @@ function buildWorkspaceTabs({
     });
   }
 
-  if (canComparePlans) {
+  if (hasLinkedTasks && reviewReady && !isReviewed) {
     tabs.push({
-      id: 'compare',
-      label: 'Compare',
-      onSelect: () => onSetActiveTab('compare'),
+      id: 'review',
+      label: 'Review',
+      onSelect: () => onSetActiveTab('review'),
     });
   }
 

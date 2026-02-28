@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 import type { Plan } from '../../../lib/planning/plan-model';
 import { usePlanningData, type PlanningData } from './usePlanningData';
 import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
@@ -15,7 +14,7 @@ export type NavigationMode = 'stack' | 'workspace';
 export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'compare' | 'progress' | 'insights' | 'report';
 
 /** Tabs available in the workspace main pane. */
-export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'compare' | 'insights' | 'report';
+export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'compare' | 'review' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
   /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
@@ -47,7 +46,18 @@ export function usePlanningWorkspaceState({
 
   // --- Shared selection state ---
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
-  const [comparePlanId, setComparePlanId] = useState<string | null>(null);
+
+  // --- Sidebar preferences (workspace mode) ---
+  const [archiveExpanded, setArchiveExpanded] = useState(() => {
+    try { return sessionStorage.getItem('planning_archive_expanded') === 'true'; } catch { return false; }
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<'expanded' | 'icons' | 'hidden'>(() => {
+    try {
+      const stored = sessionStorage.getItem('planning_sidebar_collapsed');
+      if (stored === 'icons' || stored === 'hidden') return stored;
+    } catch { /* ignore */ }
+    return 'expanded';
+  });
 
   // --- Stack navigation state (mobile) ---
   const [subView, setSubView] = useState<PlanningSubView>('list');
@@ -116,25 +126,7 @@ export function usePlanningWorkspaceState({
     }
   }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans, mode]);
 
-  // --- Guard: compare view disabled mid-session ---
-  useEffect(() => {
-    if (!data.canComparePlans) {
-      if (mode === 'stack' && subView === 'compare') {
-        setSubView('edit');
-      }
-      if (mode === 'workspace' && activeTab === 'compare') {
-        setActiveTab('edit');
-      }
-      setComparePlanId(null);
-    }
-  }, [data.canComparePlans, subView, activeTab, mode]);
-
   // --- Derived ---
-  const comparison = useMemo(() => {
-    if (!activePlan || !comparePlanId) return null;
-    return data.getComparison(activePlan, comparePlanId);
-  }, [activePlan, comparePlanId, data]);
-
   const hasLinkedTasks = useMemo(() => {
     if (!activePlan) return false;
     return data.hasLinkedTasksForPlan(activePlan.id);
@@ -144,7 +136,6 @@ export function usePlanningWorkspaceState({
 
   const handleSelectPlan = useCallback((plan: Plan) => {
     setActivePlan(plan);
-    setComparePlanId(null);
     if (mode === 'stack') {
       setSubView('edit');
     } else {
@@ -166,7 +157,6 @@ export function usePlanningWorkspaceState({
     await data.handleDeletePlan(planId);
     if (activePlan?.id === planId) {
       setActivePlan(null);
-      setComparePlanId(null);
       if (mode === 'stack') setSubView('list');
     }
   }, [activePlan, data, mode]);
@@ -180,7 +170,6 @@ export function usePlanningWorkspaceState({
     if (mode === 'stack') {
       setSubView('list');
       setActivePlan(null);
-      setComparePlanId(null);
     }
     // Workspace mode: back is a no-op (sidebar is always visible)
   }, [mode]);
@@ -191,16 +180,6 @@ export function usePlanningWorkspaceState({
     } else {
       setActivePlan(null);
       setActiveTab('insights');
-    }
-  }, [mode]);
-
-  const openCompare = useCallback((planId: string) => {
-    trackTelemetryEvent('planning_compare_open');
-    setComparePlanId(planId);
-    if (mode === 'stack') {
-      setSubView('compare');
-    } else {
-      setActiveTab('compare');
     }
   }, [mode]);
 
@@ -229,6 +208,22 @@ export function usePlanningWorkspaceState({
     }
   }, [mode]);
 
+  const toggleArchiveExpanded = useCallback(() => {
+    setArchiveExpanded((prev) => {
+      const next = !prev;
+      try { sessionStorage.setItem('planning_archive_expanded', String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = prev === 'expanded' ? 'icons' : 'expanded';
+      try { sessionStorage.setItem('planning_sidebar_collapsed', next); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
   const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan) => {
     await data.handleWrapUpCompleted(updatedPlan);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
@@ -246,13 +241,10 @@ export function usePlanningWorkspaceState({
     tasks: data.tasks,
     projects: data.projects,
     workTypes: data.workTypes,
-    canComparePlans: data.canComparePlans,
     wrapUpPlan: data.wrapUpPlan,
 
     // Selection state
     activePlan,
-    comparePlanId,
-    comparison,
     hasLinkedTasks,
 
     // Stack navigation (mobile)
@@ -263,6 +255,12 @@ export function usePlanningWorkspaceState({
     activeTab,
     setActiveTab,
 
+    // Sidebar preferences
+    archiveExpanded,
+    sidebarCollapsed,
+    toggleArchiveExpanded,
+    toggleSidebarCollapsed,
+
     // Actions
     handleCreatePlan,
     handleSelectPlan,
@@ -270,7 +268,6 @@ export function usePlanningWorkspaceState({
     handleDeletePlan,
     handleBack,
     openInsights,
-    openCompare,
     openProgress,
     openSchedule,
     openReport,
