@@ -33,6 +33,19 @@ export function usePlanEditorState({ plan, onSave }: UsePlanEditorStateParams) {
     }
   }, []);
 
+  /** Flush pending save and wait for it to complete. Use before navigating away. */
+  const flushAndWait = useCallback(async () => {
+    if (timerRef.current != null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    if (pending) {
+      await onSaveRef.current(pending);
+    }
+  }, []);
+
   useEffect(() => {
     if (!shouldResyncEditorState(lastSyncedRef.current, plan)) return;
     setCurrentPlan(plan);
@@ -88,5 +101,7 @@ export function usePlanEditorState({ plan, onSave }: UsePlanEditorStateParams) {
     mutatePlan,
     /** Flush any pending debounced save immediately. */
     flush,
+    /** Flush and wait for save to complete. Use before navigating away. */
+    flushAndWait,
   };
 }

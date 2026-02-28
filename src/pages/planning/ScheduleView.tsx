@@ -11,6 +11,7 @@ import {
   setPlanEventDate,
   updatePlanCalendarDay,
 } from '../../lib/planning/scheduling/plan-schedule-update';
+import { reconcileWorkCalendar } from '../../lib/planning/scheduling/work-calendar';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
@@ -47,6 +48,29 @@ export function ScheduleView({
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
   }, [plan.id]);
+
+  // Derive work calendar when event dates exist but workCalendar is empty (e.g. dates set
+  // in plan editor and user switched to schedule before debounced save completed).
+  useEffect(() => {
+    const hasEventDates =
+      currentPlan.eventStartDate != null && currentPlan.eventEndDate != null;
+    if (hasEventDates && currentPlan.workCalendar.length === 0) {
+      mutatePlan((prev) => ({
+        ...prev,
+        workCalendar: reconcileWorkCalendar(
+          prev.workCalendar,
+          prev.eventStartDate,
+          prev.eventEndDate,
+          prev.defaultCrewSize,
+        ),
+      }));
+    }
+  }, [
+    currentPlan.eventStartDate,
+    currentPlan.eventEndDate,
+    currentPlan.workCalendar.length,
+    mutatePlan,
+  ]);
 
   const capacity = useMemo(
     () => computeCapacitySummary(currentPlan),

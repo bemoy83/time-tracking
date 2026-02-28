@@ -5,6 +5,7 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
+import { useCallback, useRef } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -225,17 +226,34 @@ function WorkspaceMainPane({
   onOpenProgress,
   onOpenWrapUp,
 }: WorkspaceMainPaneProps) {
+  const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
+
   const isReviewed = isPlanArchived(plan);
   const reviewReady = isPlanReviewReady(plan, tasks);
   const showScheduleTab = !isReviewed;
   const effectiveActiveTab: WorkspaceTab =
     activeTab === 'schedule' && !showScheduleTab ? 'edit' : activeTab;
+
+  const handleSetActiveTab = useCallback(
+    (tab: WorkspaceTab) => {
+      if (tab === 'schedule') {
+        void (async () => {
+          await (beforeScheduleTabRef.current?.() ?? Promise.resolve());
+          onSetActiveTab('schedule');
+        })();
+      } else {
+        onSetActiveTab(tab);
+      }
+    },
+    [onSetActiveTab],
+  );
+
   const tabs = buildWorkspaceTabs({
     hasLinkedTasks,
     isReviewed,
     reviewReady,
     onOpenProgress,
-    onSetActiveTab,
+    onSetActiveTab: handleSetActiveTab,
     showScheduleTab,
   });
   const reviewedDateText = plan.reviewedAt
@@ -277,6 +295,9 @@ function WorkspaceMainPane({
             onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
             onOpenProgress={onOpenProgress}
             onOpenReport={() => onSetActiveTab('report')}
+            onRegisterBeforeScheduleSwitch={(fn) => {
+              beforeScheduleTabRef.current = fn ?? null;
+            }}
           />
         )}
         {effectiveActiveTab === 'progress' && (

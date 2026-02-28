@@ -90,7 +90,7 @@ export function WorkCalendarEditor({
                     type="number"
                     min={0}
                     step={1}
-                    value={day.crewSize ?? ''}
+                    value={day.crewSize ?? planDefaultCrewSize ?? ''}
                     placeholder={crewPlaceholder}
                     disabled={readOnly || !day.isWorkDay}
                     onChange={(event) => onUpdateDay(day.date, {

@@ -60,7 +60,7 @@ function buildDefaultDay(date: string, defaultCrewSize: number | null): WorkCale
     isWorkDay: true,
     accessStart: DEFAULT_WORKDAY_START,
     accessEnd: DEFAULT_WORKDAY_END,
-    crewSize: defaultCrewSize,
+    crewSize: null,
   };
 }
 

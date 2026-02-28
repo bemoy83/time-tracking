@@ -33,10 +33,19 @@ export function setPlanDefaultCrewSize(plan: Plan, value: string): Plan {
     ...plan,
     defaultCrewSize: normalizeDefaultCrewSize(value),
   };
+  // Days that had crewSize matching the old default were using default, not an override.
+  // Set them to null so they inherit the new default.
+  const oldDefault = plan.defaultCrewSize;
+  const workCalendar =
+    oldDefault != null
+      ? next.workCalendar.map((day) =>
+          day.crewSize === oldDefault ? { ...day, crewSize: null as number | null } : day,
+        )
+      : next.workCalendar;
   return {
     ...next,
     workCalendar: reconcileWorkCalendar(
-      next.workCalendar,
+      workCalendar,
       next.eventStartDate,
       next.eventEndDate,
       next.defaultCrewSize,

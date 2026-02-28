@@ -48,6 +48,8 @@ interface PlanEditorProps {
   onOpenSchedule?: () => void;
   onOpenProgress: () => void;
   onOpenReport?: () => void;
+  /** Register flush-before-schedule (for workspace tab switch). Pass fn to register, undefined to unregister. */
+  onRegisterBeforeScheduleSwitch?: (fn?: () => Promise<void>) => void;
 }
 
 export function PlanEditor({
@@ -61,8 +63,9 @@ export function PlanEditor({
   onOpenSchedule,
   onOpenProgress,
   onOpenReport,
+  onRegisterBeforeScheduleSwitch,
 }: PlanEditorProps) {
-  const { currentPlan, mutatePlan } = usePlanEditorState({ plan, onSave });
+  const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
   const [showAddItem, setShowAddItem] = useState(false);
   const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
@@ -128,6 +131,11 @@ export function PlanEditor({
     if (!shouldClearPlanProjectId(currentPlan.projectId, projects)) return;
     mutatePlan((prev) => ({ ...prev, projectId: null }));
   }, [currentPlan, projects, mutatePlan]);
+
+  useEffect(() => {
+    onRegisterBeforeScheduleSwitch?.(flushAndWait);
+    return () => onRegisterBeforeScheduleSwitch?.();
+  }, [onRegisterBeforeScheduleSwitch, flushAndWait]);
 
   return (
     <div className="planning-view">
@@ -226,7 +234,13 @@ export function PlanEditor({
         {!readOnly && (
           <div className="planning-view__actions">
             {onOpenSchedule && (
-              <button className="btn btn--secondary" onClick={onOpenSchedule}>
+              <button
+                className="btn btn--secondary"
+                onClick={async () => {
+                  await flushAndWait();
+                  onOpenSchedule();
+                }}
+              >
                 Schedule
               </button>
             )}
