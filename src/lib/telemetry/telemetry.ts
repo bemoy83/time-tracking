@@ -20,6 +20,7 @@ export type TelemetryEventName =
   | 'interop_plan_package_merge'
   | 'interop_plan_package_skip'
   | 'interop_plan_package_conflict'
+  | 'interop_plan_package_export'
   | 'interop_session_close'
   | 'interop_session_close_failed'
   | 'interop_execution_return_export'

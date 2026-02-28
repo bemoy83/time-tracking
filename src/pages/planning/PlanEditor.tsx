@@ -26,6 +26,7 @@ import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
+import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { ChevronLeftIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -70,6 +71,7 @@ export function PlanEditor({
   const [showAddItem, setShowAddItem] = useState(false);
   const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setTitle(plan.title);
@@ -125,6 +127,19 @@ export function PlanEditor({
 
   const handleDuplicateItem = (item: PlanLineItem) => {
     mutatePlan((prev) => addLineItemToPlan(prev, duplicateLineItem(item)));
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await flushAndWait();
+      await exportPlanPackage(currentPlan);
+      trackTelemetryEvent('interop_plan_package_export');
+    } catch {
+      window.alert('Could not export plan. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   useEffect(() => {
@@ -249,15 +264,23 @@ export function PlanEditor({
                 Progress
               </button>
             )}
+            <button className="btn btn--secondary" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? 'Handing off...' : 'Hand off'}
+            </button>
             <button className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`} onClick={handleToggleLock}>
               {isLocked ? 'Revert to Draft' : 'Activate'}
             </button>
           </div>
         )}
-        {readOnly && currentPlan.reviewedAt != null && onOpenReport && (
+        {readOnly && currentPlan.reviewedAt != null && (
           <div className="planning-view__actions">
-            <button className="btn btn--secondary" onClick={onOpenReport}>
-              Event Report
+            {onOpenReport && (
+              <button className="btn btn--secondary" onClick={onOpenReport}>
+                Event Report
+              </button>
+            )}
+            <button className="btn btn--secondary" onClick={handleExport} disabled={isExporting}>
+              {isExporting ? 'Handing off...' : 'Hand off'}
             </button>
           </div>
         )}

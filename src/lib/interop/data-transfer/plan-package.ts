@@ -1,4 +1,4 @@
-import { addPlan, getAllTasks, getPlan, updatePlan } from '../../db';
+import { addPlan, getAllTasks, getAllWorkTypes, getPlan, updatePlan } from '../../db';
 import {
   type Plan,
   type PlanLineItem,
@@ -18,6 +18,8 @@ import {
   isSupportedSchemaVersion,
   unsupportedSchemaVersionMessage,
 } from './schema-version';
+import { sanitizeFileNameSegment } from '../../utils/sanitize-filename';
+import { downloadJson } from '../download-json';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -159,6 +161,74 @@ export function createPlanPackageEnvelope(
     appVersion: '0.0.1',
     payload,
   };
+}
+
+export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePayload> {
+  const referencedWorkTypeIds = new Set(
+    plan.lineItems
+      .map((item) => item.workTypeId)
+      .filter((workTypeId): workTypeId is string => workTypeId != null),
+  );
+  const allWorkTypes = await getAllWorkTypes();
+  const workTypeById = new Map(
+    allWorkTypes
+      .filter((workType) => referencedWorkTypeIds.has(workType.id))
+      .map((workType) => [workType.id, workType]),
+  );
+
+  const workTypes: WorkType[] = [];
+  const exportedWorkTypeIds = new Set<string>();
+  const syntheticTimestamp = nowUtc();
+
+  const lineItems = plan.lineItems.map((item) => {
+    if (item.workTypeId == null) {
+      return item;
+    }
+
+    const existing = workTypeById.get(item.workTypeId);
+    if (existing) {
+      if (!exportedWorkTypeIds.has(existing.id)) {
+        workTypes.push(existing);
+        exportedWorkTypeIds.add(existing.id);
+      }
+      return item;
+    }
+
+    const syntheticId = `plan-export-${plan.id}-${item.id}`;
+    if (!exportedWorkTypeIds.has(syntheticId)) {
+      workTypes.push({
+        id: syntheticId,
+        title: item.workTypeTitle,
+        workUnit: item.workUnit,
+        buildPhase: item.buildPhase,
+        expectedProductivity: item.productivityRate,
+        createdAt: syntheticTimestamp,
+        updatedAt: syntheticTimestamp,
+      });
+      exportedWorkTypeIds.add(syntheticId);
+    }
+
+    return {
+      ...item,
+      workTypeId: syntheticId,
+    };
+  });
+
+  return {
+    plan: {
+      ...plan,
+      lineItems,
+    },
+    workTypes,
+    lastModifiedAt: plan.updatedAt,
+  };
+}
+
+export async function exportPlanPackage(plan: Plan): Promise<void> {
+  const payload = await buildPlanPackagePayload(plan);
+  const envelope = createPlanPackageEnvelope(payload);
+  const filename = `plan-package-${sanitizeFileNameSegment(plan.title)}-${plan.updatedAt.slice(0, 10)}.json`;
+  downloadJson(filename, envelope);
 }
 
 async function resolveImportedWorkTypeIds(

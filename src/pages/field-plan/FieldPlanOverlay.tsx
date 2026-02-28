@@ -20,6 +20,7 @@ import {
 } from './field-plan-model';
 import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
 import { useFieldPlanImport } from './useFieldPlanImport';
+import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
 
 type GroupMode = 'phase' | 'flat';
 
@@ -73,14 +74,6 @@ function formatPlanPersonHours(plan: Plan, tasks: ReturnType<typeof useTaskStore
   }, 0);
 
   return `${personHours.toFixed(1)} person-hrs`;
-}
-
-function sanitizeFileNameSegment(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'plan';
 }
 
 function getStatusLabel(status: FieldPlanLineItemSummary['status']): string {
