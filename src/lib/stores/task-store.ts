@@ -21,6 +21,7 @@ import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedM
 import type { WorkUnit, BuildPhase } from '../types';
 import { stopTimer } from './timer-store';
 import { archiveTask } from '../archive/archive-action';
+import { syncTaskBlockToPlan, syncTaskUnblockToPlan } from '../planning/task-plan-block-sync';
 
 // ============================================================
 // Store State
@@ -354,6 +355,10 @@ export async function blockTask(id: string, reason: string): Promise<void> {
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
   });
+
+  if (updated.sourcePlanId && updated.sourceLineItemId) {
+    await syncTaskBlockToPlan(updated);
+  }
 }
 
 /**
@@ -373,6 +378,10 @@ export async function unblockTask(id: string): Promise<void> {
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
   });
+
+  if (updated.sourcePlanId && updated.sourceLineItemId) {
+    await syncTaskUnblockToPlan(updated);
+  }
 }
 
 /**

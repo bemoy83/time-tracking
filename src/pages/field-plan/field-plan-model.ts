@@ -26,6 +26,10 @@ export function deriveLineItemStatus(item: PlanLineItem, tasks: Task[]): LineIte
     return item.executionStatus;
   }
 
+  if (tasks.some((task) => task.status === 'blocked')) {
+    return 'blocked';
+  }
+
   if (tasks.length === 0) {
     return 'pending';
   }

@@ -21,6 +21,10 @@ import {
 import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
 import { useFieldPlanImport } from './useFieldPlanImport';
 import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
+import {
+  syncLineItemBlockToTasks,
+  syncLineItemUnblockToTasks,
+} from '../../lib/planning/task-plan-block-sync';
 
 type GroupMode = 'phase' | 'flat';
 
@@ -259,7 +263,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
   const handleMarkBlocked = useCallback(
     async (lineItem: PlanLineItem) => {
-      if (!canExecute) return;
+      if (!canExecute || !selectedPlan) return;
       const reason = window.prompt('Blocked reason (required)', lineItem.blockReason ?? '');
       if (reason == null) return;
       const trimmedReason = reason.trim();
@@ -276,8 +280,9 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
         blockReason: trimmedReason,
         blockCategory: category,
       });
+      await syncLineItemBlockToTasks(selectedPlan.id, lineItem.id, trimmedReason, category);
     },
-    [canExecute, patchLineItem],
+    [canExecute, patchLineItem, selectedPlan],
   );
 
   const handleMarkDeferred = useCallback(
@@ -298,14 +303,15 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
   const handleClearBlock = useCallback(
     async (lineItem: PlanLineItem) => {
-      if (!canExecute) return;
+      if (!canExecute || !selectedPlan) return;
       await patchLineItem(lineItem.id, {
         executionStatus: 'pending',
         blockReason: null,
         blockCategory: null,
       });
+      await syncLineItemUnblockToTasks(selectedPlan.id, lineItem.id);
     },
-    [canExecute, patchLineItem],
+    [canExecute, patchLineItem, selectedPlan],
   );
 
   const handleReactivateDeferred = useCallback(

@@ -15,6 +15,7 @@ function deriveStatusFromTasks(
 ): LineItemExecutionStatus {
   if (itemStatus === 'blocked' || itemStatus === 'deferred') return itemStatus;
   if (linkedTasks.length === 0) return 'pending';
+  if (linkedTasks.some((task) => task.status === 'blocked')) return 'blocked';
   if (linkedTasks.every((task) => task.status === 'completed')) return 'completed';
   if (linkedTasks.some((task) => task.status === 'active')) return 'in-progress';
   return itemStatus;
@@ -65,6 +66,10 @@ export async function buildExecutionReturnEnvelope(
     const linked = planTasksByLineItem.get(item.id) ?? [];
     const linkedEntries = linked.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
     const status = deriveStatusFromTasks(item.executionStatus, linked);
+    const blockedTaskReason =
+      status === 'blocked' && item.blockReason == null
+        ? (linked.find((task) => task.status === 'blocked')?.blockedReason ?? null)
+        : null;
     const deadline = evaluateLineItemDeadline(item, linked, linkedEntries, todayDate);
     if (status === 'pending') summaryByStatus.pending += 1;
     if (status === 'in-progress') summaryByStatus.inProgress += 1;
@@ -75,7 +80,7 @@ export async function buildExecutionReturnEnvelope(
       lineItemId: item.id,
       title: item.title,
       executionStatus: status,
-      blockReason: item.blockReason,
+      blockReason: blockedTaskReason ?? item.blockReason,
       blockCategory: item.blockCategory,
       executorNote: item.executorNote,
       deferredNote: item.deferredNote,

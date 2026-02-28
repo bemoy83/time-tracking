@@ -295,19 +295,24 @@ export function WrapUpSheet({
         </div>
       )}
 
-      {modelV2.validationErrors.length > 0 && (
-        <p className="wrap-up-sheet__error" role="alert">
-          {modelV2.validationErrors[0]}
-        </p>
-      )}
-
-      {modelV2.submitError && (
-        <p className="wrap-up-sheet__error" role="alert">
-          {modelV2.submitError}
-        </p>
-      )}
-
-      <div className="action-sheet__actions">
+      <div
+        className={`action-sheet__actions${modelV2.validationErrors.length > 0 ? ' action-sheet__actions--stacked' : ''}`}
+      >
+        {modelV2.validationErrors.length > 0 && (
+          <div className="wrap-up-sheet__validation-block" role="alert">
+            <p className="wrap-up-sheet__validation-title">Complete wrap-up requires:</p>
+            <ul className="wrap-up-sheet__validation-list">
+              {modelV2.validationErrors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {modelV2.submitError && (
+          <p className="wrap-up-sheet__error wrap-up-sheet__error--block" role="alert">
+            {modelV2.submitError}
+          </p>
+        )}
         <div className="action-sheet__actions-right">
           <button type="button" className="btn btn--secondary btn--lg" onClick={onClose} disabled={modelV2.isSubmitting}>
             Cancel
@@ -329,11 +334,26 @@ export function WrapUpSheet({
               void modelV2.runWrapUp('archive-and-complete');
             }}
             disabled={modelV2.isSubmitting || !modelV2.canSubmit || modelV2.isLoadingProjection}
+            title={
+              !modelV2.canSubmit && modelV2.validationErrors.length > 0
+                ? modelV2.validationErrors.join('. ')
+                : undefined
+            }
+            aria-describedby={
+              !modelV2.canSubmit && modelV2.validationErrors.length > 0
+                ? 'wrapup-validation-errors'
+                : undefined
+            }
           >
             Complete Wrap-up
           </button>
         </div>
       </div>
+      {modelV2.validationErrors.length > 0 && (
+        <div id="wrapup-validation-errors" className="sr-only" aria-live="polite">
+          {modelV2.validationErrors.join('. ')}
+        </div>
+      )}
     </ActionSheet>
   );
 }
