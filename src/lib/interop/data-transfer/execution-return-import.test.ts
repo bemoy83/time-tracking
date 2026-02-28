@@ -9,23 +9,63 @@ import {
   addExecutionReturnLineItems,
   addExecutionReturnRecord,
   addExecutionReturnUnplannedTasks,
+  addTask,
   addTimeEntry,
   getAllTimeEntries,
+  getTask,
+  updateTask,
 } from '../../db';
 
 vi.mock('../../db', () => ({
   addExecutionReturnLineItems: vi.fn(),
   addExecutionReturnRecord: vi.fn(),
   addExecutionReturnUnplannedTasks: vi.fn(),
+  addTask: vi.fn(),
   addTimeEntry: vi.fn(),
   getAllTimeEntries: vi.fn(),
+  getTask: vi.fn(),
+  updateTask: vi.fn(),
+}));
+
+vi.mock('../../stores/task-store', () => ({
+  refreshTasks: vi.fn(),
 }));
 
 const mockGetAllTimeEntries = vi.mocked(getAllTimeEntries);
 const mockAddTimeEntry = vi.mocked(addTimeEntry);
+const mockAddTask = vi.mocked(addTask);
+const mockGetTask = vi.mocked(getTask);
 const mockAddExecutionReturnRecord = vi.mocked(addExecutionReturnRecord);
 const mockAddExecutionReturnLineItems = vi.mocked(addExecutionReturnLineItems);
 const mockAddExecutionReturnUnplannedTasks = vi.mocked(addExecutionReturnUnplannedTasks);
+
+function makePlanTask(
+  overrides: Partial<{ id: string; status: string; sourceLineItemId: string | null }> = {},
+) {
+  return {
+    id: 'task-1',
+    title: 'Install carpet',
+    status: 'active',
+    projectId: 'project-1',
+    parentId: null,
+    blockedReason: null,
+    estimatedMinutes: null,
+    workQuantity: 120,
+    workUnit: 'm2',
+    defaultWorkers: null,
+    targetProductivity: null,
+    buildPhase: 'build-up',
+    workTypeId: null,
+    createdAt: '2026-02-27T08:00:00.000Z',
+    updatedAt: '2026-02-27T09:00:00.000Z',
+    archivedAt: null,
+    archiveVersion: null,
+    sourcePlanId: 'plan-1',
+    sourceLineItemId: 'li-1',
+    excludeFromKpi: false,
+    ...overrides,
+  };
+}
 
 function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
   return {
@@ -63,7 +103,7 @@ function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
           deadlineStatusAtClose: 'done-on-time',
         },
       ],
-      tasks: [],
+      tasks: [makePlanTask({ id: 'task-1', status: 'active', sourceLineItemId: 'li-1' })],
       unplannedTasks: [
         {
           id: 'task-u-1',
@@ -88,6 +128,7 @@ function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
           excludeFromKpi: false,
         },
       ],
+      workTypes: [],
       timeEntries: [
         {
           id: 'te-1',
@@ -120,6 +161,8 @@ describe('execution-return import', () => {
   beforeEach(() => {
     mockGetAllTimeEntries.mockReset();
     mockAddTimeEntry.mockReset();
+    mockAddTask.mockReset();
+    mockGetTask.mockResolvedValue(null); // tasks don't exist yet
     mockAddExecutionReturnRecord.mockReset();
     mockAddExecutionReturnLineItems.mockReset();
     mockAddExecutionReturnUnplannedTasks.mockReset();
@@ -171,5 +214,22 @@ describe('execution-return import', () => {
     expect(mockAddExecutionReturnRecord).toHaveBeenCalledTimes(1);
     expect(mockAddExecutionReturnLineItems).toHaveBeenCalledTimes(1);
     expect(mockAddExecutionReturnUnplannedTasks).toHaveBeenCalledTimes(1);
+    // Tasks from payload are upserted so Planning Progress view can show execution state
+    expect(mockAddTask).toHaveBeenCalledTimes(2); // 1 plan task + 1 unplanned task
+    // Plan task status synced from payload line item (executionStatus: 'completed')
+    expect(mockAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'task-1',
+        status: 'completed',
+        sourceLineItemId: 'li-1',
+      }),
+    );
+    expect(mockAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'task-u-1',
+        title: 'Cleanup aisle',
+        status: 'completed',
+      }),
+    );
   });
 });

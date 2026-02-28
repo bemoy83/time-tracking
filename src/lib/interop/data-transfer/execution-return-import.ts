@@ -2,10 +2,15 @@ import {
   addExecutionReturnLineItems,
   addExecutionReturnRecord,
   addExecutionReturnUnplannedTasks,
+  addTask,
   addTimeEntry,
   getAllTimeEntries,
+  getTask,
+  updateTask,
 } from '../../db';
 import { durationMs, generateId, nowUtc, type Task } from '../../types';
+import { refreshTasks } from '../../stores/task-store';
+import { notifyExecutionReturnImported } from '../../planning/execution-return-import-events';
 import {
   type DataTransferEnvelope,
   type ExecutionReturnImportPreview,
@@ -19,6 +24,7 @@ import {
   isSupportedSchemaVersion,
   unsupportedSchemaVersionMessage,
 } from './schema-version';
+import { resolveImportedWorkTypeIds } from './plan-package';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -186,6 +192,38 @@ function buildImportedUnplannedTasks(
   }));
 }
 
+/** Sync task status from payload line items (authoritative executor-reported status). */
+function applyImportedLineItemStatusToTasks(
+  planTasks: Task[],
+  payloadLineItems: { lineItemId: string; executionStatus: string }[],
+): Task[] {
+  const statusByLineItemId = new Map(
+    payloadLineItems.map((li) => [li.lineItemId, li.executionStatus]),
+  );
+  return planTasks.map((task) => {
+    const lineItemId = task.sourceLineItemId;
+    if (lineItemId == null) return task;
+    const importedStatus = statusByLineItemId.get(lineItemId);
+    if (importedStatus !== 'completed') return task;
+    if (task.status === 'completed') return task;
+    return { ...task, status: 'completed' as const, updatedAt: task.updatedAt };
+  });
+}
+
+async function upsertTasksFromPayload(tasks: Task[]): Promise<number> {
+  let added = 0;
+  for (const task of tasks) {
+    const existing = await getTask(task.id);
+    if (existing) {
+      await updateTask(task);
+    } else {
+      await addTask(task);
+      added += 1;
+    }
+  }
+  return added;
+}
+
 export async function applyExecutionReturnImport(
   preview: ExecutionReturnImportPreview,
 ): Promise<ExecutionReturnImportResult> {
@@ -206,6 +244,30 @@ export async function applyExecutionReturnImport(
   await addExecutionReturnRecord(record);
   await addExecutionReturnLineItems(lineItems);
   await addExecutionReturnUnplannedTasks(unplannedTasks);
+
+  // Add or update tasks so the Planning Progress view shows execution state.
+  // Sync task status from payload line items (authoritative executor-reported status).
+  const { tasks: planTasks, unplannedTasks: unplannedTaskPayload, lineItems: payloadLineItems, workTypes: payloadWorkTypes } =
+    preview.envelope.payload;
+  const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(planTasks, payloadLineItems);
+
+  const workTypeIdMap =
+    Array.isArray(payloadWorkTypes) && payloadWorkTypes.length > 0
+      ? await resolveImportedWorkTypeIds(preview.envelope.payload.planId, payloadWorkTypes)
+      : new Map<string, string>();
+
+  const remapWorkTypeId = (task: Task): Task => {
+    if (task.workTypeId == null || workTypeIdMap.size === 0) return task;
+    const mapped = workTypeIdMap.get(task.workTypeId);
+    return mapped != null ? { ...task, workTypeId: mapped } : task;
+  };
+
+  const planTasksToUpsert = planTasksWithSyncedStatus.map(remapWorkTypeId);
+  const unplannedTasksToUpsert = unplannedTaskPayload.map(remapWorkTypeId);
+  await upsertTasksFromPayload(planTasksToUpsert);
+  await upsertTasksFromPayload(unplannedTasksToUpsert);
+  await refreshTasks();
+  notifyExecutionReturnImported();
 
   return {
     importedEntryCount: entriesToAdd.length,

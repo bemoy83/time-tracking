@@ -152,6 +152,7 @@ export function PlanningWorkspaceShell({
             activeTab={activeTab}
             tasks={tasks}
             projects={projects}
+            workTypes={workTypes}
             kpis={kpis}
             timeEntries={timeEntries}
             timeEntriesByTask={timeEntriesByTask}
@@ -162,7 +163,7 @@ export function PlanningWorkspaceShell({
             onOpenWrapUp={onOpenWrapUp}
           />
         ) : activeTab === 'insights' ? (
-          <InsightsView tasks={tasks} workTypes={workTypes} />
+          <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} />
         ) : (
           <div className="planning-workspace__empty">
             <TaskListIcon className="planning-workspace__empty-icon" />
@@ -202,6 +203,7 @@ interface WorkspaceMainPaneProps {
   activeTab: WorkspaceTab;
   tasks: Task[];
   projects: Project[];
+  workTypes: WorkType[];
   kpis: WorkTypeKpi[];
   timeEntries: TimeEntry[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
@@ -217,6 +219,7 @@ function WorkspaceMainPane({
   activeTab,
   tasks,
   projects,
+  workTypes,
   kpis,
   timeEntries,
   timeEntriesByTask,
@@ -309,6 +312,14 @@ function WorkspaceMainPane({
             onWrapUp={!isReviewed && reviewReady ? () => onOpenWrapUp(plan) : undefined}
           />
         )}
+        {effectiveActiveTab === 'insights' && (
+          <InsightsView
+            tasks={tasks}
+            workTypes={workTypes}
+            planId={plan.id}
+            planTitle={plan.title}
+          />
+        )}
         {effectiveActiveTab === 'schedule' && showScheduleTab && (
           <ScheduleView
             plan={plan}
@@ -384,6 +395,11 @@ function buildWorkspaceTabs({
       id: 'progress',
       label: 'Progress',
       onSelect: onOpenProgress,
+    });
+    tabs.push({
+      id: 'insights',
+      label: 'Insights',
+      onSelect: () => onSetActiveTab('insights'),
     });
   }
 

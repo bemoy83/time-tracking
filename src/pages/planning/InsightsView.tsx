@@ -8,10 +8,13 @@ import {
   type WorkTypeKpi,
   type WorkTypeTrend,
 } from '../../lib/kpi';
+import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../lib/types';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../lib/types';
 
 export type InsightsWindow = 'this-month' | 'last-3-months' | 'last-6-months' | 'all-time';
+
+export type InsightsScope = 'all' | 'plan';
 
 export interface InsightsRow {
   kpi: WorkTypeKpi;
@@ -80,15 +83,31 @@ export function buildInsightsRows(
 interface InsightsViewProps {
   tasks: Task[];
   workTypes: WorkType[];
+  /** When set, show per-plan metrics for this plan only. Excludes all other plans. */
+  planId?: string | null;
+  /** Display title for the plan (when planId is set). */
+  planTitle?: string;
+  /** Plans list for scope selector in global view. When provided, user can switch between "All plans" and a specific plan. */
+  plans?: Plan[];
 }
 
-export function InsightsView({ tasks, workTypes }: InsightsViewProps) {
-  const [window, setWindow] = useState<InsightsWindow>('this-month');
+export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: propPlanTitle, plans = [] }: InsightsViewProps) {
+  // Per-plan view: default to all-time since plan execution may have occurred in the past
+  const [window, setWindow] = useState<InsightsWindow>(() => (propPlanId ? 'all-time' : 'this-month'));
+  const [scope, setScope] = useState<InsightsScope>('all');
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [rows, setRows] = useState<{ stable: InsightsRow[]; highVariance: InsightsRow[] }>({
     stable: [],
     highVariance: [],
   });
   const [loading, setLoading] = useState(false);
+
+  const effectivePlanId = propPlanId ?? (scope === 'plan' && selectedPlanId ? selectedPlanId : null);
+  const effectivePlanTitle = propPlanTitle ?? (effectivePlanId ? plans.find((p) => p.id === effectivePlanId)?.title ?? null : null);
+  const plansWithTasks = useMemo(
+    () => plans.filter((p) => tasks.some((t) => t.sourcePlanId === p.id)),
+    [plans, tasks],
+  );
 
   const filteredCompletedTasks = useMemo(() => {
     const completed = tasks.filter((task) => task.status === 'completed');
@@ -107,16 +126,18 @@ export function InsightsView({ tasks, workTypes }: InsightsViewProps) {
       setLoading(true);
       try {
         const rollup = await buildAttributedRollup(filteredCompletedTasks, tasks);
-        const kpis = computeWorkTypeKpis(filteredCompletedTasks, rollup.entriesByTask, {
-          archiveOnly: true,
+        const kpiOptions = {
+          archiveOnly: false,
           workTypes,
-        });
+          planId: effectivePlanId ?? undefined,
+        };
+        const kpis = computeWorkTypeKpis(filteredCompletedTasks, rollup.entriesByTask, kpiOptions);
         const trends = computeWorkTypeTrends(
           filteredCompletedTasks,
           rollup.entriesByTask,
           undefined,
           undefined,
-          { archiveOnly: true, workTypes },
+          kpiOptions,
         );
         if (!cancelled) {
           setRows(buildInsightsRows(kpis, trends));
@@ -130,14 +151,52 @@ export function InsightsView({ tasks, workTypes }: InsightsViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [filteredCompletedTasks, tasks, workTypes]);
+  }, [filteredCompletedTasks, tasks, workTypes, effectivePlanId]);
 
   const allRows = [...rows.stable, ...rows.highVariance];
+  const showScopeSelector = plans.length > 0 && propPlanId == null;
   return (
     <div className="planning-view insights-view">
       <header className="planning-view__header">
-        <h1 className="planning-view__title">Insights</h1>
+        <h1 className="planning-view__title">
+          {effectivePlanTitle ? `Insights: ${effectivePlanTitle}` : 'Insights'}
+        </h1>
       </header>
+
+      {showScopeSelector && (
+        <div className="insights-view__scope" role="group" aria-label="Scope">
+          <span className="insights-view__scope-label">Scope:</span>
+          <button
+            type="button"
+            className={`insights-view__scope-btn${scope === 'all' ? ' insights-view__scope-btn--active' : ''}`}
+            onClick={() => setScope('all')}
+          >
+            All plans
+          </button>
+          <button
+            type="button"
+            className={`insights-view__scope-btn${scope === 'plan' ? ' insights-view__scope-btn--active' : ''}`}
+            onClick={() => setScope('plan')}
+          >
+            Per plan
+          </button>
+          {scope === 'plan' && (
+            <select
+              className="insights-view__scope-select"
+              value={selectedPlanId ?? ''}
+              onChange={(e) => setSelectedPlanId(e.target.value || null)}
+              aria-label="Select plan"
+            >
+              <option value="">Select a plan…</option>
+              {plansWithTasks.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.title}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       <div className="insights-view__filters" role="group" aria-label="Insights time window">
         <button
@@ -173,7 +232,11 @@ export function InsightsView({ tasks, workTypes }: InsightsViewProps) {
       {loading ? (
         <p className="insights-view__empty">Loading insights…</p>
       ) : allRows.length === 0 ? (
-        <p className="insights-view__empty">No KPI data available for the selected time window.</p>
+        <p className="insights-view__empty">
+          {effectivePlanId
+            ? 'No KPI data for this plan. Try selecting "All time" if the plan was completed earlier. Per-plan KPIs require completed tasks with work quantity, time entries, and matching work types.'
+            : 'No KPI data available for the selected time window.'}
+        </p>
       ) : (
         <>
           <section className="insights-view__table" aria-label="Work type performance">

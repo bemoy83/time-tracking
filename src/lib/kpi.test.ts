@@ -115,6 +115,82 @@ describe('computeWorkTypeKpis', () => {
     expect(furnitureKpi.avgProductivity).toBe(10);
   });
 
+  it('filters by planId when provided (per-plan KPIs)', () => {
+    const planA = 'plan-a';
+    const planB = 'plan-b';
+    const t1 = makeTask({
+      id: 't1',
+      workQuantity: 100,
+      workTypeId: 'wt-carpet',
+      sourcePlanId: planA,
+    });
+    const t2 = makeTask({
+      id: 't2',
+      workQuantity: 200,
+      workTypeId: 'wt-carpet',
+      sourcePlanId: planA,
+    });
+    const t3 = makeTask({
+      id: 't3',
+      workQuantity: 50,
+      workTypeId: 'wt-carpet',
+      sourcePlanId: planB,
+    });
+
+    const entriesByTask = new Map([
+      ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
+      ['t2', [makeAttributedEntry({ entryId: 'e2', taskId: 't2', ownerTaskId: 't2', personHours: 20 })]],
+      ['t3', [makeAttributedEntry({ entryId: 'e3', taskId: 't3', ownerTaskId: 't3', personHours: 5 })]],
+    ]);
+
+    const allKpis = computeWorkTypeKpis([t1, t2, t3], entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+    });
+    expect(allKpis).toHaveLength(1);
+    expect(allKpis[0].sampleCount).toBe(3);
+    expect(allKpis[0].avgProductivity).toBeCloseTo((100 + 200 + 50) / (10 + 20 + 5));
+
+    const planAKpis = computeWorkTypeKpis([t1, t2, t3], entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+      planId: planA,
+    });
+    expect(planAKpis).toHaveLength(1);
+    expect(planAKpis[0].sampleCount).toBe(2);
+    expect(planAKpis[0].avgProductivity).toBe(10); // (100 + 200) / (10 + 20)
+
+    const planBKpis = computeWorkTypeKpis([t1, t2, t3], entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+      planId: planB,
+    });
+    expect(planBKpis).toHaveLength(1);
+    expect(planBKpis[0].sampleCount).toBe(1);
+    expect(planBKpis[0].avgProductivity).toBe(10); // 50 / 5
+  });
+
+  it('uses task.title fallback when workTypeId is orphaned (not in workTypes)', () => {
+    const task = makeTask({
+      id: 't1',
+      title: 'Carpet Install',
+      workQuantity: 100,
+      workTypeId: 'wt-deleted',
+      workUnit: 'm2',
+      buildPhase: 'build-up',
+    });
+    const entriesByTask = new Map([
+      ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
+    ]);
+    const kpis = computeWorkTypeKpis([task], entriesByTask, {
+      workTypes: WORK_TYPES,
+      archiveOnly: false,
+    });
+    expect(kpis).toHaveLength(1);
+    expect(kpis[0].key.workTypeTitle).toBe('Carpet Install');
+    expect(kpis[0].avgProductivity).toBe(10);
+  });
+
   it('skips non-completed tasks', () => {
     const task = makeTask({ id: 't1', status: 'active' });
     const entriesByTask = new Map([

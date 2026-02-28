@@ -95,6 +95,8 @@ export interface KpiOptions {
   workTypes?: WorkType[];
   /** Outlier handling mode. report_only keeps all samples in aggregates. */
   outlierMode?: OutlierHandlingMode;
+  /** When set, only include tasks from this plan (task.sourcePlanId === planId). Per-plan KPIs. */
+  planId?: string | null;
 }
 
 /**
@@ -108,7 +110,7 @@ export function computeWorkTypeKpis(
   entriesByTask: Map<string, AttributedEntry[]>,
   options: KpiOptions = {},
 ): WorkTypeKpi[] {
-  const { archiveOnly = true, workTypes = [], outlierMode = 'report_only' } = options;
+  const { archiveOnly = true, workTypes = [], outlierMode = 'report_only', planId } = options;
   const workTypesById = new Map(workTypes.map((wt) => [wt.id, wt]));
 
   // Filter to completed tasks with required work data
@@ -120,7 +122,8 @@ export function computeWorkTypeKpis(
       t.workQuantity > 0 &&
       t.workTypeId != null &&
       (!archiveOnly || t.archivedAt != null) &&
-      !t.excludeFromKpi
+      !t.excludeFromKpi &&
+      (planId == null || t.sourcePlanId === planId)
   );
 
   // Accumulate per Work Type, tracking per-task rates for stability
@@ -149,11 +152,11 @@ export function computeWorkTypeKpis(
     if (personHours <= 0) continue;
 
     const linkedWorkType = task.workTypeId ? workTypesById.get(task.workTypeId) : undefined;
-    if (!linkedWorkType) continue;
+    const workTypeTitle = linkedWorkType?.title ?? task.title ?? 'Unknown';
 
     const key: WorkTypeKey = {
       workTypeId: task.workTypeId,
-      workTypeTitle: linkedWorkType.title,
+      workTypeTitle,
       workUnit: task.workUnit!,
       buildPhase: task.buildPhase,
     };

@@ -13,6 +13,11 @@ import { buildAttributedRollup } from '../../../lib/attributed-rollup';
 import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
 import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
 import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
+import {
+  subscribeToExecutionReturnImported,
+  hasExecutionReturnImportPending,
+  clearExecutionReturnImportPending,
+} from '../../../lib/planning/execution-return-import-events';
 
 function isPlannerVisiblePlan(plan: Plan): boolean {
   return plan.status === 'draft' || plan.status === 'active' || plan.status === 'reviewed';
@@ -45,6 +50,18 @@ export function usePlanningData() {
 
   useEffect(() => {
     void reloadTimeEntries();
+  }, [reloadTimeEntries]);
+
+  // Reload when execution return was imported (e.g. user returns from Settings → Data Transfer)
+  useEffect(() => {
+    if (hasExecutionReturnImportPending()) {
+      clearExecutionReturnImportPending();
+      void reloadTimeEntries();
+    }
+    const unsubscribe = subscribeToExecutionReturnImported(() => {
+      void reloadTimeEntries();
+    });
+    return unsubscribe;
   }, [reloadTimeEntries]);
 
   useEffect(() => {

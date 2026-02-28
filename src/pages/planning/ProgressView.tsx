@@ -6,6 +6,7 @@ import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS, formatDurationShort } from '../..
 import { computePlanProgress } from '../../lib/planning/plan-progress';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
+import { useExecutionReturnForProgress } from './hooks/useExecutionReturnForProgress';
 
 interface ProgressViewProps {
   plan: Plan;
@@ -32,9 +33,10 @@ function varianceClassName(variancePercent: number | null): string {
 }
 
 export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: ProgressViewProps) {
+  const importedExecutionStatus = useExecutionReturnForProgress(plan.id);
   const progress = useMemo(
-    () => computePlanProgress(plan, tasks, timeEntries),
-    [plan, tasks, timeEntries],
+    () => computePlanProgress(plan, tasks, timeEntries, importedExecutionStatus),
+    [plan, tasks, timeEntries, importedExecutionStatus],
   );
   const hadRiskRef = useRef(false);
 
@@ -95,7 +97,7 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
                 <div>
                   <h3 className="progress-view__item-title">{item.title}</h3>
                   <p className="progress-view__item-meta">
-                    {BUILD_PHASE_LABELS[item.buildPhase]} · {unitLabel} · {item.taskCount} task
+                    {item.workTypeTitle} · {BUILD_PHASE_LABELS[item.buildPhase]} · {unitLabel} · {item.taskCount} task
                     {item.taskCount === 1 ? '' : 's'}
                   </p>
                   <p className="progress-view__item-meta">

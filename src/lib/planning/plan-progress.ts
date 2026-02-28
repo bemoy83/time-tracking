@@ -14,6 +14,7 @@ export type LineItemProgressStatus = 'completed' | 'in-progress' | 'not-started'
 export interface LineItemProgress {
   lineItemId: string;
   title: string;
+  workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
   plannedHours: number;
@@ -45,6 +46,11 @@ export interface PlanProgress {
   completionRatio: number;
   orphanTasks: Task[];
   deadline: PlanDeadlineSummary;
+}
+
+/** Imported execution status from execution return (authoritative executor-reported state). */
+export interface ImportedExecutionStatusByLineItem {
+  get(lineItemId: string): 'completed' | 'in-progress' | 'pending' | 'blocked' | 'deferred' | undefined;
 }
 
 interface TimeTotals {
@@ -79,6 +85,7 @@ export function computePlanProgress(
   plan: Plan,
   tasks: Task[],
   timeEntries: TimeEntry[],
+  importedExecutionStatus?: ImportedExecutionStatusByLineItem | null,
 ): PlanProgress {
   const todayDate = new Date().toISOString().slice(0, 10);
   const linkedTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
@@ -128,12 +135,39 @@ export function computePlanProgress(
       plannedPersonHours > 0 ? ((actualPersonHours - plannedPersonHours) / plannedPersonHours) * 100 : null;
     const itemTaskIds = new Set(tasksForItem.map((task) => task.id));
     const entriesForItem = timeEntries.filter((entry) => itemTaskIds.has(entry.taskId));
-    const deadline = evaluateLineItemDeadline(item, tasksForItem, entriesForItem, todayDate);
+    const importedStatus = importedExecutionStatus?.get(item.id);
+
+    // Prefer imported execution status (from execution return) — authoritative executor-reported state
+    const resolvedStatus: LineItemProgressStatus =
+      importedStatus === 'completed'
+        ? 'completed'
+        : importedStatus === 'in-progress'
+          ? 'in-progress'
+          : resolveLineItemStatus(tasksForItem, actualPersonHours);
+
+    let deadline = evaluateLineItemDeadline(item, tasksForItem, entriesForItem, todayDate);
+    if (importedStatus === 'completed') {
+      const dueDate = item.scheduledEnd ?? item.scheduledStart ?? null;
+      const actualEndDate =
+        entriesForItem.length > 0
+          ? entriesForItem.reduce((best, e) => (e.endUtc > best ? e.endUtc : best), entriesForItem[0].endUtc).slice(0, 10)
+          : todayDate;
+      deadline = {
+        status: dueDate && actualEndDate <= dueDate ? 'done-on-time' : 'done-late',
+        dueDate,
+        actualStartDate:
+          entriesForItem.length > 0
+            ? entriesForItem.reduce((best, e) => (e.startUtc < best ? e.startUtc : best), entriesForItem[0].startUtc).slice(0, 10)
+            : null,
+        actualEndDate: actualEndDate ?? null,
+      };
+    }
     deadlineEvaluations.push(deadline);
 
     return {
       lineItemId: item.id,
       title: item.title,
+      workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
       workUnit: item.workUnit,
       buildPhase: item.buildPhase,
       plannedHours: item.timeHours,
@@ -143,7 +177,7 @@ export function computePlanProgress(
       actualPersonHours,
       actualProductivity,
       variancePercent,
-      status: resolveLineItemStatus(tasksForItem, actualPersonHours),
+      status: resolvedStatus,
       deadlineStatus: deadline.status,
       dueDate: deadline.dueDate,
       scheduledStart: item.scheduledStart,
@@ -167,7 +201,11 @@ export function computePlanProgress(
   }
 
   const linkedCompletedCount = linkedTasks.filter((task) => task.status === 'completed').length;
-  const completionRatio = linkedTasks.length > 0 ? linkedCompletedCount / linkedTasks.length : 0;
+  let completionRatio = linkedTasks.length > 0 ? linkedCompletedCount / linkedTasks.length : 0;
+  if (importedExecutionStatus && plan.lineItems.length > 0) {
+    const completedLineItemCount = lineItems.filter((li) => li.status === 'completed').length;
+    completionRatio = completedLineItemCount / plan.lineItems.length;
+  }
   const deadline = computePlanDeadlineSummary(plan, deadlineEvaluations, todayDate);
 
   return {

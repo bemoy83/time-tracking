@@ -57,6 +57,8 @@ export interface ExecutionReturnPayload {
   tasks: Task[];
   unplannedTasks: Task[];
   timeEntries: TimeEntry[];
+  /** Work types for ID remapping on planner import. Omitted in older exports. */
+  workTypes?: WorkType[];
 }
 
 export type ExecutionReturnImportConflict = 'duplicate-time-entry-id';

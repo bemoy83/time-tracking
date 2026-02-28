@@ -2,6 +2,43 @@
   gap: var(--space-md);
 }
 
+.insights-view__scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.insights-view__scope-label {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.insights-view__scope-btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-xl);
+  padding: 6px 10px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.insights-view__scope-btn--active {
+  background: #1f1f1f;
+  color: #fff;
+  border-color: #1f1f1f;
+}
+
+.insights-view__scope-select {
+  font-size: var(--font-small);
+  padding: 6px 10px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
 .insights-view__filters {
   display: flex;
   flex-wrap: wrap;

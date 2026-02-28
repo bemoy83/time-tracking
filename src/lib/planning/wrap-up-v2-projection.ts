@@ -27,6 +27,9 @@ function mergeExecutorStatus(
   if (importedStatus === 'blocked' || importedStatus === 'deferred') {
     return importedStatus;
   }
+  if (importedStatus === 'completed') {
+    return 'completed';
+  }
   return deriveExecutionStatusFromTasks(linkedTasks);
 }
 

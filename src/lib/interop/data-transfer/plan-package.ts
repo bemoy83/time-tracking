@@ -231,7 +231,7 @@ export async function exportPlanPackage(plan: Plan): Promise<void> {
   downloadJson(filename, envelope);
 }
 
-async function resolveImportedWorkTypeIds(
+export async function resolveImportedWorkTypeIds(
   planId: string,
   workTypes: WorkType[],
 ): Promise<Map<string, string>> {

@@ -348,7 +348,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
       const latestEntries = await getAllTimeEntries();
       setTimeEntries(latestEntries);
 
-      const envelope = buildExecutionReturnEnvelope(selectedPlan, tasks, latestEntries);
+      const envelope = await buildExecutionReturnEnvelope(selectedPlan, tasks, latestEntries);
       const stamp = new Date().toISOString().slice(0, 10);
       const titleKey = sanitizeFileNameSegment(selectedPlan.title);
       downloadJson(`execution-return-${titleKey}-${stamp}.json`, envelope);

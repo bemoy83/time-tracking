@@ -1,7 +1,8 @@
 import type { Plan, LineItemExecutionStatus } from '../../planning/plan-model';
-import type { Task, TimeEntry } from '../../types';
+import type { Task, TimeEntry, WorkType } from '../../types';
 import { durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
+import { getAllWorkTypes } from '../../db';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
@@ -19,11 +20,11 @@ function deriveStatusFromTasks(
   return itemStatus;
 }
 
-export function buildExecutionReturnEnvelope(
+export async function buildExecutionReturnEnvelope(
   plan: Plan,
   tasks: Task[],
   timeEntries: TimeEntry[],
-): DataTransferEnvelope<ExecutionReturnPayload> {
+): Promise<DataTransferEnvelope<ExecutionReturnPayload>> {
   const todayDate = new Date().toISOString().slice(0, 10);
   const planTasks = tasks.filter((task) => task.sourcePlanId === plan.id);
   const planTasksByLineItem = new Map<string, Task[]>();
@@ -92,6 +93,76 @@ export function buildExecutionReturnEnvelope(
     return sum + ((ms / 3_600_000) * (entry.workers ?? 1));
   }, 0);
 
+  const referencedWorkTypeIds = new Set<string>();
+  for (const task of [...planTasks, ...unplannedTasks]) {
+    if (task.workTypeId != null) referencedWorkTypeIds.add(task.workTypeId);
+  }
+  const allWorkTypes = await getAllWorkTypes();
+  const workTypeById = new Map(
+    allWorkTypes
+      .filter((wt) => referencedWorkTypeIds.has(wt.id))
+      .map((wt) => [wt.id, wt]),
+  );
+  const planLineItemBySourceId = new Map(plan.lineItems.map((item) => [item.id, item]));
+  const workTypes: WorkType[] = [];
+  const exportedIds = new Set<string>();
+  const syntheticById = new Map<string, string>();
+  const syntheticTimestamp = nowUtc();
+
+  for (const task of [...planTasks, ...unplannedTasks]) {
+    if (task.workTypeId == null) continue;
+    if (exportedIds.has(task.workTypeId)) continue;
+
+    const existing = workTypeById.get(task.workTypeId);
+    if (existing) {
+      workTypes.push(existing);
+      exportedIds.add(task.workTypeId);
+      continue;
+    }
+
+    const lineItem = task.sourceLineItemId ? planLineItemBySourceId.get(task.sourceLineItemId) : null;
+    const syntheticId = `exec-return-${plan.id}-${task.workTypeId}`;
+    syntheticById.set(task.workTypeId, syntheticId);
+    exportedIds.add(task.workTypeId);
+
+    if (lineItem) {
+      workTypes.push({
+        id: syntheticId,
+        title: lineItem.workTypeTitle,
+        workUnit: lineItem.workUnit,
+        buildPhase: lineItem.buildPhase,
+        expectedProductivity: lineItem.productivityRate,
+        createdAt: syntheticTimestamp,
+        updatedAt: syntheticTimestamp,
+      });
+    } else {
+      workTypes.push({
+        id: syntheticId,
+        title: task.title,
+        workUnit: task.workUnit ?? 'm2',
+        buildPhase: task.buildPhase ?? 'build-up',
+        expectedProductivity: 10,
+        createdAt: syntheticTimestamp,
+        updatedAt: syntheticTimestamp,
+      });
+    }
+  }
+
+  const remappedPlanTasks = planTasks.map((task) => {
+    if (task.workTypeId == null) return task;
+    const existing = workTypeById.get(task.workTypeId);
+    if (existing) return task;
+    const syntheticId = syntheticById.get(task.workTypeId);
+    return syntheticId ? { ...task, workTypeId: syntheticId } : task;
+  });
+  const remappedUnplannedTasks = unplannedTasks.map((task) => {
+    if (task.workTypeId == null) return task;
+    const existing = workTypeById.get(task.workTypeId);
+    if (existing) return task;
+    const syntheticId = syntheticById.get(task.workTypeId);
+    return syntheticId ? { ...task, workTypeId: syntheticId } : task;
+  });
+
   const payload: ExecutionReturnPayload = {
     planId: plan.id,
     planTitle: plan.title,
@@ -106,9 +177,10 @@ export function buildExecutionReturnEnvelope(
       totalPersonHours: Number(totalPersonHours.toFixed(2)),
     },
     lineItems,
-    tasks: planTasks,
-    unplannedTasks,
+    tasks: remappedPlanTasks,
+    unplannedTasks: remappedUnplannedTasks,
     timeEntries: relevantEntries,
+    workTypes,
   };
 
   return {

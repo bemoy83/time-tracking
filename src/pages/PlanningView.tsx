@@ -108,6 +108,7 @@ export function PlanningView({
         <PlanningInsightsRoute
           tasks={workspace.tasks}
           workTypes={workspace.workTypes}
+          plans={workspace.plans}
           onBack={workspace.handleBack}
         />
         {wrapUpSheet}
