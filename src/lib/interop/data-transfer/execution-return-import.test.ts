@@ -5,6 +5,7 @@ import {
   previewExecutionReturnImport,
 } from './execution-return-import';
 import type { DataTransferEnvelope, ExecutionReturnPayload } from './contracts';
+import type { Task } from '../../types';
 import {
   addExecutionReturnLineItems,
   addExecutionReturnRecord,
@@ -13,7 +14,6 @@ import {
   addTimeEntry,
   getAllTimeEntries,
   getTask,
-  updateTask,
 } from '../../db';
 
 vi.mock('../../db', () => ({
@@ -40,8 +40,8 @@ const mockAddExecutionReturnLineItems = vi.mocked(addExecutionReturnLineItems);
 const mockAddExecutionReturnUnplannedTasks = vi.mocked(addExecutionReturnUnplannedTasks);
 
 function makePlanTask(
-  overrides: Partial<{ id: string; status: string; sourceLineItemId: string | null }> = {},
-) {
+  overrides: Partial<Pick<Task, 'id' | 'status' | 'sourceLineItemId'>> = {},
+): Task {
   return {
     id: 'task-1',
     title: 'Install carpet',
