@@ -114,17 +114,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
           <h2 className="settings-view__sub-header">Feature Flags</h2>
           <p className="settings-view__helper">Gate risky planning features for rollout safety</p>
           <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Planning scenario compare</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.planningScenarioCompare}
-              onChange={(e) => {
-                handleToggleFeatureFlag('planningScenarioCompare', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
             <span className="settings-view__row-label">Calculator multi-scenario cards</span>
             <input
               type="checkbox"

@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe('evaluateRolloutGate', () => {
   const gate: RolloutGateConfig = {
-    flag: 'planningScenarioCompare',
+    flag: 'calculatorMultiScenarioCards',
     thresholds: [
       { event: 'interop_import_conflict', minCount: 0, maxCount: 10 },
     ],
@@ -65,7 +65,7 @@ describe('evaluateRolloutGate', () => {
 
   it('blocks when count is below minCount', () => {
     const gateWithMin: RolloutGateConfig = {
-      flag: 'planningScenarioCompare',
+      flag: 'calculatorMultiScenarioCards',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
       ],
@@ -84,7 +84,7 @@ describe('evaluateRolloutGate', () => {
     });
 
     const gateWithMin: RolloutGateConfig = {
-      flag: 'planningScenarioCompare',
+      flag: 'calculatorMultiScenarioCards',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
       ],
@@ -98,7 +98,7 @@ describe('evaluateRolloutGate', () => {
 
   it('evaluates multiple thresholds — all must pass', () => {
     const multiGate: RolloutGateConfig = {
-      flag: 'planningScenarioCompare',
+      flag: 'calculatorMultiScenarioCards',
       thresholds: [
         { event: 'archive_maintenance_scan', minCount: 1, maxCount: Infinity },
         { event: 'remediation_bulk_apply', minCount: 0, maxCount: 100 },
@@ -115,7 +115,7 @@ describe('evaluateRolloutGate', () => {
 
   it('allows flag-only gate with empty thresholds', () => {
     const flagOnlyGate: RolloutGateConfig = {
-      flag: 'planningScenarioCompare',
+      flag: 'calculatorMultiScenarioCards',
       thresholds: [],
     };
 
@@ -128,11 +128,11 @@ describe('evaluateRolloutGate', () => {
 
 describe('isRolloutGateOpen', () => {
   it('returns true when gate is allowed', () => {
-    expect(isRolloutGateOpen({ flag: 'planningScenarioCompare', thresholds: [] })).toBe(true);
+    expect(isRolloutGateOpen({ flag: 'calculatorMultiScenarioCards', thresholds: [] })).toBe(true);
   });
 
   it('returns false when flag is off', () => {
     mockGetFeatureFlag.mockReturnValue(false);
-    expect(isRolloutGateOpen({ flag: 'planningScenarioCompare', thresholds: [] })).toBe(false);
+    expect(isRolloutGateOpen({ flag: 'calculatorMultiScenarioCards', thresholds: [] })).toBe(false);
   });
 });

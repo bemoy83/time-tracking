@@ -344,15 +344,6 @@
   flex-wrap: wrap;
 }
 
-.planning-view__compare-trigger {
-  max-width: 200px;
-  min-height: 38px;
-  border-radius: var(--radius-xl);
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
 /* ============================================================
    Summary card
    ============================================================ */
@@ -361,21 +352,6 @@
   display: flex;
   gap: var(--space-md);
   flex-wrap: wrap;
-}
-
-/* Risk badges */
-.planning-view__risk-badge {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.planning-view__risk-badge--high {
-  background: var(--color-recording-bg);
-  color: var(--color-recording);
 }
 
 /* ============================================================
@@ -458,14 +434,6 @@
   flex-direction: column;
   gap: var(--space-sm);
   transition: border-color 0.15s;
-}
-
-.planning-view__risk--high {
-  box-shadow: inset 3px 0 0 var(--color-recording);
-}
-
-.planning-view__risk--medium {
-  box-shadow: inset 3px 0 0 var(--color-amber);
 }
 
 .planning-view__line-item-header {
@@ -728,138 +696,3 @@
   justify-content: flex-end;
 }
 
-/* ============================================================
-   Compare View
-   ============================================================ */
-
-.planning-view__compare-summary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-}
-
-.planning-view__compare-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.planning-view__compare-plan-name {
-  font-weight: 600;
-  flex: 1;
-  min-width: 0;
-}
-
-.planning-view__compare-plan-stat {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-}
-
-.planning-view__compare-delta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--color-border);
-  font-weight: 600;
-  font-size: var(--font-small);
-}
-
-.planning-view__delta--increase {
-  color: var(--color-recording);
-}
-
-.planning-view__delta--decrease {
-  color: var(--color-ready);
-}
-
-/* Compare items */
-.planning-view__compare-items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.planning-view__compare-item {
-  padding: var(--space-md);
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.planning-view__compare-item--added {
-  box-shadow: inset 3px 0 0 var(--color-ready);
-}
-
-.planning-view__compare-item--removed {
-  box-shadow: inset 3px 0 0 var(--color-recording);
-}
-
-.planning-view__compare-item--changed {
-  box-shadow: inset 3px 0 0 var(--color-amber);
-}
-
-.planning-view__compare-item-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.planning-view__compare-title {
-  font-weight: 500;
-  flex: 1;
-  min-width: 0;
-}
-
-.planning-view__compare-status {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.planning-view__compare-status--added {
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
-}
-
-.planning-view__compare-status--removed {
-  background: var(--color-recording-bg);
-  color: var(--color-recording);
-}
-
-.planning-view__compare-status--changed {
-  background: rgba(217, 119, 6, 0.15);
-  color: var(--color-amber);
-}
-
-.planning-view__compare-status--unchanged {
-  background: rgba(107, 114, 128, 0.15);
-  color: var(--color-text-muted);
-}
-
-.planning-view__compare-changes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.planning-view__compare-change {
-  font-size: var(--font-small);
-  padding: 2px var(--space-sm);
-  background: var(--color-bg);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
-}
-
-.planning-view__compare-change-arrow {
-  color: var(--color-text-muted);
-}

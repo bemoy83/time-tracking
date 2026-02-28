@@ -38,7 +38,6 @@ export type TelemetryEventName =
   | 'schedule_import_defaulted'
   | 'schedule_deadline_risk_visible'
   | 'remediation_bulk_apply'
-  | 'planning_compare_open'
   | 'planning_lock_toggle'
   | 'archive_maintenance_scan'
   | 'archive_kpi_recompute';

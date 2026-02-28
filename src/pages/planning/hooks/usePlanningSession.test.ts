@@ -47,10 +47,10 @@ describe('usePlanningSession', () => {
 
   it('merges partial updates', () => {
     savePlanningSession({ selectedPlanId: 'plan-1', activeTab: 'edit' });
-    savePlanningSession({ activeTab: 'compare' });
+    savePlanningSession({ activeTab: 'schedule' });
     const session = loadPlanningSession();
     expect(session.selectedPlanId).toBe('plan-1');
-    expect(session.activeTab).toBe('compare');
+    expect(session.activeTab).toBe('schedule');
   });
 
   it('handles corrupted storage gracefully', () => {

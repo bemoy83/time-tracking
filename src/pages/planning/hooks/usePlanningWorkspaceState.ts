@@ -11,10 +11,10 @@ import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
 export type NavigationMode = 'stack' | 'workspace';
 
 /** Sub-views for stack (mobile) navigation. */
-export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'compare' | 'progress' | 'insights' | 'report';
+export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'progress' | 'insights' | 'report';
 
 /** Tabs available in the workspace main pane. */
-export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'compare' | 'review' | 'insights' | 'report';
+export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'review' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
   /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */

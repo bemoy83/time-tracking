@@ -3,7 +3,6 @@
  */
 
 export type FeatureFlagKey =
-  | 'planningScenarioCompare'
   | 'calculatorMultiScenarioCards'
   | 'planningWorkspaceDesktop'
   | 'planningScheduleV1'
@@ -15,7 +14,6 @@ export type FeatureFlagState = Record<FeatureFlagKey, boolean>;
 const FLAGS_STORAGE_KEY = 'featureFlags';
 
 const DEFAULT_FLAGS: FeatureFlagState = {
-  planningScenarioCompare: true,
   calculatorMultiScenarioCards: true,
   planningWorkspaceDesktop: true,
   planningScheduleV1: true,

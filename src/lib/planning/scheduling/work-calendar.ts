@@ -43,7 +43,7 @@ export function listDateRange(startDate: string, endDate: string): string[] {
   return dates;
 }
 
-function buildDefaultDay(date: string, defaultCrewSize: number | null): WorkCalendarDay {
+function buildDefaultDay(date: string, _defaultCrewSize: number | null): WorkCalendarDay {
   const parsed = parseDatePart(date);
   const isWeekend = parsed ? parsed.getDay() === 0 || parsed.getDay() === 6 : false;
   if (isWeekend) {

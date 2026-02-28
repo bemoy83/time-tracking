@@ -7,12 +7,10 @@ import {
   getAllTimeEntries,
   updatePlan,
 } from '../../../lib/db';
-import { comparePlans } from '../../../lib/planning/plan-compare';
 import { createPlan, type Plan } from '../../../lib/planning/plan-model';
 import { computeWorkTypeKpis, type WorkTypeKpi } from '../../../lib/kpi';
 import { buildAttributedRollup } from '../../../lib/attributed-rollup';
 import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
-import { getFeatureFlag } from '../../../lib/flags/feature-flags';
 import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
 import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
 
@@ -31,7 +29,6 @@ export function usePlanningData() {
   const [wrapUpPlan, setWrapUpPlan] = useState<Plan | null>(null);
   const { tasks, projects } = useTaskStore();
   const { workTypes } = useWorkTypeStore();
-  const canComparePlans = getFeatureFlag('planningScenarioCompare');
 
   // --- Data loading ---
 
@@ -117,15 +114,6 @@ export function usePlanningData() {
 
   // --- Derived helpers ---
 
-  const getComparison = useCallback(
-    (planA: Plan, comparePlanId: string) => {
-      const planB = plans.find((p) => p.id === comparePlanId);
-      if (!planB) return null;
-      return comparePlans(planA, planB);
-    },
-    [plans],
-  );
-
   const hasLinkedTasksForPlan = useCallback(
     (planId: string) => tasks.some((task) => task.sourcePlanId === planId),
     [tasks],
@@ -140,7 +128,6 @@ export function usePlanningData() {
     tasks,
     projects,
     workTypes,
-    canComparePlans,
     wrapUpPlan,
 
     // CRUD
@@ -154,7 +141,6 @@ export function usePlanningData() {
     handleWrapUpCompleted,
 
     // Derived
-    getComparison,
     hasLinkedTasksForPlan,
     reloadTimeEntries,
   };
