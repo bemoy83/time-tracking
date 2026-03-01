@@ -31,6 +31,15 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           </span>
         </>
       )}
+      {capacity.overAssignedCrewDayCount > 0 && (
+        <>
+          <span className="feasibility-bar__separator">&middot;</span>
+          <span className="feasibility-bar__warning feasibility-bar__warning--crew">
+            <WarningIcon className="feasibility-bar__warning-icon" />
+            {capacity.overAssignedCrewDayCount} over-crewed {capacity.overAssignedCrewDayCount === 1 ? 'day' : 'days'}
+          </span>
+        </>
+      )}
     </div>
   );
 }

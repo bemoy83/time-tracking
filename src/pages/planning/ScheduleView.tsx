@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronIcon } from '../../components/icons';
-import { type Plan, type PlanLineItem, updatePlanLineItem } from '../../lib/planning/plan-model';
+import { type Plan, type PlanLineItem } from '../../lib/planning/plan-model';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
@@ -10,14 +10,18 @@ import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
   updatePlanCalendarDay,
+  updateLineItemAssignment,
+  updateLineItemCrewForDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import { reconcileWorkCalendar } from '../../lib/planning/scheduling/work-calendar';
+import { autoSchedule } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { EventContextBar } from './schedule/EventContextBar';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
+import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 
 interface ScheduleViewProps {
   plan: Plan;
@@ -119,7 +123,7 @@ export function ScheduleView({
           amendmentNote,
         );
       }
-      return updatePlanLineItem(prev, currentLineItem.id, nextSpan);
+      return updateLineItemAssignment(prev, currentLineItem.id, nextSpan);
     });
     trackTelemetryEvent('schedule_assignment_edit');
   };
@@ -133,6 +137,16 @@ export function ScheduleView({
 
   const handleAmendmentCancel = () => {
     setAmendment(null);
+  };
+
+  const handleAutoSchedule = () => {
+    mutatePlan((prev) => autoSchedule(prev));
+    trackTelemetryEvent('schedule_assignment_edit');
+  };
+
+  const handleCrewForDateChange = (lineItemId: string, date: string, crew: number) => {
+    mutatePlan((prev) => updateLineItemCrewForDate(prev, lineItemId, date, crew));
+    trackTelemetryEvent('schedule_assignment_edit');
   };
 
   const handleEditInputs = () => {
@@ -172,6 +186,7 @@ export function ScheduleView({
       />
 
       <FeasibilityBar capacity={capacity} />
+      <ConflictResolutionBanner capacity={capacity} />
 
       <section className="schedule-view__block schedule-view__block--compact" ref={inputsRef}>
         <header className="schedule-view__block-header">
@@ -228,12 +243,25 @@ export function ScheduleView({
         planDefaultCrewSize={currentPlan.defaultCrewSize}
       />
 
+      {!readOnly && capacity.unscheduledLineItemCount > 0 && currentPlan.workCalendar.length > 0 && (
+        <div className="schedule-view__actions">
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={handleAutoSchedule}
+          >
+            Auto-schedule ({capacity.unscheduledLineItemCount})
+          </button>
+        </div>
+      )}
+
       <ScheduleGrid
         lineItems={currentPlan.lineItems}
         calendar={currentPlan.workCalendar}
         capacity={capacity}
         readOnly={readOnly}
         onToggleAssignment={handleToggleAssignment}
+        onCrewForDateChange={handleCrewForDateChange}
       />
 
       {amendment && (

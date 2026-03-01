@@ -38,6 +38,18 @@ function coerceExecutionStatus(value: unknown): LineItemExecutionStatus {
   return 'pending';
 }
 
+function normalizeCrewByDate(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const result: Record<string, number> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+    const num = Number(val);
+    if (!Number.isFinite(num) || num < 0) continue;
+    result[key] = Math.floor(num);
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
   return {
     ...raw,
@@ -47,6 +59,7 @@ function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
     executorNote: raw.executorNote ?? null,
     deferredNote: raw.deferredNote ?? null,
     removedFromSource: raw.removedFromSource ?? false,
+    crewByDate: normalizeCrewByDate(raw.crewByDate),
     scheduledStart: raw.scheduledStart ?? null,
     scheduledEnd: raw.scheduledEnd ?? null,
     originalScheduledStart: raw.originalScheduledStart ?? null,

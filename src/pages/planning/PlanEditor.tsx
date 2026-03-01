@@ -26,8 +26,12 @@ import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
+import {
+  generateDefaultWorkCalendar,
+  dayAvailablePersonHours,
+} from '../../lib/planning/scheduling/work-calendar';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
-import { ChevronLeftIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
+import { ChevronLeftIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -85,6 +89,23 @@ export function PlanEditor({
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
+
+  const availableScope = (() => {
+    const { eventStartDate, eventEndDate, defaultCrewSize, workCalendar } = currentPlan;
+    if (!eventStartDate || !eventEndDate) return null;
+    const calendar =
+      workCalendar.length > 0
+        ? workCalendar
+        : generateDefaultWorkCalendar(eventStartDate, eventEndDate, defaultCrewSize);
+    const workDays = calendar.filter((d) => d.isWorkDay);
+    const totalAvailable = calendar.reduce(
+      (sum, d) => sum + dayAvailablePersonHours(d, defaultCrewSize),
+      0,
+    );
+    const headroom = totalAvailable - totalPersonHours;
+    return { workDayCount: workDays.length, totalAvailable, headroom };
+  })();
+
   const isLocked = currentPlan.status === 'active';
   const isEditable = !readOnly && !isLocked;
   const selectedProject = currentPlan.projectId
@@ -218,8 +239,30 @@ export function PlanEditor({
             icon={<PeopleIcon />}
             iconVariant="people"
             value={formatDurationShort(totalPersonHours * 3_600_000)}
-            label="Person-hours"
+            label="Person-hours (req)"
           />
+          {availableScope && (
+            <>
+              <MetricCard
+                icon={<ClockIcon />}
+                iconVariant="time"
+                value={`${availableScope.workDayCount}d`}
+                label="Work days"
+              />
+              <MetricCard
+                icon={<PeopleIcon />}
+                iconVariant="people"
+                value={`${availableScope.totalAvailable.toFixed(0)}h`}
+                label="Available"
+                meta={
+                  availableScope.headroom >= 0
+                    ? `+${availableScope.headroom.toFixed(0)}h headroom`
+                    : `${availableScope.headroom.toFixed(0)}h deficit`
+                }
+                variant={availableScope.headroom < 0 ? 'risk' : 'default'}
+              />
+            </>
+          )}
           {suggestions.highRiskCount > 0 && (
             <MetricCard
               value={suggestions.highRiskCount}

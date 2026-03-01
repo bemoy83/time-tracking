@@ -7,7 +7,11 @@ import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type ExecutionReturnPayload,
+  type ScheduleSection,
+  type ScheduleDayEntry,
 } from './contracts';
+import { getEffectiveCrewForDate } from '../../planning/plan-model';
+import { listDateRange } from '../../planning/scheduling/work-calendar';
 
 function deriveStatusFromTasks(
   itemStatus: LineItemExecutionStatus,
@@ -87,11 +91,15 @@ export async function buildExecutionReturnEnvelope(
       removedFromSource: item.removedFromSource,
       scheduledStart: item.scheduledStart,
       scheduledEnd: item.scheduledEnd,
+      crewByDate: item.crewByDate ?? undefined,
       actualStartDate: deadline.actualStartDate,
       actualEndDate: deadline.actualEndDate,
       deadlineStatusAtClose: deadline.status,
     };
   });
+
+  // Build structured schedule section
+  const schedule = buildScheduleSection(plan);
 
   const totalPersonHours = relevantEntries.reduce((sum, entry) => {
     const ms = durationMs(entry.startUtc, entry.endUtc);
@@ -182,6 +190,7 @@ export async function buildExecutionReturnEnvelope(
       totalPersonHours: Number(totalPersonHours.toFixed(2)),
     },
     lineItems,
+    schedule,
     tasks: remappedPlanTasks,
     unplannedTasks: remappedUnplannedTasks,
     timeEntries: relevantEntries,
@@ -195,4 +204,48 @@ export async function buildExecutionReturnEnvelope(
     appVersion: '0.0.1',
     payload,
   };
+}
+
+function buildScheduleSection(plan: Plan): ScheduleSection {
+  const dayMap = new Map<string, ScheduleDayEntry>();
+
+  for (const item of plan.lineItems) {
+    if (!item.scheduledStart || !item.scheduledEnd) continue;
+    const dates = listDateRange(item.scheduledStart, item.scheduledEnd);
+    const totalPH = item.timeHours * item.crew;
+    const hasCrewByDate = item.crewByDate && Object.keys(item.crewByDate).length > 0;
+
+    if (hasCrewByDate) {
+      const effectiveCrews = dates.map((d) => getEffectiveCrewForDate(item, d));
+      const sumCrew = effectiveCrews.reduce((s, c) => s + c, 0);
+      const safeSumCrew = sumCrew > 0 ? sumCrew : item.crew * dates.length;
+
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        const crew = effectiveCrews[i];
+        const ph = totalPH * (crew / safeSumCrew);
+        if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
+        dayMap.get(date)!.lineItems.push({
+          lineItemId: item.id,
+          title: item.title,
+          assignedCrew: crew,
+          plannedPersonHours: Number(ph.toFixed(2)),
+        });
+      }
+    } else {
+      const perDay = dates.length > 0 ? totalPH / dates.length : 0;
+      for (const date of dates) {
+        if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
+        dayMap.get(date)!.lineItems.push({
+          lineItemId: item.id,
+          title: item.title,
+          assignedCrew: item.crew,
+          plannedPersonHours: Number(perDay.toFixed(2)),
+        });
+      }
+    }
+  }
+
+  const days = [...dayMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return { days };
 }

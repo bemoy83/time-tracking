@@ -83,6 +83,12 @@ export interface PlanLineItem {
    * Kept visible as historical context on executor device.
    */
   removedFromSource: boolean;
+  /**
+   * Per-day assigned crew count (date YYYY-MM-DD → crew number).
+   * When present, overrides `crew` for capacity and allocation math.
+   * When absent or empty, falls back to even-split using `crew`.
+   */
+  crewByDate?: Record<string, number>;
   /** Scheduled start date (YYYY-MM-DD). */
   scheduledStart: string | null;
   /** Scheduled end date (YYYY-MM-DD). */
@@ -140,6 +146,31 @@ export function resolveLineItemWorkTypeTitle(
 /** Get the WorkTypeKey for a line item (for KPI lookups). */
 export function lineItemWorkTypeKey(item: PlanLineItem): WorkTypeKey {
   return toLineItemWorkTypeKey(item);
+}
+
+/**
+ * Effective crew count for a line item on a given date.
+ * Returns crewByDate[date] if set, else item.crew for dates in assigned span, else 0.
+ */
+export function getEffectiveCrewForDate(
+  item: Pick<PlanLineItem, 'crew' | 'crewByDate' | 'scheduledStart' | 'scheduledEnd'>,
+  date: string,
+): number {
+  if (!item.scheduledStart || !item.scheduledEnd) return 0;
+  if (date < item.scheduledStart || date > item.scheduledEnd) return 0;
+  return item.crewByDate?.[date] ?? item.crew;
+}
+
+/**
+ * Effective single crew value for a line item (for task creation, etc.).
+ * Returns max of crewByDate values if present, else item.crew.
+ */
+export function lineItemEffectiveCrew(item: Pick<PlanLineItem, 'crew' | 'crewByDate'>): number {
+  const byDate = item.crewByDate;
+  if (!byDate) return item.crew;
+  const values = Object.values(byDate);
+  if (values.length === 0) return item.crew;
+  return Math.max(...values, item.crew);
 }
 
 /** Compute total person-hours for a plan. */
@@ -210,6 +241,7 @@ export function createLineItem(
     executorNote: null,
     deferredNote: null,
     removedFromSource: false,
+    crewByDate: undefined,
     scheduledStart: null,
     scheduledEnd: null,
     originalScheduledStart: null,
@@ -245,6 +277,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     executorNote: null,
     deferredNote: null,
     removedFromSource: item.removedFromSource,
+    crewByDate: item.crewByDate ? { ...item.crewByDate } : undefined,
     scheduledStart: item.scheduledStart,
     scheduledEnd: item.scheduledEnd,
     originalScheduledStart: item.originalScheduledStart,

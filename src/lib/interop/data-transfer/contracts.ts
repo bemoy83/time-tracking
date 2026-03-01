@@ -35,9 +35,33 @@ export interface ExecutionReturnLineItem {
   removedFromSource: boolean;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+  /** Per-day assigned crew from plan schedule. */
+  crewByDate?: Record<string, number>;
   actualStartDate: string | null;
   actualEndDate: string | null;
   deadlineStatusAtClose: DeadlineStatus | null;
+}
+
+/**
+ * Per-day schedule entry for the structured schedule section.
+ * Groups line items with their assigned crew and planned person-hours per day.
+ */
+export interface ScheduleDayEntry {
+  date: string;
+  lineItems: Array<{
+    lineItemId: string;
+    title: string;
+    assignedCrew: number;
+    plannedPersonHours: number;
+  }>;
+}
+
+/**
+ * Structured schedule section in execution return payload.
+ * Provides a day-by-day view tying line items to tasks and time entries.
+ */
+export interface ScheduleSection {
+  days: ScheduleDayEntry[];
 }
 
 export interface ExecutionReturnPayload {
@@ -54,6 +78,8 @@ export interface ExecutionReturnPayload {
     totalPersonHours: number;
   };
   lineItems: ExecutionReturnLineItem[];
+  /** Structured day-by-day schedule section. Omitted in older exports. */
+  schedule?: ScheduleSection;
   tasks: Task[];
   unplannedTasks: Task[];
   timeEntries: TimeEntry[];

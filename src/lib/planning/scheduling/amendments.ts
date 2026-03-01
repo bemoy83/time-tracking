@@ -1,5 +1,6 @@
 import type { Plan, PlanLineItem } from '../plan-model';
 import { nowUtc } from '../../types';
+import { listDateRange } from './work-calendar';
 
 function didScheduleChange(
   previous: Pick<PlanLineItem, 'scheduledStart' | 'scheduledEnd'>,
@@ -42,12 +43,27 @@ export function applyScheduleAmendment(
         };
       }
 
+      // Update crewByDate when span changes
+      let nextCrewByDate = item.crewByDate;
+      if (nextScheduledStart && nextScheduledEnd) {
+        const newDates = new Set(listDateRange(nextScheduledStart, nextScheduledEnd));
+        const existing = item.crewByDate ?? {};
+        const updated: Record<string, number> = {};
+        for (const date of newDates) {
+          updated[date] = existing[date] ?? item.crew;
+        }
+        nextCrewByDate = updated;
+      } else {
+        nextCrewByDate = undefined;
+      }
+
       return {
         ...item,
         originalScheduledStart: item.originalScheduledStart ?? item.scheduledStart,
         originalScheduledEnd: item.originalScheduledEnd ?? item.scheduledEnd,
         scheduledStart: nextScheduledStart,
         scheduledEnd: nextScheduledEnd,
+        crewByDate: nextCrewByDate,
         amendmentNote: amendmentNote?.trim() || null,
         amendedAt: updatedAt,
       };

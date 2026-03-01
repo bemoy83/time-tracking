@@ -83,6 +83,71 @@
   color: var(--color-text-muted);
 }
 
+/* --- Conflict Resolution Banner --- */
+
+.conflict-banner {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-small);
+}
+
+.conflict-banner__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.conflict-banner__icon {
+  width: 16px;
+  height: 16px;
+  color: rgb(217, 119, 6);
+  flex-shrink: 0;
+}
+
+.conflict-banner__title {
+  font-weight: 600;
+  color: rgb(146, 64, 14);
+  flex: 1;
+}
+
+.conflict-banner__suggestions {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.conflict-banner__option {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.conflict-banner__option-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.conflict-banner__option-detail {
+  color: var(--color-text-muted);
+}
+
+.conflict-banner__note {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* --- Schedule Actions --- */
+
+.schedule-view__actions {
+  display: flex;
+  gap: var(--space-xs);
+  padding: 0 var(--space-md);
+}
+
 /* --- Event Context Bar --- */
 
 .event-context-bar {
@@ -179,6 +244,10 @@
   font-weight: 600;
 }
 
+.feasibility-bar__warning--crew {
+  color: rgb(217, 119, 6);
+}
+
 .feasibility-bar__warning-icon {
   width: 14px;
   height: 14px;
@@ -262,6 +331,22 @@
   background: rgba(239, 68, 68, 0.06);
 }
 
+.schedule-grid__day-col--over-crew {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.schedule-grid__day-crew {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.schedule-grid__day-crew--over {
+  color: rgb(217, 119, 6);
+  font-weight: 600;
+}
+
 .schedule-grid__day-label {
   display: block;
   font-size: 0.65rem;
@@ -325,9 +410,68 @@
   color: var(--color-recording);
 }
 
+.schedule-grid__cell--over-crew {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 .schedule-grid__cell-icon {
   width: 16px;
   height: 16px;
+}
+
+/* --- Crew per day editing --- */
+
+.schedule-grid__crew-toggle {
+  display: inline;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.65rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-left: var(--space-xs);
+  text-decoration: underline;
+}
+
+.schedule-grid__crew-toggle:hover {
+  color: var(--color-text);
+}
+
+.schedule-grid__crew-row {
+  display: grid;
+  gap: 2px;
+  min-width: 640px;
+}
+
+.schedule-grid__crew-label {
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.schedule-grid__crew-cell--empty {
+  min-height: 28px;
+}
+
+.schedule-grid__crew-input {
+  width: 100%;
+  min-height: 28px;
+  text-align: center;
+  font-size: 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: 2px 4px;
+}
+
+.schedule-grid__crew-input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
 }
 
 /* --- Phase grouping --- */

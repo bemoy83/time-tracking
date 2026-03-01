@@ -11,6 +11,7 @@ interface ScheduleGridProps {
   capacity: CapacitySummary;
   readOnly: boolean;
   onToggleAssignment: (lineItem: PlanLineItem, date: string, cellElement?: HTMLElement) => void;
+  onCrewForDateChange?: (lineItemId: string, date: string, crew: number) => void;
 }
 
 function formatDayLabel(date: string, index: number): string {
@@ -52,11 +53,13 @@ export function ScheduleGrid({
   capacity,
   readOnly,
   onToggleAssignment,
+  onCrewForDateChange,
 }: ScheduleGridProps) {
   const dayByDate = new Map(capacity.days.map((day) => [day.date, day]));
   const unscheduled = lineItems.filter((item) => item.scheduledStart == null || item.scheduledEnd == null);
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
+  const [expandedCrewItemId, setExpandedCrewItemId] = useState<string | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(220px, 1.3fr) repeat(${calendar.length}, minmax(72px, 1fr))`;
@@ -113,34 +116,76 @@ export function ScheduleGrid({
 
   const renderRow = (item: PlanLineItem, rowIndex: number) => {
     const assigned = new Set(getAssignedDates(item));
+    const isCrewExpanded = expandedCrewItemId === item.id;
+    const hasAssignments = assigned.size > 0;
     return (
-      <div key={item.id} className="schedule-grid__row" role="row" aria-rowindex={rowIndex + 2} style={{ gridTemplateColumns: gridColumns }}>
-        <div className="schedule-grid__line-item" role="rowheader">
-          <span className="schedule-grid__line-item-title">{item.title}</span>
-          <span className="schedule-grid__line-item-meta">
-            {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {(item.timeHours * item.crew).toFixed(1)}h
-          </span>
+      <div key={item.id}>
+        <div className="schedule-grid__row" role="row" aria-rowindex={rowIndex + 2} style={{ gridTemplateColumns: gridColumns }}>
+          <div className="schedule-grid__line-item" role="rowheader">
+            <span className="schedule-grid__line-item-title">{item.title}</span>
+            <span className="schedule-grid__line-item-meta">
+              {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {(item.timeHours * item.crew).toFixed(1)}h
+              {hasAssignments && !readOnly && onCrewForDateChange && (
+                <button
+                  type="button"
+                  className="schedule-grid__crew-toggle"
+                  onClick={() => setExpandedCrewItemId(isCrewExpanded ? null : item.id)}
+                  aria-expanded={isCrewExpanded}
+                  title="Edit crew per day"
+                >
+                  {isCrewExpanded ? 'Hide crew' : 'Crew/day'}
+                </button>
+              )}
+            </span>
+          </div>
+          {calendar.map((day, colIdx) => {
+            const isAssigned = assigned.has(day.date);
+            const cap = dayByDate.get(day.date);
+            const isOver = cap?.isOverAllocated ?? false;
+            const isOverCrew = cap?.isOverAssignedCrew ?? false;
+            return (
+              <button
+                key={`${item.id}:${day.date}`}
+                type="button"
+                role="gridcell"
+                aria-colindex={colIdx + 2}
+                className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}`}
+                onClick={(e) => onToggleAssignment(item, day.date, e.currentTarget)}
+                disabled={readOnly || !day.isWorkDay}
+                title={isAssigned ? 'Click to unassign' : 'Click to assign'}
+                aria-label={`Toggle ${item.title} on ${day.date}`}
+              >
+                {isAssigned ? <CheckIcon className="schedule-grid__cell-icon" /> : null}
+              </button>
+            );
+          })}
         </div>
-        {calendar.map((day, colIdx) => {
-          const isAssigned = assigned.has(day.date);
-          const cap = dayByDate.get(day.date);
-          const isOver = cap?.isOverAllocated ?? false;
-          return (
-            <button
-              key={`${item.id}:${day.date}`}
-              type="button"
-              role="gridcell"
-              aria-colindex={colIdx + 2}
-              className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}`}
-              onClick={(e) => onToggleAssignment(item, day.date, e.currentTarget)}
-              disabled={readOnly || !day.isWorkDay}
-              title={isAssigned ? 'Click to unassign' : 'Click to assign'}
-              aria-label={`Toggle ${item.title} on ${day.date}`}
-            >
-              {isAssigned ? <CheckIcon className="schedule-grid__cell-icon" /> : null}
-            </button>
-          );
-        })}
+        {isCrewExpanded && onCrewForDateChange && (
+          <div className="schedule-grid__crew-row" style={{ gridTemplateColumns: gridColumns }}>
+            <span className="schedule-grid__crew-label">Crew/day</span>
+            {calendar.map((day) => {
+              const isAssigned = assigned.has(day.date);
+              if (!isAssigned || !day.isWorkDay) {
+                return <span key={`crew-${item.id}:${day.date}`} className="schedule-grid__crew-cell schedule-grid__crew-cell--empty" />;
+              }
+              const crewValue = item.crewByDate?.[day.date] ?? item.crew;
+              return (
+                <input
+                  key={`crew-${item.id}:${day.date}`}
+                  type="number"
+                  className="schedule-grid__crew-input"
+                  value={crewValue}
+                  min={0}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    if (Number.isFinite(v)) onCrewForDateChange(item.id, day.date, v);
+                  }}
+                  aria-label={`Crew for ${item.title} on ${day.date}`}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -164,13 +209,20 @@ export function ScheduleGrid({
                 <span
                   key={day.date}
                   role="columnheader"
-                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}`}
+                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}`}
                 >
                   <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
                   {cap && day.isWorkDay && (
-                    <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}`}>
-                      {formatUtilBadge(cap.requiredPersonHours, cap.availablePersonHours)}
-                    </span>
+                    <>
+                      <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}`}>
+                        {formatUtilBadge(cap.requiredPersonHours, cap.availablePersonHours)}
+                      </span>
+                      {cap.assignedCrewTotal > 0 && (
+                        <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>
+                          {cap.assignedCrewTotal}/{cap.availableCrew} crew
+                        </span>
+                      )}
+                    </>
                   )}
                 </span>
               );
