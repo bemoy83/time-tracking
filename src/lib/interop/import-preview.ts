@@ -63,7 +63,7 @@ function diffFields(imported: ImportedWorkPackage, template: TaskTemplate): stri
   const changed: string[] = [];
   if (imported.workQuantity !== template.workQuantity) changed.push('workQuantity');
   if (imported.estimatedMinutes !== template.estimatedMinutes) changed.push('estimatedMinutes');
-  if (imported.defaultWorkers !== template.defaultWorkers) changed.push('defaultWorkers');
+  if (imported.crew !== template.crew) changed.push('crew');
   if (imported.targetProductivity !== template.targetProductivity) changed.push('targetProductivity');
   return changed;
 }
@@ -73,7 +73,7 @@ function diffTaskFields(imported: ImportedWorkPackage, task: Task): string[] {
   const changed: string[] = [];
   if (imported.workQuantity !== task.workQuantity) changed.push('workQuantity');
   if (imported.estimatedMinutes !== task.estimatedMinutes) changed.push('estimatedMinutes');
-  if (imported.defaultWorkers !== task.defaultWorkers) changed.push('defaultWorkers');
+  if (imported.crew !== task.crew) changed.push('crew');
   if (imported.targetProductivity !== task.targetProductivity) changed.push('targetProductivity');
   return changed;
 }

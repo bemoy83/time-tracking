@@ -40,7 +40,7 @@ export async function saveRecommendationToTask(params: SaveRecommendationParams)
   let actionDetail: string;
 
   if (params.type === 'crew' && params.crewValue != null) {
-    updated.defaultWorkers = params.crewValue;
+    updated.crew = params.crewValue;
     actionDetail = `Set crew to ${params.crewValue} workers. Based on ${rateLabel} from ${sourceLabel}, for ${params.quantityUsed} units.`;
   } else if (params.type === 'time' && params.estimatedMinutes != null) {
     updated.estimatedMinutes = params.estimatedMinutes;
@@ -64,7 +64,7 @@ export interface SaveRecommendationTemplateParams extends Omit<SaveRecommendatio
   templateId: string;
 }
 
-function applyRecommendationToTarget<T extends Pick<TaskTemplate, 'defaultWorkers' | 'estimatedMinutes'>>(
+function applyRecommendationToTarget<T extends Pick<TaskTemplate, 'crew' | 'estimatedMinutes'>>(
   target: T,
   params: RecommendationPayload,
 ): { updated: T; actionDetail: string } {
@@ -77,7 +77,7 @@ function applyRecommendationToTarget<T extends Pick<TaskTemplate, 'defaultWorker
 
   if (params.type === 'crew' && params.crewValue != null) {
     return {
-      updated: { ...target, defaultWorkers: params.crewValue },
+      updated: { ...target, crew: params.crewValue },
       actionDetail: `Set crew to ${params.crewValue} workers. Based on ${rateLabel} from ${sourceLabel}, for ${params.quantityUsed} units.`,
     };
   }

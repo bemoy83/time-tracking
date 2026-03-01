@@ -19,7 +19,7 @@ function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedW
     workTypeId: 'wt-carpet',
     workQuantity: 100,
     estimatedMinutes: 60,
-    defaultWorkers: 2,
+    crew: 2,
     targetProductivity: 10,
     ...overrides,
   };
@@ -32,7 +32,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     workUnit: 'm2',
     workQuantity: 100,
     estimatedMinutes: 60,
-    defaultWorkers: 2,
+    crew: 2,
     targetProductivity: 10,
     buildPhase: 'build-up',
     workTypeId: 'wt-carpet',
@@ -49,11 +49,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'active',
     projectId: null,
     parentId: null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: 60,
     workQuantity: 100,
     workUnit: 'm2',
-    defaultWorkers: 2,
+    crew: 2,
     targetProductivity: 10,
     buildPhase: 'build-up',
     createdAt: '2024-01-01T00:00:00.000Z',
@@ -119,13 +119,13 @@ describe('generateImportPreview', () => {
   });
 
   it('detects update for task with different fields', () => {
-    const item = makeImportItem({ defaultWorkers: 5 });
-    const task = makeTask({ defaultWorkers: 2 });
+    const item = makeImportItem({ crew: 5 });
+    const task = makeTask({ crew: 2 });
 
     const preview = generateImportPreview([item], [task], [], WORK_TYPE_TITLE_BY_ID);
 
     expect(preview.items[0].action).toBe('update');
-    expect(preview.items[0].changedFields).toContain('defaultWorkers');
+    expect(preview.items[0].changedFields).toContain('crew');
   });
 
   it('detects duplicate mapping keys in import set', () => {

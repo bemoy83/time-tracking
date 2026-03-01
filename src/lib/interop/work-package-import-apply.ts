@@ -58,7 +58,7 @@ export async function applyWorkPackageImportItems(
         buildPhase: payload.buildPhase,
         workQuantity: payload.workQuantity,
         estimatedMinutes: payload.estimatedMinutes,
-        defaultWorkers: payload.defaultWorkers,
+        crew: payload.crew,
         targetProductivity: payload.targetProductivity,
       });
       updated += 1;
@@ -73,7 +73,7 @@ export async function applyWorkPackageImportItems(
         buildPhase: payload.buildPhase,
         workQuantity: payload.workQuantity,
         estimatedMinutes: payload.estimatedMinutes,
-        defaultWorkers: payload.defaultWorkers,
+        crew: payload.crew,
         targetProductivity: payload.targetProductivity,
       });
       updated += 1;
@@ -87,7 +87,7 @@ export async function applyWorkPackageImportItems(
       buildPhase: payload.buildPhase,
       workQuantity: payload.workQuantity,
       estimatedMinutes: payload.estimatedMinutes,
-      defaultWorkers: payload.defaultWorkers,
+      crew: payload.crew,
       targetProductivity: payload.targetProductivity,
     });
     created += 1;

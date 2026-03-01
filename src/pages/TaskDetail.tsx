@@ -77,7 +77,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       {/* 3. Status banner (blocked/completed/recording) */}
       <TaskStatusBanner
         status={task.status}
-        blockedReason={task.blockedReason}
+        blockReason={task.blockReason}
         isTimerActive={detail.isTimerActive}
         taskId={task.id}
       />

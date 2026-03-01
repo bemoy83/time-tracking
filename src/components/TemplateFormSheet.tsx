@@ -48,7 +48,7 @@ export function TemplateFormSheet({
         const totalMin = template.estimatedMinutes ?? 0;
         setEstHours(Math.floor(totalMin / 60));
         setEstMinutes(totalMin % 60);
-        setWorkers(template.defaultWorkers ?? 1);
+        setWorkers(template.crew ?? 1);
       } else {
         setWorkTypeId(workTypes.length > 0 ? workTypes[0].id : '');
         setTitle('');
@@ -85,7 +85,7 @@ export function TemplateFormSheet({
         buildPhase: selectedWorkType.buildPhase,
         workQuantity: !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : null,
         estimatedMinutes: totalMinutes > 0 ? totalMinutes : null,
-        defaultWorkers: workers > 1 ? workers : null,
+        crew: workers > 1 ? workers : null,
         targetProductivity: selectedWorkType.expectedProductivity,
       };
 

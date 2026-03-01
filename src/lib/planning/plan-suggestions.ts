@@ -10,7 +10,7 @@
 import type { WorkTypeKpi } from '../kpi';
 import { findKpiByKey, type ConfidenceLevel } from '../kpi';
 import type { PlanLineItem } from './plan-model';
-import { lineItemWorkTypeKey } from './plan-model';
+import { lineItemWorkTypeKey } from '../work-package-core';
 
 /** Risk flag thresholds. */
 const HIGH_CV_THRESHOLD = 0.4;

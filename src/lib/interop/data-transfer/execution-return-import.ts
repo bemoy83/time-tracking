@@ -192,6 +192,28 @@ function buildImportedUnplannedTasks(
   }));
 }
 
+/**
+ * Normalize legacy execution-return task payloads:
+ * - crew <- crew | defaultWorkers
+ * - blockReason <- blockReason | blockedReason
+ */
+function normalizeTaskFromPayload(task: Task): Task {
+  const raw = task as Task & {
+    defaultWorkers?: number | null;
+    blockedReason?: string | null;
+  };
+  const {
+    defaultWorkers: legacyCrew,
+    blockedReason: legacyBlockReason,
+    ...rest
+  } = raw;
+  return {
+    ...rest,
+    crew: rest.crew ?? legacyCrew ?? null,
+    blockReason: rest.blockReason ?? legacyBlockReason ?? null,
+  };
+}
+
 /** Sync task status from payload line items (authoritative executor-reported status). */
 function applyImportedLineItemStatusToTasks(
   planTasks: Task[],
@@ -249,7 +271,9 @@ export async function applyExecutionReturnImport(
   // Sync task status from payload line items (authoritative executor-reported status).
   const { tasks: planTasks, unplannedTasks: unplannedTaskPayload, lineItems: payloadLineItems, workTypes: payloadWorkTypes } =
     preview.envelope.payload;
-  const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(planTasks, payloadLineItems);
+  const normalizedPlanTasks = planTasks.map(normalizeTaskFromPayload);
+  const normalizedUnplannedTasks = unplannedTaskPayload.map(normalizeTaskFromPayload);
+  const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(normalizedPlanTasks, payloadLineItems);
 
   const workTypeIdMap =
     Array.isArray(payloadWorkTypes) && payloadWorkTypes.length > 0
@@ -263,7 +287,7 @@ export async function applyExecutionReturnImport(
   };
 
   const planTasksToUpsert = planTasksWithSyncedStatus.map(remapWorkTypeId);
-  const unplannedTasksToUpsert = unplannedTaskPayload.map(remapWorkTypeId);
+  const unplannedTasksToUpsert = normalizedUnplannedTasks.map(remapWorkTypeId);
   await upsertTasksFromPayload(planTasksToUpsert);
   await upsertTasksFromPayload(unplannedTasksToUpsert);
   await refreshTasks();

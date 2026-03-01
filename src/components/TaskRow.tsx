@@ -90,8 +90,8 @@ export function TaskRow({
             </span>
           )}
         </div>
-        {isBlocked && task.blockedReason && (
-          <span className="task-row__blocked-reason">{task.blockedReason}</span>
+        {isBlocked && task.blockReason && (
+          <span className="task-row__blocked-reason">{task.blockReason}</span>
         )}
         {!isSubtask && subtaskCount > 0 && (
           <span className="task-row__subtask-count">

@@ -10,7 +10,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     workUnit: 'm2',
     workQuantity: 100,
     estimatedMinutes: 60,
-    defaultWorkers: 2,
+    crew: 2,
     targetProductivity: 10,
     buildPhase: 'build-up',
     createdAt: '2024-01-01T00:00:00.000Z',

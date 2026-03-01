@@ -20,7 +20,7 @@ export async function syncTaskBlockToPlan(task: Task): Promise<void> {
   const lineItem = plan.lineItems.find((item) => item.id === task.sourceLineItemId);
   if (!lineItem) return;
 
-  const reason = task.blockedReason;
+  const reason = task.blockReason;
   const nextPlan = updatePlanLineItem(plan, lineItem.id, {
     executionStatus: 'blocked',
     blockReason: reason,
@@ -39,7 +39,7 @@ export async function syncTaskBlockToPlan(task: Task): Promise<void> {
         updateTask({
           ...linkedTask,
           status: 'blocked',
-          blockedReason: reason,
+          blockReason: reason,
           updatedAt,
         }),
       ),
@@ -76,7 +76,7 @@ export async function syncTaskUnblockToPlan(task: Task): Promise<void> {
         updateTask({
           ...linkedTask,
           status: 'active',
-          blockedReason: null,
+          blockReason: null,
           updatedAt,
         }),
       ),
@@ -103,7 +103,7 @@ export async function syncLineItemBlockToTasks(
         updateTask({
           ...linkedTask,
           status: 'blocked',
-          blockedReason: blockReason,
+          blockReason: blockReason,
           updatedAt,
         }),
       ),
@@ -126,7 +126,7 @@ export async function syncLineItemUnblockToTasks(
         updateTask({
           ...linkedTask,
           status: 'active',
-          blockedReason: null,
+          blockReason: null,
           updatedAt,
         }),
       ),

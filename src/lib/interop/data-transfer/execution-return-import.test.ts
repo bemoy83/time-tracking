@@ -48,11 +48,11 @@ function makePlanTask(
     status: 'active',
     projectId: 'project-1',
     parentId: null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: null,
     workQuantity: 120,
     workUnit: 'm2',
-    defaultWorkers: null,
+    crew: null,
     targetProductivity: null,
     buildPhase: 'build-up',
     workTypeId: null,
@@ -111,11 +111,11 @@ function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
           status: 'completed',
           projectId: 'project-1',
           parentId: null,
-          blockedReason: null,
+          blockReason: null,
           estimatedMinutes: null,
           workQuantity: null,
           workUnit: null,
-          defaultWorkers: null,
+          crew: null,
           targetProductivity: null,
           buildPhase: null,
           workTypeId: null,
@@ -229,6 +229,32 @@ describe('execution-return import', () => {
         id: 'task-u-1',
         title: 'Cleanup aisle',
         status: 'completed',
+      }),
+    );
+  });
+
+  it('normalizes legacy blockedReason/defaultWorkers task fields from payload', async () => {
+    const envelope = makeEnvelope();
+    envelope.payload.lineItems[0].executionStatus = 'pending';
+    envelope.payload.tasks = [
+      {
+        ...makePlanTask({ id: 'task-legacy', sourceLineItemId: 'li-1' }),
+        crew: undefined as unknown as number | null,
+        blockReason: undefined as unknown as string | null,
+        defaultWorkers: 4,
+        blockedReason: 'Legacy blocker',
+      } as unknown as Task,
+    ];
+    mockGetAllTimeEntries.mockResolvedValue([]);
+
+    const preview = await previewExecutionReturnImport(envelope);
+    await applyExecutionReturnImport(preview);
+
+    expect(mockAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'task-legacy',
+        crew: 4,
+        blockReason: 'Legacy blocker',
       }),
     );
   });

@@ -57,7 +57,7 @@ export function TaskCard({
   onCompleteTask,
   onExpandToggle,
 }: TaskCardProps) {
-  const estimatedPersonMs = getEstimatedPersonMs(task.estimatedMinutes, task.defaultWorkers);
+  const estimatedPersonMs = getEstimatedPersonMs(task.estimatedMinutes, task.crew);
   const budgetStatus = calculateBudgetStatusPersonHours(totalPersonMs, estimatedPersonMs);
   const hasBudget = budgetStatus.status !== 'none';
 

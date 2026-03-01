@@ -35,11 +35,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'active',
     projectId: 'project-1',
     parentId: null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: null,
     workQuantity: null,
     workUnit: null,
-    defaultWorkers: null,
+    crew: null,
     targetProductivity: null,
     buildPhase: null,
     workTypeId: null,
@@ -63,7 +63,7 @@ describe('buildExecutionReturnEnvelope', () => {
   it('derives blocked line-item status and block reason from linked blocked tasks', async () => {
     const envelope = await buildExecutionReturnEnvelope(
       makePlan(),
-      [makeTask({ status: 'blocked', blockedReason: 'Access restricted' })],
+      [makeTask({ status: 'blocked', blockReason: 'Access restricted' })],
       [],
     );
 
@@ -81,7 +81,7 @@ describe('buildExecutionReturnEnvelope', () => {
 
     const envelope = await buildExecutionReturnEnvelope(
       plan,
-      [makeTask({ status: 'blocked', blockedReason: 'From task' })],
+      [makeTask({ status: 'blocked', blockReason: 'From task' })],
       [],
     );
 

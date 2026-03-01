@@ -115,7 +115,7 @@ export interface CreateTaskInput {
   estimatedMinutes?: number | null;
   workQuantity?: number | null;
   workUnit?: WorkUnit | null;
-  defaultWorkers?: number | null;
+  crew?: number | null;
   targetProductivity?: number | null;
   buildPhase?: BuildPhase | null;
   workTypeId?: string | null;
@@ -134,11 +134,11 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     parentId: input.parentId ?? null,
     sourcePlanId: input.sourcePlanId ?? null,
     sourceLineItemId: input.sourceLineItemId ?? null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: input.estimatedMinutes ?? null,
     workQuantity: input.workQuantity ?? null,
     workUnit: input.workUnit ?? null,
-    defaultWorkers: input.defaultWorkers ?? null,
+    crew: input.crew ?? null,
     targetProductivity: input.targetProductivity ?? null,
     buildPhase: input.buildPhase ?? null,
     workTypeId: input.workTypeId ?? null,
@@ -212,16 +212,16 @@ export async function updateTaskFields(
  */
 export async function updateTaskDefaultWorkers(
   id: string,
-  defaultWorkers: number | null
+  crew: number | null
 ): Promise<void> {
   const task = state.tasks.find((t) => t.id === id);
   if (!task) return;
 
-  const clamped = defaultWorkers != null
-    ? Math.max(1, Math.min(20, Math.round(defaultWorkers)))
+  const clamped = crew != null
+    ? Math.max(1, Math.min(20, Math.round(crew)))
     : null;
 
-  const updated = { ...task, defaultWorkers: clamped, updatedAt: nowUtc() };
+  const updated = { ...task, crew: clamped, updatedAt: nowUtc() };
   await dbUpdateTask(updated);
   setState({
     tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
@@ -329,7 +329,7 @@ export async function reactivateTask(id: string): Promise<void> {
   const updated: Task = {
     ...task,
     status: 'active',
-    blockedReason: null,
+    blockReason: null,
     updatedAt: nowUtc(),
   };
   await dbUpdateTask(updated);
@@ -348,7 +348,7 @@ export async function blockTask(id: string, reason: string): Promise<void> {
   const updated: Task = {
     ...task,
     status: 'blocked',
-    blockedReason: reason,
+    blockReason: reason,
     updatedAt: nowUtc(),
   };
   await dbUpdateTask(updated);
@@ -371,7 +371,7 @@ export async function unblockTask(id: string): Promise<void> {
   const updated: Task = {
     ...task,
     status: 'active',
-    blockedReason: null,
+    blockReason: null,
     updatedAt: nowUtc(),
   };
   await dbUpdateTask(updated);

@@ -29,11 +29,11 @@ const baseTask = {
   status: 'active' as const,
   projectId: null,
   parentId: null,
-  blockedReason: null,
+  blockReason: null,
   estimatedMinutes: null,
   workQuantity: 100,
   workUnit: 'm2' as const,
-  defaultWorkers: null,
+  crew: null,
   targetProductivity: null,
   buildPhase: 'build-up' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -50,7 +50,7 @@ const baseTemplate = {
   workUnit: 'm2' as const,
   workQuantity: 100,
   estimatedMinutes: null,
-  defaultWorkers: null,
+  crew: null,
   targetProductivity: 10,
   buildPhase: 'build-up' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -58,7 +58,7 @@ const baseTemplate = {
 };
 
 describe('saveRecommendationToTask', () => {
-  it('saves crew recommendation to task.defaultWorkers', async () => {
+  it('saves crew recommendation to task.crew', async () => {
     mockGetTask.mockResolvedValue(baseTask);
     mockUpdateTask.mockResolvedValue(undefined);
     mockAddTaskNote.mockResolvedValue(undefined);
@@ -76,7 +76,7 @@ describe('saveRecommendationToTask', () => {
 
     expect(mockUpdateTask).toHaveBeenCalledOnce();
     const updated = mockUpdateTask.mock.calls[0][0];
-    expect(updated.defaultWorkers).toBe(4);
+    expect(updated.crew).toBe(4);
   });
 
   it('saves time recommendation to task.estimatedMinutes', async () => {
@@ -162,7 +162,7 @@ describe('saveRecommendationToTask', () => {
 });
 
 describe('saveRecommendationToTemplate', () => {
-  it('saves crew recommendation to template.defaultWorkers', async () => {
+  it('saves crew recommendation to template.crew', async () => {
     mockGetTaskTemplate.mockResolvedValue(baseTemplate);
     mockUpdateTaskTemplate.mockResolvedValue(undefined);
     mockAddTemplateNote.mockResolvedValue(undefined);
@@ -180,7 +180,7 @@ describe('saveRecommendationToTemplate', () => {
 
     expect(mockUpdateTaskTemplate).toHaveBeenCalledOnce();
     const updated = mockUpdateTaskTemplate.mock.calls[0][0];
-    expect(updated.defaultWorkers).toBe(5);
+    expect(updated.crew).toBe(5);
     expect(mockAddTemplateNote).toHaveBeenCalledOnce();
     expect(mockAddTemplateNote.mock.calls[0][0].templateId).toBe('tmpl-1');
   });

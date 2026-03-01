@@ -45,7 +45,7 @@ export function TaskProductivity({ taskId, subtaskIds, onAttributedRefresh }: Ta
 
   const quantity = task.workQuantity;
   const unit = task.workUnit;
-  const workers = task.defaultWorkers ?? 1;
+  const workers = task.crew ?? 1;
   const workTypeTitle = task.workTypeId ? getWorkTypeById(task.workTypeId)?.title : null;
 
   // Target rate: from template (stored on task)

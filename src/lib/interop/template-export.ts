@@ -27,7 +27,7 @@ export function exportTemplatesCsv(
       template.buildPhase,
       template.workQuantity,
       template.estimatedMinutes,
-      template.defaultWorkers,
+      template.crew,
       template.targetProductivity,
     ]),
   );

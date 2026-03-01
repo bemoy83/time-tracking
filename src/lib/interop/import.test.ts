@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseWorkPackageCsv, workPackageMappingKey } from './import';
 
-const VALID_HEADER = 'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity';
+const VALID_HEADER = 'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,crew,targetProductivity';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -28,7 +28,7 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].buildPhase).toBe('build-up');
     expect(result.items[0].workQuantity).toBe(100);
     expect(result.items[0].estimatedMinutes).toBe(60);
-    expect(result.items[0].defaultWorkers).toBe(2);
+    expect(result.items[0].crew).toBe(2);
     expect(result.items[0].targetProductivity).toBe(10);
   });
 
@@ -40,7 +40,7 @@ describe('parseWorkPackageCsv', () => {
     expect(result.valid).toBe(true);
     expect(result.items[0].workQuantity).toBeNull();
     expect(result.items[0].estimatedMinutes).toBeNull();
-    expect(result.items[0].defaultWorkers).toBeNull();
+    expect(result.items[0].crew).toBeNull();
     expect(result.items[0].targetProductivity).toBeNull();
   });
 
@@ -54,7 +54,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
-      'title;workTypeTitle;workUnit;buildPhase;workQuantity;estimatedMinutes;defaultWorkers;targetProductivity',
+      'title;workTypeTitle;workUnit;buildPhase;workQuantity;estimatedMinutes;crew;targetProductivity',
       'Install carpet;Carpet Tiles;m2;build-up;100;60;2;10',
     ].join('\n');
     const result = parseWorkPackageCsv(semicolonCsv);
@@ -68,6 +68,18 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].workQuantity).toBe(100);
   });
 
+  it('accepts legacy defaultWorkers header and maps it to crew', () => {
+    const legacyHeaderCsv = [
+      'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'Install carpet,Carpet Tiles,m2,build-up,100,60,3,10',
+    ].join('\n');
+    const result = parseWorkPackageCsv(legacyHeaderCsv);
+
+    expect(result.valid).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].crew).toBe(3);
+  });
+
   it('rejects missing required headers', () => {
     const result = parseWorkPackageCsv('title,workUnit\nFoo,m2');
 
@@ -77,7 +89,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('requires workTypeTitle header', () => {
     const result = parseWorkPackageCsv([
-      'title,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'title,workUnit,buildPhase,workQuantity,estimatedMinutes,crew,targetProductivity',
       'Task,m2,build-up,,,,',
     ].join('\n'));
 
@@ -122,13 +134,13 @@ describe('parseWorkPackageCsv', () => {
     expect(result.errors[0].field).toBe('workQuantity');
   });
 
-  it('rejects defaultWorkers out of range', () => {
+  it('rejects crew out of range', () => {
     const result = parseWorkPackageCsv(csv([
       'Task,Carpet Tiles,m2,build-up,100,,25,',
     ]));
 
     expect(result.valid).toBe(false);
-    expect(result.errors[0].field).toBe('defaultWorkers');
+    expect(result.errors[0].field).toBe('crew');
   });
 
   it('rejects missing title', () => {

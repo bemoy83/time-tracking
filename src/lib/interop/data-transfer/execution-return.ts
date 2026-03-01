@@ -68,7 +68,7 @@ export async function buildExecutionReturnEnvelope(
     const status = deriveStatusFromTasks(item.executionStatus, linked);
     const blockedTaskReason =
       status === 'blocked' && item.blockReason == null
-        ? (linked.find((task) => task.status === 'blocked')?.blockedReason ?? null)
+        ? (linked.find((task) => task.status === 'blocked')?.blockReason ?? null)
         : null;
     const deadline = evaluateLineItemDeadline(item, linked, linkedEntries, todayDate);
     if (status === 'pending') summaryByStatus.pending += 1;

@@ -11,7 +11,7 @@ describe('getEstimatedPersonMs', () => {
     expect(getEstimatedPersonMs(-15, 2)).toBeNull();
   });
 
-  it('defaults workers to one when defaultWorkers is null', () => {
+  it('defaults workers to one when crew is null', () => {
     expect(getEstimatedPersonMs(60, null)).toBe(3_600_000);
   });
 

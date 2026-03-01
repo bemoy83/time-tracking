@@ -28,7 +28,7 @@ import {
 } from './planning/scheduling/work-calendar';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 25;
+const DB_VERSION = 27;
 
 /** Legacy placeholder task ID – removed; migration cleans up any existing instances */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
@@ -294,12 +294,12 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
           }
         }
 
-        // Version 9: Add defaultWorkers field to tasks
+        // Version 9: Add crew field to tasks
         if (oldVersion < 9 && oldVersion >= 1) {
           backfillStore('tasks', (task) => {
             const t = task as unknown as Record<string, unknown>;
-            if (t.defaultWorkers !== undefined) return false;
-            t.defaultWorkers = null;
+            if (t.crew !== undefined) return false;
+            t.crew = null;
             return true;
           });
         }
@@ -590,6 +590,39 @@ export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
             }
 
             return changed;
+          });
+        }
+
+        // Version 26: Rename task/template defaultWorkers -> crew
+        if (oldVersion < 26) {
+          if (oldVersion >= 1) {
+            backfillStore('tasks', (task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (t.crew !== undefined) return false;
+              t.crew = t.defaultWorkers ?? null;
+              delete t.defaultWorkers;
+              return true;
+            });
+          }
+          if (db.objectStoreNames.contains('taskTemplates')) {
+            backfillStore('taskTemplates', (template) => {
+              const t = template as unknown as Record<string, unknown>;
+              if (t.crew !== undefined) return false;
+              t.crew = t.defaultWorkers ?? null;
+              delete t.defaultWorkers;
+              return true;
+            });
+          }
+        }
+
+        // Version 27: Rename task blockedReason -> blockReason
+        if (oldVersion < 27 && oldVersion >= 1) {
+          backfillStore('tasks', (task) => {
+            const t = task as unknown as Record<string, unknown>;
+            if (t.blockReason !== undefined) return false;
+            t.blockReason = t.blockedReason ?? null;
+            delete t.blockedReason;
+            return true;
           });
         }
       },

@@ -20,8 +20,8 @@ export function TaskPersonnel({ taskId }: TaskPersonnelProps) {
   const [showSheet, setShowSheet] = useState(false);
   const [tempWorkers, setTempWorkers] = useState(1);
 
-  const hasValue = task?.defaultWorkers != null;
-  const currentValue = task?.defaultWorkers ?? 1;
+  const hasValue = task?.crew != null;
+  const currentValue = task?.crew ?? 1;
 
   const handleOpen = () => {
     setTempWorkers(currentValue);

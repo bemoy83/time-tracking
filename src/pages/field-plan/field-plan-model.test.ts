@@ -10,11 +10,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'active',
     projectId: 'project-1',
     parentId: null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: null,
     workQuantity: null,
     workUnit: null,
-    defaultWorkers: null,
+    crew: null,
     targetProductivity: null,
     buildPhase: null,
     workTypeId: null,
@@ -34,7 +34,7 @@ describe('deriveLineItemStatus', () => {
     const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
     const status = deriveLineItemStatus(item, [
       makeTask({ id: 'task-1', status: 'active' }),
-      makeTask({ id: 'task-2', status: 'blocked', blockedReason: 'No materials' }),
+      makeTask({ id: 'task-2', status: 'blocked', blockReason: 'No materials' }),
     ]);
 
     expect(status).toBe('blocked');
@@ -46,7 +46,7 @@ describe('deriveLineItemStatus', () => {
       executionStatus: 'deferred' as const,
     };
     const status = deriveLineItemStatus(item, [
-      makeTask({ status: 'blocked', blockedReason: 'No materials' }),
+      makeTask({ status: 'blocked', blockReason: 'No materials' }),
     ]);
 
     expect(status).toBe('deferred');

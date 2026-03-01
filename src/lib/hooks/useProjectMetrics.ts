@@ -58,7 +58,7 @@ export function useProjectMetrics(
 
     const estimatedPersonMs = getEstimatedPersonMs(
       task.estimatedMinutes,
-      task.defaultWorkers,
+      task.crew,
     );
     if (estimatedPersonMs !== null) {
       tasksWithEstimate += 1;

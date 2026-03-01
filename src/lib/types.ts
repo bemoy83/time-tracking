@@ -64,7 +64,7 @@ export interface TaskTemplate {
   workUnit: WorkUnit;
   workQuantity: number | null;
   estimatedMinutes: number | null;
-  defaultWorkers: number | null;
+  crew: number | null;
   targetProductivity: number | null; // units/person-hr (legacy, sourced from WorkType)
   buildPhase: BuildPhase;
   createdAt: string;
@@ -132,11 +132,11 @@ export interface Task {
   status: TaskStatus;
   projectId: string | null;
   parentId: string | null; // For one-level subtasks
-  blockedReason: string | null; // Why the task is blocked
+  blockReason: string | null; // Why the task is blocked
   estimatedMinutes: number | null; // Optional time budget
   workQuantity: number | null; // e.g. 120 for "120 m²"
   workUnit: WorkUnit | null; // e.g. 'm2'
-  defaultWorkers: number | null; // Expected crew count; null = use 1
+  crew: number | null; // Expected crew count; null = use 1
   targetProductivity: number | null; // units/person-hr from template
   buildPhase: BuildPhase | null; // from template, read-only
   workTypeId: string | null; // references WorkType
@@ -325,14 +325,14 @@ export function formatTrackedVsEstimateBadge(
 
 /**
  * Convert clock-time estimate to person-time estimate.
- * Defaults to one worker when defaultWorkers is null.
+ * Defaults to one worker when crew is null.
  */
 export function getEstimatedPersonMs(
   estimatedMinutes: number | null,
-  defaultWorkers: number | null
+  crew: number | null
 ): number | null {
   if (estimatedMinutes === null || estimatedMinutes <= 0) return null;
-  return estimatedMinutes * 60_000 * (defaultWorkers ?? 1);
+  return estimatedMinutes * 60_000 * (crew ?? 1);
 }
 
 /**

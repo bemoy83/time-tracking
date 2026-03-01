@@ -51,7 +51,7 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [showEstimateSheet, setShowEstimateSheet] = useState(false);
 
-  const estimatedPersonMs = getEstimatedPersonMs(task?.estimatedMinutes ?? null, task?.defaultWorkers ?? null);
+  const estimatedPersonMs = getEstimatedPersonMs(task?.estimatedMinutes ?? null, task?.crew ?? null);
   const budgetStatus = calculateBudgetStatusPersonHours(breakdown.totalPersonMs, estimatedPersonMs);
 
   const hasSubtasks = subtaskIds.length > 0;
@@ -294,7 +294,7 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
           initialHours={0}
           initialMinutes={0}
           showWorkers
-          initialWorkers={task?.defaultWorkers ?? 1}
+          initialWorkers={task?.crew ?? 1}
           onSave={handleAddEntry}
           onCancel={() => setShowAddSheet(false)}
           resetKey={showAddSheet ? 1 : 0}

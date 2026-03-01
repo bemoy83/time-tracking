@@ -9,14 +9,14 @@ import { ClockIcon, WarningIcon, CheckIcon } from './icons';
 
 interface TaskStatusBannerProps {
   status: 'active' | 'completed' | 'blocked';
-  blockedReason?: string | null;
+  blockReason?: string | null;
   isTimerActive: boolean;
   taskId?: string;
 }
 
 export function TaskStatusBanner({
   status,
-  blockedReason,
+  blockReason,
   isTimerActive,
   taskId,
 }: TaskStatusBannerProps) {
@@ -25,7 +25,7 @@ export function TaskStatusBanner({
       <div className="task-detail__status-control task-detail__status-control--blocked">
         <WarningIcon className="task-detail__status-icon" />
         <span className="task-detail__status-label">
-          Blocked{blockedReason ? ` · ${blockedReason}` : ''}
+          Blocked{blockReason ? ` · ${blockReason}` : ''}
         </span>
       </div>
     );

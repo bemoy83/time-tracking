@@ -4,7 +4,7 @@
  *
  * Expected CSV columns:
  *   title, workTypeTitle, workUnit, buildPhase, workQuantity,
- *   estimatedMinutes, defaultWorkers, targetProductivity
+ *   estimatedMinutes, crew (or legacy defaultWorkers), targetProductivity
  *
  * Stable mapping key for round-trip: title + workTypeTitle + workUnit + buildPhase
  */
@@ -30,7 +30,7 @@ export interface ImportedWorkPackage {
   workTypeId: string | null;
   workQuantity: number | null;
   estimatedMinutes: number | null;
-  defaultWorkers: number | null;
+  crew: number | null;
   targetProductivity: number | null;
 }
 
@@ -123,14 +123,15 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
     // Validate optional numeric fields
     const workQuantity = parseOptionalNumber(row['workquantity'], rowNum, 'workQuantity', rowErrors);
     const estimatedMinutes = parseOptionalNumber(row['estimatedminutes'], rowNum, 'estimatedMinutes', rowErrors);
-    const defaultWorkers = parseOptionalNumber(row['defaultworkers'], rowNum, 'defaultWorkers', rowErrors);
+    const crewRaw = row['crew'] || row['defaultworkers'];
+    const crew = parseOptionalNumber(crewRaw, rowNum, 'crew', rowErrors);
     const targetProductivity = parseOptionalNumber(row['targetproductivity'], rowNum, 'targetProductivity', rowErrors);
 
     if (workQuantity != null && workQuantity <= 0) {
       rowErrors.push({ row: rowNum, field: 'workQuantity', message: 'Work quantity must be positive' });
     }
-    if (defaultWorkers != null && (defaultWorkers < 1 || defaultWorkers > 20)) {
-      rowErrors.push({ row: rowNum, field: 'defaultWorkers', message: 'Default workers must be between 1 and 20' });
+    if (crew != null && (crew < 1 || crew > 20)) {
+      rowErrors.push({ row: rowNum, field: 'crew', message: 'Default workers must be between 1 and 20' });
     }
 
     if (rowErrors.length > 0) {
@@ -154,7 +155,7 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       workTypeId: resolvedWorkType?.id ?? null,
       workQuantity,
       estimatedMinutes,
-      defaultWorkers,
+      crew,
       targetProductivity,
     });
   }

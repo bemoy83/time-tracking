@@ -39,7 +39,7 @@ export function WorkPackageImportCard({
         value={csvInput}
         onChange={onCsvInputChange}
         onFileLoaded={onParse}
-        placeholder="title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity"
+        placeholder="title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,crew|defaultWorkers,targetProductivity"
         rows={8}
       />
 

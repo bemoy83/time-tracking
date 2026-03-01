@@ -45,11 +45,11 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     status: 'active',
     projectId: 'project-1',
     parentId: null,
-    blockedReason: null,
+    blockReason: null,
     estimatedMinutes: null,
     workQuantity: null,
     workUnit: null,
-    defaultWorkers: null,
+    crew: null,
     targetProductivity: null,
     buildPhase: null,
     workTypeId: null,
@@ -94,7 +94,7 @@ describe('task-plan-block-sync', () => {
     const inputTask = makeTask({
       id: 'task-1',
       status: 'blocked',
-      blockedReason: 'Waiting for materials',
+      blockReason: 'Waiting for materials',
       sourcePlanId: 'plan-1',
       sourceLineItemId: 'line-1',
     });
@@ -132,7 +132,7 @@ describe('task-plan-block-sync', () => {
       expect.objectContaining({
         id: 'task-1',
         status: 'blocked',
-        blockedReason: 'Waiting for materials',
+        blockReason: 'Waiting for materials',
         updatedAt: '2026-02-28T10:00:00.000Z',
       }),
     );
@@ -140,7 +140,7 @@ describe('task-plan-block-sync', () => {
       expect.objectContaining({
         id: 'task-2',
         status: 'blocked',
-        blockedReason: 'Waiting for materials',
+        blockReason: 'Waiting for materials',
         updatedAt: '2026-02-28T10:00:00.000Z',
       }),
     );
@@ -157,7 +157,7 @@ describe('task-plan-block-sync', () => {
     const siblingTask = makeTask({
       id: 'task-2',
       status: 'blocked',
-      blockedReason: 'Waiting for access',
+      blockReason: 'Waiting for access',
       sourcePlanId: 'plan-1',
       sourceLineItemId: 'line-1',
     });
@@ -187,14 +187,14 @@ describe('task-plan-block-sync', () => {
       expect.objectContaining({
         id: 'task-1',
         status: 'active',
-        blockedReason: null,
+        blockReason: null,
       }),
     );
     expect(mockUpdateTask).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'task-2',
         status: 'active',
-        blockedReason: null,
+        blockReason: null,
       }),
     );
     expect(mockRefreshTasks).toHaveBeenCalledTimes(1);
@@ -225,14 +225,14 @@ describe('task-plan-block-sync', () => {
       expect.objectContaining({
         id: 'task-1',
         status: 'blocked',
-        blockedReason: 'Crew delayed',
+        blockReason: 'Crew delayed',
       }),
     );
     expect(mockUpdateTask).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'task-2',
         status: 'blocked',
-        blockedReason: 'Crew delayed',
+        blockReason: 'Crew delayed',
       }),
     );
     expect(mockRefreshTasks).toHaveBeenCalledTimes(1);
@@ -242,14 +242,14 @@ describe('task-plan-block-sync', () => {
     const t1 = makeTask({
       id: 'task-1',
       status: 'blocked',
-      blockedReason: 'Blocked',
+      blockReason: 'Blocked',
       sourcePlanId: 'plan-1',
       sourceLineItemId: 'line-1',
     });
     const t2 = makeTask({
       id: 'task-2',
       status: 'blocked',
-      blockedReason: 'Blocked',
+      blockReason: 'Blocked',
       sourcePlanId: 'plan-1',
       sourceLineItemId: 'line-1',
     });
@@ -262,14 +262,14 @@ describe('task-plan-block-sync', () => {
       expect.objectContaining({
         id: 'task-1',
         status: 'active',
-        blockedReason: null,
+        blockReason: null,
       }),
     );
     expect(mockUpdateTask).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'task-2',
         status: 'active',
-        blockedReason: null,
+        blockReason: null,
       }),
     );
     expect(mockRefreshTasks).toHaveBeenCalledTimes(1);
@@ -279,7 +279,7 @@ describe('task-plan-block-sync', () => {
     const inputTask = makeTask({
       id: 'task-1',
       status: 'blocked',
-      blockedReason: 'No access',
+      blockReason: 'No access',
       sourcePlanId: 'plan-missing',
       sourceLineItemId: 'line-1',
     });

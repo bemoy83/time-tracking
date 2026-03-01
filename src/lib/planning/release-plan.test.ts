@@ -24,7 +24,7 @@ describe('lineItemToCreateTaskInput', () => {
     expect(input.workTypeId).toBe('wt-123');
     expect(input.workQuantity).toBe(100);
     expect(input.workUnit).toBe('m2');
-    expect(input.defaultWorkers).toBe(3);
+    expect(input.crew).toBe(3);
     expect(input.targetProductivity).toBe(10);
     expect(input.buildPhase).toBe('build-up');
     expect(input.estimatedMinutes).toBe(600); // 10 hours * 60

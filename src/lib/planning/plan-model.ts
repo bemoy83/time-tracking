@@ -11,6 +11,7 @@
 import type { WorkUnit, BuildPhase } from '../types';
 import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
+import { lineItemWorkTypeKey as toLineItemWorkTypeKey } from '../work-package-core';
 
 export type PlanStatus =
   | 'draft'
@@ -138,12 +139,7 @@ export function resolveLineItemWorkTypeTitle(
 
 /** Get the WorkTypeKey for a line item (for KPI lookups). */
 export function lineItemWorkTypeKey(item: PlanLineItem): WorkTypeKey {
-  return {
-    workTypeId: item.workTypeId,
-    workTypeTitle: resolveLineItemWorkTypeTitle(item),
-    workUnit: item.workUnit,
-    buildPhase: item.buildPhase,
-  };
+  return toLineItemWorkTypeKey(item);
 }
 
 /** Compute total person-hours for a plan. */

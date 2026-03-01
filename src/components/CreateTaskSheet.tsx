@@ -75,7 +75,7 @@ export function CreateTaskSheet({
         const totalMin = template.estimatedMinutes ?? 0;
         setEstHours(Math.floor(totalMin / 60));
         setEstMinutes(totalMin % 60);
-        setWorkers(template.defaultWorkers ?? 1);
+        setWorkers(template.crew ?? 1);
       } else {
         setTitle('');
         setQuantity('');
@@ -102,7 +102,7 @@ export function CreateTaskSheet({
         estimatedMinutes: showEstimate && totalMinutes > 0 ? totalMinutes : undefined,
         workQuantity: showWork && !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : undefined,
         workUnit: showWork && !isNaN(parsedQty) && parsedQty > 0 ? unit : undefined,
-        defaultWorkers: showWorkers && workers > 1 ? workers : undefined,
+        crew: showWorkers && workers > 1 ? workers : undefined,
         targetProductivity: workType?.expectedProductivity ?? (template?.targetProductivity ?? undefined),
         buildPhase: workType?.buildPhase ?? (template?.buildPhase ?? undefined),
         workTypeId: workType?.id ?? (template?.workTypeId ?? undefined),

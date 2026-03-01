@@ -151,7 +151,7 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       return {
         success: false,
         reason: 'task_blocked',
-        message: `Task is blocked: ${task.blockedReason || 'No reason specified'}`,
+        message: `Task is blocked: ${task.blockReason || 'No reason specified'}`,
       };
     }
 
@@ -161,8 +161,8 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
       taskId,
       startUtc: nowUtc(),
       source: 'manual',
-      workers: task.defaultWorkers != null
-        ? Math.max(1, Math.min(20, Math.round(task.defaultWorkers)))
+      workers: task.crew != null
+        ? Math.max(1, Math.min(20, Math.round(task.crew)))
         : 1,
     };
 
