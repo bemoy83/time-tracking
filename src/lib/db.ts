@@ -1041,9 +1041,13 @@ export async function setAttributionSnapshot(snapshot: AttributionSnapshot): Pro
 
 /**
  * Clear all attribution snapshots.
+ * No-ops if the store does not exist (e.g. DB at older schema before migration).
  */
 export async function clearAttributionSnapshots(): Promise<void> {
   const db = await getDB();
+  if (!db.objectStoreNames.contains('attributionSnapshots')) {
+    return;
+  }
   const tx = db.transaction('attributionSnapshots', 'readwrite');
   await tx.store.clear();
   await tx.done;

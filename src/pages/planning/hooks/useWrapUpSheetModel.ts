@@ -106,7 +106,7 @@ interface UseWrapUpSheetModelParams {
   tasks: Task[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
   onClose: () => void;
-  onCompleted: (updatedPlan: Plan) => void | Promise<void>;
+  onCompleted: (updatedPlan: Plan, success: boolean) => void | Promise<void>;
 }
 
 export function useWrapUpSheetModel({
@@ -181,7 +181,7 @@ export function useWrapUpSheetModel({
         markReviewed: mode === 'archive-and-complete',
       });
 
-      await onCompleted(result.updatedPlan);
+      await onCompleted(result.updatedPlan, result.success);
       if (result.success) {
         setSubmitError(null);
         onClose();

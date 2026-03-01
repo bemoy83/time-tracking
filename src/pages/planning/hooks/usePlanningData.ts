@@ -124,9 +124,12 @@ export function usePlanningData() {
     setWrapUpPlan(null);
   }, []);
 
-  const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan) => {
+  const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan, success: boolean) => {
     setPlans((prev) => prev.map((plan) => (plan.id === updatedPlan.id ? updatedPlan : plan)));
     await refreshTasks();
+    if (success) {
+      setWrapUpPlan(null);
+    }
   }, []);
 
   // --- Derived helpers ---

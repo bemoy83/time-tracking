@@ -17,6 +17,8 @@ export interface LineItemProgress {
   workTypeTitle: string;
   workUnit: WorkUnit;
   buildPhase: BuildPhase;
+  plannedQuantity: number;
+  actualQuantity: number;
   blockReason: string | null;
   blockCategory: string | null;
   deferredNote: string | null;
@@ -196,6 +198,8 @@ export function computePlanProgress(
       workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
       workUnit: item.workUnit,
       buildPhase: item.buildPhase,
+      plannedQuantity: item.workQuantity,
+      actualQuantity: totalTaskQuantity,
       blockReason,
       blockCategory,
       deferredNote,

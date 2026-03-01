@@ -21,6 +21,10 @@
   color: var(--color-text-muted);
 }
 
+.wrap-up-sheet__unplanned-note {
+  margin: 0 0 var(--space-xs);
+}
+
 .wrap-up-sheet__list {
   display: flex;
   flex-direction: column;
@@ -104,6 +108,17 @@
   gap: var(--space-xs);
 }
 
+.wrap-up-sheet__card-v2--error {
+  border-color: var(--color-recording);
+  background: var(--color-recording-bg);
+}
+
+.wrap-up-sheet__card-hint {
+  font-size: 0.75rem;
+  color: var(--color-recording);
+  font-weight: 600;
+}
+
 .wrap-up-sheet__card-header {
   display: flex;
   align-items: flex-start;
@@ -171,6 +186,20 @@
 .wrap-up-sheet__error--block {
   width: 100%;
   margin-bottom: var(--space-sm);
+}
+
+/* Sticky actions bar so validation + buttons stay visible when content scrolls */
+.wrap-up-sheet__actions-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg);
+  margin-left: calc(-1 * var(--space-lg));
+  margin-right: calc(-1 * var(--space-lg));
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(-1 * (var(--space-lg) + env(safe-area-inset-bottom, 0px)));
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .action-sheet__actions--stacked {

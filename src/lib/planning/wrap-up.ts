@@ -56,15 +56,22 @@ export async function executePlanWrapUp({
   }
 
   for (const taskId of uniqueArchiveIds) {
-    const result = await archiveTask(taskId);
-    if (result.success) {
-      archivedTaskIds.push(taskId);
-    } else {
+    try {
+      const result = await archiveTask(taskId);
+      if (result.success) {
+        archivedTaskIds.push(taskId);
+      } else {
+        failedArchiveTaskIds.push({
+          taskId,
+          reason: result.issues.length > 0
+            ? result.issues.map((issue) => issue.message).join('; ')
+            : 'Unknown archive failure',
+        });
+      }
+    } catch (err) {
       failedArchiveTaskIds.push({
         taskId,
-        reason: result.issues.length > 0
-          ? result.issues.map((issue) => issue.message).join('; ')
-          : 'Unknown archive failure',
+        reason: err instanceof Error ? err.message : 'Archive failed',
       });
     }
   }
@@ -82,7 +89,11 @@ export async function executePlanWrapUp({
     await updatePlan(updatedPlan);
   }
 
-  await invalidateAttributionCache();
+  try {
+    await invalidateAttributionCache();
+  } catch {
+    // Cache invalidation is non-critical; wrap-up result is still valid
+  }
 
   return {
     updatedPlan,

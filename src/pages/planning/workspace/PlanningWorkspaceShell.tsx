@@ -54,7 +54,7 @@ interface PlanningWorkspaceShellProps {
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
   onCloseWrapUp: () => void;
-  onWrapUpCompleted: (plan: Plan) => void;
+  onWrapUpCompleted: (plan: Plan, success: boolean) => void;
 
   // App chrome
   onExit: () => void;

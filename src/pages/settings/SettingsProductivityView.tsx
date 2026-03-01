@@ -76,8 +76,12 @@ export function SettingsProductivityView({ onBack }: SettingsProductivityViewPro
       <ArchiveMaintenanceCard
         maintenanceReport={archiveMaintenance.maintenanceReport}
         isRunningMaintenance={archiveMaintenance.isRunningMaintenance}
+        isArchivingPending={archiveMaintenance.isArchivingPending}
         onRunMaintenance={() => {
           void archiveMaintenance.handleRunMaintenance();
+        }}
+        onArchiveCandidates={() => {
+          void archiveMaintenance.handleArchiveCandidates();
         }}
         archiveGroups={archiveMaintenance.archiveGroups}
         recomputeReport={archiveMaintenance.recomputeReport}

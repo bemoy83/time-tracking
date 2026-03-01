@@ -118,6 +118,14 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
 
               <div className="progress-view__item-grid">
                 <div>
+                  <span className="progress-view__label">Work quantity</span>
+                  <span className="progress-view__value">
+                    {item.plannedQuantity > 0
+                      ? `${item.actualQuantity.toLocaleString()} / ${item.plannedQuantity.toLocaleString()} ${unitLabel}`
+                      : '—'}
+                  </span>
+                </div>
+                <div>
                   <span className="progress-view__label">Hours</span>
                   <span className="progress-view__value">
                     {formatHours(item.actualHours)} / {formatHours(item.plannedHours)}

@@ -1,7 +1,8 @@
+import { useRef } from 'react';
 import { ActionSheet } from '../../components/ActionSheet';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
-import { WORK_UNIT_LABELS } from '../../lib/types';
+import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { useWrapUpSheetModel } from './hooks/useWrapUpSheetModel';
 import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
 import { getFeatureFlag } from '../../lib/flags/feature-flags';
@@ -13,7 +14,7 @@ interface WrapUpSheetProps {
   tasks: Task[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
   onClose: () => void;
-  onCompleted: (updatedPlan: Plan) => void;
+  onCompleted: (updatedPlan: Plan, success: boolean) => void | Promise<void>;
 }
 
 function toRateLabel(rate: number | null, task: Task): string {
@@ -32,6 +33,7 @@ export function WrapUpSheet({
 }: WrapUpSheetProps) {
   const wrapUpV2Enabled = getFeatureFlag('wrapUpReviewV2');
   const { workTypes } = useWorkTypeStore();
+  const validationBlockRef = useRef<HTMLDivElement>(null);
 
   const model = useWrapUpSheetModel({
     isOpen: isOpen && !wrapUpV2Enabled,
@@ -131,6 +133,16 @@ export function WrapUpSheet({
         <p className="wrap-up-sheet__empty">Loading execution return data...</p>
       )}
 
+      {!modelV2.isLoadingProjection && modelV2.projectionLoadError && (
+        <p className="wrap-up-sheet__error wrap-up-sheet__error--block" role="alert">
+          {modelV2.projectionLoadError}. Try closing and reopening the wrap-up sheet.
+        </p>
+      )}
+
+      {!modelV2.isLoadingProjection && !modelV2.projection && !modelV2.projectionLoadError && (
+        <p className="wrap-up-sheet__empty">No execution data available for this plan.</p>
+      )}
+
       {!modelV2.isLoadingProjection && modelV2.projection && (
         <div className="wrap-up-sheet wrap-up-sheet--v2">
           <section className="wrap-up-sheet__meta-block">
@@ -149,11 +161,15 @@ export function WrapUpSheet({
                 const decision = modelV2.lineItemDecisions.get(item.lineItem.id);
                 if (!decision) return null;
 
+                const hasError = modelV2.lineItemIdsWithErrors.has(item.lineItem.id);
                 return (
-                  <article key={item.lineItem.id} className="wrap-up-sheet__card-v2">
+                  <article key={item.lineItem.id} className={`wrap-up-sheet__card-v2${hasError ? ' wrap-up-sheet__card-v2--error' : ''}`}>
                     <div className="wrap-up-sheet__card-header">
                       <div>
                         <h4 className="wrap-up-sheet__row-title">{item.lineItem.title}</h4>
+                        <p className="wrap-up-sheet__row-meta">
+                          Work type: {item.lineItem.workTypeTitle} · {WORK_UNIT_LABELS[item.lineItem.workUnit] ?? item.lineItem.workUnit} · {BUILD_PHASE_LABELS[item.lineItem.buildPhase] ?? item.lineItem.buildPhase}
+                        </p>
                         <p className="wrap-up-sheet__row-meta">
                           Status: {decision.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
                         </p>
@@ -224,6 +240,9 @@ export function WrapUpSheet({
                           onChange={(e) => modelV2.setDeferredDispositionConfirmed(item.lineItem.id, e.target.checked)}
                         />
                         <span>Confirm "Not Delivered" disposition</span>
+                        {hasError && !decision.deferredDispositionConfirmed && (
+                          <span className="wrap-up-sheet__card-hint" role="status">Required to complete</span>
+                        )}
                       </label>
                     )}
 
@@ -244,6 +263,9 @@ export function WrapUpSheet({
 
           <section className="wrap-up-sheet__group">
             <h3 className="wrap-up-sheet__group-title">Unplanned Work</h3>
+            <p className="wrap-up-sheet__row-meta wrap-up-sheet__unplanned-note">
+              Unplanned tasks are not archived during wrap-up. KPI and work type settings are still applied.
+            </p>
             <div className="wrap-up-sheet__list wrap-up-sheet__list--v2">
               {modelV2.projection.unplanned.length === 0 && (
                 <p className="wrap-up-sheet__empty">No unplanned tasks found.</p>
@@ -251,9 +273,10 @@ export function WrapUpSheet({
               {modelV2.projection.unplanned.map((item) => {
                 const decision = modelV2.unplannedDecisions.get(item.taskId);
                 if (!decision) return null;
+                const hasUnplannedError = modelV2.unplannedTaskIdsWithErrors.has(item.taskId);
 
                 return (
-                  <article key={item.taskId} className="wrap-up-sheet__card-v2">
+                  <article key={item.taskId} className={`wrap-up-sheet__card-v2${hasUnplannedError ? ' wrap-up-sheet__card-v2--error' : ''}`}>
                     <h4 className="wrap-up-sheet__row-title">{item.title}</h4>
                     <p className="wrap-up-sheet__row-meta">
                       {item.personHours.toFixed(2)} person-hrs {item.isImportedOnly ? '· Imported-only' : ''}
@@ -264,9 +287,12 @@ export function WrapUpSheet({
                         type="checkbox"
                         checked={decision.includeInKpi}
                         onChange={(e) => modelV2.setUnplannedIncludeInKpi(item.taskId, e.target.checked)}
-                        disabled={item.isImportedOnly}
+                        disabled={item.isImportedOnly && !decision.includeInKpi}
                       />
                       <span>Include in KPI</span>
+                      {hasUnplannedError && item.isImportedOnly && decision.includeInKpi && (
+                        <span className="wrap-up-sheet__card-hint" role="status">Imported-only cannot be in KPI</span>
+                      )}
                     </label>
 
                     <label className="wrap-up-sheet__review-note">
@@ -286,6 +312,11 @@ export function WrapUpSheet({
                             </option>
                           ))}
                       </select>
+                      {hasUnplannedError && decision.includeInKpi && (decision.assignedWorkTypeId == null || item.isImportedOnly) && (
+                        <span className="wrap-up-sheet__card-hint" role="status">
+                          {item.isImportedOnly ? 'Uncheck "Include in KPI" or assign work type' : 'Required when including in KPI'}
+                        </span>
+                      )}
                     </label>
                   </article>
                 );
@@ -296,10 +327,10 @@ export function WrapUpSheet({
       )}
 
       <div
-        className={`action-sheet__actions${modelV2.validationErrors.length > 0 ? ' action-sheet__actions--stacked' : ''}`}
+        className={`action-sheet__actions wrap-up-sheet__actions-bar${modelV2.validationErrors.length > 0 ? ' action-sheet__actions--stacked' : ''}`}
       >
         {modelV2.validationErrors.length > 0 && (
-          <div className="wrap-up-sheet__validation-block" role="alert">
+          <div ref={validationBlockRef} className="wrap-up-sheet__validation-block" role="alert">
             <p className="wrap-up-sheet__validation-title">Complete wrap-up requires:</p>
             <ul className="wrap-up-sheet__validation-list">
               {modelV2.validationErrors.map((err, i) => (
@@ -321,9 +352,13 @@ export function WrapUpSheet({
             type="button"
             className="btn btn--secondary btn--lg"
             onClick={() => {
+              if (!modelV2.canSubmit) {
+                validationBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+              }
               void modelV2.runWrapUp('save-review-only');
             }}
-            disabled={modelV2.isSubmitting || !modelV2.canSubmit}
+            disabled={modelV2.isSubmitting}
           >
             Save Review Only
           </button>
@@ -331,13 +366,19 @@ export function WrapUpSheet({
             type="button"
             className="btn btn--primary btn--lg"
             onClick={() => {
+              if (!modelV2.canSubmit) {
+                validationBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+              }
               void modelV2.runWrapUp('archive-and-complete');
             }}
-            disabled={modelV2.isSubmitting || !modelV2.canSubmit || modelV2.isLoadingProjection}
+            disabled={modelV2.isSubmitting || modelV2.isLoadingProjection || !modelV2.projection}
             title={
-              !modelV2.canSubmit && modelV2.validationErrors.length > 0
-                ? modelV2.validationErrors.join('. ')
-                : undefined
+              !modelV2.projection
+                ? 'Execution data must load first'
+                : !modelV2.canSubmit && modelV2.validationErrors.length > 0
+                  ? modelV2.validationErrors.join('. ')
+                  : undefined
             }
             aria-describedby={
               !modelV2.canSubmit && modelV2.validationErrors.length > 0

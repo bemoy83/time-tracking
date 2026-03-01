@@ -7,7 +7,7 @@ interface PlanningWrapUpSheetProps {
   tasks: Task[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
   onClose: () => void;
-  onCompleted: (updatedPlan: Plan) => void;
+  onCompleted: (updatedPlan: Plan, success: boolean) => void;
 }
 
 export function PlanningWrapUpSheet({

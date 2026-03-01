@@ -5,7 +5,9 @@ import type { RecomputeChangeReport } from '../../../lib/archive/recompute-repor
 interface ArchiveMaintenanceCardProps {
   maintenanceReport: MaintenanceReport | null;
   isRunningMaintenance: boolean;
+  isArchivingPending: boolean;
   onRunMaintenance: () => void;
+  onArchiveCandidates: () => void;
   archiveGroups: RecomputedArchiveKpiGroup[] | null;
   recomputeReport: RecomputeChangeReport | null;
   isRecomputingArchive: boolean;
@@ -15,7 +17,9 @@ interface ArchiveMaintenanceCardProps {
 export function ArchiveMaintenanceCard({
   maintenanceReport,
   isRunningMaintenance,
+  isArchivingPending,
   onRunMaintenance,
+  onArchiveCandidates,
   archiveGroups,
   recomputeReport,
   isRecomputingArchive,
@@ -44,6 +48,18 @@ export function ArchiveMaintenanceCard({
           <div className="settings-view__row-detail">
             Archived issues: {maintenanceReport.archivedIssues.length} · Archive-ready: {maintenanceReport.archiveCandidates.length} · Blocked: {maintenanceReport.blockedFromArchival.length}
           </div>
+          {maintenanceReport.archiveCandidates.length > 0 && (
+            <div className="settings-view__row-detail">
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={onArchiveCandidates}
+                disabled={isArchivingPending}
+              >
+                {isArchivingPending ? 'Archiving...' : `Archive ${maintenanceReport.archiveCandidates.length} ready task(s)`}
+              </button>
+            </div>
+          )}
           {maintenanceReport.archivedIssues.slice(0, 3).map((issue) => (
             <div key={`${issue.taskId}-${issue.issue.type}`} className="settings-view__row-detail">
               {issue.taskId}: {issue.description}

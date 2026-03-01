@@ -224,8 +224,8 @@ export function usePlanningWorkspaceState({
     });
   }, []);
 
-  const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan) => {
-    await data.handleWrapUpCompleted(updatedPlan);
+  const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan, success: boolean) => {
+    await data.handleWrapUpCompleted(updatedPlan, success);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
   }, [data]);
 
