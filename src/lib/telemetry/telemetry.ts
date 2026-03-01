@@ -41,6 +41,7 @@ export type TelemetryEventName =
   | 'remediation_bulk_apply'
   | 'planning_lock_toggle'
   | 'archive_maintenance_scan'
+  | 'archive_maintenance_archive_candidates'
   | 'archive_kpi_recompute';
 
 export interface TelemetryRecord {
