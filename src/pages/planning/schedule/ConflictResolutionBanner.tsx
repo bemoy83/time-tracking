@@ -19,13 +19,18 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
 
   const crewSummary = formatCrewSuggestionSummary(suggestions.crewSuggestions);
   const overtimeSummary = formatOvertimeSuggestionSummary(suggestions.overtimeSuggestions);
+  const conflictDayCount = Math.max(
+    suggestions.crewSuggestions.length,
+    suggestions.overtimeSuggestions.length,
+    suggestions.workerCapacitySuggestions.length,
+  );
 
   return (
     <div className="conflict-banner">
       <div className="conflict-banner__header">
         <WarningIcon className="conflict-banner__icon" />
         <span className="conflict-banner__title">
-          Schedule has capacity conflicts on {suggestions.crewSuggestions.length} {suggestions.crewSuggestions.length === 1 ? 'day' : 'days'}
+          Schedule has capacity conflicts on {conflictDayCount} {conflictDayCount === 1 ? 'day' : 'days'}
         </span>
         <button
           type="button"
@@ -47,6 +52,14 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
             <div className="conflict-banner__option">
               <span className="conflict-banner__option-label">Solve for overtime:</span>
               <span className="conflict-banner__option-detail">{overtimeSummary}</span>
+            </div>
+          )}
+          {suggestions.workerCapacitySuggestions.length > 0 && (
+            <div className="conflict-banner__option">
+              <span className="conflict-banner__option-label">Worker capacity exceeded:</span>
+              <span className="conflict-banner__option-detail">
+                {suggestions.workerCapacitySuggestions.map((s) => s.message).join('; ')}
+              </span>
             </div>
           )}
           <p className="conflict-banner__note">

@@ -3,7 +3,7 @@ import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-m
 import { BUILD_PHASE_LABELS, BUILD_PHASES, WORK_UNIT_LABELS, type BuildPhase } from '../../../lib/types';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
-import { CheckIcon, ChevronIcon } from '../../../components/icons';
+import { CheckIcon, ChevronIcon, WarningIcon } from '../../../components/icons';
 
 interface ScheduleGridProps {
   lineItems: PlanLineItem[];
@@ -24,7 +24,15 @@ function formatDayLabel(date: string, index: number): string {
   return `Day ${index + 1} | ${formatted}`;
 }
 
-function formatUtilBadge(required: number, available: number): string {
+function formatUtilBadge(
+  required: number,
+  available: number,
+  overWorker?: { assignedCrewTotal: number; accessHours: number },
+): string {
+  if (overWorker) {
+    const maxAchievable = overWorker.assignedCrewTotal * overWorker.accessHours;
+    return `${required.toFixed(0)}h / ${maxAchievable.toFixed(0)}h max`;
+  }
   if (available <= 0) return `${required.toFixed(0)}h`;
   const pct = Math.round((required / available) * 100);
   return `${required.toFixed(0)}h ${pct}%`;
@@ -143,19 +151,26 @@ export function ScheduleGrid({
             const cap = dayByDate.get(day.date);
             const isOver = cap?.isOverAllocated ?? false;
             const isOverCrew = cap?.isOverAssignedCrew ?? false;
+            const isOverWorker = (cap?.isOverWorkerCapacity ?? false) && isAssigned;
             return (
               <button
                 key={`${item.id}:${day.date}`}
                 type="button"
                 role="gridcell"
                 aria-colindex={colIdx + 2}
-                className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}`}
+                className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
                 onClick={(e) => onToggleAssignment(item, day.date, e.currentTarget)}
                 disabled={readOnly || !day.isWorkDay}
-                title={isAssigned ? 'Click to unassign' : 'Click to assign'}
+                title={isOverWorker ? 'Exceeds worker capacity (add crew or days)' : isAssigned ? 'Click to unassign' : 'Click to assign'}
                 aria-label={`Toggle ${item.title} on ${day.date}`}
               >
-                {isAssigned ? <CheckIcon className="schedule-grid__cell-icon" /> : null}
+                {isAssigned ? (
+                  isOverWorker ? (
+                    <WarningIcon className="schedule-grid__cell-icon" aria-label="Exceeds worker capacity" />
+                  ) : (
+                    <CheckIcon className="schedule-grid__cell-icon" />
+                  )
+                ) : null}
               </button>
             );
           })}
@@ -209,13 +224,19 @@ export function ScheduleGrid({
                 <span
                   key={day.date}
                   role="columnheader"
-                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}`}
+                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}`}
                 >
                   <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
                   {cap && day.isWorkDay && (
                     <>
-                      <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}`}>
-                        {formatUtilBadge(cap.requiredPersonHours, cap.availablePersonHours)}
+                      <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}`}>
+                        {formatUtilBadge(
+                          cap.requiredPersonHours,
+                          cap.availablePersonHours,
+                          cap.isOverWorkerCapacity
+                            ? { assignedCrewTotal: cap.assignedCrewTotal, accessHours: cap.accessHours }
+                            : undefined,
+                        )}
                       </span>
                       {cap.assignedCrewTotal > 0 && (
                         <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>

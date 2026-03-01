@@ -213,36 +213,19 @@ function buildScheduleSection(plan: Plan): ScheduleSection {
     if (!item.scheduledStart || !item.scheduledEnd) continue;
     const dates = listDateRange(item.scheduledStart, item.scheduledEnd);
     const totalPH = item.timeHours * item.crew;
-    const hasCrewByDate = item.crewByDate && Object.keys(item.crewByDate).length > 0;
+    // Always even-split: person-hours distributed equally across days.
+    // crewByDate reflects assigned workers per day (for capacity), not workload proportion.
+    const perDay = dates.length > 0 ? totalPH / dates.length : 0;
 
-    if (hasCrewByDate) {
-      const effectiveCrews = dates.map((d) => getEffectiveCrewForDate(item, d));
-      const sumCrew = effectiveCrews.reduce((s, c) => s + c, 0);
-      const safeSumCrew = sumCrew > 0 ? sumCrew : item.crew * dates.length;
-
-      for (let i = 0; i < dates.length; i++) {
-        const date = dates[i];
-        const crew = effectiveCrews[i];
-        const ph = totalPH * (crew / safeSumCrew);
-        if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
-        dayMap.get(date)!.lineItems.push({
-          lineItemId: item.id,
-          title: item.title,
-          assignedCrew: crew,
-          plannedPersonHours: Number(ph.toFixed(2)),
-        });
-      }
-    } else {
-      const perDay = dates.length > 0 ? totalPH / dates.length : 0;
-      for (const date of dates) {
-        if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
-        dayMap.get(date)!.lineItems.push({
-          lineItemId: item.id,
-          title: item.title,
-          assignedCrew: item.crew,
-          plannedPersonHours: Number(perDay.toFixed(2)),
-        });
-      }
+    for (const date of dates) {
+      const crew = getEffectiveCrewForDate(item, date);
+      if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
+      dayMap.get(date)!.lineItems.push({
+        lineItemId: item.id,
+        title: item.title,
+        assignedCrew: crew,
+        plannedPersonHours: Number(perDay.toFixed(2)),
+      });
     }
   }
 

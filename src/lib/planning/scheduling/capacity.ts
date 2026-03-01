@@ -1,6 +1,7 @@
 import type { Plan } from '../plan-model';
 import { getEffectiveCrewForDate } from '../plan-model';
 import {
+  dayAccessHours,
   dayAvailablePersonHours,
   dayCrewSize,
   hasSchedulingCalendar,
@@ -12,6 +13,8 @@ export interface DailyCapacity {
   isWorkDay: boolean;
   requiredPersonHours: number;
   availablePersonHours: number;
+  /** Access hours per worker for this day (e.g. 8 for 08:00–16:00). */
+  accessHours: number;
   /** Available crew from work calendar for this day. */
   availableCrew: number;
   /** Sum of assigned crew across all line items on this day. */
@@ -21,6 +24,8 @@ export interface DailyCapacity {
   isOverAllocated: boolean;
   /** True when assignedCrewTotal > availableCrew. */
   isOverAssignedCrew: boolean;
+  /** True when any line item on this day has personHours > effectiveCrew × accessHours. */
+  isOverWorkerCapacity: boolean;
 }
 
 export interface CapacitySummary {
@@ -31,6 +36,8 @@ export interface CapacitySummary {
   overAllocatedDayCount: number;
   /** Number of days where assigned crew exceeds available crew. */
   overAssignedCrewDayCount: number;
+  /** Number of days where any line item exceeds worker capacity (personHours > crew × accessHours). */
+  overWorkerCapacityDayCount: number;
   unscheduledLineItemCount: number;
   scheduledLineItemCount: number;
 }
@@ -54,17 +61,20 @@ function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
   for (const day of days) {
     const available = dayAvailablePersonHours(day, plan.defaultCrewSize);
     const crew = dayCrewSize(day, plan.defaultCrewSize);
+    const access = dayAccessHours(day);
     dayMap.set(day.date, {
       date: day.date,
       isWorkDay: day.isWorkDay,
       requiredPersonHours: 0,
       availablePersonHours: round2(available),
+      accessHours: access,
       availableCrew: crew,
       assignedCrewTotal: 0,
       utilization: available > 0 ? 0 : null,
       lineItemCount: 0,
       isOverAllocated: false,
       isOverAssignedCrew: false,
+      isOverWorkerCapacity: false,
     });
   }
   return dayMap;
@@ -92,34 +102,22 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
     }
     scheduledLineItemCount += 1;
 
+    // Always even-split: person-hours distributed equally across assigned days.
+    // crewByDate is for capacity validation only (not proportional distribution).
     const totalPersonHours = item.timeHours * item.crew;
-    const hasCrewByDate = item.crewByDate && Object.keys(item.crewByDate).length > 0;
+    const perDay = totalPersonHours / dates.length;
 
-    if (hasCrewByDate) {
-      // Variable crew: distribute person-hours proportionally to per-day crew
-      const effectiveCrews = dates.map((d) => getEffectiveCrewForDate(item, d));
-      const sumCrew = effectiveCrews.reduce((s, c) => s + c, 0);
-      const safeSumCrew = sumCrew > 0 ? sumCrew : item.crew * dates.length;
-
-      for (let i = 0; i < dates.length; i++) {
-        const date = dates[i];
-        const day = dayMap.get(date);
-        if (!day) continue;
-        const effectiveCrew = effectiveCrews[i];
-        const personHoursForDay = totalPersonHours * (effectiveCrew / safeSumCrew);
-        day.requiredPersonHours += personHoursForDay;
-        day.assignedCrewTotal += effectiveCrew;
-        day.lineItemCount += 1;
-      }
-    } else {
-      // Even split: distribute person-hours equally across days
-      const perDay = totalPersonHours / dates.length;
-      for (const date of dates) {
-        const day = dayMap.get(date);
-        if (!day) continue;
-        day.requiredPersonHours += perDay;
-        day.assignedCrewTotal += item.crew;
-        day.lineItemCount += 1;
+    for (const date of dates) {
+      const day = dayMap.get(date);
+      if (!day) continue;
+      const effectiveCrew = getEffectiveCrewForDate(item, date);
+      day.requiredPersonHours += perDay;
+      day.assignedCrewTotal += effectiveCrew;
+      day.lineItemCount += 1;
+      // Worker capacity: can this crew physically work perDay hours?
+      const maxAllowed = effectiveCrew * (day.accessHours || 8);
+      if (perDay > maxAllowed + 0.01) {
+        day.isOverWorkerCapacity = true;
       }
     }
   }
@@ -146,6 +144,7 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
   const headroomPersonHours = round2(totalAvailablePersonHours - totalRequiredPersonHours);
   const overAllocatedDayCount = days.filter((day) => day.isOverAllocated).length;
   const overAssignedCrewDayCount = days.filter((day) => day.isOverAssignedCrew).length;
+  const overWorkerCapacityDayCount = days.filter((day) => day.isOverWorkerCapacity).length;
 
   return {
     days,
@@ -154,6 +153,7 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
     headroomPersonHours,
     overAllocatedDayCount,
     overAssignedCrewDayCount,
+    overWorkerCapacityDayCount,
     unscheduledLineItemCount,
     scheduledLineItemCount,
   };

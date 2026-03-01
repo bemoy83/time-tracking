@@ -40,6 +40,15 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           </span>
         </>
       )}
+      {capacity.overWorkerCapacityDayCount > 0 && (
+        <>
+          <span className="feasibility-bar__separator">&middot;</span>
+          <span className="feasibility-bar__warning feasibility-bar__warning--worker">
+            <WarningIcon className="feasibility-bar__warning-icon" />
+            {capacity.overWorkerCapacityDayCount} {capacity.overWorkerCapacityDayCount === 1 ? 'day exceeds' : 'days exceed'} worker capacity
+          </span>
+        </>
+      )}
     </div>
   );
 }

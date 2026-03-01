@@ -248,6 +248,10 @@
   color: rgb(217, 119, 6);
 }
 
+.feasibility-bar__warning--worker {
+  color: rgb(185, 28, 28);
+}
+
 .feasibility-bar__warning-icon {
   width: 14px;
   height: 14px;
@@ -365,6 +369,11 @@
   font-weight: 600;
 }
 
+.schedule-grid__day-util--over-worker {
+  color: var(--color-recording);
+  font-weight: 600;
+}
+
 .schedule-grid__line-item-title {
   display: block;
   font-weight: 600;
@@ -413,6 +422,15 @@
 .schedule-grid__cell--over-crew {
   background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.4);
+}
+
+.schedule-grid__cell--over-worker {
+  background: rgba(185, 28, 28, 0.08);
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.schedule-grid__day-col--over-worker {
+  background: rgba(185, 28, 28, 0.05);
 }
 
 .schedule-grid__cell-icon {
