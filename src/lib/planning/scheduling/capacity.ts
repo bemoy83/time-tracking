@@ -26,6 +26,12 @@ export interface DailyCapacity {
   isOverAssignedCrew: boolean;
   /** True when any line item on this day has personHours > effectiveCrew × accessHours. */
   isOverWorkerCapacity: boolean;
+  /** Assigned crew × access hours — the person-hours the assigned crew can provide. */
+  assignedCapacityPersonHours: number;
+  /** True if at least one line item has this date as its last assigned day. */
+  isCompletionDay: boolean;
+  /** When over-worker: work still needed at start of this day to meet estimate (required + deficit). */
+  needToMeetTargetPersonHours: number;
 }
 
 export interface CapacitySummary {
@@ -75,6 +81,9 @@ function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
       isOverAllocated: false,
       isOverAssignedCrew: false,
       isOverWorkerCapacity: false,
+      assignedCapacityPersonHours: 0,
+      isCompletionDay: false,
+      needToMeetTargetPersonHours: 0,
     });
   }
   return dayMap;
@@ -102,24 +111,39 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
     }
     scheduledLineItemCount += 1;
 
-    // Always even-split: person-hours distributed equally across assigned days.
-    // crewByDate is for capacity validation only (not proportional distribution).
+    // Sequential fill: crew works each day in calendar order, contributing
+    // their full capacity until the item's work is complete. All person-hours
+    // count toward the goal — no artificial spreading.
     const totalPersonHours = item.timeHours * item.crew;
-    const perDay = totalPersonHours / dates.length;
+    let remaining = totalPersonHours;
+    const lastDate = dates[dates.length - 1];
 
     for (const date of dates) {
       const day = dayMap.get(date);
       if (!day) continue;
       const effectiveCrew = getEffectiveCrewForDate(item, date);
-      day.requiredPersonHours += perDay;
+      const capacity = effectiveCrew * (day.accessHours || 8);
+
+      if (remaining <= 0) {
+        // Work already complete — crew is assigned but has no work from this item
+        day.lineItemCount += 1;
+        continue;
+      }
+
+      const work = Math.min(remaining, capacity);
+      day.requiredPersonHours += work;
       day.assignedCrewTotal += effectiveCrew;
       day.lineItemCount += 1;
-      // Worker capacity: can this crew physically work perDay hours?
-      const maxAllowed = effectiveCrew * (day.accessHours || 8);
-      if (perDay > maxAllowed + 0.01) {
+      remaining -= work;
+
+      if (date === lastDate && remaining > 0.01) {
         day.isOverWorkerCapacity = true;
+        day.needToMeetTargetPersonHours += work + remaining;
       }
     }
+
+    const lastDay = dayMap.get(lastDate);
+    if (lastDay) lastDay.isCompletionDay = true;
   }
 
   const days = [...dayMap.values()]
@@ -129,6 +153,8 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
       const available = round2(day.availablePersonHours);
       const utilization = available > 0 ? round2(required / available) : null;
       const isOverAssignedCrew = day.isWorkDay && day.assignedCrewTotal > day.availableCrew;
+      const assignedCapacityPersonHours = round2(day.assignedCrewTotal * (day.accessHours || 8));
+      const needToMeetTargetPersonHours = round2(day.needToMeetTargetPersonHours || 0);
       return {
         ...day,
         requiredPersonHours: required,
@@ -136,6 +162,8 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
         utilization,
         isOverAllocated: available > 0 ? required > available : required > 0,
         isOverAssignedCrew,
+        assignedCapacityPersonHours,
+        needToMeetTargetPersonHours,
       };
     });
 

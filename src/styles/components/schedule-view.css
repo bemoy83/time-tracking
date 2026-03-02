@@ -134,6 +134,7 @@
   color: var(--color-text-muted);
 }
 
+
 .conflict-banner__note {
   margin: var(--space-xs) 0 0;
   color: var(--color-text-muted);
@@ -257,6 +258,7 @@
   height: 14px;
 }
 
+
 /* --- Amendment Popover --- */
 
 .amendment-popover {
@@ -374,6 +376,7 @@
   font-weight: 600;
 }
 
+
 .schedule-grid__line-item-title {
   display: block;
   font-weight: 600;
@@ -386,15 +389,112 @@
   color: var(--color-text-muted);
 }
 
+.schedule-grid__hours-compare {
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-grid__hours-compare--under {
+  color: var(--color-recording, #dc2626);
+  font-weight: 500;
+}
+
+.schedule-grid__estimate-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-grid__estimate-badge--under {
+  background: rgba(220, 38, 38, 0.15);
+  color: var(--color-recording, #dc2626);
+}
+
+.schedule-grid__estimate-badge--over {
+  background: rgba(245, 158, 11, 0.2);
+  color: #b45309;
+}
+
+.schedule-grid__estimate-badge--at {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
 .schedule-grid__cell {
   border: 1px solid transparent;
-  min-height: 40px;
+  min-height: 48px;
   color: var(--color-primary);
   font-weight: 700;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+}
+
+.schedule-grid__cell-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.schedule-grid__cell-badge--need {
+  color: rgb(185, 28, 28);
+  font-weight: 700;
+}
+
+.schedule-grid__cell-badge--over {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.schedule-grid__cell-crew {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.schedule-grid__cell-crew-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.schedule-grid__cell-crew-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.schedule-grid__cell-crew-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.schedule-grid__cell-crew-value {
+  font-size: var(--font-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  min-width: 1.25em;
+  text-align: center;
 }
 
 .schedule-grid__cell:focus-visible {
@@ -403,8 +503,8 @@
 }
 
 .schedule-grid__cell--assigned {
-  background: rgba(37, 99, 235, 0.14);
-  border-color: rgba(37, 99, 235, 0.4);
+  background: var(--color-bg);
+  border-color: transparent;
 }
 
 .schedule-grid__cell--off {
@@ -434,63 +534,18 @@
 }
 
 .schedule-grid__cell-icon {
-  width: 16px;
-  height: 16px;
-}
-
-/* --- Crew per day editing --- */
-
-.schedule-grid__crew-toggle {
-  display: inline;
-  background: none;
-  border: none;
+  width: 20px;
+  height: 20px;
   color: var(--color-primary);
-  font-size: 0.65rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  margin-left: var(--space-xs);
-  text-decoration: underline;
+  flex-shrink: 0;
 }
 
-.schedule-grid__crew-toggle:hover {
-  color: var(--color-text);
+.schedule-grid__cell-icon--warning {
+  color: rgb(185, 28, 28);
 }
 
-.schedule-grid__crew-row {
-  display: grid;
-  gap: 2px;
-  min-width: 640px;
-}
+/* --- Inline crew controls (per cell) --- */
 
-.schedule-grid__crew-label {
-  padding: 4px 8px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-}
-
-.schedule-grid__crew-cell--empty {
-  min-height: 28px;
-}
-
-.schedule-grid__crew-input {
-  width: 100%;
-  min-height: 28px;
-  text-align: center;
-  font-size: 0.7rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  padding: 2px 4px;
-}
-
-.schedule-grid__crew-input:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -1px;
-}
 
 /* --- Phase grouping --- */
 
@@ -655,7 +710,7 @@
   }
 
   .schedule-grid__cell--assigned {
-    background: rgba(37, 99, 235, 0.14) !important;
+    /* No background in print — icon carries assigned state */
   }
 
   .schedule-grid__cell--over {

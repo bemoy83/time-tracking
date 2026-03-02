@@ -1,9 +1,111 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import { getEffectiveCrewForDate, type PlanLineItem, type WorkCalendarDay } from '../../../lib/planning/plan-model';
 import { BUILD_PHASE_LABELS, BUILD_PHASES, WORK_UNIT_LABELS, type BuildPhase } from '../../../lib/types';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
-import { CheckIcon, ChevronIcon, WarningIcon } from '../../../components/icons';
+
+/**
+ * Compute work hours this line item contributes to a specific day (sequential fill).
+ * Returns 0 when not assigned or day has no capacity.
+ */
+function getWorkHoursForDay(
+  item: PlanLineItem,
+  date: string,
+  dayByDate: Map<string, { accessHours: number }>,
+): number {
+  const assignedDates = getAssignedDates(item);
+  if (!assignedDates.includes(date)) return 0;
+  const totalPersonHours = item.timeHours * item.crew;
+  let remaining = totalPersonHours;
+  for (const d of assignedDates) {
+    const day = dayByDate.get(d);
+    const accessH = day?.accessHours ?? 0;
+    if (accessH <= 0) continue;
+    const crew = getEffectiveCrewForDate(item, d);
+    const capacity = crew * accessH;
+    const work = Math.min(remaining, capacity);
+    if (d === date) return Math.round(work * 10) / 10;
+    remaining -= work;
+  }
+  return 0;
+}
+
+/**
+ * Compute scheduled person-hours for a line item: sum of crew × accessHours
+ * for each assigned work day. Counts all allocated capacity, not capped at estimate.
+ * Returns 0 when no assignments.
+ */
+function getScheduledHours(
+  item: PlanLineItem,
+  assignedDates: string[],
+  dayByDate: Map<string, { accessHours: number }>,
+): number {
+  if (assignedDates.length === 0) return 0;
+  let total = 0;
+  for (const date of assignedDates) {
+    const day = dayByDate.get(date);
+    const accessH = day?.accessHours ?? 0;
+    if (accessH <= 0) continue;
+    const crew = getEffectiveCrewForDate(item, date);
+    total += crew * accessH;
+  }
+  return Math.round(total * 10) / 10;
+}
+import { PeopleIcon, ChevronIcon, WarningIcon } from '../../../components/icons';
+
+/**
+ * On the item's last assigned day with crew, returns { assignedPersonHours, remainingAtStart, deficit? } —
+ * assigned person-hours this day (crew × accessHours, not capped) and estimate remaining at start.
+ * remainingAtStart = amount still needed at start of this day (same for over or under).
+ * deficit = amount still needed after this day, when over-worker.
+ */
+function getLastDayBreakdown(
+  item: PlanLineItem,
+  date: string,
+  dayByDate: Map<string, { accessHours: number }>,
+): { assignedPersonHours: number; remainingAtStart: number; deficit?: number } | null {
+  const assignedDates = getAssignedDates(item);
+  if (assignedDates.length === 0) return null;
+  if (assignedDates[assignedDates.length - 1] !== date) return null;
+
+  const day = dayByDate.get(date);
+  const accessH = day?.accessHours ?? 0;
+  if (accessH <= 0) return null;
+  const crew = getEffectiveCrewForDate(item, date);
+  const assignedPersonHours = Math.round(crew * accessH * 10) / 10;
+  if (assignedPersonHours <= 0) return null;
+
+  const totalPersonHours = item.timeHours * item.crew;
+  let remaining = totalPersonHours;
+  let remainingAtStart = 0;
+
+  for (const d of assignedDates) {
+    const dDay = dayByDate.get(d);
+    const dAccessH = dDay?.accessHours ?? 0;
+    if (dAccessH <= 0) continue;
+    const dCrew = getEffectiveCrewForDate(item, d);
+    const capacity = dCrew * dAccessH;
+    if (d === date) remainingAtStart = remaining;
+    remaining -= Math.min(remaining, capacity);
+  }
+
+  const result: { assignedPersonHours: number; remainingAtStart: number; deficit?: number } = {
+    assignedPersonHours,
+    remainingAtStart: Math.round(remainingAtStart * 10) / 10,
+  };
+  if (remaining > 0.01) result.deficit = Math.round(remaining * 10) / 10;
+  return result;
+}
+
+/** For isOverWorker check: true when last day has deficit. */
+function isOverWorkerForDay(
+  item: PlanLineItem,
+  date: string,
+  dayByDate: Map<string, { accessHours: number }>,
+): boolean {
+  const b = getLastDayBreakdown(item, date, dayByDate);
+  return b != null && b.deficit != null;
+}
 
 interface ScheduleGridProps {
   lineItems: PlanLineItem[];
@@ -25,17 +127,36 @@ function formatDayLabel(date: string, index: number): string {
 }
 
 function formatUtilBadge(
-  required: number,
-  available: number,
-  overWorker?: { assignedCrewTotal: number; accessHours: number },
+  cap: {
+    requiredPersonHours: number;
+    availablePersonHours: number;
+    assignedCrewTotal: number;
+    accessHours: number;
+    isOverWorkerCapacity: boolean;
+    assignedCapacityPersonHours: number;
+    isCompletionDay: boolean;
+    needToMeetTargetPersonHours?: number;
+  },
 ): string {
-  if (overWorker) {
-    const maxAchievable = overWorker.assignedCrewTotal * overWorker.accessHours;
-    return `${required.toFixed(0)}h / ${maxAchievable.toFixed(0)}h max`;
+  const required = cap.requiredPersonHours;
+  const available = cap.availablePersonHours;
+  const assignedCapacity = cap.assignedCapacityPersonHours;
+
+  if (cap.isOverWorkerCapacity) {
+    const need = cap.needToMeetTargetPersonHours ?? required;
+    return `${need.toFixed(1)}h need · ${assignedCapacity.toFixed(0)}h capacity`;
+  }
+  if (cap.assignedCrewTotal > 0) {
+    const pct =
+      cap.isCompletionDay && required > 0
+        ? Math.round((assignedCapacity / required) * 100)
+        : null;
+    const pctStr = pct != null ? ` ${pct}%` : '';
+    const capacityStr = cap.isCompletionDay ? ` · ${assignedCapacity.toFixed(0)}h capacity` : '';
+    return `${required.toFixed(0)}h work${capacityStr}${pctStr}`;
   }
   if (available <= 0) return `${required.toFixed(0)}h`;
-  const pct = Math.round((required / available) * 100);
-  return `${required.toFixed(0)}h ${pct}%`;
+  return `${required.toFixed(0)}h`;
 }
 
 interface PhaseGroup {
@@ -67,7 +188,6 @@ export function ScheduleGrid({
   const unscheduled = lineItems.filter((item) => item.scheduledStart == null || item.scheduledEnd == null);
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
-  const [expandedCrewItemId, setExpandedCrewItemId] = useState<string | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(220px, 1.3fr) repeat(${calendar.length}, minmax(72px, 1fr))`;
@@ -123,26 +243,41 @@ export function ScheduleGrid({
   };
 
   const renderRow = (item: PlanLineItem, rowIndex: number) => {
-    const assigned = new Set(getAssignedDates(item));
-    const isCrewExpanded = expandedCrewItemId === item.id;
+    const assignedDates = getAssignedDates(item);
+    const assigned = new Set(assignedDates);
     const hasAssignments = assigned.size > 0;
+    const estimateHours = item.timeHours * item.crew;
+    const scheduledHours = hasAssignments ? getScheduledHours(item, assignedDates, dayByDate) : 0;
     return (
       <div key={item.id}>
         <div className="schedule-grid__row" role="row" aria-rowindex={rowIndex + 2} style={{ gridTemplateColumns: gridColumns }}>
           <div className="schedule-grid__line-item" role="rowheader">
             <span className="schedule-grid__line-item-title">{item.title}</span>
             <span className="schedule-grid__line-item-meta">
-              {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {(item.timeHours * item.crew).toFixed(1)}h
-              {hasAssignments && !readOnly && onCrewForDateChange && (
-                <button
-                  type="button"
-                  className="schedule-grid__crew-toggle"
-                  onClick={() => setExpandedCrewItemId(isCrewExpanded ? null : item.id)}
-                  aria-expanded={isCrewExpanded}
-                  title="Edit crew per day"
-                >
-                  {isCrewExpanded ? 'Hide crew' : 'Crew/day'}
-                </button>
+              {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} ·{' '}
+              {hasAssignments ? (
+                <>
+                  <span
+                    className={`schedule-grid__hours-compare${scheduledHours < estimateHours - 0.01 ? ' schedule-grid__hours-compare--under' : ''}`}
+                    title={`Scheduled: ${scheduledHours.toFixed(1)}h of estimate ${estimateHours.toFixed(1)}h`}
+                  >
+                    {scheduledHours.toFixed(1)}h / {estimateHours.toFixed(1)}h
+                  </span>
+                  <span
+                    className={`schedule-grid__estimate-badge${
+                      scheduledHours < estimateHours - 0.01
+                        ? ' schedule-grid__estimate-badge--under'
+                        : scheduledHours > estimateHours + 0.01
+                          ? ' schedule-grid__estimate-badge--over'
+                          : ' schedule-grid__estimate-badge--at'
+                    }`}
+                    title={scheduledHours < estimateHours - 0.01 ? 'Under estimate' : scheduledHours > estimateHours + 0.01 ? 'Over estimate (excess capacity)' : 'Matches estimate'}
+                  >
+                    {Math.round((scheduledHours / estimateHours) * 100)}%
+                  </span>
+                </>
+              ) : (
+                <span>{estimateHours.toFixed(1)}h</span>
               )}
             </span>
           </div>
@@ -151,7 +286,9 @@ export function ScheduleGrid({
             const cap = dayByDate.get(day.date);
             const isOver = cap?.isOverAllocated ?? false;
             const isOverCrew = cap?.isOverAssignedCrew ?? false;
-            const isOverWorker = (cap?.isOverWorkerCapacity ?? false) && isAssigned;
+            const isOverWorker = isAssigned && isOverWorkerForDay(item, day.date, dayByDate);
+            const crewValue = isAssigned ? (item.crewByDate?.[day.date] ?? item.crew) : 0;
+
             return (
               <button
                 key={`${item.id}:${day.date}`}
@@ -159,48 +296,84 @@ export function ScheduleGrid({
                 role="gridcell"
                 aria-colindex={colIdx + 2}
                 className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
-                onClick={(e) => onToggleAssignment(item, day.date, e.currentTarget)}
+                onClick={(e) => {
+                  // Don't toggle when clicking − or + buttons (they adjust crew)
+                  if ((e.target as HTMLElement).closest('.schedule-grid__cell-crew-btn')) return;
+                  onToggleAssignment(item, day.date, e.currentTarget);
+                }}
                 disabled={readOnly || !day.isWorkDay}
                 title={isOverWorker ? 'Exceeds worker capacity (add crew or days)' : isAssigned ? 'Click to unassign' : 'Click to assign'}
                 aria-label={`Toggle ${item.title} on ${day.date}`}
               >
                 {isAssigned ? (
-                  isOverWorker ? (
-                    <WarningIcon className="schedule-grid__cell-icon" aria-label="Exceeds worker capacity" />
-                  ) : (
-                    <CheckIcon className="schedule-grid__cell-icon" />
-                  )
+                  <>
+                    {(() => {
+                      const hours = getWorkHoursForDay(item, day.date, dayByDate);
+                      if (hours <= 0) return null;
+                      const lastDayBreakdown = getLastDayBreakdown(item, day.date, dayByDate);
+                      if (lastDayBreakdown == null) {
+                        return <span className="schedule-grid__cell-badge">{hours.toFixed(1)}h</span>;
+                      }
+                      const { assignedPersonHours, remainingAtStart, deficit } = lastDayBreakdown;
+                      const isDeficit = deficit != null;
+                      const isOver = !isDeficit && assignedPersonHours > remainingAtStart + 0.01;
+                      return (
+                        <span className={`schedule-grid__cell-badge${isDeficit ? ' schedule-grid__cell-badge--need' : isOver ? ' schedule-grid__cell-badge--over' : ''}`}>
+                          {assignedPersonHours.toFixed(1)}h / {remainingAtStart.toFixed(1)}h
+                        </span>
+                      );
+                    })()}
+                    <div className="schedule-grid__cell-crew">
+                      {!readOnly && onCrewForDateChange ? (
+                        <>
+                          <button
+                            type="button"
+                            className="schedule-grid__cell-crew-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (crewValue > 0) onCrewForDateChange(item.id, day.date, crewValue - 1);
+                            }}
+                            disabled={crewValue <= 0}
+                            aria-label={`Decrease crew for ${item.title} on ${day.date}`}
+                          >
+                            −
+                          </button>
+                          {isOverWorker ? (
+                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
+                          ) : (
+                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
+                          )}
+                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
+                          <button
+                            type="button"
+                            className="schedule-grid__cell-crew-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (crewValue < 99) onCrewForDateChange(item.id, day.date, crewValue + 1);
+                            }}
+                            disabled={crewValue >= 99}
+                            aria-label={`Increase crew for ${item.title} on ${day.date}`}
+                          >
+                            +
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {isOverWorker ? (
+                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
+                          ) : (
+                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
+                          )}
+                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
+                        </>
+                      )}
+                    </div>
+                  </>
                 ) : null}
               </button>
             );
           })}
         </div>
-        {isCrewExpanded && onCrewForDateChange && (
-          <div className="schedule-grid__crew-row" style={{ gridTemplateColumns: gridColumns }}>
-            <span className="schedule-grid__crew-label">Crew/day</span>
-            {calendar.map((day) => {
-              const isAssigned = assigned.has(day.date);
-              if (!isAssigned || !day.isWorkDay) {
-                return <span key={`crew-${item.id}:${day.date}`} className="schedule-grid__crew-cell schedule-grid__crew-cell--empty" />;
-              }
-              const crewValue = item.crewByDate?.[day.date] ?? item.crew;
-              return (
-                <input
-                  key={`crew-${item.id}:${day.date}`}
-                  type="number"
-                  className="schedule-grid__crew-input"
-                  value={crewValue}
-                  min={0}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    if (Number.isFinite(v)) onCrewForDateChange(item.id, day.date, v);
-                  }}
-                  aria-label={`Crew for ${item.title} on ${day.date}`}
-                />
-              );
-            })}
-          </div>
-        )}
       </div>
     );
   };
@@ -230,13 +403,7 @@ export function ScheduleGrid({
                   {cap && day.isWorkDay && (
                     <>
                       <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}`}>
-                        {formatUtilBadge(
-                          cap.requiredPersonHours,
-                          cap.availablePersonHours,
-                          cap.isOverWorkerCapacity
-                            ? { assignedCrewTotal: cap.assignedCrewTotal, accessHours: cap.accessHours }
-                            : undefined,
-                        )}
+                        {formatUtilBadge(cap)}
                       </span>
                       {cap.assignedCrewTotal > 0 && (
                         <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>
