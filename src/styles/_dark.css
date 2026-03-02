@@ -375,4 +375,14 @@
   .schedule-grid__cell--off {
     background: rgba(255, 255, 255, 0.04);
   }
+
+  /* --- Workspace tab scroll shadows --- */
+  .planning-workspace__tabs {
+    --_scroll-shadow-color: var(--color-bg);
+    background:
+      linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,
+      linear-gradient(to right, rgba(255,255,255,0.06), transparent) left / 24px 100% no-repeat scroll,
+      linear-gradient(to left, rgba(255,255,255,0.06), transparent) right / 24px 100% no-repeat scroll;
+  }
 }

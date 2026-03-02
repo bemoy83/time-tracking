@@ -112,6 +112,7 @@ export function PlanningWorkspaceShell({
               className="planning-workspace__sidebar-collapse"
               onClick={onToggleSidebar}
               aria-label={isSidebarIconsOnly ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={isSidebarIconsOnly ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <ChevronLeftIcon className={`planning-workspace__sidebar-collapse-icon${isSidebarIconsOnly ? ' planning-workspace__sidebar-collapse-icon--collapsed' : ''}`} />
             </button>

@@ -70,6 +70,16 @@
   padding: var(--space-sm) var(--space-xs);
 }
 
+.planning-workspace__sidebar--icons .planning-workspace__sidebar-collapse {
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+}
+
+.planning-workspace__sidebar--icons .planning-workspace__sidebar-collapse:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .planning-workspace__sidebar-collapse {
   display: flex;
   align-items: center;
@@ -346,7 +356,6 @@
   border-bottom: 1px solid var(--color-border);
   padding: 0 var(--space-md);
   flex-shrink: 0;
-  background: var(--color-bg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -354,6 +363,14 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* Scroll shadow indicators — fade at overflowing edges */
+  --_scroll-shadow-size: 24px;
+  --_scroll-shadow-color: var(--color-bg);
+  background:
+    linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / var(--_scroll-shadow-size) 100% no-repeat local,
+    linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / var(--_scroll-shadow-size) 100% no-repeat local,
+    linear-gradient(to right, rgba(0,0,0,0.08), transparent) left / var(--_scroll-shadow-size) 100% no-repeat scroll,
+    linear-gradient(to left, rgba(0,0,0,0.08), transparent) right / var(--_scroll-shadow-size) 100% no-repeat scroll;
 }
 
 .planning-workspace__tabs::-webkit-scrollbar {
@@ -363,7 +380,7 @@
 .planning-workspace__tab {
   padding: var(--space-sm) var(--space-md);
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   background: none;
   color: var(--color-text-muted);
   font-size: var(--font-small);
@@ -380,6 +397,7 @@
 .planning-workspace__tab--active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .planning-workspace__tab:focus-visible {
