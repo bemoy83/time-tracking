@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--font-small);
+  font-size: var(--font-body);
   gap: var(--space-sm);
 }
 
@@ -27,7 +27,7 @@
 }
 
 .progress-view__deadline--at-risk {
-  color: #8a4b00;
+  color: var(--color-amber);
 }
 
 .progress-view__deadline--behind {
@@ -62,7 +62,7 @@
 }
 
 .progress-view__item-meta {
-  margin: 2px 0 0;
+  margin: var(--space-xs) 0 0;
   color: var(--color-text-muted);
   font-size: var(--font-small);
 }
@@ -138,7 +138,7 @@
 }
 
 .progress-view__variance--near {
-  color: #8a4b00;
+  color: var(--color-amber);
 }
 
 .progress-view__variance--over {

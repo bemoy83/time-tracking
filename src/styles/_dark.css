@@ -376,6 +376,16 @@
     background: rgba(255, 255, 255, 0.04);
   }
 
+  /* --- Phase pill + filter active states --- */
+  .planning-view__phase-pill--active {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .insights-view__scope-btn--active,
+  .insights-view__filter-btn--active {
+    border-color: var(--color-text);
+  }
+
   /* --- Workspace tab scroll shadows --- */
   .planning-workspace__tabs {
     --_scroll-shadow-color: var(--color-bg);

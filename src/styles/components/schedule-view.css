@@ -294,7 +294,7 @@
 .schedule-grid {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   overflow-x: auto;
 }
 
@@ -302,7 +302,7 @@
 .schedule-grid__row,
 .schedule-grid__footer {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 640px;
 }
 
@@ -313,8 +313,13 @@
 .schedule-grid__summary-col {
   background: var(--color-bg);
   border-radius: var(--radius-md);
-  padding: 8px;
+  padding: var(--space-sm) 8px;
   font-size: var(--font-label);
+}
+
+.schedule-grid__header .schedule-grid__line-item-col,
+.schedule-grid__header .schedule-grid__day-col {
+  background: var(--color-surface-subtle);
 }
 
 .schedule-grid__line-item-col {
@@ -330,7 +335,7 @@
 }
 
 .schedule-grid__day-col--off {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .schedule-grid__day-col--over {
@@ -554,7 +559,7 @@
 
 .schedule-grid__phase-header {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 640px;
   background: none;
   border: none;
@@ -567,7 +572,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 8px;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
   font-size: var(--font-caption);
   font-weight: 700;
   text-transform: uppercase;

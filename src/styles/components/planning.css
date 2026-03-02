@@ -174,7 +174,7 @@
   padding-bottom: var(--space-sm);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .planning-view__editor-header {
@@ -347,7 +347,7 @@
 
 .planning-view__summary {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -382,8 +382,8 @@
 }
 
 .planning-view__phase-pill--active {
-  background: #1f1f1f;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-bg);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
