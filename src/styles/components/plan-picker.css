@@ -32,7 +32,6 @@
 }
 
 .plan-picker__select-all:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -59,7 +58,6 @@
 }
 
 .plan-picker__plan-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 

@@ -15,6 +15,10 @@
     --color-recording-bg: #2d1f1f;
     --color-recording-border: #5c2929;
     --color-ready-bg: #1f2d1f;
+    --color-budget-under: #22c55e;
+    --color-budget-under-bg: rgba(34, 197, 94, 0.15);
+    --color-budget-approaching: #fbbf24;
+    --color-budget-approaching-bg: rgba(251, 191, 36, 0.15);
   }
 
   /* --- Task Row --- */

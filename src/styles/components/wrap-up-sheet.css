@@ -56,13 +56,13 @@
 }
 
 .wrap-up-sheet__row-meta {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-text-muted);
 }
 
 .wrap-up-sheet__outlier {
   display: inline-flex;
-  font-size: 0.625rem;
+  font-size: var(--font-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -114,7 +114,7 @@
 }
 
 .wrap-up-sheet__card-hint {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-recording);
   font-weight: 600;
 }

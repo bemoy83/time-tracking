@@ -54,7 +54,7 @@
 }
 
 .calculator__provenance-item {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-text-muted);
 }
 
@@ -101,7 +101,7 @@
 }
 
 .calculator__compare-card-label {
-  font-size: 0.7rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -114,7 +114,7 @@
 }
 
 .calculator__compare-card-rate {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-text-muted);
 }
 
@@ -132,7 +132,7 @@
 
 .calculator__save-warning {
   margin-top: var(--space-xs);
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: #b45309;
 }
 
@@ -208,16 +208,16 @@
 }
 
 .calculator__scenario-provenance {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-text-muted);
 }
 
 .calculator__scenario-warning {
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: #b45309;
 }
 
 .calculator__scenario-invalid {
-  font-size: 0.8rem;
+  font-size: var(--font-small);
   color: var(--color-text-muted);
 }

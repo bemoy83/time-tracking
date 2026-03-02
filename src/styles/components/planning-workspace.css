@@ -51,7 +51,6 @@
 }
 
 .planning-workspace__exit:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -136,7 +135,6 @@
 }
 
 .planning-workspace__sidebar-footer-item:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -187,11 +185,6 @@
   opacity: 0.88;
 }
 
-.planning-sidebar__create-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
 .planning-sidebar__action-icon {
   width: 16px;
   height: 16px;
@@ -207,7 +200,7 @@
 }
 
 .planning-sidebar__zone-heading {
-  font-size: 0.6875rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -267,7 +260,7 @@
 
 .planning-view__list--compact .planning-view__item-action {
   padding: 4px 8px;
-  font-size: 0.65rem;
+  font-size: var(--font-caption);
   margin-right: var(--space-xs);
 }
 
@@ -284,7 +277,7 @@
 /* --- Mobile zone heading (full-page list) --- */
 
 .planning-view__zone-heading {
-  font-size: 0.6875rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -390,7 +383,6 @@
 }
 
 .planning-workspace__tab:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 

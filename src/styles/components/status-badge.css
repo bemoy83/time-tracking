@@ -7,7 +7,7 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 9999px;
-  font-size: 0.65rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;

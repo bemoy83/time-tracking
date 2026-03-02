@@ -117,8 +117,9 @@
     color: var(--color-border);
   }
   
-  .task-work-quantity__number-input:focus {
+  .task-work-quantity__number-input:focus-visible {
     outline: none;
+    border-color: var(--color-primary);
   }
   
   .task-work-quantity__input-unit {

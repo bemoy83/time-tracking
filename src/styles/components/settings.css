@@ -78,11 +78,6 @@
   background: var(--color-border);
 }
 
-.settings-view__card--tappable:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
 .settings-view__card-chevron {
   width: 16px;
   height: 16px;
@@ -135,7 +130,6 @@ button.settings-view__row:active {
 }
 
 .settings-view__row:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -209,11 +203,6 @@ button.settings-view__row:active {
   transform: translateX(20px);
 }
 
-.settings-view__toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
 /* ============================================================
    Policy select — compact .input inside a row
    ============================================================ */
@@ -254,7 +243,7 @@ button.settings-view__row:active {
 }
 
 .settings-view__danger-link:focus-visible {
-  outline: 2px solid var(--color-recording);
+  outline: 3px solid var(--color-recording);
   outline-offset: -2px;
   border-radius: var(--radius-md);
 }
@@ -334,7 +323,7 @@ button.settings-view__row:active {
 
 .kpi-badge {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
@@ -411,7 +400,6 @@ button.settings-view__row:active {
 }
 
 .settings-view__link-row:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
   border-radius: var(--radius-md);
 }
@@ -464,7 +452,6 @@ button.settings-view__row:active {
 }
 
 .settings-detail__back:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 

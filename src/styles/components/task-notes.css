@@ -76,7 +76,7 @@
   transition: border-color 0.15s;
 }
 
-.task-notes__textarea:focus {
+.task-notes__textarea:focus-visible {
   outline: none;
   border-color: var(--color-primary);
 }

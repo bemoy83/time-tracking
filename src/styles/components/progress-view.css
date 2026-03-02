@@ -70,7 +70,7 @@
 .progress-view__status {
   border-radius: 999px;
   padding: 2px 8px;
-  font-size: 0.65rem;
+  font-size: var(--font-caption);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -121,7 +121,7 @@
 .progress-view__label {
   display: block;
   color: var(--color-text-muted);
-  font-size: 0.6875rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;

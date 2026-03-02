@@ -50,7 +50,7 @@ main.main--workspace {
 }
 
 main:target {
-  outline: 2px solid var(--color-primary);
+  outline: 3px solid var(--color-primary);
 }
 
 /* Adjust main content when network status bar is visible */

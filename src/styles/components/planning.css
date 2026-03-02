@@ -84,7 +84,6 @@
 }
 
 .planning-view__item-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -147,7 +146,7 @@
 }
 
 .planning-view__item-delete:focus-visible {
-  outline: 2px solid var(--color-recording);
+  outline: 3px solid var(--color-recording);
   outline-offset: -2px;
 }
 
@@ -204,7 +203,6 @@
 }
 
 .planning-view__back:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -225,7 +223,7 @@
   min-width: 0;
 }
 
-.planning-view__title-input:focus {
+.planning-view__title-input:focus-visible {
   border-bottom-color: var(--color-primary);
   outline: none;
 }
@@ -246,7 +244,7 @@
 }
 
 .planning-view__project-label {
-  font-size: 0.6875rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -298,7 +296,6 @@
 }
 
 .planning-view__project-button:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
@@ -490,7 +487,6 @@
 }
 
 .planning-view__line-item-duplicate:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
@@ -500,7 +496,7 @@
 }
 
 .planning-view__line-item-remove:focus-visible {
-  outline: 2px solid var(--color-recording);
+  outline: 3px solid var(--color-recording);
   outline-offset: -2px;
 }
 
@@ -532,7 +528,7 @@
   display: flex;
   align-items: center;
   height: 20px;
-  font-size: 0.6875rem;
+  font-size: var(--font-caption);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -579,7 +575,6 @@
 }
 
 .planning-view__recompute-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
@@ -634,7 +629,7 @@
 }
 
 .planning-view__risk-reason {
-  font-size: 0.65rem;
+  font-size: var(--font-caption);
   font-weight: 500;
   color: var(--color-recording);
   background: var(--color-recording-bg);

@@ -107,7 +107,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px var(--space-sm);
-  font-size: 0.75rem;
+  font-size: var(--font-label);
   color: var(--color-text-muted);
 }
 

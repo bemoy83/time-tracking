@@ -40,16 +40,16 @@
   font-size: var(--font-small);
   font-weight: 600;
   padding: 2px var(--space-sm);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   width: fit-content;
 }
 
 .task-productivity__comparison--met {
-  color: var(--color-budget-under, #16a34a);
-  background: var(--color-budget-under-bg, rgba(22, 163, 74, 0.1));
+  color: var(--color-budget-under);
+  background: var(--color-budget-under-bg);
 }
 
 .task-productivity__comparison--under {
-  color: var(--color-budget-approaching, #d97706);
-  background: var(--color-budget-approaching-bg, rgba(217, 119, 6, 0.1));
+  color: var(--color-budget-approaching);
+  background: var(--color-budget-approaching-bg);
 }

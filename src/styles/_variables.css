@@ -28,10 +28,12 @@
   --color-success-hover: #15803d;
   --color-danger-bg-hover: #fecaca;
 
-  /* Typography scale — 3 sizes */
+  /* Typography scale */
   --font-large: 1.5rem;    /* 24px - titles, key values */
   --font-body: 1rem;       /* 16px - buttons, labels, body */
   --font-small: 0.8125rem; /* 13px - timestamps, badges, metadata */
+  --font-label: 0.75rem;     /* 12px — field labels, secondary metadata */
+  --font-caption: 0.6875rem; /* 11px — smallest readable text for dense data */
 
   /* Sizing - 44px minimum for touch targets */
   --touch-min: 44px;
@@ -50,6 +52,13 @@
   --radius-md: 8px;
   --radius-lg: 14px;
   --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Budget status colors */
+  --color-budget-under: #16a34a;
+  --color-budget-under-bg: rgba(22, 163, 74, 0.1);
+  --color-budget-approaching: #d97706;
+  --color-budget-approaching-bg: rgba(217, 119, 6, 0.1);
 }
 
 /* High contrast mode support */
@@ -60,6 +69,8 @@
     --color-recording-border: #b91c1c;
     --color-ready: #15803d;
     --color-border: #000000;
+    --color-budget-under: #15803d;
+    --color-budget-approaching: #92400e;
   }
 }
 
