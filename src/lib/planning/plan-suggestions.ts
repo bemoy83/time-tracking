@@ -9,8 +9,14 @@
 
 import type { WorkTypeKpi } from '../kpi';
 import { findKpiByKey, type ConfidenceLevel } from '../kpi';
-import type { PlanLineItem } from './plan-model';
+import {
+  getPhaseSpan,
+  hasPhaseDates,
+  type Plan,
+  type PlanLineItem,
+} from './plan-model';
 import { lineItemWorkTypeKey } from '../work-package-core';
+import { dayAccessHours, generateDefaultWorkCalendar } from './scheduling/work-calendar';
 
 /** Risk flag thresholds. */
 const HIGH_CV_THRESHOLD = 0.4;
@@ -77,12 +83,67 @@ function classifyRisk(
   return { risk: 'low', reasons };
 }
 
+function resolveSuggestedRate(
+  item: PlanLineItem,
+  kpi: WorkTypeKpi | null,
+): { suggestedRate: number | null; confidence: ConfidenceLevel | null } {
+  if (!kpi || kpi.confidence === 'insufficient' || kpi.avgProductivity <= 0) {
+    return { suggestedRate: null, confidence: null };
+  }
+
+  const suggestedRate = kpi.avgProductivity;
+  const confidence = kpi.confidence;
+
+  if (suggestedRate > 0 && item.crew > 0) {
+    return { suggestedRate, confidence };
+  }
+
+  return { suggestedRate, confidence };
+}
+
+function resolvePhaseSuggestedCrew(
+  item: PlanLineItem,
+  plan: Plan | null | undefined,
+  suggestedRate: number | null,
+): number | null {
+  if (!plan || !hasPhaseDates(plan)) return null;
+  if (item.workQuantity <= 0) return null;
+
+  const phaseSpan = getPhaseSpan(plan, item.buildPhase);
+  if (!phaseSpan) return null;
+
+  const workDaysInPhase = (
+    plan.workCalendar.length > 0
+      ? plan.workCalendar
+      : generateDefaultWorkCalendar(phaseSpan.start, phaseSpan.end, plan.defaultCrewSize)
+  ).filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end && day.isWorkDay);
+
+  if (workDaysInPhase.length === 0) return null;
+
+  const firstDayAccessHours = dayAccessHours(workDaysInPhase[0]);
+  const accessHoursPerDay = firstDayAccessHours > 0 ? firstDayAccessHours : 8;
+  const totalAvailableHours = workDaysInPhase.length * accessHoursPerDay;
+  if (totalAvailableHours <= 0) return null;
+
+  const effectiveRate =
+    item.productivityRate > 0
+      ? item.productivityRate
+      : (suggestedRate != null && suggestedRate > 0 ? suggestedRate : null);
+  if (effectiveRate == null) return null;
+
+  const personHours = item.workQuantity / effectiveRate;
+  if (!Number.isFinite(personHours) || personHours <= 0) return null;
+
+  return Math.max(1, Math.ceil(personHours / totalAvailableHours));
+}
+
 /**
  * Generate KPI-backed suggestions for all line items in a plan.
  */
 export function generatePlanSuggestions(
   lineItems: PlanLineItem[],
   kpis: WorkTypeKpi[],
+  plan?: Plan | null,
 ): PlanSuggestions {
   const items: LineItemSuggestion[] = lineItems.map((item) => {
     const key = lineItemWorkTypeKey(item);
@@ -90,16 +151,10 @@ export function generatePlanSuggestions(
 
     const { risk, reasons } = classifyRisk(kpi);
 
-    let suggestedRate: number | null = null;
+    const { suggestedRate, confidence } = resolveSuggestedRate(item, kpi);
     let suggestedTimeHours: number | null = null;
-    let confidence: ConfidenceLevel | null = null;
-
-    if (kpi && kpi.confidence !== 'insufficient') {
-      suggestedRate = kpi.avgProductivity;
-      confidence = kpi.confidence;
-      if (suggestedRate > 0 && item.crew > 0) {
-        suggestedTimeHours = item.workQuantity / (suggestedRate * item.crew);
-      }
+    if (suggestedRate != null && item.crew > 0) {
+      suggestedTimeHours = item.workQuantity / (suggestedRate * item.crew);
     }
 
     return {
@@ -107,7 +162,7 @@ export function generatePlanSuggestions(
       kpi,
       suggestedRate,
       suggestedTimeHours,
-      suggestedCrew: null,
+      suggestedCrew: resolvePhaseSuggestedCrew(item, plan, suggestedRate),
       confidence,
       risk,
       riskReasons: reasons,

@@ -58,6 +58,27 @@ export function LineItemCard({
     }
   };
 
+  const effectiveRate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 0);
+  const canMagicApply =
+    !isLocked &&
+    item.workQuantity > 0 &&
+    effectiveRate > 0 &&
+    (suggestedCrew != null || suggestion?.suggestedRate != null || suggestion?.suggestedTimeHours != null);
+  const handleMagicApply = () => {
+    const crew = suggestedCrew ?? item.crew;
+    const rate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 1);
+    const timeHours = item.workQuantity / (rate * crew);
+    const updates: Partial<PlanLineItem> = {
+      crew,
+      timeHours: Math.round(timeHours * 100) / 100,
+    };
+    if (suggestion?.suggestedRate != null && item.productivityRate !== suggestion.suggestedRate) {
+      updates.productivityRate = suggestion.suggestedRate;
+      updates.rateSource = 'historical';
+    }
+    onUpdate(updates);
+  };
+
   const workTypeLabel = (() => {
     const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
     return wt
@@ -74,6 +95,18 @@ export function LineItemCard({
         </div>
         {!isLocked && (
           <div className="planning-view__line-item-actions">
+            {canMagicApply && (
+              <button
+                type="button"
+                className="planning-view__line-item-magic"
+                onClick={handleMagicApply}
+                aria-label="Apply suggested crew and time"
+                title="Apply suggested crew and time"
+              >
+                <SparklesIcon className="planning-view__line-item-action-icon" />
+                Apply suggestions
+              </button>
+            )}
             <button
               type="button"
               className="planning-view__line-item-duplicate"

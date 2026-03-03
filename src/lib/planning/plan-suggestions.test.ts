@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { WorkTypeKpi } from '../kpi';
-import type { PlanLineItem } from './plan-model';
+import type { Plan, PlanLineItem } from './plan-model';
 import { generatePlanSuggestions } from './plan-suggestions';
 
 function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
@@ -53,6 +53,31 @@ function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
     confidence: 'high',
     cv: 0.1,
     outlierCount: 0,
+    ...overrides,
+  };
+}
+
+function makePlan(overrides: Partial<Plan> = {}): Plan {
+  return {
+    id: 'plan-1',
+    title: 'Plan',
+    status: 'draft',
+    lineItems: [],
+    projectId: null,
+    eventStartDate: null,
+    eventEndDate: null,
+    buildUpStartDate: null,
+    buildUpEndDate: null,
+    tearDownStartDate: null,
+    tearDownEndDate: null,
+    defaultCrewSize: 2,
+    workCalendar: [],
+    createdAt: '2026-03-01T00:00:00.000Z',
+    updatedAt: '2026-03-01T00:00:00.000Z',
+    activatedAt: null,
+    reviewedAt: null,
+    importedAt: null,
+    sessionClosedAt: null,
     ...overrides,
   };
 }
@@ -126,5 +151,98 @@ describe('generatePlanSuggestions', () => {
     expect(result.items).toHaveLength(0);
     expect(result.highRiskCount).toBe(0);
     expect(result.noDataCount).toBe(0);
+  });
+
+  it('computes suggested crew from phase window with default calendar', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-06',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const item = makeLineItem({
+      workQuantity: 500,
+      productivityRate: 10,
+      buildPhase: 'build-up',
+    });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].suggestedCrew).toBe(2);
+  });
+
+  it('uses KPI rate for suggested crew when line-item rate is invalid', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-06',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const item = makeLineItem({
+      workQuantity: 100,
+      productivityRate: 0,
+      buildPhase: 'build-up',
+    });
+    const kpi = makeKpi({ avgProductivity: 5, confidence: 'high' });
+
+    const result = generatePlanSuggestions([item], [kpi], plan);
+    expect(result.items[0].suggestedCrew).toBe(1);
+  });
+
+  it('returns null suggested crew when phase dates are missing', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: null,
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const item = makeLineItem({ workQuantity: 100, productivityRate: 10 });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].suggestedCrew).toBeNull();
+  });
+
+  it('returns null suggested crew when phase has no work days', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-07',
+      buildUpEndDate: '2026-03-08',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const item = makeLineItem({ workQuantity: 100, productivityRate: 10 });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].suggestedCrew).toBeNull();
+  });
+
+  it('returns null suggested crew when quantity or effective rate is invalid', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-06',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const zeroQuantity = makeLineItem({ id: 'li-zero-qty', workQuantity: 0, productivityRate: 10 });
+    const zeroRate = makeLineItem({ id: 'li-zero-rate', workQuantity: 100, productivityRate: 0 });
+
+    const result = generatePlanSuggestions([zeroQuantity, zeroRate], [], plan);
+    expect(result.items[0].suggestedCrew).toBeNull();
+    expect(result.items[1].suggestedCrew).toBeNull();
+  });
+
+  it('uses access hours from calendar day when custom calendar exists', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '06:00', accessEnd: '12:00', crewSize: null },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '06:00', accessEnd: '12:00', crewSize: null },
+      ],
+    });
+    const item = makeLineItem({ workQuantity: 120, productivityRate: 10, buildPhase: 'build-up' });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].suggestedCrew).toBe(1);
   });
 });

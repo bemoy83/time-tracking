@@ -95,7 +95,7 @@ export function PlanEditor({
     currentPlan.eventEndDate,
   );
 
-  const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
+  const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
   const totalPersonHours = planTotalPersonHours(currentPlan);
 
   const availableScope = (() => {
