@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronIcon } from '../../components/icons';
-import { type Plan, type PlanLineItem } from '../../lib/planning/plan-model';
+import { type Plan, type PlanLineItem, activatePlan, revertToDraft } from '../../lib/planning/plan-model';
+import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
@@ -43,8 +44,9 @@ export function ScheduleView({
   onBack,
   readOnly,
 }: ScheduleViewProps) {
-  const { currentPlan, mutatePlan } = usePlanEditorState({ plan, onSave });
+  const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const isEmpty = !currentPlan.eventStartDate || !currentPlan.eventEndDate;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
   const inputsRef = useRef<HTMLElement>(null);
@@ -156,6 +158,26 @@ export function ScheduleView({
     });
   };
 
+  const isLocked = currentPlan.status === 'active';
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await flushAndWait();
+      await exportPlanPackage(currentPlan);
+      trackTelemetryEvent('interop_plan_package_export');
+    } catch {
+      window.alert('Could not export plan. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleToggleLock = () => {
+    mutatePlan((prev) => (isLocked ? revertToDraft(prev) : activatePlan(prev)));
+    trackTelemetryEvent('planning_lock_toggle');
+  };
+
   return (
     <div className="planning-view schedule-view">
       <header className="planning-view__editor-header">
@@ -166,14 +188,45 @@ export function ScheduleView({
         <h2 className="planning-view__title" style={{ flex: 1 }}>
           Schedule
         </h2>
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm"
-          onClick={() => window.print()}
-          aria-label="Print schedule"
-        >
-          Print
-        </button>
+        <div className="schedule-view__header-actions">
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => window.print()}
+            aria-label="Print schedule"
+          >
+            Print
+          </button>
+          {!readOnly && (
+            <>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={handleExport}
+                disabled={isExporting}
+              >
+                {isExporting ? 'Handing off...' : 'Hand off'}
+              </button>
+              <button
+                type="button"
+                className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
+                onClick={handleToggleLock}
+              >
+                {isLocked ? 'Revert to Draft' : 'Activate'}
+              </button>
+            </>
+          )}
+          {readOnly && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? 'Handing off...' : 'Hand off'}
+            </button>
+          )}
+        </div>
       </header>
 
       <EventContextBar

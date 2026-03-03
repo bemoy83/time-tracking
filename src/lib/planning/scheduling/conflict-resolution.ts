@@ -23,10 +23,15 @@ export interface WorkerCapacitySuggestion {
   message: string;
 }
 
+export interface ExcessCapacitySuggestion {
+  dayCount: number;
+}
+
 export interface ConflictSuggestions {
   crewSuggestions: CrewSuggestion[];
   overtimeSuggestions: OvertimeSuggestion[];
   workerCapacitySuggestions: WorkerCapacitySuggestion[];
+  excessCapacitySuggestion?: ExcessCapacitySuggestion;
   hasConflicts: boolean;
 }
 
@@ -94,10 +99,15 @@ export function generateConflictSuggestions(capacity: CapacitySummary): Conflict
     });
   }
 
+  const excessCapacitySuggestion = capacity.overStaffedDayCount > 0
+    ? { dayCount: capacity.overStaffedDayCount }
+    : undefined;
+
   return {
     crewSuggestions,
     overtimeSuggestions,
     workerCapacitySuggestions,
+    excessCapacitySuggestion,
     hasConflicts:
       crewSuggestions.length > 0 ||
       overtimeSuggestions.length > 0 ||
@@ -119,6 +129,11 @@ export function formatCrewSuggestionSummary(suggestions: CrewSuggestion[]): stri
     return `+${s.additionalCrew} crew on ${dayLabel}`;
   });
   return parts.join(', ');
+}
+
+export function formatExcessSuggestionSummary(suggestion: ExcessCapacitySuggestion): string {
+  const { dayCount } = suggestion;
+  return `${dayCount} ${dayCount === 1 ? 'day has' : 'days have'} excess crew capacity — reduce crew in Crew/day to match demand, or leave as buffer.`;
 }
 
 export function formatOvertimeSuggestionSummary(suggestions: OvertimeSuggestion[]): string {

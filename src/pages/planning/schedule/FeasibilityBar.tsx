@@ -49,6 +49,14 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           </span>
         </>
       )}
+      {capacity.overStaffedDayCount > 0 && (
+        <>
+          <span className="feasibility-bar__separator">&middot;</span>
+          <span className="feasibility-bar__info feasibility-bar__info--excess">
+            {capacity.overStaffedDayCount} {capacity.overStaffedDayCount === 1 ? 'day' : 'days'} with excess crew capacity
+          </span>
+        </>
+      )}
     </div>
   );
 }

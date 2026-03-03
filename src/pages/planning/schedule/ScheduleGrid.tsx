@@ -133,6 +133,7 @@ function formatUtilBadge(
     assignedCrewTotal: number;
     accessHours: number;
     isOverWorkerCapacity: boolean;
+    isOverStaffed: boolean;
     assignedCapacityPersonHours: number;
     isCompletionDay: boolean;
     needToMeetTargetPersonHours?: number;
@@ -144,6 +145,10 @@ function formatUtilBadge(
   if (cap.isOverWorkerCapacity) {
     const need = cap.needToMeetTargetPersonHours ?? required;
     return `${need.toFixed(0)}/${available.toFixed(0)}h`;
+  }
+  if (cap.isOverStaffed) {
+    const excess = cap.assignedCapacityPersonHours - required;
+    return `${required.toFixed(0)}h / ${cap.assignedCapacityPersonHours.toFixed(0)}h (+${excess.toFixed(0)}h excess)`;
   }
   if (cap.assignedCrewTotal > 0 && available > 0) {
     const pct = Math.round((required / available) * 100);
@@ -293,7 +298,7 @@ export function ScheduleGrid({
             const isOver = cap?.isOverAllocated ?? false;
             const isOverCrew = cap?.isOverAssignedCrew ?? false;
             const isOverWorker = isAssigned && isOverWorkerForDay(item, day.date, dayByDate);
-            const crewValue = isAssigned ? (item.crewByDate?.[day.date] ?? item.crew) : 0;
+            const crewValue = isAssigned && day.isWorkDay ? (item.crewByDate?.[day.date] ?? item.crew) : 0;
             const lastDayBd = isAssigned ? getLastDayBreakdown(item, day.date, dayByDate) : null;
             const OVER_TARGET_TOLERANCE = 1.05;
             const isOverTargetCell =
@@ -338,51 +343,53 @@ export function ScheduleGrid({
                         </span>
                       );
                     })()}
-                    <div className="schedule-grid__cell-crew">
-                      {!readOnly && onCrewForDateChange ? (
-                        <>
-                          <button
-                            type="button"
-                            className="schedule-grid__cell-crew-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (crewValue > 0) onCrewForDateChange(item.id, day.date, crewValue - 1);
-                            }}
-                            disabled={crewValue <= 0}
-                            aria-label={`Decrease crew for ${item.title} on ${day.date}`}
-                          >
-                            −
-                          </button>
-                          {isOverWorker ? (
-                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
-                          ) : (
-                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
-                          )}
-                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
-                          <button
-                            type="button"
-                            className="schedule-grid__cell-crew-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (crewValue < 99) onCrewForDateChange(item.id, day.date, crewValue + 1);
-                            }}
-                            disabled={crewValue >= 99}
-                            aria-label={`Increase crew for ${item.title} on ${day.date}`}
-                          >
-                            +
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {isOverWorker ? (
-                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
-                          ) : (
-                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
-                          )}
-                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
-                        </>
-                      )}
-                    </div>
+                    {day.isWorkDay && (
+                      <div className="schedule-grid__cell-crew">
+                        {!readOnly && onCrewForDateChange ? (
+                          <>
+                            <button
+                              type="button"
+                              className="schedule-grid__cell-crew-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (crewValue > 0) onCrewForDateChange(item.id, day.date, crewValue - 1);
+                              }}
+                              disabled={crewValue <= 0}
+                              aria-label={`Decrease crew for ${item.title} on ${day.date}`}
+                            >
+                              −
+                            </button>
+                            {isOverWorker ? (
+                              <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
+                            ) : (
+                              <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
+                            )}
+                            <span className="schedule-grid__cell-crew-value">{crewValue}</span>
+                            <button
+                              type="button"
+                              className="schedule-grid__cell-crew-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (crewValue < 99) onCrewForDateChange(item.id, day.date, crewValue + 1);
+                              }}
+                              disabled={crewValue >= 99}
+                              aria-label={`Increase crew for ${item.title} on ${day.date}`}
+                            >
+                              +
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {isOverWorker ? (
+                              <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
+                            ) : (
+                              <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
+                            )}
+                            <span className="schedule-grid__cell-crew-value">{crewValue}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : null}
               </button>
@@ -426,7 +433,7 @@ export function ScheduleGrid({
                 <span
                   key={day.date}
                   role="columnheader"
-                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}`}
+                  className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${cap?.isOverStaffed ? ' schedule-grid__day-col--over-staffed' : ''}`}
                 >
                   <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
                   {cap && day.isWorkDay && (
@@ -453,7 +460,7 @@ export function ScheduleGrid({
                           </span>
                         );
                       })()}
-                      <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}`}>
+                      <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${cap.isOverStaffed ? ' schedule-grid__day-util--over-staffed' : ''}`}>
                         {formatUtilBadge(cap)}
                       </span>
                       {cap.assignedCrewTotal > 0 && (

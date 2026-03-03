@@ -144,6 +144,22 @@ export interface ImportedExecutionReturnUnplannedTaskRecord {
   personHours: number;
 }
 
+export type PlanPackageLineItemDiffAction = 'new' | 'updated' | 'unchanged' | 'removed';
+
+export interface PlanPackageLineItemDiff {
+  lineItemId: string;
+  title: string;
+  action: PlanPackageLineItemDiffAction;
+  changedFields?: string[];
+}
+
+export interface PlanPackageLineItemDiffSummary {
+  new: number;
+  updated: number;
+  unchanged: number;
+  removed: number;
+}
+
 export interface PlanPackageImportPreview {
   planId: string;
   title: string;
@@ -153,6 +169,8 @@ export interface PlanPackageImportPreview {
   conflict: 'none' | 'replace-or-skip' | 'merge' | 'planner-plan';
   existingStatus: Plan['status'] | null;
   envelope: DataTransferEnvelope<PlanPackagePayload>;
+  lineItemDiffs?: PlanPackageLineItemDiff[];
+  lineItemDiffSummary?: PlanPackageLineItemDiffSummary;
 }
 
 export interface ExecutionSummary {

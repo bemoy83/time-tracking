@@ -316,6 +316,47 @@
   color: var(--color-text-muted);
 }
 
+.field-plan-import-card__diff-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-small);
+}
+
+.field-plan-import-card__diff-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.field-plan-import-card__diff-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.field-plan-import-card__diff-badge--new {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.field-plan-import-card__diff-badge--updated {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.field-plan-import-card__diff-badge--unchanged {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-muted);
+}
+
+.field-plan-import-card__diff-badge--removed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
 .field-plan-import-card__actions {
   display: flex;
   gap: var(--space-sm);

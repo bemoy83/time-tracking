@@ -54,6 +54,10 @@ function formatRate(kpi: WorkTypeKpi): string {
   return `${kpi.avgProductivity.toFixed(1)} ${unit}/person-hr`;
 }
 
+function needsCautionLabel(kpi: WorkTypeKpi): boolean {
+  return kpi.confidence === 'insufficient' || kpi.confidence === 'low';
+}
+
 function byTitle(a: InsightsRow, b: InsightsRow): number {
   const titleCmp = a.kpi.key.workTypeTitle.localeCompare(b.kpi.key.workTypeTitle);
   if (titleCmp !== 0) return titleCmp;
@@ -240,8 +244,14 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
       ) : (
         <>
           <section className="insights-view__table" aria-label="Work type performance">
+            {rows.stable.length > 0 && (
+              <p className="insights-view__guidance">
+                Use these rates for planning when sample size and variance are sufficient.
+              </p>
+            )}
             {rows.stable.map((row) => {
               const insufficient = row.kpi.sampleCount < MIN_SAMPLE_COUNT;
+              const caution = needsCautionLabel(row.kpi);
               const phaseLabel = row.kpi.key.buildPhase
                 ? BUILD_PHASE_LABELS[row.kpi.key.buildPhase]
                 : 'N/A';
@@ -251,7 +261,12 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
                   className={`insights-view__row${insufficient ? ' insights-view__row--insufficient' : ''}`}
                 >
                   <div>
-                    <h3 className="insights-view__title-row">{row.kpi.key.workTypeTitle}</h3>
+                    <h3 className="insights-view__title-row">
+                      {row.kpi.key.workTypeTitle}
+                      {caution && (
+                        <span className="insights-view__caution-badge">Use with caution</span>
+                      )}
+                    </h3>
                     <p className="insights-view__meta">
                       {WORK_UNIT_LABELS[row.kpi.key.workUnit]} · {phaseLabel}
                     </p>
@@ -264,6 +279,11 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
                     <span>Trend: {formatTrend(row)}</span>
                     <span>Outliers: {row.kpi.outlierCount}</span>
                   </div>
+                  {row.kpi.confidence === 'insufficient' && (
+                    <p className="insights-view__hint">
+                      Add more completed tasks to improve reliability.
+                    </p>
+                  )}
                 </article>
               );
             })}
@@ -272,15 +292,24 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
           {rows.highVariance.length > 0 && (
             <section className="insights-view__variance" aria-label="Less reliable for estimating">
               <h2 className="insights-view__variance-title">Less Reliable for Estimating</h2>
+              <p className="insights-view__guidance insights-view__guidance--caution">
+                Use with caution — limited samples or high variance. Prefer template or manual rates until more data is available.
+              </p>
               <div className="insights-view__table">
                 {rows.highVariance.map((row) => {
+                  const caution = needsCautionLabel(row.kpi);
                   const phaseLabel = row.kpi.key.buildPhase
                     ? BUILD_PHASE_LABELS[row.kpi.key.buildPhase]
                     : 'N/A';
                   return (
                     <article key={workTypeKeyString(row.kpi.key)} className="insights-view__row insights-view__row--variance">
                       <div>
-                        <h3 className="insights-view__title-row">{row.kpi.key.workTypeTitle}</h3>
+                        <h3 className="insights-view__title-row">
+                          {row.kpi.key.workTypeTitle}
+                          {caution && (
+                            <span className="insights-view__caution-badge">Use with caution</span>
+                          )}
+                        </h3>
                         <p className="insights-view__meta">
                           {WORK_UNIT_LABELS[row.kpi.key.workUnit]} · {phaseLabel}
                         </p>
@@ -293,6 +322,11 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
                         <span>Trend: {formatTrend(row)}</span>
                         <span>Outliers: {row.kpi.outlierCount}</span>
                       </div>
+                      {row.kpi.confidence === 'insufficient' && (
+                        <p className="insights-view__hint">
+                          Add more completed tasks to improve reliability.
+                        </p>
+                      )}
                     </article>
                   );
                 })}

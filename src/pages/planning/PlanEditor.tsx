@@ -13,15 +13,12 @@ import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
-  activatePlan,
-  revertToDraft,
   addLineItemToPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
   duplicateLineItem,
   planTotalPersonHours,
 } from '../../lib/planning/plan-model';
-import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
@@ -30,7 +27,6 @@ import {
   generateDefaultWorkCalendar,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { ChevronLeftIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -75,7 +71,6 @@ export function PlanEditor({
   const [showAddItem, setShowAddItem] = useState(false);
   const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setTitle(plan.title);
@@ -116,11 +111,6 @@ export function PlanEditor({
     mutatePlan((prev) => ({ ...prev, title }));
   };
 
-  const handleToggleLock = () => {
-    mutatePlan((prev) => (isLocked ? revertToDraft(prev) : activatePlan(prev)));
-    trackTelemetryEvent('planning_lock_toggle');
-  };
-
   const handleAssignProject = (projectId: string | null) => {
     mutatePlan((prev) => ({ ...prev, projectId }));
   };
@@ -148,19 +138,6 @@ export function PlanEditor({
 
   const handleDuplicateItem = (item: PlanLineItem) => {
     mutatePlan((prev) => addLineItemToPlan(prev, duplicateLineItem(item)));
-  };
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await flushAndWait();
-      await exportPlanPackage(currentPlan);
-      trackTelemetryEvent('interop_plan_package_export');
-    } catch {
-      window.alert('Could not export plan. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   useEffect(() => {
@@ -307,12 +284,6 @@ export function PlanEditor({
                 Progress
               </button>
             )}
-            <button className="btn btn--secondary" onClick={handleExport} disabled={isExporting}>
-              {isExporting ? 'Handing off...' : 'Hand off'}
-            </button>
-            <button className={`btn ${isLocked ? 'btn--success' : 'btn--secondary'}`} onClick={handleToggleLock}>
-              {isLocked ? 'Revert to Draft' : 'Activate'}
-            </button>
           </div>
         )}
         {readOnly && currentPlan.reviewedAt != null && (
@@ -322,9 +293,6 @@ export function PlanEditor({
                 Event Report
               </button>
             )}
-            <button className="btn btn--secondary" onClick={handleExport} disabled={isExporting}>
-              {isExporting ? 'Handing off...' : 'Hand off'}
-            </button>
           </div>
         )}
       </div>

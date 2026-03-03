@@ -11,6 +11,8 @@ import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type PlanPackageImportPreview,
+  type PlanPackageLineItemDiff,
+  type PlanPackageLineItemDiffSummary,
   type PlanPackagePayload,
 } from './contracts';
 import { reconcileWorkCalendar } from '../../planning/scheduling/work-calendar';
@@ -320,6 +322,73 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
   };
 }
 
+const DIFF_FIELDS = [
+  'title', 'workQuantity', 'crew', 'timeHours', 'productivityRate',
+  'scheduledStart', 'scheduledEnd',
+] as const;
+
+function shallowEqualCrewByDate(
+  a: Record<string, number> | undefined,
+  b: Record<string, number> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((key) => a[key] === b[key]);
+}
+
+export function diffPlanPackageLineItems(
+  existing: Plan,
+  incoming: Plan,
+): PlanPackageLineItemDiff[] {
+  const existingById = new Map(existing.lineItems.map((item) => [item.id, item]));
+  const incomingIds = new Set(incoming.lineItems.map((item) => item.id));
+  const diffs: PlanPackageLineItemDiff[] = [];
+
+  for (const incomingItem of incoming.lineItems) {
+    const existingItem = existingById.get(incomingItem.id);
+    if (!existingItem) {
+      diffs.push({ lineItemId: incomingItem.id, title: incomingItem.title, action: 'new' });
+      continue;
+    }
+    const changedFields: string[] = [];
+    for (const field of DIFF_FIELDS) {
+      if (incomingItem[field] !== existingItem[field]) {
+        changedFields.push(field);
+      }
+    }
+    if (!shallowEqualCrewByDate(incomingItem.crewByDate, existingItem.crewByDate)) {
+      changedFields.push('crewByDate');
+    }
+    diffs.push({
+      lineItemId: incomingItem.id,
+      title: incomingItem.title,
+      action: changedFields.length > 0 ? 'updated' : 'unchanged',
+      changedFields: changedFields.length > 0 ? changedFields : undefined,
+    });
+  }
+
+  for (const existingItem of existing.lineItems) {
+    if (!incomingIds.has(existingItem.id)) {
+      diffs.push({ lineItemId: existingItem.id, title: existingItem.title, action: 'removed' });
+    }
+  }
+
+  return diffs;
+}
+
+function computeDiffSummary(diffs: PlanPackageLineItemDiff[]): PlanPackageLineItemDiffSummary {
+  return {
+    new: diffs.filter((d) => d.action === 'new').length,
+    updated: diffs.filter((d) => d.action === 'updated').length,
+    unchanged: diffs.filter((d) => d.action === 'unchanged').length,
+    removed: diffs.filter((d) => d.action === 'removed').length,
+  };
+}
+
 export async function previewPlanPackageImport(
   envelope: DataTransferEnvelope<PlanPackagePayload>,
 ): Promise<PlanPackageImportPreview> {
@@ -339,6 +408,13 @@ export async function previewPlanPackageImport(
     }
   }
 
+  const lineItemDiffs = existing
+    ? diffPlanPackageLineItems(existing, importedPlan)
+    : undefined;
+  const lineItemDiffSummary = lineItemDiffs
+    ? computeDiffSummary(lineItemDiffs)
+    : undefined;
+
   return {
     planId: importedPlan.id,
     title: importedPlan.title,
@@ -348,13 +424,22 @@ export async function previewPlanPackageImport(
     conflict,
     existingStatus,
     envelope,
+    lineItemDiffs,
+    lineItemDiffSummary,
   };
+}
+
+export interface PlanPackageMergeSummary {
+  newCount: number;
+  updatedCount: number;
+  unchangedCount: number;
+  removedCount: number;
 }
 
 export async function applyPlanPackageImport(
   preview: PlanPackageImportPreview,
   resolution: 'replace' | 'skip' = 'replace',
-): Promise<{ applied: boolean; merged: boolean; reason: string }> {
+): Promise<{ applied: boolean; merged: boolean; reason: string; mergeSummary?: PlanPackageMergeSummary }> {
   const envelope = preview.envelope;
   const importedPlan = normalizeIncomingPlan(envelope.payload.plan);
   const existing = await getPlan(importedPlan.id);
@@ -402,9 +487,22 @@ export async function applyPlanPackageImport(
   const next = merged ? mergeReceivedPlan(existing, mappedPlan) : mappedPlan;
   await updatePlan(next);
 
+  let mergeSummary: PlanPackageMergeSummary | undefined;
+  if (merged) {
+    const diffs = diffPlanPackageLineItems(existing, mappedPlan);
+    const summary = computeDiffSummary(diffs);
+    mergeSummary = {
+      newCount: summary.new,
+      updatedCount: summary.updated,
+      unchangedCount: summary.unchanged,
+      removedCount: summary.removed,
+    };
+  }
+
   return {
     applied: true,
     merged,
     reason: merged ? 'Merged plan package update.' : 'Replaced received plan.',
+    mergeSummary,
   };
 }

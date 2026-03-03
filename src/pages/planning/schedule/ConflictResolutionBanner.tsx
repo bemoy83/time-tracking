@@ -4,6 +4,7 @@ import {
   generateConflictSuggestions,
   formatCrewSuggestionSummary,
   formatOvertimeSuggestionSummary,
+  formatExcessSuggestionSummary,
 } from '../../../lib/planning/scheduling/conflict-resolution';
 import { WarningIcon } from '../../../components/icons';
 
@@ -15,7 +16,8 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
   const suggestions = useMemo(() => generateConflictSuggestions(capacity), [capacity]);
   const [expanded, setExpanded] = useState(false);
 
-  if (!suggestions.hasConflicts) return null;
+  const hasExcess = suggestions.excessCapacitySuggestion != null;
+  if (!suggestions.hasConflicts && !hasExcess) return null;
 
   const crewSummary = formatCrewSuggestionSummary(suggestions.crewSuggestions);
   const overtimeSummary = formatOvertimeSuggestionSummary(suggestions.overtimeSuggestions);
@@ -26,11 +28,13 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
   );
 
   return (
-    <div className="conflict-banner">
+    <div className={`conflict-banner${!suggestions.hasConflicts && hasExcess ? ' conflict-banner--info' : ''}`}>
       <div className="conflict-banner__header">
         <WarningIcon className="conflict-banner__icon" />
         <span className="conflict-banner__title">
-          Schedule has capacity conflicts on {conflictDayCount} {conflictDayCount === 1 ? 'day' : 'days'}
+          {suggestions.hasConflicts
+            ? `Schedule has capacity conflicts on ${conflictDayCount} ${conflictDayCount === 1 ? 'day' : 'days'}`
+            : `${suggestions.excessCapacitySuggestion!.dayCount} ${suggestions.excessCapacitySuggestion!.dayCount === 1 ? 'day has' : 'days have'} excess crew capacity`}
         </span>
         <button
           type="button"
@@ -59,6 +63,14 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
               <span className="conflict-banner__option-label">Worker capacity exceeded:</span>
               <span className="conflict-banner__option-detail">
                 {suggestions.workerCapacitySuggestions.map((s) => s.message).join('; ')}
+              </span>
+            </div>
+          )}
+          {hasExcess && (
+            <div className="conflict-banner__option conflict-banner__option--info">
+              <span className="conflict-banner__option-label">Excess crew capacity:</span>
+              <span className="conflict-banner__option-detail">
+                {formatExcessSuggestionSummary(suggestions.excessCapacitySuggestion!)}
               </span>
             </div>
           )}

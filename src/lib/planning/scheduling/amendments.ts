@@ -43,10 +43,17 @@ export function applyScheduleAmendment(
         };
       }
 
-      // Update crewByDate when span changes
+      // Update crewByDate when span changes — only store work days to avoid orphaned non-work entries
       let nextCrewByDate = item.crewByDate;
       if (nextScheduledStart && nextScheduledEnd) {
-        const newDates = new Set(listDateRange(nextScheduledStart, nextScheduledEnd));
+        const allDates = listDateRange(nextScheduledStart, nextScheduledEnd);
+        const workDaySet =
+          plan.workCalendar.length > 0
+            ? new Set(plan.workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
+            : null;
+        const newDates = workDaySet
+          ? allDates.filter((d) => workDaySet.has(d))
+          : allDates;
         const existing = item.crewByDate ?? {};
         const updated: Record<string, number> = {};
         for (const date of newDates) {

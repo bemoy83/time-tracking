@@ -62,7 +62,12 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
     setIsApplyingPlanImport(true);
     try {
       const result = await applyPlanPackageImport(planPreview, resolution);
-      setPlanImportMessage(result.reason);
+      let msg = result.reason;
+      if (result.mergeSummary) {
+        const { newCount, updatedCount, unchangedCount, removedCount } = result.mergeSummary;
+        msg += ` Merged: ${newCount} new, ${updatedCount} updated, ${unchangedCount} unchanged, ${removedCount} removed.`;
+      }
+      setPlanImportMessage(msg);
       if (result.applied) {
         setPlanPreview(null);
         trackTelemetryEvent(result.merged ? 'interop_plan_package_merge' : 'interop_plan_package_import');
@@ -166,6 +171,31 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
             {planPreview.conflict === 'merge' && (
               <div className="settings-view__row-detail">
                 Existing received plan has execution state. Import will merge and preserve executor annotations.
+              </div>
+            )}
+            {planPreview.lineItemDiffSummary && (
+              <div className="settings-view__row-detail" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                <span style={{ fontWeight: 600 }}>Line item changes:</span>
+                {planPreview.lineItemDiffSummary.new > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--new">
+                    {planPreview.lineItemDiffSummary.new} new
+                  </span>
+                )}
+                {planPreview.lineItemDiffSummary.updated > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--updated">
+                    {planPreview.lineItemDiffSummary.updated} updated
+                  </span>
+                )}
+                {planPreview.lineItemDiffSummary.unchanged > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--unchanged">
+                    {planPreview.lineItemDiffSummary.unchanged} unchanged
+                  </span>
+                )}
+                {planPreview.lineItemDiffSummary.removed > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--removed">
+                    {planPreview.lineItemDiffSummary.removed} removed
+                  </span>
+                )}
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

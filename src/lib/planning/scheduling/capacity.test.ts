@@ -140,6 +140,59 @@ describe('computeCapacitySummary', () => {
     expect(summary.totalRequiredPersonHours).toBe(60);
   });
 
+  it('does not flag overStaffed when capacity matches demand', () => {
+    // 20h total, 2 days, 4 crew each → 10h/day required, 4×8=32h capacity/day → not over-staffed (balanced)
+    const plan: Plan = {
+      ...createPlan('Balanced Plan'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-03',
+      defaultCrewSize: 4,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    };
+    const item = createLineItem('Flooring', 'Flooring', 'm2', 'build-up', 100, 1);
+    item.crew = 2;
+    item.timeHours = 10; // 20h total. Day 1: 2×8=16h capacity, does 16h. Day 2: 2×8=16h capacity, does 4h.
+    item.scheduledStart = '2026-03-02';
+    item.scheduledEnd = '2026-03-03';
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    // Day 1: required 16h, assignedCapacity 16h → not over-staffed
+    expect(summary.days[0].isOverStaffed).toBe(false);
+    // Day 2: required 4h, assignedCapacity 16h → over-staffed
+    expect(summary.days[1].isOverStaffed).toBe(true);
+    expect(summary.overStaffedDayCount).toBe(1);
+  });
+
+  it('flags overStaffed when crew capacity exceeds required person-hours', () => {
+    // 10h total, 2 days, 6 crew each → Day 1: 6×8=48h capacity, 10h required → isOverStaffed true
+    const plan: Plan = {
+      ...createPlan('Excess Plan'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-03',
+      defaultCrewSize: 6,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 6 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 6 },
+      ],
+    };
+    const item = createLineItem('Rigging', 'Rigging', 'm2', 'build-up', 10, 1);
+    item.crew = 1;
+    item.timeHours = 10; // 10h total. Day 1: 1×8=8h capacity, does 8h. Day 2: 1×8=8h capacity, does 2h.
+    item.scheduledStart = '2026-03-02';
+    item.scheduledEnd = '2026-03-03';
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    // Day 2 has 2h required but 8h assigned capacity → over-staffed
+    expect(summary.days[1].isOverStaffed).toBe(true);
+    expect(summary.days[1].assignedCapacityPersonHours).toBe(8);
+    expect(summary.overStaffedDayCount).toBe(1);
+  });
+
   it('shows balanced capacity when crew matches required exactly', () => {
     // 1 crew × 8h = 8h capacity/day. 16h total, 2 days = 16h capacity. Exact fit.
     const plan: Plan = {
@@ -168,5 +221,41 @@ describe('computeCapacitySummary', () => {
     // Only last day of item span is a completion day
     expect(summary.days[0].isCompletionDay).toBe(false);
     expect(summary.days[1].isCompletionDay).toBe(true);
+  });
+
+  it('does not count crew on non-work days when work spans weekend', () => {
+    // Thu Mar 5 - Tue Mar 10: Thu, Fri work days; Sat, Sun off; Mon, Tue work days
+    const plan: Plan = {
+      ...createPlan('Span Weekend Plan'),
+      eventStartDate: '2026-03-05',
+      eventEndDate: '2026-03-10',
+      defaultCrewSize: 12,
+      workCalendar: [
+        { date: '2026-03-05', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 12 },
+        { date: '2026-03-06', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 12 },
+        { date: '2026-03-07', isWorkDay: false, accessStart: null, accessEnd: null, crewSize: null },
+        { date: '2026-03-08', isWorkDay: false, accessStart: null, accessEnd: null, crewSize: null },
+        { date: '2026-03-09', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 12 },
+        { date: '2026-03-10', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 12 },
+      ],
+    };
+    const item = createLineItem('Rigging', 'Rigging', 'm2', 'build-up', 10, 1);
+    item.crew = 1;
+    item.timeHours = 24; // 24h total spanning Thu–Tue
+    item.scheduledStart = '2026-03-05';
+    item.scheduledEnd = '2026-03-10';
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    // Non-work days (Sat, Sun) should have 0 assigned crew — no work allocated there
+    expect(summary.days[2].isWorkDay).toBe(false);
+    expect(summary.days[2].assignedCrewTotal).toBe(0);
+    expect(summary.days[3].isWorkDay).toBe(false);
+    expect(summary.days[3].assignedCrewTotal).toBe(0);
+    // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job. Tue has 0 crew (work done)
+    expect(summary.days[0].assignedCrewTotal).toBe(1);
+    expect(summary.days[1].assignedCrewTotal).toBe(1);
+    expect(summary.days[4].assignedCrewTotal).toBe(1);
+    expect(summary.days[5].assignedCrewTotal).toBe(0); // Work complete on Mon
   });
 });

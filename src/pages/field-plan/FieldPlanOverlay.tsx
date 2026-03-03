@@ -422,6 +422,31 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
             {preview.conflict === 'merge' && (
               <p className="field-plan-import-card__meta">Existing execution state found. Import will merge.</p>
             )}
+            {preview.lineItemDiffSummary && (
+              <div className="field-plan-import-card__diff-summary">
+                <span className="field-plan-import-card__diff-label">Line item changes:</span>
+                {preview.lineItemDiffSummary.new > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--new">
+                    {preview.lineItemDiffSummary.new} new
+                  </span>
+                )}
+                {preview.lineItemDiffSummary.updated > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--updated">
+                    {preview.lineItemDiffSummary.updated} updated
+                  </span>
+                )}
+                {preview.lineItemDiffSummary.unchanged > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--unchanged">
+                    {preview.lineItemDiffSummary.unchanged} unchanged
+                  </span>
+                )}
+                {preview.lineItemDiffSummary.removed > 0 && (
+                  <span className="field-plan-import-card__diff-badge field-plan-import-card__diff-badge--removed">
+                    {preview.lineItemDiffSummary.removed} removed
+                  </span>
+                )}
+              </div>
+            )}
             <div className="field-plan-import-card__actions">
               <button
                 type="button"

@@ -133,3 +133,32 @@
   margin: 0;
   font-size: var(--font-body);
 }
+
+.insights-view__guidance {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.insights-view__guidance--caution {
+  color: #b45309;
+}
+
+.insights-view__caution-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  vertical-align: middle;
+}
+
+.insights-view__hint {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-style: italic;
+}

@@ -90,7 +90,14 @@ export function updateLineItemAssignment(
     });
   }
 
-  const newDates = new Set(listDateRange(nextSpan.scheduledStart, nextSpan.scheduledEnd));
+  const allDates = listDateRange(nextSpan.scheduledStart, nextSpan.scheduledEnd);
+  const workDaySet =
+    plan.workCalendar.length > 0
+      ? new Set(plan.workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
+      : null;
+  const newDates = new Set(
+    workDaySet ? allDates.filter((d) => workDaySet.has(d)) : allDates,
+  );
   const existingCrewByDate = item.crewByDate ?? {};
 
   const nextCrewByDate: Record<string, number> = {};
@@ -107,6 +114,7 @@ export function updateLineItemAssignment(
 
 /**
  * Update crew count for a specific line item on a specific date.
+ * Non-work days are never stored; if date is non-work, its entry is removed from crewByDate.
  */
 export function updateLineItemCrewForDate(
   plan: Plan,
@@ -117,6 +125,16 @@ export function updateLineItemCrewForDate(
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
 
-  const crewByDate = { ...(item.crewByDate ?? {}), [date]: Math.max(0, Math.floor(crew)) };
+  const isWorkDay =
+    plan.workCalendar.length > 0
+      ? plan.workCalendar.some((d) => d.date === date && d.isWorkDay)
+      : true;
+  const existing = { ...(item.crewByDate ?? {}) };
+  if (isWorkDay) {
+    existing[date] = Math.max(0, Math.floor(crew));
+  } else {
+    delete existing[date];
+  }
+  const crewByDate = Object.keys(existing).length > 0 ? existing : undefined;
   return updatePlanLineItem(plan, lineItemId, { crewByDate });
 }

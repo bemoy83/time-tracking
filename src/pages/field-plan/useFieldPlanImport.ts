@@ -54,7 +54,12 @@ export function useFieldPlanImport({
 
     try {
       const result = await applyPlanPackageImport(preview, resolution);
-      onMessage(result.reason);
+      let message = result.reason;
+      if (result.mergeSummary) {
+        const { newCount, updatedCount, unchangedCount, removedCount } = result.mergeSummary;
+        message += ` Merged: ${newCount} new, ${updatedCount} updated, ${unchangedCount} unchanged, ${removedCount} removed.`;
+      }
+      onMessage(message);
       if (result.applied) {
         setPreview(null);
         await onImportApplied(preview.planId);
