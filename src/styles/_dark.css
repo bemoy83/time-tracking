@@ -367,6 +367,34 @@
   }
 
   /* --- Schedule View (Event Inputs, Work Calendar, Schedule Grid, Capacity Summary) --- */
+
+  /* Work Calendar week grid */
+  .wc-cell--work {
+    background: rgba(96, 165, 250, 0.08);
+    border-color: rgba(96, 165, 250, 0.2);
+  }
+
+  .wc-cell--off {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .wc-cell--out-of-range {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .wc-cell--off .wc-cell__day-num--toggle {
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .wc-cell__day-num--toggle:hover:not(:disabled) {
+    opacity: 0.8;
+  }
+
+  .wc-cell__value:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
   .schedule-grid__cell--off {
     background: transparent;
   }
