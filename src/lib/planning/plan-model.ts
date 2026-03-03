@@ -114,6 +114,14 @@ export interface Plan {
   eventStartDate: string | null;
   /** Event end date (YYYY-MM-DD). */
   eventEndDate: string | null;
+  /** Build-up start date (YYYY-MM-DD). */
+  buildUpStartDate: string | null;
+  /** Build-up end date (YYYY-MM-DD). */
+  buildUpEndDate: string | null;
+  /** Tear-down start date (YYYY-MM-DD). */
+  tearDownStartDate: string | null;
+  /** Tear-down end date (YYYY-MM-DD). */
+  tearDownEndDate: string | null;
   /** Default crew size for schedule capacity math. */
   defaultCrewSize: number | null;
   /** Per-day work calendar across event period. */
@@ -128,6 +136,78 @@ export interface Plan {
   importedAt?: string | null;
   /** ISO timestamp when executor closed the session. */
   sessionClosedAt?: string | null;
+}
+
+export interface PlanDateSpan {
+  start: string;
+  end: string;
+}
+
+function hasDateValue(value: string | null | undefined): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+export function hasPhaseDates(
+  plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
+): plan is Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'> & {
+  buildUpStartDate: string;
+  buildUpEndDate: string;
+  tearDownStartDate: string;
+  tearDownEndDate: string;
+} {
+  return (
+    hasDateValue(plan.buildUpStartDate) &&
+    hasDateValue(plan.buildUpEndDate) &&
+    hasDateValue(plan.tearDownStartDate) &&
+    hasDateValue(plan.tearDownEndDate)
+  );
+}
+
+export function getPlanEffectiveSpan(
+  plan: Pick<
+    Plan,
+    | 'eventStartDate'
+    | 'eventEndDate'
+    | 'buildUpStartDate'
+    | 'buildUpEndDate'
+    | 'tearDownStartDate'
+    | 'tearDownEndDate'
+  >,
+): PlanDateSpan | null {
+  if (hasPhaseDates(plan)) {
+    return {
+      start: plan.buildUpStartDate,
+      end: plan.tearDownEndDate,
+    };
+  }
+
+  if (hasDateValue(plan.eventStartDate) && hasDateValue(plan.eventEndDate)) {
+    return {
+      start: plan.eventStartDate,
+      end: plan.eventEndDate,
+    };
+  }
+
+  return null;
+}
+
+export function getPhaseSpan(
+  plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
+  phase: BuildPhase,
+): PlanDateSpan | null {
+  if (!hasPhaseDates(plan)) return null;
+
+  if (phase === 'build-up') {
+    return {
+      start: plan.buildUpStartDate,
+      end: plan.buildUpEndDate,
+    };
+  }
+
+  return {
+    start: plan.tearDownStartDate,
+    end: plan.tearDownEndDate,
+  };
 }
 
 /**
@@ -198,6 +278,10 @@ export function createPlan(title: string): Plan {
     projectId: null,
     eventStartDate: null,
     eventEndDate: null,
+    buildUpStartDate: null,
+    buildUpEndDate: null,
+    tearDownStartDate: null,
+    tearDownEndDate: null,
     defaultCrewSize: null,
     workCalendar: [],
     createdAt: now,

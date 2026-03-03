@@ -1,6 +1,7 @@
 import { PencilIcon } from '../../../components/icons';
+import { type PhaseDateValues, getPrimaryScheduleRange } from './schedule-date-ui';
 
-interface EventContextBarProps {
+interface EventContextBarProps extends PhaseDateValues {
   eventStartDate: string | null;
   eventEndDate: string | null;
   calendarDayCount: number;
@@ -17,6 +18,10 @@ function formatDate(date: string): string {
 }
 
 export function EventContextBar({
+  buildUpStartDate,
+  buildUpEndDate,
+  tearDownStartDate,
+  tearDownEndDate,
   eventStartDate,
   eventEndDate,
   calendarDayCount,
@@ -24,25 +29,50 @@ export function EventContextBar({
   totalAvailableHours,
   onEdit,
 }: EventContextBarProps) {
-  if (!eventStartDate || !eventEndDate) return null;
+  const primaryRange = getPrimaryScheduleRange(
+    {
+      buildUpStartDate,
+      buildUpEndDate,
+      tearDownStartDate,
+      tearDownEndDate,
+    },
+    eventStartDate,
+    eventEndDate,
+  );
 
-  const dateRange = `${formatDate(eventStartDate)}–${formatDate(eventEndDate)}`;
+  if (!primaryRange) return null;
+
+  const label = primaryRange.source === 'phase' ? 'Schedule:' : 'Event:';
+  const dateRange = `${formatDate(primaryRange.start)}-${formatDate(primaryRange.end)}`;
+  const hasEventOverlay =
+    primaryRange.source === 'phase' &&
+    eventStartDate != null &&
+    eventEndDate != null;
 
   return (
     <div className="event-context-bar">
-      <span className="event-context-bar__label">Event:</span>
-      <span className="event-context-bar__detail">{dateRange}</span>
+      <span className="event-context-bar__label">{label}</span>
+      <span className="event-context-bar__detail event-context-bar__detail--emphasis">{dateRange}</span>
+      {hasEventOverlay && (
+        <>
+          <span className="event-context-bar__separator">&middot;</span>
+          <span className="event-context-bar__label event-context-bar__label--secondary">Event:</span>
+          <span className="event-context-bar__detail">
+            {formatDate(eventStartDate!)}-{formatDate(eventEndDate!)}
+          </span>
+        </>
+      )}
       <span className="event-context-bar__separator">&middot;</span>
       <span className="event-context-bar__detail">{calendarDayCount} {calendarDayCount === 1 ? 'day' : 'days'}</span>
       <span className="event-context-bar__separator">&middot;</span>
-      <span className="event-context-bar__detail">{defaultCrewSize ?? '–'} crew</span>
+      <span className="event-context-bar__detail">{defaultCrewSize ?? '-'} crew</span>
       <span className="event-context-bar__separator">&middot;</span>
       <span className="event-context-bar__detail">{totalAvailableHours.toFixed(0)}h available</span>
       <button
         type="button"
         className="event-context-bar__edit"
         onClick={onEdit}
-        aria-label="Edit event inputs"
+        aria-label="Edit schedule inputs"
       >
         <PencilIcon className="event-context-bar__edit-icon" />
         Edit

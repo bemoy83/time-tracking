@@ -3,6 +3,12 @@ import { getEffectiveCrewForDate, type PlanLineItem, type WorkCalendarDay } from
 import { BUILD_PHASE_LABELS, BUILD_PHASES, WORK_UNIT_LABELS, type BuildPhase } from '../../../lib/types';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
+import {
+  type PhaseDateValues,
+  getPhaseRange,
+  hasCompletePhaseDates,
+  isDateWithinSpan,
+} from './schedule-date-ui';
 
 /**
  * Compute work hours this line item contributes to a specific day (sequential fill).
@@ -111,6 +117,7 @@ interface ScheduleGridProps {
   lineItems: PlanLineItem[];
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
+  phaseDates: PhaseDateValues;
   readOnly: boolean;
   onToggleAssignment: (lineItem: PlanLineItem, date: string, cellElement?: HTMLElement) => void;
   onCrewForDateChange?: (lineItemId: string, date: string, crew: number) => void;
@@ -142,19 +149,8 @@ function formatUtilBadge(
   const required = cap.requiredPersonHours;
   const available = cap.availablePersonHours;
 
-  if (cap.isOverWorkerCapacity) {
-    const need = cap.needToMeetTargetPersonHours ?? required;
-    return `${need.toFixed(0)}/${available.toFixed(0)}h`;
-  }
-  if (cap.isOverStaffed) {
-    const excess = cap.assignedCapacityPersonHours - required;
-    return `${required.toFixed(0)}h / ${cap.assignedCapacityPersonHours.toFixed(0)}h (+${excess.toFixed(0)}h excess)`;
-  }
-  if (cap.assignedCrewTotal > 0 && available > 0) {
-    const pct = Math.round((required / available) * 100);
-    return `${required.toFixed(0)}/${available.toFixed(0)}h ${pct}%`;
-  }
-  return `${required.toFixed(0)}h`;
+  if (available <= 0) return `${required.toFixed(0)}h`;
+  return `${required.toFixed(0)} / ${available.toFixed(0)}h`;
 }
 
 interface PhaseGroup {
@@ -178,11 +174,13 @@ export function ScheduleGrid({
   lineItems,
   calendar,
   capacity,
+  phaseDates,
   readOnly,
   onToggleAssignment,
   onCrewForDateChange,
 }: ScheduleGridProps) {
   const dayByDate = new Map(capacity.days.map((day) => [day.date, day]));
+  const hasPhaseWindows = hasCompletePhaseDates(phaseDates);
   const unscheduled = lineItems.filter((item) => item.scheduledStart == null || item.scheduledEnd == null);
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
@@ -243,6 +241,7 @@ export function ScheduleGrid({
   const renderRow = (item: PlanLineItem, rowIndex: number) => {
     const assignedDates = getAssignedDates(item);
     const assigned = new Set(assignedDates);
+    const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, item.buildPhase) : null;
     const hasAssignments = assigned.size > 0;
     const estimateHours = item.timeHours * item.crew;
     const scheduledHours = hasAssignments ? getScheduledHours(item, assignedDates, dayByDate) : 0;
@@ -294,6 +293,8 @@ export function ScheduleGrid({
           </div>
           {calendar.map((day, colIdx) => {
             const isAssigned = assigned.has(day.date);
+            const isOutOfPhase = hasPhaseWindows && !isDateWithinSpan(day.date, phaseRange);
+            const isPhaseMismatch = isAssigned && isOutOfPhase;
             const cap = dayByDate.get(day.date);
             const isOver = cap?.isOverAllocated ?? false;
             const isOverCrew = cap?.isOverAssignedCrew ?? false;
@@ -315,15 +316,27 @@ export function ScheduleGrid({
                 type="button"
                 role="gridcell"
                 aria-colindex={colIdx + 2}
-                className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
+                className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOutOfPhase ? ' schedule-grid__cell--phase-locked' : ''}${isPhaseMismatch ? ' schedule-grid__cell--phase-mismatch' : ''}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
                 onClick={(e) => {
                   // Don't toggle when clicking − or + buttons (they adjust crew)
                   if ((e.target as HTMLElement).closest('.schedule-grid__cell-crew-btn')) return;
                   onToggleAssignment(item, day.date, e.currentTarget);
                 }}
-                disabled={readOnly || !day.isWorkDay}
-                title={isOverWorker ? 'Exceeds worker capacity (add crew or days)' : isAssigned ? 'Click to unassign' : 'Click to assign'}
-                aria-label={`Toggle ${item.title} on ${day.date}`}
+                disabled={readOnly || !day.isWorkDay || isOutOfPhase}
+                title={
+                  isOutOfPhase
+                    ? `Outside ${BUILD_PHASE_LABELS[item.buildPhase]} window`
+                    : isOverWorker
+                      ? 'Exceeds worker capacity (add crew or days)'
+                      : isAssigned
+                        ? 'Click to unassign'
+                        : 'Click to assign'
+                }
+                aria-label={
+                  isOutOfPhase
+                    ? `${item.title} on ${day.date} is outside ${BUILD_PHASE_LABELS[item.buildPhase]} window`
+                    : `Toggle ${item.title} on ${day.date}`
+                }
               >
                 {isAssigned ? (
                   <>
@@ -414,7 +427,7 @@ export function ScheduleGrid({
       </header>
 
       {calendar.length === 0 ? (
-        <p className="schedule-view__muted">Set event start and end dates to open the schedule grid.</p>
+        <p className="schedule-view__muted">Set schedule dates to open the schedule grid.</p>
       ) : (
         <div
           className="schedule-grid"
@@ -438,12 +451,9 @@ export function ScheduleGrid({
                   <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
                   {cap && day.isWorkDay && (
                     <>
-                      {(() => {
-                        const pct = cap.availablePersonHours > 0
-                          ? Math.round((cap.requiredPersonHours / cap.availablePersonHours) * 100)
-                          : 0;
+                      {cap.availablePersonHours > 0 && (() => {
+                        const pct = Math.round((cap.requiredPersonHours / cap.availablePersonHours) * 100);
                         const barWidth = Math.min(pct, 100);
-                        const isBarOver = cap.isOverAllocated;
                         return (
                           <span
                             className="schedule-grid__day-bar"
@@ -454,7 +464,7 @@ export function ScheduleGrid({
                             aria-label={`${pct}% capacity used`}
                           >
                             <span
-                              className={`schedule-grid__day-bar-fill${isBarOver ? ' schedule-grid__day-bar-fill--over' : ''}`}
+                              className={`schedule-grid__day-bar-fill${cap.isOverAllocated ? ' schedule-grid__day-bar-fill--over' : ''}`}
                               style={{ width: `${barWidth}%` }}
                             />
                           </span>

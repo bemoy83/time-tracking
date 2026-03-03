@@ -3,6 +3,7 @@ import {
   type Plan,
   type PlanLineItem,
   type LineItemExecutionStatus,
+  getPlanEffectiveSpan,
 } from '../../planning/plan-model';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { nowUtc } from '../../types';
@@ -73,24 +74,32 @@ function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
 
 function normalizeIncomingPlan(plan: Plan): Plan {
   const now = nowUtc();
+  const normalizedDates: Plan = {
+    ...plan,
+    eventStartDate: plan.eventStartDate ?? null,
+    eventEndDate: plan.eventEndDate ?? null,
+    buildUpStartDate: plan.buildUpStartDate ?? null,
+    buildUpEndDate: plan.buildUpEndDate ?? null,
+    tearDownStartDate: plan.tearDownStartDate ?? null,
+    tearDownEndDate: plan.tearDownEndDate ?? null,
+  };
+  const effectiveSpan = getPlanEffectiveSpan(normalizedDates);
   const normalizedCalendar = reconcileWorkCalendar(
-    plan.workCalendar ?? [],
-    plan.eventStartDate ?? null,
-    plan.eventEndDate ?? null,
-    plan.defaultCrewSize ?? null,
+    normalizedDates.workCalendar ?? [],
+    effectiveSpan?.start ?? null,
+    effectiveSpan?.end ?? null,
+    normalizedDates.defaultCrewSize ?? null,
   );
   return {
-    ...plan,
+    ...normalizedDates,
     status: 'received',
     reviewedAt: null,
     importedAt: now,
     sessionClosedAt: null,
     updatedAt: now,
-    eventStartDate: plan.eventStartDate ?? null,
-    eventEndDate: plan.eventEndDate ?? null,
-    defaultCrewSize: plan.defaultCrewSize ?? null,
+    defaultCrewSize: normalizedDates.defaultCrewSize ?? null,
     workCalendar: normalizedCalendar,
-    lineItems: plan.lineItems.map((item) =>
+    lineItems: normalizedDates.lineItems.map((item) =>
       normalizeImportedLineItem({
         ...item,
         executionStatus: 'pending',
@@ -306,17 +315,28 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     });
   }
 
-  return {
+  const normalizedIncoming: Plan = {
     ...incoming,
+    eventStartDate: incoming.eventStartDate ?? null,
+    eventEndDate: incoming.eventEndDate ?? null,
+    buildUpStartDate: incoming.buildUpStartDate ?? null,
+    buildUpEndDate: incoming.buildUpEndDate ?? null,
+    tearDownStartDate: incoming.tearDownStartDate ?? null,
+    tearDownEndDate: incoming.tearDownEndDate ?? null,
+  };
+  const effectiveSpan = getPlanEffectiveSpan(normalizedIncoming);
+
+  return {
+    ...normalizedIncoming,
     createdAt: existing.createdAt,
     importedAt: nowUtc(),
     status: 'received',
     sessionClosedAt: null,
     workCalendar: reconcileWorkCalendar(
-      incoming.workCalendar,
-      incoming.eventStartDate ?? null,
-      incoming.eventEndDate ?? null,
-      incoming.defaultCrewSize ?? null,
+      normalizedIncoming.workCalendar,
+      effectiveSpan?.start ?? null,
+      effectiveSpan?.end ?? null,
+      normalizedIncoming.defaultCrewSize ?? null,
     ),
     lineItems: mergedItems,
   };

@@ -15,7 +15,7 @@ import type {
   AttributionSnapshot,
   WorkType,
 } from './types';
-import type { Plan } from './planning/plan-model';
+import { type Plan, getPlanEffectiveSpan } from './planning/plan-model';
 import { PROJECT_COLORS } from './types';
 import type {
   ImportedExecutionReturnLineItemRecord,
@@ -1131,14 +1131,32 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.eventEndDate = null;
   }
 
+  if (raw.buildUpStartDate === undefined) {
+    raw.buildUpStartDate = null;
+  }
+
+  if (raw.buildUpEndDate === undefined) {
+    raw.buildUpEndDate = null;
+  }
+
+  if (raw.tearDownStartDate === undefined) {
+    raw.tearDownStartDate = null;
+  }
+
+  if (raw.tearDownEndDate === undefined) {
+    raw.tearDownEndDate = null;
+  }
+
   if (raw.defaultCrewSize === undefined) {
     raw.defaultCrewSize = null;
   }
 
+  const effectiveSpan = getPlanEffectiveSpan(raw as unknown as Plan);
+
   if (!Array.isArray(raw.workCalendar)) {
     raw.workCalendar = generateDefaultWorkCalendar(
-      (raw.eventStartDate as string | null) ?? null,
-      (raw.eventEndDate as string | null) ?? null,
+      effectiveSpan?.start ?? null,
+      effectiveSpan?.end ?? null,
       (raw.defaultCrewSize as number | null) ?? null,
     );
   } else {
@@ -1150,8 +1168,8 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
         accessEnd: string | null;
         crewSize: number | null;
       }>,
-      (raw.eventStartDate as string | null) ?? null,
-      (raw.eventEndDate as string | null) ?? null,
+      effectiveSpan?.start ?? null,
+      effectiveSpan?.end ?? null,
       (raw.defaultCrewSize as number | null) ?? null,
     );
   }

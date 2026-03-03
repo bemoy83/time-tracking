@@ -22,6 +22,10 @@ describe('createPlan', () => {
     expect(plan.projectId).toBeNull();
     expect(plan.eventStartDate).toBeNull();
     expect(plan.eventEndDate).toBeNull();
+    expect(plan.buildUpStartDate).toBeNull();
+    expect(plan.buildUpEndDate).toBeNull();
+    expect(plan.tearDownStartDate).toBeNull();
+    expect(plan.tearDownEndDate).toBeNull();
     expect(plan.defaultCrewSize).toBeNull();
     expect(plan.workCalendar).toEqual([]);
     expect(plan.activatedAt).toBeNull();

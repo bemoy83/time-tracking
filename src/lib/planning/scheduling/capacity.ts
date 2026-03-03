@@ -4,6 +4,7 @@ import {
   dayAccessHours,
   dayAvailablePersonHours,
   dayCrewSize,
+  getEffectiveScheduleSpan,
   hasSchedulingCalendar,
   listDateRange,
 } from './work-calendar';
@@ -57,15 +58,18 @@ function round2(value: number): number {
 }
 
 function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
+  const effectiveSpan = getEffectiveScheduleSpan(plan);
   const days = hasSchedulingCalendar(plan)
     ? plan.workCalendar
-    : listDateRange(plan.eventStartDate ?? '', plan.eventEndDate ?? '').map((date) => ({
-      date,
-      isWorkDay: true,
-      accessStart: '08:00' as string | null,
-      accessEnd: '16:00' as string | null,
-      crewSize: plan.defaultCrewSize,
-    }));
+    : effectiveSpan
+      ? listDateRange(effectiveSpan.start, effectiveSpan.end).map((date) => ({
+        date,
+        isWorkDay: true,
+        accessStart: '08:00' as string | null,
+        accessEnd: '16:00' as string | null,
+        crewSize: plan.defaultCrewSize,
+      }))
+      : [];
 
   const dayMap = new Map<string, DailyCapacity>();
   for (const day of days) {

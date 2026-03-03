@@ -28,6 +28,34 @@ function makePlan(): Plan {
 }
 
 describe('computeCapacitySummary', () => {
+  it('supports phase-only plans with populated work calendar', () => {
+    const plan: Plan = {
+      ...createPlan('Phase Plan'),
+      eventStartDate: null,
+      eventEndDate: null,
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      tearDownStartDate: '2026-03-04',
+      tearDownEndDate: '2026-03-05',
+      defaultCrewSize: 3,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      ],
+    };
+    const item = createLineItem('Install', 'Install', 'pcs', 'build-up', 8, 1);
+    item.crew = 1;
+    item.timeHours = 8;
+    item.scheduledStart = '2026-03-02';
+    item.scheduledEnd = '2026-03-02';
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    expect(summary.days).toHaveLength(2);
+    expect(summary.totalAvailablePersonHours).toBe(48);
+    expect(summary.totalRequiredPersonHours).toBe(8);
+  });
+
   it('fills days sequentially — Day 1 absorbs work up to its capacity', () => {
     const plan = makePlan();
     // Day 1: 2 crew × 8h = 16h capacity. Day 2: 2 crew × 4h = 8h capacity.

@@ -189,8 +189,18 @@
   color: var(--color-text);
 }
 
+.event-context-bar__label--secondary {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
 .event-context-bar__detail {
   white-space: nowrap;
+}
+
+.event-context-bar__detail--emphasis {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .event-context-bar__separator {
@@ -432,6 +442,7 @@
 }
 
 .schedule-grid__day-bar-fill {
+  display: block;
   height: 100%;
   border-radius: 2px;
   background: var(--color-primary);
@@ -591,6 +602,10 @@
   outline-offset: -2px;
 }
 
+.schedule-grid__cell:disabled {
+  cursor: default;
+}
+
 .schedule-grid__cell--assigned {
   background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
@@ -607,6 +622,24 @@
   background: transparent;
   color: var(--color-text-muted);
   cursor: default;
+}
+
+.schedule-grid__cell--phase-locked {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.02) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  color: var(--color-text-muted);
+}
+
+.schedule-grid__cell--phase-mismatch {
+  box-shadow:
+    inset -1px 0 0 rgba(0, 0, 0, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06),
+    inset 0 0 0 2px rgba(220, 38, 38, 0.35);
 }
 
 .schedule-grid__cell--over {

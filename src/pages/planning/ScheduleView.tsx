@@ -9,7 +9,6 @@ import { applyScheduleAmendment } from '../../lib/planning/scheduling/amendments
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import {
   setPlanDefaultCrewSize,
-  setPlanEventDate,
   updatePlanCalendarDay,
   updateLineItemAssignment,
   updateLineItemCrewForDate,
@@ -23,6 +22,12 @@ import { EventContextBar } from './schedule/EventContextBar';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
+import {
+  type PhaseDateField,
+  type PhaseDateValues,
+  getPrimaryScheduleRange,
+  readPhaseDateValues,
+} from './schedule/schedule-date-ui';
 
 interface ScheduleViewProps {
   plan: Plan;
@@ -38,6 +43,15 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
+type PlanWithPhaseDates = Plan & PhaseDateValues;
+
+function formatShortDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function ScheduleView({
   plan,
   onSave,
@@ -47,7 +61,15 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const isEmpty = !currentPlan.eventStartDate || !currentPlan.eventEndDate;
+  const phaseDates = readPhaseDateValues(currentPlan as Partial<PhaseDateValues>);
+  const primaryRange = getPrimaryScheduleRange(
+    phaseDates,
+    currentPlan.eventStartDate,
+    currentPlan.eventEndDate,
+  );
+  const primaryRangeStart = primaryRange?.start ?? null;
+  const primaryRangeEnd = primaryRange?.end ?? null;
+  const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
   const inputsRef = useRef<HTMLElement>(null);
 
@@ -55,25 +77,41 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_tab_open');
   }, [plan.id]);
 
-  // Derive work calendar when event dates exist but workCalendar is empty (e.g. dates set
-  // in plan editor and user switched to schedule before debounced save completed).
+  const applyCalendarSpan = (nextPlan: PlanWithPhaseDates): Plan => {
+    const nextPhaseDates = readPhaseDateValues(nextPlan);
+    const nextRange = getPrimaryScheduleRange(
+      nextPhaseDates,
+      nextPlan.eventStartDate,
+      nextPlan.eventEndDate,
+    );
+    return {
+      ...nextPlan,
+      workCalendar: reconcileWorkCalendar(
+        nextPlan.workCalendar,
+        nextRange?.start ?? null,
+        nextRange?.end ?? null,
+        nextPlan.defaultCrewSize,
+      ),
+    };
+  };
+
+  // Derive work calendar when schedule dates exist but workCalendar is empty
+  // (e.g. dates set in editor and user switched tabs before debounced save completed).
   useEffect(() => {
-    const hasEventDates =
-      currentPlan.eventStartDate != null && currentPlan.eventEndDate != null;
-    if (hasEventDates && currentPlan.workCalendar.length === 0) {
+    if (primaryRangeStart && primaryRangeEnd && currentPlan.workCalendar.length === 0) {
       mutatePlan((prev) => ({
         ...prev,
         workCalendar: reconcileWorkCalendar(
           prev.workCalendar,
-          prev.eventStartDate,
-          prev.eventEndDate,
+          primaryRangeStart,
+          primaryRangeEnd,
           prev.defaultCrewSize,
         ),
       }));
     }
   }, [
-    currentPlan.eventStartDate,
-    currentPlan.eventEndDate,
+    primaryRangeStart,
+    primaryRangeEnd,
     currentPlan.workCalendar.length,
     mutatePlan,
   ]);
@@ -87,12 +125,30 @@ export function ScheduleView({
     field: 'eventStartDate' | 'eventEndDate',
     value: string,
   ) => {
-    mutatePlan((prev) => setPlanEventDate(prev, field, value));
+    mutatePlan((prev) =>
+      applyCalendarSpan({
+        ...(prev as PlanWithPhaseDates),
+        [field]: value || null,
+      }),
+    );
+    trackTelemetryEvent('schedule_calendar_edit');
+  };
+
+  const handlePlanPhaseDateChange = (
+    field: PhaseDateField,
+    value: string,
+  ) => {
+    mutatePlan((prev) =>
+      applyCalendarSpan({
+        ...(prev as PlanWithPhaseDates),
+        [field]: value || null,
+      }),
+    );
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
   const handleDefaultCrewChange = (value: string) => {
-    mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
+    mutatePlan((prev) => applyCalendarSpan(setPlanDefaultCrewSize(prev, value) as PlanWithPhaseDates));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
@@ -230,6 +286,10 @@ export function ScheduleView({
       </header>
 
       <EventContextBar
+        buildUpStartDate={phaseDates.buildUpStartDate}
+        buildUpEndDate={phaseDates.buildUpEndDate}
+        tearDownStartDate={phaseDates.tearDownStartDate}
+        tearDownEndDate={phaseDates.tearDownEndDate}
         eventStartDate={currentPlan.eventStartDate}
         eventEndDate={currentPlan.eventEndDate}
         calendarDayCount={currentPlan.workCalendar.length}
@@ -253,25 +313,21 @@ export function ScheduleView({
               className={`schedule-view__block-chevron${inputsExpanded ? ' schedule-view__block-chevron--expanded' : ''}`}
             />
             <h3 className="schedule-view__block-title">
-              Event Inputs
+              Schedule Inputs
               {!inputsExpanded &&
-                currentPlan.eventStartDate &&
-                currentPlan.eventEndDate && (
+                primaryRange != null && (
                   <span className="schedule-view__block-summary">
-                    {' '}
-                    — {new Date(`${currentPlan.eventStartDate}T00:00:00`).toLocaleDateString(undefined, {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                    –
-                    {new Date(`${currentPlan.eventEndDate}T00:00:00`).toLocaleDateString(undefined, {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+                    {' '}— {formatShortDate(primaryRange.start)}-{formatShortDate(primaryRange.end)}
                     · {currentPlan.workCalendar.length}{' '}
-                    {currentPlan.workCalendar.length === 1 ? 'day' : 'days'} ·{' '}
-                    {currentPlan.defaultCrewSize ?? '–'} crew · {capacity.totalAvailablePersonHours.toFixed(0)}h
+                    {currentPlan.workCalendar.length === 1 ? 'day' : 'days'} · {currentPlan.defaultCrewSize ?? '–'} crew · {capacity.totalAvailablePersonHours.toFixed(0)}h
                     available
+                    {primaryRange.source === 'phase' &&
+                      currentPlan.eventStartDate &&
+                      currentPlan.eventEndDate && (
+                        <>
+                          {' '}· Event {formatShortDate(currentPlan.eventStartDate)}-{formatShortDate(currentPlan.eventEndDate)}
+                        </>
+                      )}
                   </span>
                 )}
             </h3>
@@ -279,10 +335,15 @@ export function ScheduleView({
         </header>
         {inputsExpanded && (
           <PlanScheduleInputs
+            buildUpStartDate={phaseDates.buildUpStartDate}
+            buildUpEndDate={phaseDates.buildUpEndDate}
+            tearDownStartDate={phaseDates.tearDownStartDate}
+            tearDownEndDate={phaseDates.tearDownEndDate}
             eventStartDate={currentPlan.eventStartDate}
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
             readOnly={readOnly}
+            onPhaseDateChange={handlePlanPhaseDateChange}
             onEventDateChange={handlePlanDateChange}
             onDefaultCrewSizeChange={handleDefaultCrewChange}
           />
@@ -312,6 +373,7 @@ export function ScheduleView({
         lineItems={currentPlan.lineItems}
         calendar={currentPlan.workCalendar}
         capacity={capacity}
+        phaseDates={phaseDates}
         readOnly={readOnly}
         onToggleAssignment={handleToggleAssignment}
         onCrewForDateChange={handleCrewForDateChange}

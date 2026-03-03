@@ -1,4 +1,9 @@
-import type { Plan, WorkCalendarDay } from '../plan-model';
+import {
+  type Plan,
+  type PlanDateSpan,
+  type WorkCalendarDay,
+  getPlanEffectiveSpan,
+} from '../plan-model';
 
 const DEFAULT_WORKDAY_START = '08:00';
 const DEFAULT_WORKDAY_END = '16:00';
@@ -146,6 +151,20 @@ export function dayAvailablePersonHours(day: WorkCalendarDay, defaultCrewSize: n
   return dayAccessHours(day) * dayCrewSize(day, defaultCrewSize);
 }
 
-export function hasSchedulingCalendar(plan: Pick<Plan, 'eventStartDate' | 'eventEndDate' | 'workCalendar'>): boolean {
-  return plan.eventStartDate != null && plan.eventEndDate != null && plan.workCalendar.length > 0;
+export function hasSchedulingCalendar(plan: Pick<Plan, 'workCalendar'>): boolean {
+  return plan.workCalendar.length > 0;
+}
+
+export function getEffectiveScheduleSpan(
+  plan: Pick<
+    Plan,
+    | 'eventStartDate'
+    | 'eventEndDate'
+    | 'buildUpStartDate'
+    | 'buildUpEndDate'
+    | 'tearDownStartDate'
+    | 'tearDownEndDate'
+  >,
+): PlanDateSpan | null {
+  return getPlanEffectiveSpan(plan);
 }

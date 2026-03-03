@@ -40,6 +40,11 @@ export function LineItemCard({
 }: LineItemCardProps) {
   const [rationale, setRationale] = useState(item.rationale ?? '');
   const riskClass = suggestion ? `planning-view__risk--${suggestion.risk}` : '';
+  const suggestedCrew =
+    suggestion &&
+    typeof (suggestion as LineItemSuggestion & { suggestedCrew?: number | null }).suggestedCrew === 'number'
+      ? (suggestion as LineItemSuggestion & { suggestedCrew?: number | null }).suggestedCrew
+      : null;
 
   const canRecomputeTime = item.workQuantity > 0 && item.crew > 0 && item.productivityRate > 0;
   const handleRecomputeTime = () => {
@@ -147,6 +152,11 @@ export function LineItemCard({
               onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
               onFocus={selectOnFocus}
             />
+            {suggestedCrew != null && (
+              <span className="planning-view__field-help">
+                Suggested: {suggestedCrew} crew for phase
+              </span>
+            )}
           </div>
           <div className="planning-view__field">
             <span className="planning-view__field-label">

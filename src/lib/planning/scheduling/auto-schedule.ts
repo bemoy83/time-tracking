@@ -4,7 +4,7 @@
  */
 
 import type { Plan } from '../plan-model';
-import { updatePlanLineItem } from '../plan-model';
+import { getPhaseSpan, hasPhaseDates, updatePlanLineItem } from '../plan-model';
 import { dayAvailablePersonHours } from './work-calendar';
 import { listDateRange } from './work-calendar';
 
@@ -21,14 +21,13 @@ interface DayLoad {
  * Initializes crewByDate with item.crew for each assigned day.
  */
 export function autoSchedule(plan: Plan): Plan {
-  const { eventStartDate, eventEndDate, defaultCrewSize, workCalendar } = plan;
-  if (!eventStartDate || !eventEndDate) return plan;
-
+  const { defaultCrewSize, workCalendar } = plan;
   const calendar = workCalendar.length > 0 ? workCalendar : [];
   if (calendar.length === 0) return plan;
 
   const workDays = calendar.filter((d) => d.isWorkDay);
   if (workDays.length === 0) return plan;
+  const hasPhaseWindows = hasPhaseDates(plan);
 
   // Build day load tracker
   const dayLoadMap = new Map<string, DayLoad>();
@@ -63,13 +62,25 @@ export function autoSchedule(plan: Plan): Plan {
 
   if (unscheduled.length === 0) return plan;
 
-  const workDayDates = workDays.map((d) => d.date);
-
   let result = plan;
 
   for (const { item, totalPH } of unscheduled) {
+    const candidateWorkDays = hasPhaseWindows
+      ? (() => {
+          const phaseSpan = getPhaseSpan(plan, item.buildPhase);
+          if (!phaseSpan) return [];
+          return workDays.filter((d) => d.date >= phaseSpan.start && d.date <= phaseSpan.end);
+        })()
+      : workDays;
+    if (candidateWorkDays.length === 0) continue;
+
+    const workDayDates = candidateWorkDays.map((d) => d.date);
+
     // Determine min span length needed: ceil(totalPH / maxDailyAvailable)
-    const maxDailyAvail = Math.max(...workDays.map((d) => dayAvailablePersonHours(d, defaultCrewSize)), 1);
+    const maxDailyAvail = Math.max(
+      ...candidateWorkDays.map((d) => dayAvailablePersonHours(d, defaultCrewSize)),
+      1,
+    );
     const minSpanDays = Math.max(1, Math.ceil(totalPH / maxDailyAvail));
     const spanLength = Math.min(minSpanDays, workDayDates.length);
 

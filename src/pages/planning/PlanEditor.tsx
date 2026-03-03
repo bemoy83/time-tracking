@@ -21,9 +21,9 @@ import {
 } from '../../lib/planning/plan-model';
 import {
   setPlanDefaultCrewSize,
-  setPlanEventDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
+  reconcileWorkCalendar,
   generateDefaultWorkCalendar,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
@@ -36,6 +36,12 @@ import { AddLineItemForm } from './AddLineItemForm';
 import { LineItemCard } from './LineItemCard';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
+import {
+  type PhaseDateField,
+  type PhaseDateValues,
+  getPrimaryScheduleRange,
+  readPhaseDateValues,
+} from './schedule/schedule-date-ui';
 
 interface PlanEditorProps {
   plan: Plan;
@@ -52,6 +58,8 @@ interface PlanEditorProps {
   /** Register flush-before-schedule (for workspace tab switch). Pass fn to register, undefined to unregister. */
   onRegisterBeforeScheduleSwitch?: (fn?: () => Promise<void>) => void;
 }
+
+type PlanWithPhaseDates = Plan & PhaseDateValues;
 
 export function PlanEditor({
   plan,
@@ -82,16 +90,41 @@ export function PlanEditor({
     setPhaseFilter('build-up');
   }, [plan.id]);
 
+  const phaseDates = readPhaseDateValues(currentPlan as Partial<PhaseDateValues>);
+  const primaryRange = getPrimaryScheduleRange(
+    phaseDates,
+    currentPlan.eventStartDate,
+    currentPlan.eventEndDate,
+  );
+
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
 
+  const applyCalendarSpan = (nextPlan: PlanWithPhaseDates): Plan => {
+    const nextPhaseDates = readPhaseDateValues(nextPlan);
+    const nextRange = getPrimaryScheduleRange(
+      nextPhaseDates,
+      nextPlan.eventStartDate,
+      nextPlan.eventEndDate,
+    );
+    return {
+      ...nextPlan,
+      workCalendar: reconcileWorkCalendar(
+        nextPlan.workCalendar,
+        nextRange?.start ?? null,
+        nextRange?.end ?? null,
+        nextPlan.defaultCrewSize,
+      ),
+    };
+  };
+
   const availableScope = (() => {
-    const { eventStartDate, eventEndDate, defaultCrewSize, workCalendar } = currentPlan;
-    if (!eventStartDate || !eventEndDate) return null;
+    const { defaultCrewSize, workCalendar } = currentPlan;
+    if (!primaryRange) return null;
     const calendar =
       workCalendar.length > 0
         ? workCalendar
-        : generateDefaultWorkCalendar(eventStartDate, eventEndDate, defaultCrewSize);
+        : generateDefaultWorkCalendar(primaryRange.start, primaryRange.end, defaultCrewSize);
     const workDays = calendar.filter((d) => d.isWorkDay);
     const totalAvailable = calendar.reduce(
       (sum, d) => sum + dayAvailablePersonHours(d, defaultCrewSize),
@@ -116,11 +149,25 @@ export function PlanEditor({
   };
 
   const handleSetEventDate = (field: 'eventStartDate' | 'eventEndDate', value: string) => {
-    mutatePlan((prev) => setPlanEventDate(prev, field, value));
+    mutatePlan((prev) =>
+      applyCalendarSpan({
+        ...(prev as PlanWithPhaseDates),
+        [field]: value || null,
+      }),
+    );
+  };
+
+  const handleSetPhaseDate = (field: PhaseDateField, value: string) => {
+    mutatePlan((prev) =>
+      applyCalendarSpan({
+        ...(prev as PlanWithPhaseDates),
+        [field]: value || null,
+      }),
+    );
   };
 
   const handleSetDefaultCrewSize = (value: string) => {
-    mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
+    mutatePlan((prev) => applyCalendarSpan(setPlanDefaultCrewSize(prev, value) as PlanWithPhaseDates));
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
@@ -196,10 +243,15 @@ export function PlanEditor({
         </div>
 
         <PlanScheduleInputs
+          buildUpStartDate={phaseDates.buildUpStartDate}
+          buildUpEndDate={phaseDates.buildUpEndDate}
+          tearDownStartDate={phaseDates.tearDownStartDate}
+          tearDownEndDate={phaseDates.tearDownEndDate}
           eventStartDate={currentPlan.eventStartDate}
           eventEndDate={currentPlan.eventEndDate}
           defaultCrewSize={currentPlan.defaultCrewSize}
-          readOnly={readOnly}
+          readOnly={readOnly || isLocked}
+          onPhaseDateChange={handleSetPhaseDate}
           onEventDateChange={handleSetEventDate}
           onDefaultCrewSizeChange={handleSetDefaultCrewSize}
         />

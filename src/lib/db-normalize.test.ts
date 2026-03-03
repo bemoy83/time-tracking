@@ -107,6 +107,10 @@ describe('normalizePlan', () => {
     const plan = normalizePlan(raw);
     expect(plan.eventStartDate).toBeNull();
     expect(plan.eventEndDate).toBeNull();
+    expect(plan.buildUpStartDate).toBeNull();
+    expect(plan.buildUpEndDate).toBeNull();
+    expect(plan.tearDownStartDate).toBeNull();
+    expect(plan.tearDownEndDate).toBeNull();
     expect(plan.defaultCrewSize).toBeNull();
     expect(Array.isArray(plan.workCalendar)).toBe(true);
     expect(plan.lineItems[0].originalScheduledStart).toBeNull();
