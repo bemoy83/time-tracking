@@ -1,7 +1,8 @@
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { updatePlanLineItem } from '../plan-model';
+import { getPlanEffectiveSpan, updatePlanLineItem } from '../plan-model';
 import type { ScheduleSpan } from './assignment';
 import { reconcileWorkCalendar, listDateRange } from './work-calendar';
+import type { PhaseDateField } from './schedule-span';
 
 export function normalizeDefaultCrewSize(value: string): number | null {
   if (value.trim() === '') return null;
@@ -10,24 +11,39 @@ export function normalizeDefaultCrewSize(value: string): number | null {
   return Math.max(0, Math.floor(parsed));
 }
 
+function reconcilePlanCalendar(plan: Plan): Plan {
+  const effectiveSpan = getPlanEffectiveSpan(plan);
+  return {
+    ...plan,
+    workCalendar: reconcileWorkCalendar(
+      plan.workCalendar,
+      effectiveSpan?.start ?? null,
+      effectiveSpan?.end ?? null,
+      plan.defaultCrewSize,
+    ),
+  };
+}
+
 export function setPlanEventDate(
   plan: Plan,
   field: 'eventStartDate' | 'eventEndDate',
   value: string,
 ): Plan {
-  const next = {
+  return reconcilePlanCalendar({
     ...plan,
     [field]: value || null,
-  };
-  return {
-    ...next,
-    workCalendar: reconcileWorkCalendar(
-      next.workCalendar,
-      next.eventStartDate,
-      next.eventEndDate,
-      next.defaultCrewSize,
-    ),
-  };
+  });
+}
+
+export function setPlanPhaseDate(
+  plan: Plan,
+  field: PhaseDateField,
+  value: string,
+): Plan {
+  return reconcilePlanCalendar({
+    ...plan,
+    [field]: value || null,
+  });
 }
 
 export function setPlanDefaultCrewSize(plan: Plan, value: string): Plan {
@@ -44,15 +60,10 @@ export function setPlanDefaultCrewSize(plan: Plan, value: string): Plan {
           day.crewSize === oldDefault ? { ...day, crewSize: null as number | null } : day,
         )
       : next.workCalendar;
-  return {
+  return reconcilePlanCalendar({
     ...next,
-    workCalendar: reconcileWorkCalendar(
-      workCalendar,
-      next.eventStartDate,
-      next.eventEndDate,
-      next.defaultCrewSize,
-    ),
-  };
+    workCalendar,
+  });
 }
 
 export function updatePlanCalendarDay(

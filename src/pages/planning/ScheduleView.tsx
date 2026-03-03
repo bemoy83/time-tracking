@@ -9,6 +9,8 @@ import { applyScheduleAmendment } from '../../lib/planning/scheduling/amendments
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import {
   setPlanDefaultCrewSize,
+  setPlanEventDate,
+  setPlanPhaseDate,
   updatePlanCalendarDay,
   updateLineItemAssignment,
   updateLineItemCrewForDate,
@@ -24,7 +26,6 @@ import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import {
   type PhaseDateField,
-  type PhaseDateValues,
   getPrimaryScheduleRange,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
@@ -43,8 +44,6 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
-type PlanWithPhaseDates = Plan & PhaseDateValues;
-
 function formatShortDate(date: string): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
     day: 'numeric',
@@ -61,7 +60,7 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const phaseDates = readPhaseDateValues(currentPlan as Partial<PhaseDateValues>);
+  const phaseDates = readPhaseDateValues(currentPlan);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -76,24 +75,6 @@ export function ScheduleView({
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
   }, [plan.id]);
-
-  const applyCalendarSpan = (nextPlan: PlanWithPhaseDates): Plan => {
-    const nextPhaseDates = readPhaseDateValues(nextPlan);
-    const nextRange = getPrimaryScheduleRange(
-      nextPhaseDates,
-      nextPlan.eventStartDate,
-      nextPlan.eventEndDate,
-    );
-    return {
-      ...nextPlan,
-      workCalendar: reconcileWorkCalendar(
-        nextPlan.workCalendar,
-        nextRange?.start ?? null,
-        nextRange?.end ?? null,
-        nextPlan.defaultCrewSize,
-      ),
-    };
-  };
 
   // Derive work calendar when schedule dates exist but workCalendar is empty
   // (e.g. dates set in editor and user switched tabs before debounced save completed).
@@ -125,12 +106,7 @@ export function ScheduleView({
     field: 'eventStartDate' | 'eventEndDate',
     value: string,
   ) => {
-    mutatePlan((prev) =>
-      applyCalendarSpan({
-        ...(prev as PlanWithPhaseDates),
-        [field]: value || null,
-      }),
-    );
+    mutatePlan((prev) => setPlanEventDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
@@ -138,17 +114,12 @@ export function ScheduleView({
     field: PhaseDateField,
     value: string,
   ) => {
-    mutatePlan((prev) =>
-      applyCalendarSpan({
-        ...(prev as PlanWithPhaseDates),
-        [field]: value || null,
-      }),
-    );
+    mutatePlan((prev) => setPlanPhaseDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
   const handleDefaultCrewChange = (value: string) => {
-    mutatePlan((prev) => applyCalendarSpan(setPlanDefaultCrewSize(prev, value) as PlanWithPhaseDates));
+    mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 

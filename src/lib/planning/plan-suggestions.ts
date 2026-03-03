@@ -25,6 +25,8 @@ export interface LineItemSuggestion {
   suggestedRate: number | null;
   /** Recommended time (hours) based on suggested rate and item's quantity/crew. */
   suggestedTimeHours: number | null;
+  /** Suggested minimum crew size for the scheduled phase window, when available. */
+  suggestedCrew: number | null;
   /** Confidence of the suggestion. */
   confidence: ConfidenceLevel | null;
   /** Risk assessment for this line item. */
@@ -105,6 +107,7 @@ export function generatePlanSuggestions(
       kpi,
       suggestedRate,
       suggestedTimeHours,
+      suggestedCrew: null,
       confidence,
       risk,
       riskReasons: reasons,

@@ -40,11 +40,7 @@ export function LineItemCard({
 }: LineItemCardProps) {
   const [rationale, setRationale] = useState(item.rationale ?? '');
   const riskClass = suggestion ? `planning-view__risk--${suggestion.risk}` : '';
-  const suggestedCrew =
-    suggestion &&
-    typeof (suggestion as LineItemSuggestion & { suggestedCrew?: number | null }).suggestedCrew === 'number'
-      ? (suggestion as LineItemSuggestion & { suggestedCrew?: number | null }).suggestedCrew
-      : null;
+  const suggestedCrew = suggestion?.suggestedCrew ?? null;
 
   const canRecomputeTime = item.workQuantity > 0 && item.crew > 0 && item.productivityRate > 0;
   const handleRecomputeTime = () => {

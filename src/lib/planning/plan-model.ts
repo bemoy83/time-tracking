@@ -12,6 +12,12 @@ import type { WorkUnit, BuildPhase } from '../types';
 import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 import { lineItemWorkTypeKey as toLineItemWorkTypeKey } from '../work-package-core';
+import {
+  type DateSpan,
+  getPhaseSpan as getPhaseSpanInternal,
+  getPlanEffectiveSpan as getPlanEffectiveSpanInternal,
+  hasPhaseDates as hasPhaseDatesInternal,
+} from './scheduling/schedule-span';
 
 export type PlanStatus =
   | 'draft'
@@ -138,14 +144,7 @@ export interface Plan {
   sessionClosedAt?: string | null;
 }
 
-export interface PlanDateSpan {
-  start: string;
-  end: string;
-}
-
-function hasDateValue(value: string | null | undefined): value is string {
-  return typeof value === 'string' && value.length > 0;
-}
+export type PlanDateSpan = DateSpan;
 
 export function hasPhaseDates(
   plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
@@ -155,12 +154,7 @@ export function hasPhaseDates(
   tearDownStartDate: string;
   tearDownEndDate: string;
 } {
-  return (
-    hasDateValue(plan.buildUpStartDate) &&
-    hasDateValue(plan.buildUpEndDate) &&
-    hasDateValue(plan.tearDownStartDate) &&
-    hasDateValue(plan.tearDownEndDate)
-  );
+  return hasPhaseDatesInternal(plan);
 }
 
 export function getPlanEffectiveSpan(
@@ -174,40 +168,14 @@ export function getPlanEffectiveSpan(
     | 'tearDownEndDate'
   >,
 ): PlanDateSpan | null {
-  if (hasPhaseDates(plan)) {
-    return {
-      start: plan.buildUpStartDate,
-      end: plan.tearDownEndDate,
-    };
-  }
-
-  if (hasDateValue(plan.eventStartDate) && hasDateValue(plan.eventEndDate)) {
-    return {
-      start: plan.eventStartDate,
-      end: plan.eventEndDate,
-    };
-  }
-
-  return null;
+  return getPlanEffectiveSpanInternal(plan);
 }
 
 export function getPhaseSpan(
   plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
   phase: BuildPhase,
 ): PlanDateSpan | null {
-  if (!hasPhaseDates(plan)) return null;
-
-  if (phase === 'build-up') {
-    return {
-      start: plan.buildUpStartDate,
-      end: plan.buildUpEndDate,
-    };
-  }
-
-  return {
-    start: plan.tearDownStartDate,
-    end: plan.tearDownEndDate,
-  };
+  return getPhaseSpanInternal(plan, phase);
 }
 
 /**

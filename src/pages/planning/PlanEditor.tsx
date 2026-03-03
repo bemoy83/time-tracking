@@ -21,9 +21,10 @@ import {
 } from '../../lib/planning/plan-model';
 import {
   setPlanDefaultCrewSize,
+  setPlanEventDate,
+  setPlanPhaseDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
-  reconcileWorkCalendar,
   generateDefaultWorkCalendar,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
@@ -38,7 +39,6 @@ import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import {
   type PhaseDateField,
-  type PhaseDateValues,
   getPrimaryScheduleRange,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
@@ -58,8 +58,6 @@ interface PlanEditorProps {
   /** Register flush-before-schedule (for workspace tab switch). Pass fn to register, undefined to unregister. */
   onRegisterBeforeScheduleSwitch?: (fn?: () => Promise<void>) => void;
 }
-
-type PlanWithPhaseDates = Plan & PhaseDateValues;
 
 export function PlanEditor({
   plan,
@@ -90,7 +88,7 @@ export function PlanEditor({
     setPhaseFilter('build-up');
   }, [plan.id]);
 
-  const phaseDates = readPhaseDateValues(currentPlan as Partial<PhaseDateValues>);
+  const phaseDates = readPhaseDateValues(currentPlan);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -99,24 +97,6 @@ export function PlanEditor({
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis);
   const totalPersonHours = planTotalPersonHours(currentPlan);
-
-  const applyCalendarSpan = (nextPlan: PlanWithPhaseDates): Plan => {
-    const nextPhaseDates = readPhaseDateValues(nextPlan);
-    const nextRange = getPrimaryScheduleRange(
-      nextPhaseDates,
-      nextPlan.eventStartDate,
-      nextPlan.eventEndDate,
-    );
-    return {
-      ...nextPlan,
-      workCalendar: reconcileWorkCalendar(
-        nextPlan.workCalendar,
-        nextRange?.start ?? null,
-        nextRange?.end ?? null,
-        nextPlan.defaultCrewSize,
-      ),
-    };
-  };
 
   const availableScope = (() => {
     const { defaultCrewSize, workCalendar } = currentPlan;
@@ -149,25 +129,15 @@ export function PlanEditor({
   };
 
   const handleSetEventDate = (field: 'eventStartDate' | 'eventEndDate', value: string) => {
-    mutatePlan((prev) =>
-      applyCalendarSpan({
-        ...(prev as PlanWithPhaseDates),
-        [field]: value || null,
-      }),
-    );
+    mutatePlan((prev) => setPlanEventDate(prev, field, value));
   };
 
   const handleSetPhaseDate = (field: PhaseDateField, value: string) => {
-    mutatePlan((prev) =>
-      applyCalendarSpan({
-        ...(prev as PlanWithPhaseDates),
-        [field]: value || null,
-      }),
-    );
+    mutatePlan((prev) => setPlanPhaseDate(prev, field, value));
   };
 
   const handleSetDefaultCrewSize = (value: string) => {
-    mutatePlan((prev) => applyCalendarSpan(setPlanDefaultCrewSize(prev, value) as PlanWithPhaseDates));
+    mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
   };
 
   const handleAddLineItem = (item: PlanLineItem) => {
