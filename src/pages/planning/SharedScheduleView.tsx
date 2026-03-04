@@ -24,6 +24,7 @@ import {
   loadCrewPoolOverride,
   saveCrewPoolOverride,
 } from './hooks/useCrewPoolStorage';
+import { useSharedSchedulePersistence } from './hooks/useSharedSchedulePersistence';
 
 const AUTOSAVE_DELAY = 500;
 
@@ -60,9 +61,6 @@ export function SharedScheduleView({
   onSavePlan,
 }: SharedScheduleViewProps) {
   const initSelectionRef = useRef(false);
-  const saveTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const pendingSavesRef = useRef<Map<string, Plan>>(new Map());
-  const [optimisticPlansById, setOptimisticPlansById] = useState<Map<string, Plan>>(new Map());
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
 
@@ -73,18 +71,14 @@ export function SharedScheduleView({
 
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans]);
 
-  const effectivePlansById = useMemo(() => {
-    const merged = new Map(plansById);
-    for (const [planId, optimisticPlan] of optimisticPlansById) {
-      merged.set(planId, optimisticPlan);
-    }
-    return merged;
-  }, [plansById, optimisticPlansById]);
-
-  const effectivePlansByIdRef = useRef(effectivePlansById);
-  useEffect(() => {
-    effectivePlansByIdRef.current = effectivePlansById;
-  }, [effectivePlansById]);
+  const {
+    effectivePlansById,
+    applyPlanMutation,
+  } = useSharedSchedulePersistence({
+    plansById,
+    onSavePlan,
+    autosaveDelay: AUTOSAVE_DELAY,
+  });
 
   useEffect(() => {
     trackTelemetryEvent('shared_schedule_tab_open');
@@ -106,77 +100,6 @@ export function SharedScheduleView({
     }
     initSelectionRef.current = true;
   }, [onSelectedPlanIdsChange, selectablePlans, selectedPlanIds]);
-
-  useEffect(() => {
-    setOptimisticPlansById((prev) => {
-      let changed = false;
-      const next = new Map(prev);
-
-      for (const [planId, optimistic] of prev) {
-        const persisted = plansById.get(planId);
-        if (!persisted) {
-          next.delete(planId);
-          pendingSavesRef.current.delete(planId);
-          const existingTimer = saveTimersRef.current.get(planId);
-          if (existingTimer) {
-            clearTimeout(existingTimer);
-            saveTimersRef.current.delete(planId);
-          }
-          changed = true;
-          continue;
-        }
-
-        if (persisted.updatedAt === optimistic.updatedAt) {
-          next.delete(planId);
-          pendingSavesRef.current.delete(planId);
-          const existingTimer = saveTimersRef.current.get(planId);
-          if (existingTimer) {
-            clearTimeout(existingTimer);
-            saveTimersRef.current.delete(planId);
-          }
-          changed = true;
-        }
-      }
-
-      return changed ? next : prev;
-    });
-  }, [plansById]);
-
-  useEffect(() => {
-    return () => {
-      for (const timer of saveTimersRef.current.values()) {
-        clearTimeout(timer);
-      }
-      saveTimersRef.current.clear();
-      for (const plan of pendingSavesRef.current.values()) {
-        onSavePlan(plan);
-      }
-      pendingSavesRef.current.clear();
-    };
-  }, [onSavePlan]);
-
-  const queuePlanSave = useCallback((plan: Plan) => {
-    setOptimisticPlansById((prev) => {
-      const next = new Map(prev);
-      next.set(plan.id, plan);
-      return next;
-    });
-
-    pendingSavesRef.current.set(plan.id, plan);
-
-    const existingTimer = saveTimersRef.current.get(plan.id);
-    if (existingTimer) clearTimeout(existingTimer);
-
-    const timer = setTimeout(() => {
-      saveTimersRef.current.delete(plan.id);
-      const pendingPlan = pendingSavesRef.current.get(plan.id);
-      if (!pendingPlan) return;
-      pendingSavesRef.current.delete(plan.id);
-      onSavePlan(pendingPlan);
-    }, AUTOSAVE_DELAY);
-
-    saveTimersRef.current.set(plan.id, timer);
-  }, [onSavePlan]);
 
   const selectedPlans = useMemo(
     () => selectablePlans
@@ -292,18 +215,6 @@ export function SharedScheduleView({
     lineItems: lineItemRefs,
   }), [crewPoolCalendar, crewPoolDefaultCrewSize, lineItemRefs]);
 
-  const applyPlanMutation = useCallback((
-    planId: string,
-    mutate: (plan: Plan) => Plan,
-  ): boolean => {
-    const currentPlan = effectivePlansByIdRef.current.get(planId);
-    if (!currentPlan) return false;
-    const nextPlan = mutate(currentPlan);
-    if (nextPlan === currentPlan || nextPlan.updatedAt === currentPlan.updatedAt) return false;
-    queuePlanSave(nextPlan);
-    return true;
-  }, [queuePlanSave]);
-
   const handleToggleAssignment = useCallback((
     planId: string,
     lineItemId: string,
@@ -347,8 +258,7 @@ export function SharedScheduleView({
     // Propagate to each plan so assignment/crew mutations persist (they use plan.workCalendar)
     for (const plan of selectedPlans) {
       if (isPlanArchived(plan)) continue;
-      const updated = syncPlanWorkCalendarFromCrewPool(plan, date, updates);
-      if (updated !== plan) queuePlanSave(updated);
+      applyPlanMutation(plan.id, (currentPlan) => syncPlanWorkCalendarFromCrewPool(currentPlan, date, updates));
     }
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
   };

@@ -20,6 +20,11 @@ import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
 import { EventReportView } from '../EventReportView';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
+import {
+  getVisibleGlobalWorkspaceTabs,
+  getVisiblePlanWorkspaceTabs,
+  type WorkspaceRenderContext,
+} from './workspace-tabs';
 import { ChevronLeftIcon, HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
@@ -96,6 +101,16 @@ export function PlanningWorkspaceShell({
   const isSidebarVisible = sidebarCollapsed !== 'hidden';
   const isSidebarIconsOnly = sidebarCollapsed === 'icons';
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+  const sidebarTabContext: WorkspaceRenderContext = {
+    hasLinkedTasks,
+    isReviewed: activePlan ? isPlanArchived(activePlan) : false,
+    reviewReady: false,
+    showScheduleTab: activePlan ? !isPlanArchived(activePlan) : false,
+    onOpenProgress,
+    onOpenInsights,
+    onSetActiveTab,
+  };
+  const sidebarTabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
 
   return (
     <div className="planning-workspace">
@@ -140,24 +155,22 @@ export function PlanningWorkspaceShell({
             </div>
           )}
           <div className="planning-workspace__sidebar-footer">
-            <button
-              type="button"
-              className={`planning-workspace__sidebar-footer-item${activeTab === 'shared-schedule' ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
-              onClick={() => onSetActiveTab('shared-schedule')}
-              aria-label="Shared schedule"
-            >
-              <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
-              {!isSidebarIconsOnly && <span>Shared Schedule</span>}
-            </button>
-            <button
-              type="button"
-              className={`planning-workspace__sidebar-footer-item${activeTab === 'insights' ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
-              onClick={onOpenInsights}
-              aria-label="Insights"
-            >
-              <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
-              {!isSidebarIconsOnly && <span>Insights</span>}
-            </button>
+            {sidebarTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`planning-workspace__sidebar-footer-item${activeTab === tab.id ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
+                onClick={tab.onSelect}
+                aria-label={tab.label}
+              >
+                {tab.id === 'shared-schedule' ? (
+                  <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
+                ) : (
+                  <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
+                )}
+                {!isSidebarIconsOnly && <span>{tab.label}</span>}
+              </button>
+            ))}
           </div>
         </aside>
       )}
@@ -280,13 +293,14 @@ function WorkspaceMainPane({
     [onSetActiveTab],
   );
 
-  const tabs = buildWorkspaceTabs({
+  const tabs = getVisiblePlanWorkspaceTabs({
     hasLinkedTasks,
     isReviewed,
     reviewReady: wrapUpEligible,
     onOpenProgress,
     onSetActiveTab: handleSetActiveTab,
     showScheduleTab,
+    onOpenInsights: () => onSetActiveTab('insights'),
   });
   const reviewedDateText = plan.reviewedAt
     ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}`
@@ -380,81 +394,6 @@ function WorkspaceMainPane({
       </div>
     </div>
   );
-}
-
-interface WorkspaceTabItem {
-  id: WorkspaceTab;
-  label: string;
-  onSelect: () => void;
-}
-
-function buildWorkspaceTabs({
-  hasLinkedTasks,
-  isReviewed,
-  reviewReady,
-  onOpenProgress,
-  onSetActiveTab,
-  showScheduleTab,
-}: {
-  hasLinkedTasks: boolean;
-  isReviewed: boolean;
-  reviewReady: boolean;
-  onOpenProgress: () => void;
-  onSetActiveTab: (tab: WorkspaceTab) => void;
-  showScheduleTab: boolean;
-}): WorkspaceTabItem[] {
-  const tabs: WorkspaceTabItem[] = [
-    {
-      id: 'edit',
-      label: isReviewed ? 'Plan' : 'Edit',
-      onSelect: () => onSetActiveTab('edit'),
-    },
-  ];
-
-  if (showScheduleTab) {
-    tabs.push({
-      id: 'schedule',
-      label: 'Schedule',
-      onSelect: () => onSetActiveTab('schedule'),
-    });
-  }
-
-  tabs.push({
-    id: 'shared-schedule',
-    label: 'Shared Schedule',
-    onSelect: () => onSetActiveTab('shared-schedule'),
-  });
-
-  if (hasLinkedTasks) {
-    tabs.push({
-      id: 'progress',
-      label: 'Progress',
-      onSelect: onOpenProgress,
-    });
-    tabs.push({
-      id: 'insights',
-      label: 'Insights',
-      onSelect: () => onSetActiveTab('insights'),
-    });
-  }
-
-  if (hasLinkedTasks && reviewReady && !isReviewed) {
-    tabs.push({
-      id: 'review',
-      label: 'Review',
-      onSelect: () => onSetActiveTab('review'),
-    });
-  }
-
-  if (isReviewed) {
-    tabs.push({
-      id: 'report',
-      label: 'Report',
-      onSelect: () => onSetActiveTab('report'),
-    });
-  }
-
-  return tabs;
 }
 
 /** Reusable tab button to reduce repetition in the tab strip. */
