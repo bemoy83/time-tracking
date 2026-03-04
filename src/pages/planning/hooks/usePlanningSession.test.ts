@@ -35,14 +35,23 @@ describe('usePlanningSession', () => {
 
   it('returns defaults when nothing stored', () => {
     const session = loadPlanningSession();
-    expect(session).toEqual({ selectedPlanId: null, activeTab: 'edit' });
+    expect(session).toEqual({
+      selectedPlanId: null,
+      activeTab: 'edit',
+      selectedPlanIdsForSharedSchedule: [],
+    });
   });
 
   it('persists and restores selectedPlanId and activeTab', () => {
-    savePlanningSession({ selectedPlanId: 'plan-1', activeTab: 'progress' });
+    savePlanningSession({
+      selectedPlanId: 'plan-1',
+      activeTab: 'progress',
+      selectedPlanIdsForSharedSchedule: ['plan-1', 'plan-2'],
+    });
     const session = loadPlanningSession();
     expect(session.selectedPlanId).toBe('plan-1');
     expect(session.activeTab).toBe('progress');
+    expect(session.selectedPlanIdsForSharedSchedule).toEqual(['plan-1', 'plan-2']);
   });
 
   it('merges partial updates', () => {
@@ -56,6 +65,10 @@ describe('usePlanningSession', () => {
   it('handles corrupted storage gracefully', () => {
     localStorage.setItem('planning-workspace-session', 'not-json');
     const session = loadPlanningSession();
-    expect(session).toEqual({ selectedPlanId: null, activeTab: 'edit' });
+    expect(session).toEqual({
+      selectedPlanId: null,
+      activeTab: 'edit',
+      selectedPlanIdsForSharedSchedule: [],
+    });
   });
 });

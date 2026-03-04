@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLineItem, createPlan, type Plan } from '../plan-model';
-import { computeCapacitySummary } from './capacity';
+import { computeCapacitySummary, computeSharedCapacitySummary } from './capacity';
 
 function makePlan(): Plan {
   return {
@@ -285,5 +285,52 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[1].assignedCrewTotal).toBe(1);
     expect(summary.days[4].assignedCrewTotal).toBe(1);
     expect(summary.days[5].assignedCrewTotal).toBe(0); // Work complete on Mon
+  });
+
+  it('computes shared capacity across plans using a single crew-pool calendar', () => {
+    const planA: Plan = {
+      ...createPlan('Plan A'),
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      tearDownStartDate: '2026-03-05',
+      tearDownEndDate: '2026-03-06',
+      defaultCrewSize: 2,
+    };
+    const itemA = createLineItem('A', 'A', 'pcs', 'build-up', 8, 1);
+    itemA.crew = 1;
+    itemA.timeHours = 8;
+    itemA.scheduledStart = '2026-03-02';
+    itemA.scheduledEnd = '2026-03-02';
+    planA.lineItems = [itemA];
+
+    const planB: Plan = {
+      ...createPlan('Plan B'),
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      tearDownStartDate: '2026-03-05',
+      tearDownEndDate: '2026-03-06',
+      defaultCrewSize: 3,
+    };
+    const itemB = createLineItem('B', 'B', 'pcs', 'build-up', 8, 1);
+    itemB.crew = 1;
+    itemB.timeHours = 8;
+    itemB.scheduledStart = '2026-03-02';
+    itemB.scheduledEnd = '2026-03-02';
+    planB.lineItems = [itemB];
+
+    const summary = computeSharedCapacitySummary({
+      calendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      ],
+      defaultCrewSize: 1, // 8h available globally
+      lineItems: [
+        { planId: planA.id, lineItemId: itemA.id, plan: planA, item: itemA, readOnly: false },
+        { planId: planB.id, lineItemId: itemB.id, plan: planB, item: itemB, readOnly: false },
+      ],
+    });
+
+    expect(summary.totalRequiredPersonHours).toBe(16);
+    expect(summary.totalAvailablePersonHours).toBe(8);
+    expect(summary.overAllocatedDayCount).toBe(1);
   });
 });

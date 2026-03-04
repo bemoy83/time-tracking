@@ -1,5 +1,6 @@
-import type { Plan } from '../plan-model';
-import { getEffectiveCrewForDate } from '../plan-model';
+import type { Plan, PlanLineItem, WorkCalendarDay } from '../plan-model';
+import { getEffectiveCrewForDate, getPhaseSpan } from '../plan-model';
+import type { SharedScheduleInput } from './shared-schedule-types';
 import {
   dayAccessHours,
   dayAvailablePersonHours,
@@ -53,28 +54,23 @@ export interface CapacitySummary {
   overStaffedDayCount: number;
 }
 
+interface ScheduleCounters {
+  unscheduledLineItemCount: number;
+  scheduledLineItemCount: number;
+}
+
 function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
-  const effectiveSpan = getEffectiveScheduleSpan(plan);
-  const days = hasSchedulingCalendar(plan)
-    ? plan.workCalendar
-    : effectiveSpan
-      ? listDateRange(effectiveSpan.start, effectiveSpan.end).map((date) => ({
-        date,
-        isWorkDay: true,
-        accessStart: '08:00' as string | null,
-        accessEnd: '16:00' as string | null,
-        crewSize: plan.defaultCrewSize,
-      }))
-      : [];
-
+function buildDayMapFromCalendar(
+  calendar: WorkCalendarDay[],
+  defaultCrewSize: number | null,
+): Map<string, DailyCapacity> {
   const dayMap = new Map<string, DailyCapacity>();
-  for (const day of days) {
-    const available = dayAvailablePersonHours(day, plan.defaultCrewSize);
-    const crew = dayCrewSize(day, plan.defaultCrewSize);
+  for (const day of calendar) {
+    const available = dayAvailablePersonHours(day, defaultCrewSize);
+    const crew = dayCrewSize(day, defaultCrewSize);
     const access = dayAccessHours(day);
     dayMap.set(day.date, {
       date: day.date,
@@ -98,63 +94,71 @@ function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
   return dayMap;
 }
 
+function buildDayMap(plan: Plan): Map<string, DailyCapacity> {
+  const effectiveSpan = getEffectiveScheduleSpan(plan);
+  const days = hasSchedulingCalendar(plan)
+    ? plan.workCalendar
+    : effectiveSpan
+      ? listDateRange(effectiveSpan.start, effectiveSpan.end).map((date) => ({
+          date,
+          isWorkDay: true,
+          accessStart: '08:00' as string | null,
+          accessEnd: '16:00' as string | null,
+          crewSize: plan.defaultCrewSize,
+        }))
+      : [];
+
+  return buildDayMapFromCalendar(days, plan.defaultCrewSize);
+}
+
 function listScheduledDates(start: string, end: string): string[] {
   return listDateRange(start, end);
 }
 
-export function computeCapacitySummary(plan: Plan): CapacitySummary {
-  const dayMap = buildDayMap(plan);
-  let unscheduledLineItemCount = 0;
-  let scheduledLineItemCount = 0;
+function applyScheduledItem(
+  dayMap: Map<string, DailyCapacity>,
+  item: PlanLineItem,
+  dates: string[],
+): void {
+  // Sequential fill: crew works each day in calendar order, contributing
+  // their full capacity until the item's work is complete. All person-hours
+  // count toward the goal — no artificial spreading.
+  const totalPersonHours = item.timeHours * item.crew;
+  let remaining = totalPersonHours;
+  const lastDate = dates[dates.length - 1];
 
-  for (const item of plan.lineItems) {
-    if (!item.scheduledStart || !item.scheduledEnd) {
-      unscheduledLineItemCount += 1;
-      continue;
-    }
+  for (const date of dates) {
+    const day = dayMap.get(date);
+    if (!day) continue;
+    const effectiveCrew = getEffectiveCrewForDate(item, date);
+    const capacity = day.isWorkDay ? effectiveCrew * (day.accessHours || 8) : 0;
 
-    const dates = listScheduledDates(item.scheduledStart, item.scheduledEnd);
-    if (dates.length === 0) {
-      unscheduledLineItemCount += 1;
-      continue;
-    }
-    scheduledLineItemCount += 1;
-
-    // Sequential fill: crew works each day in calendar order, contributing
-    // their full capacity until the item's work is complete. All person-hours
-    // count toward the goal — no artificial spreading.
-    const totalPersonHours = item.timeHours * item.crew;
-    let remaining = totalPersonHours;
-    const lastDate = dates[dates.length - 1];
-
-    for (const date of dates) {
-      const day = dayMap.get(date);
-      if (!day) continue;
-      const effectiveCrew = getEffectiveCrewForDate(item, date);
-      const capacity = day.isWorkDay ? effectiveCrew * (day.accessHours || 8) : 0;
-
-      if (remaining <= 0) {
-        // Work already complete — crew is assigned but has no work from this item
-        day.lineItemCount += 1;
-        continue;
-      }
-
-      const work = Math.min(remaining, capacity);
-      day.requiredPersonHours += work;
-      if (day.isWorkDay) day.assignedCrewTotal += effectiveCrew;
+    if (remaining <= 0) {
+      // Work already complete — crew is assigned but has no work from this item
       day.lineItemCount += 1;
-      remaining -= work;
-
-      if (date === lastDate && remaining > 0.01) {
-        day.isOverWorkerCapacity = true;
-        day.needToMeetTargetPersonHours += work + remaining;
-      }
+      continue;
     }
 
-    const lastDay = dayMap.get(lastDate);
-    if (lastDay) lastDay.isCompletionDay = true;
+    const work = Math.min(remaining, capacity);
+    day.requiredPersonHours += work;
+    if (day.isWorkDay) day.assignedCrewTotal += effectiveCrew;
+    day.lineItemCount += 1;
+    remaining -= work;
+
+    if (date === lastDate && remaining > 0.01) {
+      day.isOverWorkerCapacity = true;
+      day.needToMeetTargetPersonHours += work + remaining;
+    }
   }
 
+  const lastDay = dayMap.get(lastDate);
+  if (lastDay) lastDay.isCompletionDay = true;
+}
+
+function finalizeCapacitySummary(
+  dayMap: Map<string, DailyCapacity>,
+  counters: ScheduleCounters,
+): CapacitySummary {
   const days = [...dayMap.values()]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((day) => {
@@ -194,8 +198,66 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
     overAllocatedDayCount,
     overAssignedCrewDayCount,
     overWorkerCapacityDayCount,
-    unscheduledLineItemCount,
-    scheduledLineItemCount,
+    unscheduledLineItemCount: counters.unscheduledLineItemCount,
+    scheduledLineItemCount: counters.scheduledLineItemCount,
     overStaffedDayCount,
   };
+}
+
+export function computeCapacitySummary(plan: Plan): CapacitySummary {
+  const dayMap = buildDayMap(plan);
+  const counters: ScheduleCounters = {
+    unscheduledLineItemCount: 0,
+    scheduledLineItemCount: 0,
+  };
+
+  for (const item of plan.lineItems) {
+    if (!item.scheduledStart || !item.scheduledEnd) {
+      counters.unscheduledLineItemCount += 1;
+      continue;
+    }
+
+    const dates = listScheduledDates(item.scheduledStart, item.scheduledEnd);
+    if (dates.length === 0) {
+      counters.unscheduledLineItemCount += 1;
+      continue;
+    }
+
+    counters.scheduledLineItemCount += 1;
+    applyScheduledItem(dayMap, item, dates);
+  }
+
+  return finalizeCapacitySummary(dayMap, counters);
+}
+
+export function computeSharedCapacitySummary(input: SharedScheduleInput): CapacitySummary {
+  const dayMap = buildDayMapFromCalendar(input.calendar, input.defaultCrewSize);
+  const counters: ScheduleCounters = {
+    unscheduledLineItemCount: 0,
+    scheduledLineItemCount: 0,
+  };
+
+  for (const entry of input.lineItems) {
+    const { item, plan } = entry;
+    if (!item.scheduledStart || !item.scheduledEnd) {
+      counters.unscheduledLineItemCount += 1;
+      continue;
+    }
+
+    const dates = listScheduledDates(item.scheduledStart, item.scheduledEnd);
+    const phaseSpan = getPhaseSpan(plan, item.buildPhase);
+    const validDates = phaseSpan
+      ? dates.filter((date) => date >= phaseSpan.start && date <= phaseSpan.end)
+      : dates;
+
+    if (validDates.length === 0) {
+      counters.unscheduledLineItemCount += 1;
+      continue;
+    }
+
+    counters.scheduledLineItemCount += 1;
+    applyScheduledItem(dayMap, item, validDates);
+  }
+
+  return finalizeCapacitySummary(dayMap, counters);
 }

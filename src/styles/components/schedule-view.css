@@ -745,6 +745,10 @@
   margin-top: var(--space-xs);
 }
 
+.schedule-grid__phase-header--project {
+  margin-top: var(--space-sm);
+}
+
 .schedule-grid__phase-label {
   display: flex;
   align-items: center;
@@ -764,8 +768,58 @@
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
+.schedule-grid__phase-label--depth-0 {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.schedule-grid__phase-label--depth-1 {
+  padding-inline-start: calc(var(--space-sm) + 10px);
+}
+
 .schedule-grid__phase-label:hover {
   color: var(--color-text);
+}
+
+.schedule-grid__group-count {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.schedule-grid__readonly-badge {
+  margin-inline-start: var(--space-xs);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: rgb(146, 64, 14);
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.schedule-grid__group-day {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+}
+
+.schedule-grid__group-day-hours {
+  font-weight: 600;
+}
+
+.schedule-grid__group-day-crew {
+  font-size: 10px;
+}
+
+.schedule-grid__line-item--shared {
+  padding-inline-start: calc(var(--space-sm) + 12px);
 }
 
 .schedule-grid__phase-spacer {
@@ -861,6 +915,37 @@
 
 .schedule-grid__row--over-target .schedule-grid__line-item {
   border-inline-start: 3px solid var(--color-amber);
+}
+
+.shared-schedule__plan-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-xs);
+}
+
+.shared-schedule__plan-option {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-surface-subtle);
+}
+
+.shared-schedule__plan-option > input {
+  margin: 0 0 4px;
+}
+
+.shared-schedule__plan-option-title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.shared-schedule__plan-option-meta {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
 }
 
 /* --- Work Calendar (week grid) --- */

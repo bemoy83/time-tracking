@@ -5,16 +5,19 @@ const STORAGE_KEY = 'planning-workspace-session';
 interface PlanningSession {
   selectedPlanId: string | null;
   activeTab: WorkspaceTab;
+  selectedPlanIdsForSharedSchedule: string[];
 }
 
 const DEFAULT_SESSION: PlanningSession = {
   selectedPlanId: null,
   activeTab: 'edit',
+  selectedPlanIdsForSharedSchedule: [],
 };
 
 function isWorkspaceTab(value: unknown): value is WorkspaceTab {
   return value === 'edit'
     || value === 'schedule'
+    || value === 'shared-schedule'
     || value === 'progress'
     || value === 'review'
     || value === 'insights'
@@ -29,6 +32,9 @@ export function loadPlanningSession(): PlanningSession {
     return {
       selectedPlanId: parsed.selectedPlanId ?? null,
       activeTab: isWorkspaceTab(parsed.activeTab) ? parsed.activeTab : 'edit',
+      selectedPlanIdsForSharedSchedule: Array.isArray(parsed.selectedPlanIdsForSharedSchedule)
+        ? parsed.selectedPlanIdsForSharedSchedule.filter((id): id is string => typeof id === 'string')
+        : [],
     };
   } catch {
     return DEFAULT_SESSION;

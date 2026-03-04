@@ -15,6 +15,7 @@ import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithI
 import { PlanList } from '../PlanList';
 import { PlanEditor } from '../PlanEditor';
 import { ScheduleView } from '../ScheduleView';
+import { SharedScheduleView } from '../SharedScheduleView';
 import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
 import { EventReportView } from '../EventReportView';
@@ -37,6 +38,7 @@ interface PlanningWorkspaceShellProps {
   activeTab: WorkspaceTab;
   hasLinkedTasks: boolean;
   wrapUpPlan: Plan | null;
+  selectedPlanIdsForSharedSchedule: Set<string>;
 
   // Sidebar preferences
   archiveExpanded: boolean;
@@ -50,6 +52,7 @@ interface PlanningWorkspaceShellProps {
   onDeletePlan: (id: string) => void;
   onSavePlan: (plan: Plan) => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
+  onSetSelectedPlanIdsForSharedSchedule: (planIds: Set<string>) => void;
   onOpenInsights: () => void;
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
@@ -72,6 +75,7 @@ export function PlanningWorkspaceShell({
   activeTab,
   hasLinkedTasks,
   wrapUpPlan,
+  selectedPlanIdsForSharedSchedule,
   archiveExpanded,
   sidebarCollapsed,
   onToggleArchive,
@@ -81,6 +85,7 @@ export function PlanningWorkspaceShell({
   onDeletePlan,
   onSavePlan,
   onSetActiveTab,
+  onSetSelectedPlanIdsForSharedSchedule,
   onOpenInsights,
   onOpenProgress,
   onOpenWrapUp,
@@ -137,6 +142,15 @@ export function PlanningWorkspaceShell({
           <div className="planning-workspace__sidebar-footer">
             <button
               type="button"
+              className={`planning-workspace__sidebar-footer-item${activeTab === 'shared-schedule' ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
+              onClick={() => onSetActiveTab('shared-schedule')}
+              aria-label="Shared schedule"
+            >
+              <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
+              {!isSidebarIconsOnly && <span>Shared Schedule</span>}
+            </button>
+            <button
+              type="button"
               className={`planning-workspace__sidebar-footer-item${activeTab === 'insights' ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
               onClick={onOpenInsights}
               aria-label="Insights"
@@ -150,7 +164,15 @@ export function PlanningWorkspaceShell({
 
       {/* Main pane */}
       <section className="planning-workspace__main">
-        {activePlan ? (
+        {activeTab === 'shared-schedule' ? (
+          <SharedScheduleView
+            plans={plans}
+            projects={projects}
+            selectedPlanIds={selectedPlanIdsForSharedSchedule}
+            onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
+            onSavePlan={onSavePlan}
+          />
+        ) : activePlan ? (
           <WorkspaceMainPane
             plan={activePlan}
             activeTab={activeTab}
@@ -396,6 +418,12 @@ function buildWorkspaceTabs({
       onSelect: () => onSetActiveTab('schedule'),
     });
   }
+
+  tabs.push({
+    id: 'shared-schedule',
+    label: 'Shared Schedule',
+    onSelect: () => onSetActiveTab('shared-schedule'),
+  });
 
   if (hasLinkedTasks) {
     tabs.push({

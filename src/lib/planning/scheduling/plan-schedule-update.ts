@@ -80,6 +80,45 @@ export function updatePlanCalendarDay(
 }
 
 /**
+ * Sync a calendar day change from the shared crew pool into a plan's workCalendar.
+ * Used when the user toggles work/off in the shared schedule — the change must
+ * propagate to each plan so mutations (assignment, crew) persist correctly.
+ * Only updates plans whose effective span includes the date.
+ */
+export function syncPlanWorkCalendarFromCrewPool(
+  plan: Plan,
+  date: string,
+  updates: Partial<WorkCalendarDay>,
+): Plan {
+  const span = getPlanEffectiveSpan(plan);
+  if (!span || date < span.start || date > span.end) return plan;
+
+  const existingDay = plan.workCalendar.find((d) => d.date === date);
+  const overrideDay: WorkCalendarDay = existingDay
+    ? { ...existingDay, ...updates, date }
+    : {
+        date,
+        isWorkDay: updates.isWorkDay ?? true,
+        accessStart: updates.accessStart ?? '08:00',
+        accessEnd: updates.accessEnd ?? '16:00',
+        crewSize: updates.crewSize ?? null,
+      };
+
+  const existingOverride = existingDay
+    ? plan.workCalendar.map((d) => (d.date === date ? overrideDay : d))
+    : [...plan.workCalendar, overrideDay];
+
+  const workCalendar = reconcileWorkCalendar(
+    existingOverride,
+    span.start,
+    span.end,
+    plan.defaultCrewSize,
+  );
+
+  return { ...plan, workCalendar };
+}
+
+/**
  * Apply a schedule span change to a line item, managing crewByDate lifecycle:
  * - When span extends: initialize crewByDate for new dates with item.crew.
  * - When span shrinks: prune crewByDate entries outside new span.

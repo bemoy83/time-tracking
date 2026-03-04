@@ -54,6 +54,7 @@ export function PlanningView({
         activeTab={workspace.activeTab}
         hasLinkedTasks={workspace.hasLinkedTasks}
         wrapUpPlan={workspace.wrapUpPlan}
+        selectedPlanIdsForSharedSchedule={workspace.selectedPlanIdsForSharedSchedule}
         archiveExpanded={workspace.archiveExpanded}
         sidebarCollapsed={workspace.sidebarCollapsed}
         onToggleArchive={workspace.toggleArchiveExpanded}
@@ -63,6 +64,7 @@ export function PlanningView({
         onDeletePlan={workspace.handleDeletePlan}
         onSavePlan={workspace.handleSavePlan}
         onSetActiveTab={workspace.setActiveTab}
+        onSetSelectedPlanIdsForSharedSchedule={workspace.setSelectedPlanIdsForSharedSchedule}
         onOpenInsights={workspace.openInsights}
         onOpenProgress={workspace.openProgress}
         onOpenWrapUp={workspace.openWrapUp}

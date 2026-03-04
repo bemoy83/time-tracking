@@ -14,7 +14,7 @@ export type NavigationMode = 'stack' | 'workspace';
 export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'progress' | 'insights' | 'report';
 
 /** Tabs available in the workspace main pane. */
-export type WorkspaceTab = 'edit' | 'schedule' | 'progress' | 'review' | 'insights' | 'report';
+export type WorkspaceTab = 'edit' | 'schedule' | 'shared-schedule' | 'progress' | 'review' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
   /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
@@ -46,6 +46,9 @@ export function usePlanningWorkspaceState({
 
   // --- Shared selection state ---
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
+  const [selectedPlanIdsForSharedScheduleState, setSelectedPlanIdsForSharedScheduleState] = useState<Set<string>>(
+    () => new Set(session?.selectedPlanIdsForSharedSchedule ?? []),
+  );
 
   // --- Sidebar preferences (workspace mode) ---
   const [archiveExpanded, setArchiveExpanded] = useState(() => {
@@ -93,8 +96,24 @@ export function usePlanningWorkspaceState({
     savePlanningSession({
       selectedPlanId: activePlan?.id ?? null,
       activeTab,
+      selectedPlanIdsForSharedSchedule: Array.from(selectedPlanIdsForSharedScheduleState),
     });
-  }, [mode, activePlan, activeTab]);
+  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState]);
+
+  // Remove shared-schedule selection entries that no longer exist.
+  useEffect(() => {
+    if (mode !== 'workspace') return;
+    const knownPlanIds = new Set(data.plans.map((plan) => plan.id));
+    setSelectedPlanIdsForSharedScheduleState((prev) => {
+      let changed = false;
+      const next = new Set<string>();
+      for (const planId of prev) {
+        if (knownPlanIds.has(planId)) next.add(planId);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [data.plans, mode]);
 
   // --- Sync activePlan with plans list (handle updates/deletes) ---
   useEffect(() => {
@@ -229,6 +248,10 @@ export function usePlanningWorkspaceState({
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
   }, [data]);
 
+  const setSelectedPlanIdsForSharedSchedule = useCallback((next: Set<string>) => {
+    setSelectedPlanIdsForSharedScheduleState(new Set(next));
+  }, []);
+
   return {
     // Navigation mode
     mode,
@@ -246,6 +269,8 @@ export function usePlanningWorkspaceState({
     // Selection state
     activePlan,
     hasLinkedTasks,
+    selectedPlanIdsForSharedSchedule: selectedPlanIdsForSharedScheduleState,
+    setSelectedPlanIdsForSharedSchedule,
 
     // Stack navigation (mobile)
     subView,
