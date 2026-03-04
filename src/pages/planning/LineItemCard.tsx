@@ -315,7 +315,9 @@ export function LineItemCard({
       {suggestion && suggestion.riskReasons.length > 0 && (
         <div className="planning-view__risk-warnings">
           {suggestion.riskReasons.map((reason, i) => (
-            <span key={i} className="planning-view__risk-reason">{reason}</span>
+            <StatusBadge key={i} variant="danger">
+              {reason}
+            </StatusBadge>
           ))}
         </div>
       )}

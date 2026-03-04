@@ -252,27 +252,27 @@
   border-radius: var(--radius-lg);
 }
 
+.planning-view__list--compact .planning-view__item {
+  gap: var(--space-xs);
+}
+
 .planning-view__list--compact .planning-view__item-btn {
   padding: var(--space-sm) var(--space-sm);
   min-height: 40px;
+  gap: var(--space-sm);
 }
 
 .planning-view__list--compact .planning-view__item-delete {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   margin-right: var(--space-xs);
 }
 
 .planning-view__list--compact .planning-view__item-delete-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
-.planning-view__list--compact .planning-view__item-action {
-  padding: 4px 8px;
-  font-size: var(--font-caption);
-  margin-right: var(--space-xs);
-}
 
 /* --- Selected plan highlight in sidebar --- */
 
@@ -358,7 +358,7 @@
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;

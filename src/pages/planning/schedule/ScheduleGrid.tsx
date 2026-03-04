@@ -523,6 +523,9 @@ export function ScheduleGrid({
                             />
                             {group.label} ({group.items.length})
                           </span>
+                          {calendar.map((day) => (
+                            <span key={day.date} className="schedule-grid__phase-spacer" aria-hidden="true" />
+                          ))}
                         </button>
                         {!isCollapsed && group.items.map((item, i) => renderRow(item, startIdx + i))}
                       </div>

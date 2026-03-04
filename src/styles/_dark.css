@@ -313,11 +313,11 @@
     background: #252525;
   }
 
-  .planning-view__item-btn:hover {
+  .planning-view__item:hover {
     background: #2a2a2a;
   }
 
-  .planning-view__item-btn:active {
+  .planning-view__item:active {
     background: #2f2f2f;
   }
 
@@ -409,7 +409,7 @@
     background: rgba(37, 99, 235, 0.12);
   }
 
-  .planning-view__risk-reason {
+  .planning-view__risk-warnings .status-badge--danger {
     background: #991b1b;
   }
 
@@ -566,6 +566,16 @@
     background: transparent;
   }
 
+  .schedule-grid__cell--phase-locked {
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.025),
+      rgba(255, 255, 255, 0.025) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+
   /* Softer grid lines in dark mode */
   .schedule-grid__line-item-col,
   .schedule-grid__day-col,
@@ -577,13 +587,18 @@
   }
 
   .schedule-grid__phase-label {
-    background: transparent;
+    background: #1e1e1e;
     border-bottom-color: rgba(255, 255, 255, 0.05);
     color: #858585;
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
   }
 
   .schedule-grid__phase-label:hover {
     color: #e0e0e0;
+  }
+
+  .schedule-grid__phase-spacer {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
   }
 
   .schedule-grid__cell {

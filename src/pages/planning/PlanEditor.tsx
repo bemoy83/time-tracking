@@ -198,6 +198,11 @@ export function PlanEditor({
               Schedule
             </button>
           )}
+          {!readOnly && isLocked && canOpenProgress && (
+            <button className="btn btn--secondary btn--sm" onClick={onOpenProgress}>
+              Progress
+            </button>
+          )}
         </div>
 
         <div className="planning-view__project-row">
@@ -299,13 +304,6 @@ export function PlanEditor({
         )}
 
         {/* Actions */}
-        {!readOnly && isLocked && canOpenProgress && (
-          <div className="planning-view__actions">
-            <button className="btn btn--secondary" onClick={onOpenProgress}>
-              Progress
-            </button>
-          </div>
-        )}
         {readOnly && currentPlan.reviewedAt != null && (
           <div className="planning-view__actions">
             {onOpenReport && (

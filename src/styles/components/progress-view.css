@@ -3,34 +3,52 @@
 }
 
 .progress-view__summary {
-  display: grid;
-  gap: var(--space-sm);
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
-}
-
-.progress-view__summary-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: var(--font-body);
-  gap: var(--space-sm);
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
-.progress-view__deadline {
-  text-align: right;
+.progress-view__summary--risk {
+  background: rgba(245, 158, 11, 0.06);
 }
 
-.progress-view__deadline--on-track {
+.progress-view__summary-metric {
+  white-space: nowrap;
+}
+
+.progress-view__summary-metric strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.progress-view__summary-sep {
+  color: var(--color-border);
+}
+
+.progress-view__summary-deadline {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.progress-view__summary-deadline--on-track {
   color: var(--color-ready);
 }
 
-.progress-view__deadline--at-risk {
+.progress-view__summary-deadline--at-risk {
   color: var(--color-amber);
 }
 
-.progress-view__deadline--behind {
+.progress-view__summary-deadline--behind {
   color: var(--color-recording);
 }
 
@@ -49,11 +67,26 @@
   gap: var(--space-sm);
 }
 
+@media (min-width: 768px) {
+  .progress-view__item {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-lg);
+  }
+}
+
 .progress-view__item-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-sm);
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .progress-view__item-header {
+    flex: 0 1 320px;
+  }
 }
 
 .progress-view__item-title {
@@ -110,6 +143,14 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .progress-view__item-grid {
+    flex: 1;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-md);
+  }
 }
 
 @media (max-width: 520px) {

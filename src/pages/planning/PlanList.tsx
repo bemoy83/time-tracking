@@ -7,7 +7,16 @@ import {
   sortPlansForSidebar,
 } from '../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from './hooks/usePlanIdsWithImportedExecutionReturns';
-import { ChevronIcon, ChevronRightIcon, TrashIcon, PlusIcon } from '../../components/icons';
+import {
+  ChevronIcon,
+  ChevronRightIcon,
+  TrashIcon,
+  PlusIcon,
+  CheckIcon,
+  CompleteCircleIcon,
+  PencilIcon,
+  PlayIcon,
+} from '../../components/icons';
 import { Fab } from '../../components/Fab';
 import { StatusBadge } from '../../components/StatusBadge';
 
@@ -233,6 +242,40 @@ interface PlanListItemProps {
   compact?: boolean;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  active: 'Active',
+  'review-ready': 'Review ready',
+  reviewed: 'Reviewed',
+};
+
+function PlanStatusIcon({
+  variant,
+}: {
+  variant: 'draft' | 'active' | 'review-ready' | 'reviewed';
+}) {
+  const title = STATUS_LABELS[variant] ?? variant;
+  const iconClass = `planning-view__status-icon planning-view__status-icon--${variant}`;
+  const Icon =
+    variant === 'reviewed'
+      ? CompleteCircleIcon
+      : variant === 'review-ready'
+        ? CheckIcon
+        : variant === 'active'
+          ? PlayIcon
+          : PencilIcon;
+  return (
+    <span
+      className={iconClass}
+      title={title}
+      role="img"
+      aria-label={title}
+    >
+      <Icon className="planning-view__status-icon-svg" aria-hidden />
+    </span>
+  );
+}
+
 function PlanListItem({
   plan,
   tasks,
@@ -261,20 +304,49 @@ function PlanListItem({
             </span>
           )}
         </span>
-        <StatusBadge variant={badgeVariant} />
+        {compact ? (
+          <span className="planning-view__item-badges">
+            <PlanStatusIcon
+              variant={
+                badgeVariant === 'reviewed'
+                  ? 'reviewed'
+                  : badgeVariant === 'review-ready'
+                    ? 'review-ready'
+                    : badgeVariant === 'active'
+                      ? 'active'
+                      : 'draft'
+              }
+            />
+          </span>
+        ) : (
+          <StatusBadge variant={badgeVariant} />
+        )}
         {!compact && <ChevronRightIcon className="planning-view__item-chevron" />}
       </button>
       {wrapUpEligible && (
-        <button
-          className="planning-view__item-action"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenWrapUp(plan);
-          }}
-          aria-label={`Wrap up ${plan.title}`}
-        >
-          Wrap Up
-        </button>
+        compact ? (
+          <button
+            type="button"
+            className="planning-view__item-wrap-up-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenWrapUp(plan);
+            }}
+            aria-label={`Wrap up ${plan.title}`}
+            title="Wrap up"
+          >
+            <CheckIcon className="planning-view__item-wrap-up-icon" />
+          </button>
+        ) : (
+          <StatusBadge
+            variant="wrap-up"
+            as="button"
+            onClick={() => onOpenWrapUp(plan)}
+            aria-label={`Wrap up ${plan.title}`}
+          >
+            Wrap Up
+          </StatusBadge>
+        )
       )}
       <button
         className="planning-view__item-delete"

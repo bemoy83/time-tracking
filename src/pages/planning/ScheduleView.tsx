@@ -208,14 +208,6 @@ export function ScheduleView({
           Schedule
         </h2>
         <div className="schedule-view__header-actions">
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => window.print()}
-            aria-label="Print schedule"
-          >
-            Print
-          </button>
           {!readOnly && (
             <>
               <button

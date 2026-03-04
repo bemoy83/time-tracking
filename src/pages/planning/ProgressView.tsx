@@ -65,22 +65,24 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
         )}
       </header>
 
-      <section className="progress-view__summary">
-        <div className="progress-view__summary-row">
-          <span>Completion</span>
-          <strong>{Math.round(progress.completionRatio * 100)}%</strong>
-        </div>
-        <div className="progress-view__summary-row">
-          <span>Planned items</span>
-          <strong>{progress.lineItems.length}</strong>
-        </div>
+      <section
+        className={`progress-view__summary${progress.deadline.enabled && progress.deadline.status && progress.deadline.status !== 'on-track' ? ' progress-view__summary--risk' : ''}`}
+        aria-label="Plan progress summary"
+      >
+        <span className="progress-view__summary-metric">
+          <strong>{Math.round(progress.completionRatio * 100)}%</strong> complete
+        </span>
+        <span className="progress-view__summary-sep">&middot;</span>
+        <span className="progress-view__summary-metric">
+          <strong>{progress.lineItems.length}</strong> planned {progress.lineItems.length === 1 ? 'item' : 'items'}
+        </span>
         {progress.deadline.enabled && progress.deadline.label && (
-          <div className="progress-view__summary-row">
-            <span>Deadline</span>
-            <strong className={`progress-view__deadline progress-view__deadline--${progress.deadline.status}`}>
-              {progress.deadline.label} ({progress.deadline.status?.replace('-', ' ')})
-            </strong>
-          </div>
+          <>
+            <span className="progress-view__summary-sep">&middot;</span>
+            <span className={`progress-view__summary-deadline progress-view__summary-deadline--${progress.deadline.status ?? 'on-track'}`}>
+              {progress.deadline.label}
+            </span>
+          </>
         )}
       </section>
 

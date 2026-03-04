@@ -5,10 +5,14 @@
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
+  box-sizing: border-box;
   border-radius: 9999px;
   font-size: var(--font-caption);
   font-weight: 600;
+  line-height: 1;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   flex-shrink: 0;
@@ -31,23 +35,46 @@
 }
 
 .status-badge--review-ready {
-  background: rgba(217, 119, 6, 0.2);
-  color: #8a4b00;
+  background: var(--color-amber);
+  color: white;
 }
 
 .status-badge--reviewed {
-  background: rgba(22, 163, 74, 0.16);
-  color: var(--color-ready);
+  background: var(--color-ready);
+  color: white;
 }
 
 .status-badge--received {
-  background: rgba(37, 99, 235, 0.14);
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
 }
 
 .status-badge--session-closed {
-  background: rgba(107, 114, 128, 0.16);
-  color: var(--color-text-muted);
+  background: #6b7280;
+  color: white;
+}
+
+.status-badge--wrap-up {
+  background: var(--color-ready);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  transition: filter 0.15s;
+}
+
+.status-badge--wrap-up:hover {
+  filter: brightness(1.08);
+}
+
+.status-badge--wrap-up:active {
+  filter: brightness(0.95);
+}
+
+.status-badge--wrap-up:focus-visible {
+  outline: 2px solid var(--color-ready);
+  outline-offset: 2px;
 }
 
 .status-badge--high {
@@ -61,6 +88,11 @@
 }
 
 .status-badge--low {
+  background: var(--color-recording);
+  color: white;
+}
+
+.status-badge--danger {
   background: var(--color-recording);
   color: white;
 }
