@@ -2,8 +2,9 @@ import { useState } from 'react';
 import {
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
+  type WorkUnit,
 } from '../../lib/types';
-import { getWorkTypeById } from '../../lib/stores/work-type-store';
+import { getWorkTypeById, useWorkTypeStore } from '../../lib/stores/work-type-store';
 import {
   type PlanLineItem,
   resolveLineItemWorkTypeTitle,
@@ -39,6 +40,8 @@ export function LineItemCard({
   onRemove,
 }: LineItemCardProps) {
   const [rationale, setRationale] = useState(item.rationale ?? '');
+  const [unitChangeWarning, setUnitChangeWarning] = useState<{ from: WorkUnit; to: WorkUnit } | null>(null);
+  const { workTypes } = useWorkTypeStore();
   const riskClass = suggestion ? `planning-view__risk--${suggestion.risk}` : '';
   const suggestedCrew = suggestion?.suggestedCrew ?? null;
 
@@ -86,12 +89,47 @@ export function LineItemCard({
       : `${resolveLineItemWorkTypeTitle(item)} · ${BUILD_PHASE_LABELS[item.buildPhase]} · ${WORK_UNIT_LABELS[item.workUnit]}`;
   })();
 
+  const handleWorkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const wt = workTypes.find((w) => w.id === e.target.value);
+    if (!wt) return;
+    setUnitChangeWarning(
+      wt.workUnit !== item.workUnit ? { from: item.workUnit, to: wt.workUnit } : null,
+    );
+    const updates: Partial<PlanLineItem> = {
+      workTypeId: wt.id,
+      workTypeTitle: wt.title,
+      workUnit: wt.workUnit,
+      buildPhase: wt.buildPhase,
+      productivityRate: wt.expectedProductivity,
+      rateSource: 'template',
+    };
+    if (wt.expectedProductivity > 0 && item.crew > 0 && item.workQuantity > 0) {
+      updates.timeHours = Math.round((item.workQuantity / (wt.expectedProductivity * item.crew)) * 100) / 100;
+    }
+    onUpdate(updates);
+  };
+
   return (
     <div className={`planning-view__line-item ${riskClass}`}>
       <div className="planning-view__line-item-header">
         <div className="planning-view__line-item-info">
           <span className="planning-view__line-item-title">{item.title}</span>
-          <span className="planning-view__line-item-type">{workTypeLabel}</span>
+          {isLocked ? (
+            <span className="planning-view__line-item-type">{workTypeLabel}</span>
+          ) : (
+            <select
+              className="input planning-view__work-type-select"
+              value={item.workTypeId ?? ''}
+              onChange={handleWorkTypeChange}
+            >
+              <option value="" disabled>Select work type…</option>
+              {workTypes.map((wt) => (
+                <option key={wt.id} value={wt.id}>
+                  {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         {!isLocked && (
           <div className="planning-view__line-item-actions">
@@ -125,6 +163,23 @@ export function LineItemCard({
           </div>
         )}
       </div>
+
+      {unitChangeWarning && (
+        <div className="planning-view__unit-warning">
+          <span>
+            Unit changed from {WORK_UNIT_LABELS[unitChangeWarning.from]} to{' '}
+            {WORK_UNIT_LABELS[unitChangeWarning.to]}. Verify quantity.
+          </span>
+          <button
+            type="button"
+            className="planning-view__unit-warning-dismiss"
+            onClick={() => setUnitChangeWarning(null)}
+            aria-label="Dismiss warning"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {isLocked ? (
         <div className="planning-view__line-item-fields">

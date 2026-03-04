@@ -524,6 +524,10 @@
   min-width: 0;
 }
 
+.planning-view__line-item-info:has(.planning-view__work-type-select) {
+  gap: var(--space-xs);
+}
+
 .planning-view__line-item-title {
   font-weight: 600;
   white-space: nowrap;
@@ -609,6 +613,57 @@
 .planning-view__line-item-action-icon {
   width: 18px;
   height: 18px;
+}
+
+/* Work type select in header */
+select.planning-view__work-type-select {
+  font-size: var(--font-small);
+  min-height: 30px;
+  padding: var(--space-xs) var(--space-sm);
+  padding-right: 2rem;
+  border-radius: var(--radius-lg);
+  background-size: 14px 14px;
+  background-position: right var(--space-xs) center;
+}
+
+/* Unit change warning banner */
+.planning-view__unit-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: color-mix(in srgb, #d97706 10%, transparent);
+  color: #92400e;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-small);
+  font-weight: 500;
+}
+
+.planning-view__unit-warning span {
+  flex: 1;
+}
+
+.planning-view__unit-warning-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  font-size: var(--font-small);
+  opacity: 0.6;
+  transition: opacity 0.15s, background-color 0.15s;
+}
+
+.planning-view__unit-warning-dismiss:hover {
+  opacity: 1;
+  background: color-mix(in srgb, #d97706 12%, transparent);
 }
 
 /* Line item fields — grid */
