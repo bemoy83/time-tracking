@@ -1,6 +1,5 @@
 import type { BuildPhase, Task, WorkType, WorkUnit } from './types';
 import type { PlanLineItem } from './planning/plan-model';
-import { lineItemEffectiveCrew } from './planning/plan-model';
 import type { CreateTaskInput } from './stores/task-store';
 import type { WorkTypeKey } from './kpi';
 
@@ -63,7 +62,7 @@ export function lineItemToWorkPackageCore(item: PlanLineItem): WorkPackageCore {
     workUnit: item.workUnit,
     buildPhase: item.buildPhase,
     workQuantity: item.workQuantity,
-    crew: lineItemEffectiveCrew(item),
+    crew: item.crew,
     productivityRate: item.productivityRate,
     estimatedMinutes: Math.round(item.timeHours * 60),
     blockReason: item.blockReason,
