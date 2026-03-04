@@ -145,7 +145,6 @@ export function LineItemCard({
                 title="Apply suggested crew and time"
               >
                 <SparklesIcon className="planning-view__line-item-action-icon" />
-                Apply suggestions
               </button>
             )}
             <button

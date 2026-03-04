@@ -187,6 +187,17 @@ export function PlanEditor({
             aria-label="Plan title"
           />
           <StatusBadge variant={currentPlan.status} />
+          {!readOnly && onOpenSchedule && (
+            <button
+              className="btn btn--secondary btn--sm"
+              onClick={async () => {
+                await flushAndWait();
+                onOpenSchedule();
+              }}
+            >
+              Schedule
+            </button>
+          )}
         </div>
 
         <div className="planning-view__project-row">
@@ -288,24 +299,11 @@ export function PlanEditor({
         )}
 
         {/* Actions */}
-        {!readOnly && (
+        {!readOnly && isLocked && canOpenProgress && (
           <div className="planning-view__actions">
-            {onOpenSchedule && (
-              <button
-                className="btn btn--secondary"
-                onClick={async () => {
-                  await flushAndWait();
-                  onOpenSchedule();
-                }}
-              >
-                Schedule
-              </button>
-            )}
-            {isLocked && canOpenProgress && (
-              <button className="btn btn--secondary" onClick={onOpenProgress}>
-                Progress
-              </button>
-            )}
+            <button className="btn btn--secondary" onClick={onOpenProgress}>
+              Progress
+            </button>
           </div>
         )}
         {readOnly && currentPlan.reviewedAt != null && (

@@ -20,7 +20,6 @@ import { autoSchedule } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
-import { EventContextBar } from './schedule/EventContextBar';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
@@ -178,13 +177,6 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_assignment_edit');
   };
 
-  const handleEditInputs = () => {
-    setInputsExpanded(true);
-    requestAnimationFrame(() => {
-      inputsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
-
   const isLocked = currentPlan.status === 'active';
 
   const handleExport = async () => {
@@ -256,19 +248,6 @@ export function ScheduleView({
         </div>
       </header>
 
-      <EventContextBar
-        buildUpStartDate={phaseDates.buildUpStartDate}
-        buildUpEndDate={phaseDates.buildUpEndDate}
-        tearDownStartDate={phaseDates.tearDownStartDate}
-        tearDownEndDate={phaseDates.tearDownEndDate}
-        eventStartDate={currentPlan.eventStartDate}
-        eventEndDate={currentPlan.eventEndDate}
-        calendarDayCount={currentPlan.workCalendar.length}
-        defaultCrewSize={currentPlan.defaultCrewSize}
-        totalAvailableHours={capacity.totalAvailablePersonHours}
-        onEdit={handleEditInputs}
-      />
-
       <FeasibilityBar capacity={capacity} />
       <ConflictResolutionBanner capacity={capacity} />
 
@@ -328,24 +307,13 @@ export function ScheduleView({
         planDefaultCrewSize={currentPlan.defaultCrewSize}
       />
 
-      {!readOnly && capacity.unscheduledLineItemCount > 0 && currentPlan.workCalendar.length > 0 && (
-        <div className="schedule-view__actions">
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={handleAutoSchedule}
-          >
-            Auto-schedule ({capacity.unscheduledLineItemCount})
-          </button>
-        </div>
-      )}
-
       <ScheduleGrid
         lineItems={currentPlan.lineItems}
         calendar={currentPlan.workCalendar}
         capacity={capacity}
         phaseDates={phaseDates}
         readOnly={readOnly}
+        onAutoSchedule={handleAutoSchedule}
         onToggleAssignment={handleToggleAssignment}
         onCrewForDateChange={handleCrewForDateChange}
       />

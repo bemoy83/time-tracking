@@ -363,10 +363,11 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: var(--color-bg);
   /* Scroll shadow indicators — fade at overflowing edges */
   --_scroll-shadow-size: 24px;
   --_scroll-shadow-color: var(--color-bg);
-  background:
+  background-image:
     linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / var(--_scroll-shadow-size) 100% no-repeat local,
     linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / var(--_scroll-shadow-size) 100% no-repeat local,
     linear-gradient(to right, rgba(0,0,0,0.08), transparent) left / var(--_scroll-shadow-size) 100% no-repeat scroll,

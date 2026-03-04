@@ -626,30 +626,31 @@
 .planning-view__line-item-magic {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-2xs) var(--space-sm);
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
   color: var(--color-primary);
-  font-size: var(--font-small);
-  font-weight: 600;
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.15s, border-color 0.15s;
+  border-radius: 9999px;
+  transition: background-color 0.15s, color 0.15s;
   flex-shrink: 0;
 }
 
 .planning-view__line-item-magic:hover {
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .planning-view__line-item-magic:focus-visible {
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 .planning-view__line-item-magic .planning-view__line-item-action-icon {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 
 .planning-view__line-item-duplicate,
@@ -893,11 +894,11 @@ select.planning-view__work-type-select:hover {
 
 .planning-view__risk-reason {
   font-size: var(--font-caption);
-  font-weight: 500;
-  color: var(--color-recording);
-  background: var(--color-recording-bg);
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-weight: 600;
+  color: white;
+  background: var(--color-recording);
+  padding: 2px 8px;
+  border-radius: 9999px;
 }
 
 /* ============================================================

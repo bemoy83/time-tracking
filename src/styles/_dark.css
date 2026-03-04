@@ -4,6 +4,19 @@
    ============================================================ */
 
 @media (prefers-color-scheme: dark) {
+  /* --- Scrollbars — dark mode --- */
+  * {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
   /* --- Design tokens --- */
   :root {
     --color-bg: #121212;
@@ -397,7 +410,7 @@
   }
 
   .planning-view__risk-reason {
-    background: rgba(220, 38, 38, 0.15);
+    background: #991b1b;
   }
 
   .planning-view__add-form {
@@ -593,8 +606,9 @@
 
   /* --- Workspace tab scroll shadows --- */
   .planning-workspace__tabs {
+    background-color: var(--color-bg);
     --_scroll-shadow-color: var(--color-bg);
-    background:
+    background-image:
       linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / 24px 100% no-repeat local,
       linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,
       linear-gradient(to right, rgba(255,255,255,0.06), transparent) left / 24px 100% no-repeat scroll,

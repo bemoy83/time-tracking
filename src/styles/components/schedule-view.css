@@ -103,7 +103,6 @@
 
 .conflict-banner {
   background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
   border-radius: var(--radius-lg);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-small);
@@ -126,6 +125,14 @@
   font-weight: 600;
   color: rgb(146, 64, 14);
   flex: 1;
+}
+
+.conflict-banner .btn {
+  color: rgb(217, 119, 6);
+}
+
+.conflict-banner .btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
 }
 
 .conflict-banner__suggestions {
@@ -157,7 +164,14 @@
 
 .conflict-banner--info {
   background: rgba(59, 130, 246, 0.06);
-  border-color: rgba(59, 130, 246, 0.18);
+}
+
+.conflict-banner--info .btn {
+  color: rgb(37, 99, 235);
+}
+
+.conflict-banner--info .btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .conflict-banner--info .conflict-banner__icon {
@@ -397,7 +411,31 @@
 }
 
 .schedule-grid__line-item-col {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.schedule-grid__line-item {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.schedule-grid__line-item-col {
   font-weight: 700;
+}
+
+.schedule-grid__line-item-col--with-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.schedule-grid__line-item-col-label {
+  display: block;
+}
+
+.schedule-grid__auto-schedule-btn {
+  flex-shrink: 0;
 }
 
 .schedule-grid__day-col {

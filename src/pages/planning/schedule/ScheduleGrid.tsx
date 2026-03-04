@@ -119,6 +119,7 @@ interface ScheduleGridProps {
   capacity: CapacitySummary;
   phaseDates: PhaseDateValues;
   readOnly: boolean;
+  onAutoSchedule?: () => void;
   onToggleAssignment: (lineItem: PlanLineItem, date: string, cellElement?: HTMLElement) => void;
   onCrewForDateChange?: (lineItemId: string, date: string, crew: number) => void;
 }
@@ -176,6 +177,7 @@ export function ScheduleGrid({
   capacity,
   phaseDates,
   readOnly,
+  onAutoSchedule,
   onToggleAssignment,
   onCrewForDateChange,
 }: ScheduleGridProps) {
@@ -438,7 +440,20 @@ export function ScheduleGrid({
           style={{ '--schedule-day-count': calendar.length } as React.CSSProperties}
         >
           <div className="schedule-grid__header" role="row" style={{ gridTemplateColumns: gridColumns }}>
-            <span className="schedule-grid__line-item-col" role="columnheader">Work package</span>
+            <div className="schedule-grid__line-item-col schedule-grid__line-item-col--with-action" role="columnheader">
+              <span className="schedule-grid__line-item-col-label">Work package</span>
+              {onAutoSchedule && calendar.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm schedule-grid__auto-schedule-btn"
+                  onClick={onAutoSchedule}
+                  disabled={readOnly || unscheduled.length === 0}
+                  aria-label={unscheduled.length > 0 ? `Auto-schedule ${unscheduled.length} unscheduled item${unscheduled.length === 1 ? '' : 's'}` : 'No unscheduled items'}
+                >
+                  Auto-schedule ({unscheduled.length})
+                </button>
+              )}
+            </div>
             {calendar.map((day, index) => {
               const cap = dayByDate.get(day.date);
               const isOver = cap?.isOverAllocated ?? false;
@@ -516,37 +531,6 @@ export function ScheduleGrid({
                 })()
               : lineItems.map((item, i) => renderRow(item, i))
             }
-          </div>
-
-          <div className="schedule-grid__footer" role="row" style={{ gridTemplateColumns: gridColumns }}>
-            <span className="schedule-grid__line-item-col" role="columnheader">Utilization</span>
-            {calendar.map((day) => {
-              const cap = dayByDate.get(day.date);
-              if (!cap) return <span key={`${day.date}-empty`} className="schedule-grid__summary-col">-</span>;
-              const pct = cap.utilization != null ? Math.round(cap.utilization * 100) : 0;
-              const barWidth = Math.min(pct, 100);
-              return (
-                <span
-                  key={`${day.date}-summary`}
-                  className={`schedule-grid__summary-col${cap.isOverAllocated ? ' schedule-grid__summary-col--over' : ''}`}
-                >
-                  <span>{cap.requiredPersonHours.toFixed(1)} / {cap.availablePersonHours.toFixed(1)}h</span>
-                  <span
-                    className="schedule-grid__util-bar"
-                    role="progressbar"
-                    aria-valuenow={pct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`${pct}% utilized`}
-                  >
-                    <span
-                      className={`schedule-grid__util-bar-fill${cap.isOverAllocated ? ' schedule-grid__util-bar-fill--over' : ''}`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </span>
-                </span>
-              );
-            })}
           </div>
         </div>
       )}
