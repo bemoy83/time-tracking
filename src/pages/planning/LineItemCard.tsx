@@ -117,18 +117,21 @@ export function LineItemCard({
           {isLocked ? (
             <span className="planning-view__line-item-type">{workTypeLabel}</span>
           ) : (
-            <select
-              className="input planning-view__work-type-select"
-              value={item.workTypeId ?? ''}
-              onChange={handleWorkTypeChange}
-            >
-              <option value="" disabled>Select work type…</option>
-              {workTypes.map((wt) => (
-                <option key={wt.id} value={wt.id}>
-                  {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="input planning-view__work-type-select"
+                value={item.workTypeId ?? ''}
+                onChange={handleWorkTypeChange}
+              >
+                <option value="" disabled>Select work type…</option>
+                {workTypes.map((wt) => (
+                  <option key={wt.id} value={wt.id}>
+                    {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
+                  </option>
+                ))}
+              </select>
+              <span className="planning-view__field-help">Category, phase, and unit</span>
+            </>
           )}
         </div>
         {!isLocked && (
@@ -213,6 +216,7 @@ export function LineItemCard({
               onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
               onFocus={selectOnFocus}
             />
+            <span className="planning-view__field-help">Total in {WORK_UNIT_LABELS[item.workUnit]}</span>
           </div>
           <div className="planning-view__field">
             <span className="planning-view__field-label">
@@ -236,11 +240,9 @@ export function LineItemCard({
               onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
               onFocus={selectOnFocus}
             />
-            {suggestedCrew != null && (
-              <span className="planning-view__field-help">
-                Suggested: {suggestedCrew} crew for phase
-              </span>
-            )}
+            <span className="planning-view__field-help">
+              {suggestedCrew != null ? `Suggested: ${suggestedCrew} crew for phase` : 'Number of workers'}
+            </span>
           </div>
           <div className="planning-view__field">
             <span className="planning-view__field-label">
@@ -263,6 +265,7 @@ export function LineItemCard({
               onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
               onFocus={selectOnFocus}
             />
+            <span className="planning-view__field-help">Estimated duration in hours</span>
           </div>
           <div className="planning-view__field">
             <span className="planning-view__field-label">
@@ -276,6 +279,7 @@ export function LineItemCard({
               onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
               onFocus={selectOnFocus}
             />
+            <span className="planning-view__field-help">Productivity per person-hour</span>
           </div>
         </div>
       )}
@@ -328,6 +332,7 @@ export function LineItemCard({
             onChange={(e) => setRationale(e.target.value)}
             onBlur={() => onUpdate({ rationale: rationale || null })}
           />
+          <span className="planning-view__field-help">Optional note for this package</span>
         </div>
       )}
       {isLocked && rationale && (

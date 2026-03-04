@@ -309,7 +309,57 @@
   }
 
   .planning-view__line-item {
-    background: #252525;
+    background: #1e1e1e;
+  }
+
+  .planning-view__line-item-type {
+    color: #858585;
+  }
+
+  .planning-view__field-label {
+    color: #858585;
+  }
+
+  .planning-view__field .input {
+    background: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  .planning-view__field .input:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .planning-view__field-value {
+    color: #e0e0e0;
+  }
+
+  select.planning-view__work-type-select {
+    background-color: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  select.planning-view__work-type-select:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .planning-view__rationale .input {
+    background: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  .planning-view__rationale .input::placeholder {
+    color: #858585;
+  }
+
+  .planning-view__rationale .input:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .planning-view__field-help {
+    color: #858585;
   }
 
   .insights-view__row {
@@ -366,7 +416,97 @@
     background: #1e1e1e;
   }
 
+  /* --- Plan Editor sticky summary — schedule inputs --- */
+  .planning-view__sticky-summary .planning-view__schedule-inputs {
+    background: #1e1e1e;
+  }
+
+  .planning-view__sticky-summary .planning-view__schedule-group-title,
+  .planning-view__sticky-summary .planning-view__schedule-label-text {
+    color: #858585;
+  }
+
+  .planning-view__sticky-summary .planning-view__schedule-input .input {
+    background: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  .planning-view__sticky-summary .planning-view__schedule-input .input:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.65;
+    filter: invert(1);
+  }
+
+  .planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.85;
+  }
+
   /* --- Schedule View (Event Inputs, Work Calendar, Schedule Grid, Capacity Summary) --- */
+
+  /* Section blocks — softer contrast */
+  .schedule-view .schedule-view__block {
+    background: #1e1e1e;
+  }
+
+  .schedule-view .schedule-view__block-title {
+    color: var(--color-text-muted);
+  }
+
+  /* Schedule Inputs — muted labels, softer inputs */
+  .schedule-view .planning-view__schedule-group-title {
+    color: var(--color-text-muted);
+  }
+
+  .schedule-view .planning-view__schedule-label-text {
+    color: var(--color-text-muted);
+  }
+
+  .schedule-view .planning-view__schedule-input .input {
+    background: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  .schedule-view .planning-view__schedule-input .input:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .schedule-view .planning-view__schedule-input .input::placeholder {
+    color: #858585;
+  }
+
+  /* Date input calendar icon — lighter variant for dark backgrounds */
+  .schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.65;
+    filter: invert(1);
+  }
+
+  .schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.85;
+  }
+
+  /* Work Calendar — muted headers (Mon, Tue, Wk 1, etc.) */
+  .schedule-view .wc-col-head,
+  .schedule-view .wc-week-label {
+    color: #858585;
+  }
+
+  /* Work Calendar day cell content — softer text */
+  .schedule-view .wc-cell__day-num {
+    color: #e0e0e0;
+  }
+
+  .schedule-view .wc-cell__value {
+    color: #e0e0e0;
+  }
+
+  .schedule-view .wc-cell__value--inherited {
+    color: #858585;
+  }
 
   /* Work Calendar week grid */
   .wc-cell--work {

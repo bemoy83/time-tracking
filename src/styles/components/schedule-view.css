@@ -89,6 +89,16 @@
   color: var(--color-text-muted);
 }
 
+/* --- Schedule Inputs block (schedule view) --- */
+
+.schedule-view .schedule-view__block--compact {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+}
+
+/* Input/group styling shared with sticky summary — see planning.css */
+
 /* --- Conflict Resolution Banner --- */
 
 .conflict-banner {

@@ -324,6 +324,26 @@
   align-items: stretch;
 }
 
+/* Schedule inputs makeover (sticky summary + schedule view) */
+.planning-view__sticky-summary .planning-view__schedule-inputs {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  gap: var(--space-lg);
+}
+
+.schedule-view .planning-view__schedule-inputs {
+  gap: var(--space-lg);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-group,
+.schedule-view .planning-view__schedule-group {
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
 .planning-view__schedule-group {
   margin: 0;
   border: 1px solid var(--color-border);
@@ -337,6 +357,17 @@
 
 .planning-view__schedule-group:disabled {
   opacity: 0.7;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-group-title,
+.schedule-view .planning-view__schedule-group-title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+  padding: 0;
 }
 
 .planning-view__schedule-group-title {
@@ -357,6 +388,52 @@
 
 .planning-view__schedule-group-grid--single {
   grid-template-columns: 1fr;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-group-grid,
+.schedule-view .planning-view__schedule-group-grid {
+  gap: var(--space-md);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input,
+.schedule-view .planning-view__schedule-input {
+  gap: 6px;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-label-text,
+.schedule-view .planning-view__schedule-label-text {
+  font-size: var(--font-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input .input,
+.schedule-view .planning-view__schedule-input .input {
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input .input:focus-visible,
+.schedule-view .planning-view__schedule-input .input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input .input:hover,
+.schedule-view .planning-view__schedule-input .input:hover {
+  border-color: var(--color-border);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator,
+.schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
 }
 
 @media (max-width: 820px) {
@@ -618,12 +695,21 @@
 /* Work type select in header */
 select.planning-view__work-type-select {
   font-size: var(--font-small);
-  min-height: 30px;
+  min-height: 36px;
   padding: var(--space-xs) var(--space-sm);
   padding-right: 2rem;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
   background-size: 14px 14px;
   background-position: right var(--space-xs) center;
+}
+
+select.planning-view__work-type-select:focus-visible {
+  border-color: var(--color-primary);
+}
+
+select.planning-view__work-type-select:hover {
+  border-color: var(--color-border);
 }
 
 /* Unit change warning banner */
@@ -689,11 +775,11 @@ select.planning-view__work-type-select {
   display: flex;
   align-items: center;
   height: 20px;
-  font-size: var(--font-caption);
+  font-size: var(--font-small);
   font-weight: 600;
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-transform: none;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -701,6 +787,16 @@ select.planning-view__work-type-select {
   font-size: var(--font-small);
   min-height: 36px;
   padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+
+.planning-view__field .input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.planning-view__field .input:hover {
+  border-color: var(--color-border);
 }
 
 .planning-view__field-value {
@@ -813,6 +909,16 @@ select.planning-view__work-type-select {
   width: 100%;
   min-height: 36px;
   padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+
+.planning-view__rationale .input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.planning-view__rationale .input:hover {
+  border-color: var(--color-border);
 }
 
 /* ============================================================
