@@ -1,5 +1,5 @@
 import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
-import type { Task, TimeEntry, WorkType } from '../../types';
+import type { Project, Task, TimeEntry, WorkType } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
 export const DATA_TRANSFER_SCHEMA_VERSION = '1.1';
@@ -21,6 +21,8 @@ export interface DataTransferEnvelope<TPayload> {
 export interface PlanPackagePayload {
   plan: Plan;
   workTypes: WorkType[];
+  /** Projects referenced by the plan; optional for backward compatibility. */
+  projects?: Project[];
   lastModifiedAt: string;
 }
 

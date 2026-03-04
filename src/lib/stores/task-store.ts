@@ -102,6 +102,21 @@ export async function refreshTasks(): Promise<void> {
   }
 }
 
+/**
+ * Refresh projects from database.
+ * Call after adding projects during plan package import.
+ */
+export async function refreshProjects(): Promise<void> {
+  try {
+    const projects = await getAllProjects();
+    setState({ projects, error: null });
+  } catch (err) {
+    setState({
+      error: err instanceof Error ? err.message : 'Failed to refresh projects',
+    });
+  }
+}
+
 // ============================================================
 // Task Actions
 // ============================================================

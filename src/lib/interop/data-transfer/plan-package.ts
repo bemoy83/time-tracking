@@ -1,4 +1,4 @@
-import { addPlan, getAllTasks, getAllWorkTypes, getPlan, updatePlan } from '../../db';
+import { addPlan, addProject, getAllProjects, getAllTasks, getAllWorkTypes, getPlan, getProject, updatePlan } from '../../db';
 import {
   type Plan,
   type PlanLineItem,
@@ -7,7 +7,8 @@ import {
 } from '../../planning/plan-model';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { nowUtc } from '../../types';
-import type { WorkType } from '../../types';
+import type { Project, WorkType } from '../../types';
+import { generateId } from '../../types';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
@@ -238,12 +239,21 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
     };
   });
 
+  const projects: Project[] = [];
+  if (plan.projectId) {
+    const project = await getProject(plan.projectId);
+    if (project) {
+      projects.push(project);
+    }
+  }
+
   return {
     plan: {
       ...plan,
       lineItems,
     },
     workTypes,
+    projects: projects.length > 0 ? projects : undefined,
     lastModifiedAt: plan.updatedAt,
   };
 }
@@ -277,6 +287,34 @@ export async function resolveImportedWorkTypeIds(
     mapping.set(imported.id, created.id);
   }
   return mapping;
+}
+
+async function resolveImportedProjectId(
+  planProjectId: string | null,
+  payloadProjects: Project[] | undefined,
+): Promise<string | null> {
+  if (!planProjectId) return null;
+  if (!payloadProjects?.length) return null;
+
+  const importedProject = payloadProjects.find((p) => p.id === planProjectId);
+  if (!importedProject) return null;
+
+  const existingProjects = await getAllProjects();
+  const match = existingProjects.find(
+    (p) => p.name === importedProject.name && p.color === importedProject.color,
+  );
+  if (match) return match.id;
+
+  const now = nowUtc();
+  const newProject: Project = {
+    id: generateId(),
+    name: importedProject.name,
+    color: importedProject.color,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await addProject(newProject);
+  return newProject.id;
 }
 
 function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
@@ -489,13 +527,22 @@ export async function applyPlanPackageImport(
     ...item,
     workTypeId: item.workTypeId ? (workTypeIdMap.get(item.workTypeId) ?? item.workTypeId) : null,
   }));
+  const resolvedProjectId = await resolveImportedProjectId(
+    importedPlan.projectId,
+    envelope.payload.projects,
+  );
   const mappedPlan = {
     ...importedPlan,
+    projectId: resolvedProjectId ?? null,
     lineItems: remappedLineItems,
   };
 
   if (!existing) {
     await addPlan(mappedPlan);
+    if (resolvedProjectId) {
+      const { refreshProjects } = await import('../../stores/task-store');
+      await refreshProjects();
+    }
     return {
       applied: true,
       merged: false,
@@ -506,6 +553,11 @@ export async function applyPlanPackageImport(
   const merged = hasExistingExecution;
   const next = merged ? mergeReceivedPlan(existing, mappedPlan) : mappedPlan;
   await updatePlan(next);
+
+  if (resolvedProjectId) {
+    const { refreshProjects } = await import('../../stores/task-store');
+    await refreshProjects();
+  }
 
   let mergeSummary: PlanPackageMergeSummary | undefined;
   if (merged) {

@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Plan, PlanLineItem } from '../../planning/plan-model';
 import type { WorkType } from '../../types';
-import { getAllWorkTypes } from '../../db';
+import { getAllWorkTypes, getProject } from '../../db';
 import { nowUtc } from '../../types';
 import { downloadJson } from '../download-json';
 import { buildPlanPackagePayload, exportPlanPackage } from './plan-package';
 
 vi.mock('../../db', () => ({
   addPlan: vi.fn(),
+  addProject: vi.fn(),
+  getAllProjects: vi.fn(),
   getAllTasks: vi.fn(),
   getAllWorkTypes: vi.fn(),
   getPlan: vi.fn(),
+  getProject: vi.fn(),
   updatePlan: vi.fn(),
 }));
 
@@ -23,6 +26,7 @@ vi.mock('../download-json', () => ({
 }));
 
 const mockGetAllWorkTypes = vi.mocked(getAllWorkTypes);
+const mockGetProject = vi.mocked(getProject);
 const mockNowUtc = vi.mocked(nowUtc);
 const mockDownloadJson = vi.mocked(downloadJson);
 
@@ -83,6 +87,8 @@ function makePlan(lineItems: PlanLineItem[]): Plan {
 describe('plan-package export', () => {
   beforeEach(() => {
     mockGetAllWorkTypes.mockReset();
+    mockGetProject.mockReset();
+    mockGetProject.mockResolvedValue(null);
     mockNowUtc.mockReset();
     mockDownloadJson.mockReset();
     mockNowUtc.mockReturnValue('2026-02-28T10:00:00.000Z');
@@ -202,5 +208,33 @@ describe('plan-package export', () => {
         },
       },
     });
+  });
+
+  it('includes project in payload when plan has projectId and project exists', async () => {
+    const project = {
+      id: 'project-1',
+      name: 'Spring Exhibition',
+      color: '#2563eb',
+      createdAt: '2026-02-01T00:00:00.000Z',
+      updatedAt: '2026-02-01T00:00:00.000Z',
+    };
+    mockGetProject.mockResolvedValue(project);
+    mockGetAllWorkTypes.mockResolvedValue([]);
+
+    const plan = makePlan([makeLineItem({ workTypeId: null })]);
+    const payload = await buildPlanPackagePayload(plan);
+
+    expect(mockGetProject).toHaveBeenCalledWith('project-1');
+    expect(payload.projects).toEqual([project]);
+  });
+
+  it('omits projects when plan has no projectId', async () => {
+    const plan = { ...makePlan([makeLineItem()]), projectId: null };
+    mockGetAllWorkTypes.mockResolvedValue([]);
+
+    const payload = await buildPlanPackagePayload(plan);
+
+    expect(mockGetProject).not.toHaveBeenCalled();
+    expect(payload.projects).toBeUndefined();
   });
 });

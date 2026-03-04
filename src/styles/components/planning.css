@@ -459,8 +459,8 @@
 }
 
 .planning-view__phase-pill--active {
-  background: var(--color-text);
-  color: var(--color-bg);
+  background: #1f1f1f;
+  color: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
