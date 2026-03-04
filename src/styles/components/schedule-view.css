@@ -346,8 +346,8 @@
   display: flex;
   flex-direction: column;
   overflow-x: auto;
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-lg);
+  background: transparent;
+  border-radius: 0;
 }
 
 .schedule-grid__header,
@@ -367,8 +367,8 @@
 .schedule-grid__summary-col {
   padding: var(--space-sm) 8px;
   font-size: var(--font-label);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Cells use box-shadow for hairline grid lines (avoids button default borders) */
@@ -378,12 +378,12 @@
   border: none;
   background: transparent;
   overflow: hidden;
-  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.06), inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .schedule-grid__header .schedule-grid__line-item-col,
 .schedule-grid__header .schedule-grid__day-col {
-  background: var(--color-surface-subtle);
+  background: transparent;
 }
 
 .schedule-grid__line-item-col,
@@ -393,7 +393,7 @@
   z-index: 2;
   min-width: 0;
   background: var(--color-surface-subtle);
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
 }
 
 .schedule-grid__line-item-col {
@@ -704,13 +704,13 @@
   align-items: center;
   gap: 4px;
   padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  font-size: var(--font-caption);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: var(--font-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--color-text-muted);
-  background: var(--color-surface-subtle);
+  background: transparent;
   grid-column: 1 / -1;
 }
 
@@ -733,7 +733,7 @@
   left: 0;
   z-index: 2;
   background: var(--color-surface-subtle);
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
 }
 
 .schedule-grid__footer .schedule-grid__line-item-col,

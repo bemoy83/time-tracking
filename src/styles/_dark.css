@@ -452,6 +452,20 @@
     background: #1e1e1e;
   }
 
+  /* Schedule grid — match block to avoid nested card look */
+  .schedule-view .schedule-grid__header .schedule-grid__line-item-col,
+  .schedule-view .schedule-grid__header .schedule-grid__day-col,
+  .schedule-view .schedule-grid__line-item-col,
+  .schedule-view .schedule-grid__line-item,
+  .schedule-view .schedule-grid__footer .schedule-grid__line-item-col {
+    background: #1e1e1e;
+  }
+
+  .schedule-view .schedule-grid__line-item-col,
+  .schedule-view .schedule-grid__line-item {
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
+  }
+
   .schedule-view .schedule-view__block-title {
     color: var(--color-text-muted);
   }
@@ -550,7 +564,13 @@
   }
 
   .schedule-grid__phase-label {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
+    background: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+    color: #858585;
+  }
+
+  .schedule-grid__phase-label:hover {
+    color: #e0e0e0;
   }
 
   .schedule-grid__cell {
