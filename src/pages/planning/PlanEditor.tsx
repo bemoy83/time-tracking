@@ -203,6 +203,11 @@ export function PlanEditor({
               Progress
             </button>
           )}
+          {readOnly && currentPlan.reviewedAt != null && onOpenReport && (
+            <button className="btn btn--secondary btn--sm" onClick={onOpenReport}>
+              Event Report
+            </button>
+          )}
         </div>
 
         <div className="planning-view__project-row">
@@ -303,16 +308,6 @@ export function PlanEditor({
           </div>
         )}
 
-        {/* Actions */}
-        {readOnly && currentPlan.reviewedAt != null && (
-          <div className="planning-view__actions">
-            {onOpenReport && (
-              <button className="btn btn--secondary" onClick={onOpenReport}>
-                Event Report
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* FAB — Add Work Package (when editable) */}

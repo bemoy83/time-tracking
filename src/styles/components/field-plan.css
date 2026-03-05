@@ -1,5 +1,6 @@
 /* ============================================================
    Field Plan View Overlay
+   Styled to match TodayView visual language
    ============================================================ */
 
 .field-plan-overlay {
@@ -39,9 +40,10 @@
 
 .field-plan-overlay__title {
   margin: 0;
-  font-size: var(--font-body);
-  font-weight: 700;
+  font-size: var(--font-large);
+  font-weight: 800;
   flex: 1;
+  color: var(--color-text);
 }
 
 .field-plan-overlay__content {
@@ -53,7 +55,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
 .field-plan-overlay__message {
@@ -75,230 +77,582 @@
   margin: 0;
 }
 
-.field-plan-overlay__plan-selector {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
+/* ============================================================
+   Plan Selector (matches TodayView project groups)
+   ============================================================ */
 
-.field-plan-overlay__plan-group {
+.field-plan__plan-selector {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
 }
 
-.field-plan-overlay__plan-group h3 {
-  margin: 0;
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.field-plan__plan-list {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
-.field-plan-overlay__plan-btn,
-.field-plan-overlay__past-toggle {
+.field-plan__plan-btn {
   border: none;
-  background: transparent;
+  background: var(--color-surface-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   min-height: var(--touch-min);
-  padding: var(--space-sm);
-  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
   font-size: var(--font-body);
   color: var(--color-text);
+  border-top: 1px solid var(--color-border);
 }
 
-.field-plan-overlay__plan-btn:hover,
-.field-plan-overlay__past-toggle:hover {
+.field-plan__plan-btn:first-child {
+  border-top: none;
+}
+
+.field-plan__plan-btn:hover {
   background: var(--color-surface-hover);
 }
 
-.field-plan-overlay__plan-btn--active {
-  background: var(--color-primary);
-  color: white;
+.field-plan__plan-btn--active {
+  border-inline-start: 3px solid var(--color-primary);
+  background: var(--color-surface-subtle);
+  font-weight: 600;
 }
 
-.field-plan-overlay__plan-chevron,
-.field-plan-overlay__past-chevron {
+.field-plan__plan-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-plan__plan-chevron {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
-.field-plan-overlay__past-chevron {
-  transition: transform 0.15s ease;
+.field-plan__empty-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  padding: var(--space-sm) var(--space-md);
 }
 
-.field-plan-overlay__past-chevron--open {
-  transform: rotate(90deg);
-}
-
-.field-plan-overlay__past-list {
+.field-plan__past-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
-.field-plan-detail {
+/* ============================================================
+   Section Headers (matches TodayView section pattern)
+   ============================================================ */
+
+.field-plan__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.field-plan__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.field-plan__icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================================
+   Plan Header Card
+   ============================================================ */
+
+.field-plan__header-card {
   background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
-.field-plan-detail__header {
+.field-plan__plan-title {
+  margin: 0;
+  font-size: var(--font-large);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.field-plan__progress {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
-.field-plan-detail__title {
-  margin: 0;
-  font-size: var(--font-large);
-}
-
-.field-plan-detail__meta {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-small);
-}
-
-.field-plan-detail__progress-track {
-  height: 8px;
+.field-plan__progress-track {
+  height: 6px;
   background: var(--color-border);
   border-radius: 999px;
   overflow: hidden;
 }
 
-.field-plan-detail__progress-fill {
+.field-plan__progress-fill {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--color-ready);
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
-.field-plan-detail__status-row {
+.field-plan__progress-label {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.field-plan__summary-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-sm);
+}
+
+.field-plan__summary-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.field-plan__summary-stat--risk {
+  color: var(--color-recording);
+}
+
+.field-plan__summary-stat--warning {
+  color: var(--color-amber);
+}
+
+.field-plan__summary-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ============================================================
+   Collapsible Toggle (matches CompletedSection pattern)
+   ============================================================ */
+
+.field-plan__collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-muted);
 }
 
-.field-plan-detail__toolbar {
-  display: flex;
-  gap: var(--space-sm);
+.field-plan__collapsible-toggle:hover {
+  opacity: 0.9;
 }
 
-.field-plan-detail__groups {
+.field-plan__toggle-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.field-plan__toggle-icon--ready {
+  color: var(--color-ready);
+}
+
+.field-plan__toggle-icon--muted {
+  color: var(--color-text-muted);
+}
+
+.field-plan__toggle-chevron {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  transform: rotate(-90deg);
+}
+
+.field-plan__toggle-chevron--expanded {
+  transform: rotate(0deg);
+}
+
+/* Completed section toggle color */
+.field-plan__section--completed .field-plan__collapsible-toggle {
+  color: var(--color-ready);
+}
+
+/* ============================================================
+   Task List Container (matches TodayView task list)
+   ============================================================ */
+
+.field-plan__task-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  background: transparent;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
 }
 
-.field-plan-detail__group {
+.field-plan__task-list > .swipeable-row {
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.field-plan__task-list > .swipeable-row:first-child {
+  border-top: none;
+}
+
+/* Active — blue left accent */
+.field-plan__task-list--active {
+  border-inline-start: 3px solid var(--color-primary);
+}
+
+.field-plan__task-list--active > .swipeable-row:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.field-plan__task-list--active > .swipeable-row:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}
+
+/* Blocked — amber left accent */
+.field-plan__task-list--blocked {
+  border-inline-start: 3px solid var(--color-amber);
+}
+
+.field-plan__task-list--blocked > .swipeable-row:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.field-plan__task-list--blocked > .swipeable-row:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}
+
+/* Completed — green left accent */
+.field-plan__task-list--completed {
+  border-inline-start: 3px solid var(--color-ready);
+}
+
+.field-plan__task-list--completed > .swipeable-row:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.field-plan__task-list--completed > .swipeable-row:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}
+
+/* Deferred — muted */
+.field-plan__task-list--deferred {
+  opacity: 0.85;
+}
+
+/* ============================================================
+   Line Item Row (matches TaskRow visual structure)
+   ============================================================ */
+
+.field-plan-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-subtle);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text);
+  font-size: var(--font-body);
+}
+
+.field-plan-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.field-plan-row--completed {
+  opacity: 0.85;
+}
+
+.field-plan-row--blocked {
+  background: #fffaf2;
+}
+
+.field-plan-row--blocked:hover {
+  background: #fff5e5;
+}
+
+.field-plan-row--deferred {
+  opacity: 0.85;
+}
+
+.field-plan-row--removed {
+  opacity: 0.7;
+}
+
+/* Status column */
+.field-plan-row__status-col {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 5px;
+  flex-shrink: 0;
+}
+
+.field-plan-row__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.field-plan-row__dot--in-progress {
+  background: var(--color-primary);
+}
+
+.field-plan-row__dot--blocked {
+  background: var(--color-amber);
+}
+
+.field-plan-row__dot--completed {
+  background: var(--color-ready);
+}
+
+.field-plan-row__dot--deferred {
+  background: var(--color-text-muted);
+}
+
+.field-plan-row__dot--pending {
+  background: var(--color-border);
+}
+
+/* Content column */
+.field-plan-row__content {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 2px;
 }
 
-.field-plan-detail__group-title {
-  margin: 0;
+.field-plan-row__title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-plan-row__meta {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-plan-row__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-small);
+  padding: 1px 0;
+}
+
+.field-plan-row__chip--blocked {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+.field-plan-row__chip--deferred {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.field-plan-row__chip--removed {
+  color: var(--color-recording);
+  font-style: italic;
+}
+
+.field-plan-row__chip-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.field-plan-row__note {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.field-plan-row__deadline {
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.field-plan-row__deadline--on-track,
+.field-plan-row__deadline--done-on-time {
+  color: var(--color-ready);
+}
+
+.field-plan-row__deadline--at-risk,
+.field-plan-row__deadline--due-today {
+  color: var(--color-amber);
+}
+
+.field-plan-row__deadline--overdue,
+.field-plan-row__deadline--done-late {
+  color: var(--color-recording);
+}
+
+.field-plan-row__deadline--needs-replanning {
+  color: var(--color-text-muted);
+}
+
+/* Trail column */
+.field-plan-row__trail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
+.field-plan-row__chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
+   Unplanned Tasks
+   ============================================================ */
+
+.field-plan__unplanned {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.field-plan__unplanned summary {
+  cursor: pointer;
+  font-weight: 600;
   font-size: var(--font-small);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.field-plan-detail__empty-group {
-  margin: 0;
-  color: var(--color-text-muted);
+.field-plan__unplanned-list {
+  margin: var(--space-sm) 0 0;
+  padding-left: var(--space-md);
   font-size: var(--font-small);
-}
-
-.field-plan-detail__unplanned {
-  background: var(--color-bg);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.field-plan-detail__unplanned summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.field-plan-detail__close-session {
-  width: 100%;
-}
-
-.field-plan-detail__closed-note {
-  margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--font-small);
 }
 
-.field-line-item {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-sm);
+/* ============================================================
+   Action Sheet — Line Item Actions
+   ============================================================ */
+
+.field-plan__action-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 0;
 }
 
-.field-line-item--blocked {
-  border-color: var(--color-amber);
-  background: #fffaf2;
-}
-
-.field-line-item--deferred {
-  opacity: 0.85;
-}
-
-.field-line-item--completed {
-  background: #f4fbf4;
-}
-
-.field-line-item--removed {
-  border-style: dashed;
-}
-
-.field-line-item__header {
+.field-plan__action-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.field-line-item__title {
-  margin: 0;
+  gap: var(--space-md);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
   font-size: var(--font-body);
+  color: var(--color-text);
+  text-align: left;
 }
 
-.field-line-item__status {
-  font-size: var(--font-small);
+.field-plan__action-btn:first-child {
+  border-top: none;
+}
+
+.field-plan__action-btn:hover {
+  background: var(--color-surface-hover);
+}
+
+.field-plan__action-btn:active {
+  background: var(--color-border);
+}
+
+.field-plan__action-btn-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--font-large);
+  line-height: 1;
+}
+
+.field-plan__action-btn-icon--primary {
+  color: var(--color-primary);
+}
+
+.field-plan__action-btn-icon--warning {
+  color: var(--color-amber);
+}
+
+.field-plan__action-btn-icon--ready {
+  color: var(--color-ready);
+}
+
+.field-plan__action-btn-icon--muted {
   color: var(--color-text-muted);
-  text-transform: uppercase;
 }
 
-.field-line-item__meta,
-.field-line-item__notice,
-.field-line-item__note {
-  margin: 0;
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-}
-
-.field-line-item__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
+/* ============================================================
+   Import Card (preserved from previous design)
+   ============================================================ */
 
 .field-plan-import-card {
   background: var(--color-surface-subtle);
@@ -360,10 +714,4 @@
 .field-plan-import-card__actions {
   display: flex;
   gap: var(--space-sm);
-}
-
-.field-plan-overlay__empty-text {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-small);
 }
