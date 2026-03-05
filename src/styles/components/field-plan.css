@@ -124,6 +124,17 @@
   font-weight: 600;
 }
 
+/* Rounded corners wrapping the accent bar (matches task list) */
+.field-plan__plan-btn--active:first-child {
+  border-start-start-radius: calc(var(--radius-xl) - 1px);
+  border-start-end-radius: var(--radius-xl);
+}
+
+.field-plan__plan-btn--active:last-child {
+  border-end-start-radius: calc(var(--radius-xl) - 1px);
+  border-end-end-radius: var(--radius-xl);
+}
+
 .field-plan__plan-name {
   flex: 1;
   min-width: 0;
@@ -714,4 +725,56 @@
 .field-plan-import-card__actions {
   display: flex;
   gap: var(--space-sm);
+}
+
+/* ============================================================
+   Action Sheet Forms (Block, Defer, Note)
+   ============================================================ */
+
+.field-plan__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.field-plan__form-label {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-plan__category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.field-plan__category-pill {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  border-radius: var(--radius-full);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.field-plan__category-pill:hover {
+  background: var(--color-surface-hover);
+}
+
+.field-plan__category-pill--active {
+  background: var(--color-amber);
+  border-color: var(--color-amber);
+  color: white;
+}
+
+.field-plan__category-pill--active:hover {
+  background: var(--color-amber);
+  opacity: 0.9;
 }

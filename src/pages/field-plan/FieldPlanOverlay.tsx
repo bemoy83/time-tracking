@@ -6,6 +6,7 @@ import {
   ChevronRightIcon,
   ClockIcon,
   ExpandChevronIcon,
+  PencilIcon,
   PlayIcon,
   TaskListIcon,
   WarningIcon,
@@ -39,10 +40,28 @@ import {
   syncLineItemUnblockToTasks,
 } from '../../lib/planning/task-plan-block-sync';
 
+// --- Types ---
+
 interface FieldPlanOverlayProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type FormMode =
+  | { kind: 'actions'; lineItem: FieldPlanLineItemSummary }
+  | { kind: 'block'; lineItem: FieldPlanLineItemSummary }
+  | { kind: 'defer'; lineItem: FieldPlanLineItemSummary }
+  | { kind: 'note'; lineItem: FieldPlanLineItemSummary };
+
+const BLOCK_CATEGORIES: { value: BlockCategory; label: string }[] = [
+  { value: 'access', label: 'Access' },
+  { value: 'materials', label: 'Materials' },
+  { value: 'crew', label: 'Crew' },
+  { value: 'dependency', label: 'Dependency' },
+  { value: 'other', label: 'Other' },
+];
+
+// --- Helpers ---
 
 function isExecutorPlan(plan: Plan): boolean {
   return plan.status === 'received' || plan.status === 'session-closed';
@@ -58,17 +77,6 @@ function sortExecutorPlans(plans: Plan[]): Plan[] {
     const bDate = b.status === 'received' ? (b.importedAt ?? b.updatedAt) : (b.sessionClosedAt ?? b.updatedAt);
     return bDate.localeCompare(aDate);
   });
-}
-
-function normalizeBlockCategory(raw: string | null): BlockCategory | null {
-  if (!raw) return null;
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === 'access') return 'access';
-  if (normalized === 'materials') return 'materials';
-  if (normalized === 'crew') return 'crew';
-  if (normalized === 'dependency') return 'dependency';
-  if (normalized === 'other') return 'other';
-  return null;
 }
 
 function formatPlanPersonHours(plan: Plan, tasks: ReturnType<typeof useTaskStore>['tasks'], timeEntries: TimeEntry[]): string {
@@ -109,6 +117,258 @@ function groupByStatus(lineItems: FieldPlanLineItemSummary[]) {
   return { inProgress, blocked, pending, completed, deferred };
 }
 
+// --- Line Item Row Component ---
+
+interface FieldPlanLineItemRowProps {
+  lineItem: FieldPlanLineItemSummary;
+  canExecute: boolean;
+  onRelease: (item: PlanLineItem) => void;
+  onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
+}
+
+function FieldPlanLineItemRow({
+  lineItem,
+  canExecute,
+  onRelease,
+  onOpenActions,
+}: FieldPlanLineItemRowProps) {
+  const { item, status, tasks: linkedTasks } = lineItem;
+  const canRelease = canExecute && !item.removedFromSource && status === 'pending' && linkedTasks.length === 0;
+  const canAct = canExecute && !item.removedFromSource;
+
+  const leftAction = canRelease
+    ? {
+        label: 'Release',
+        icon: <PlayIcon className="swipeable-row__action-icon" />,
+        color: 'var(--color-primary)',
+        onAction: () => onRelease(item),
+      }
+    : undefined;
+
+  const rightAction = canAct
+    ? {
+        label: 'Actions',
+        icon: <PencilIcon className="swipeable-row__action-icon" />,
+        color: 'var(--color-text-muted)',
+        onAction: () => onOpenActions(lineItem),
+      }
+    : undefined;
+
+  return (
+    <SwipeableRow
+      leftAction={leftAction}
+      rightAction={rightAction}
+      onLongPress={canAct ? () => onOpenActions(lineItem) : undefined}
+    >
+      <button
+        type="button"
+        className={`field-plan-row field-plan-row--${status}${item.removedFromSource ? ' field-plan-row--removed' : ''}`}
+        onClick={canAct ? () => onOpenActions(lineItem) : undefined}
+      >
+        <div className="field-plan-row__status-col">
+          <span className={`field-plan-row__dot field-plan-row__dot--${status}`} />
+        </div>
+        <div className="field-plan-row__content">
+          <span className="field-plan-row__title">{item.title}</span>
+          <span className="field-plan-row__meta">
+            {item.workTypeTitle} · {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {item.crew} crew · {item.timeHours.toFixed(1)}h
+          </span>
+          {item.blockReason && (
+            <span className="field-plan-row__chip field-plan-row__chip--blocked">
+              <BlockedIcon className="field-plan-row__chip-icon" />
+              {item.blockReason}
+            </span>
+          )}
+          {item.deferredNote && (
+            <span className="field-plan-row__chip field-plan-row__chip--deferred">
+              Deferred: {item.deferredNote}
+            </span>
+          )}
+          {item.executorNote && (
+            <span className="field-plan-row__note">
+              Note: {item.executorNote}
+            </span>
+          )}
+          {item.removedFromSource && (
+            <span className="field-plan-row__chip field-plan-row__chip--removed">Removed from source</span>
+          )}
+          {lineItem.deadlineStatus !== 'unscheduled' && (
+            <span className={`field-plan-row__deadline field-plan-row__deadline--${lineItem.deadlineStatus}`}>
+              {formatDeadlineStatusLabel(lineItem.deadlineStatus)}
+              {lineItem.dueDate ? ` · Due ${lineItem.dueDate}` : ''}
+            </span>
+          )}
+        </div>
+        <div className="field-plan-row__trail">
+          {linkedTasks.length > 0 && (
+            <CountBadge count={linkedTasks.length} variant="muted" size="compact" />
+          )}
+          <ChevronRightIcon className="field-plan-row__chevron" />
+        </div>
+      </button>
+    </SwipeableRow>
+  );
+}
+
+// --- Action Sheet Forms ---
+
+function BlockForm({
+  lineItem,
+  onSubmit,
+  onCancel,
+}: {
+  lineItem: PlanLineItem;
+  onSubmit: (reason: string, category: BlockCategory | null) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState(lineItem.blockReason ?? '');
+  const [category, setCategory] = useState<BlockCategory | null>(lineItem.blockCategory ?? null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const canSubmit = reason.trim().length > 0;
+
+  return (
+    <>
+      <div className="field-plan__form-group">
+        <label className="field-plan__form-label" htmlFor="block-reason">Reason</label>
+        <input
+          ref={inputRef}
+          id="block-reason"
+          className="input"
+          type="text"
+          placeholder="What's blocking this?"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </div>
+      <div className="field-plan__form-group">
+        <label className="field-plan__form-label">Category</label>
+        <div className="field-plan__category-pills" role="radiogroup" aria-label="Block category">
+          {BLOCK_CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              type="button"
+              className={`field-plan__category-pill${category === cat.value ? ' field-plan__category-pill--active' : ''}`}
+              onClick={() => setCategory(category === cat.value ? null : cat.value)}
+              role="radio"
+              aria-checked={category === cat.value}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="action-sheet__actions">
+        <div className="action-sheet__actions-right">
+          <button type="button" className="btn btn--secondary btn--lg" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn--warning btn--lg"
+            onClick={() => canSubmit && onSubmit(reason.trim(), category)}
+            disabled={!canSubmit}
+          >
+            Block
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DeferForm({
+  lineItem,
+  onSubmit,
+  onCancel,
+}: {
+  lineItem: PlanLineItem;
+  onSubmit: (note: string | null) => void;
+  onCancel: () => void;
+}) {
+  const [note, setNote] = useState(lineItem.deferredNote ?? '');
+
+  return (
+    <>
+      <div className="field-plan__form-group">
+        <label className="field-plan__form-label" htmlFor="defer-note">Note (optional)</label>
+        <input
+          id="defer-note"
+          className="input"
+          type="text"
+          placeholder="Why is this deferred?"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div className="action-sheet__actions">
+        <div className="action-sheet__actions-right">
+          <button type="button" className="btn btn--secondary btn--lg" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary btn--lg"
+            onClick={() => onSubmit(note.trim() || null)}
+          >
+            Defer
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function NoteForm({
+  lineItem,
+  onSubmit,
+  onCancel,
+}: {
+  lineItem: PlanLineItem;
+  onSubmit: (note: string | null) => void;
+  onCancel: () => void;
+}) {
+  const [note, setNote] = useState(lineItem.executorNote ?? '');
+
+  return (
+    <>
+      <div className="field-plan__form-group">
+        <label className="field-plan__form-label" htmlFor="executor-note">Note</label>
+        <input
+          id="executor-note"
+          className="input"
+          type="text"
+          placeholder="Add a note..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div className="action-sheet__actions">
+        <div className="action-sheet__actions-right">
+          <button type="button" className="btn btn--secondary btn--lg" onClick={onCancel}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary btn--lg"
+            onClick={() => onSubmit(note.trim() || null)}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// --- Main Overlay ---
+
 export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
   const { tasks } = useTaskStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +380,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [completedExpanded, setCompletedExpanded] = useState(false);
   const [deferredExpanded, setDeferredExpanded] = useState(false);
-  const [actionSheetItem, setActionSheetItem] = useState<FieldPlanLineItemSummary | null>(null);
+  const [formMode, setFormMode] = useState<FormMode | null>(null);
 
   const hadDeadlineRiskRef = useRef(false);
 
@@ -153,6 +413,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     resetImportPreview();
     setCompletedExpanded(false);
     setDeferredExpanded(false);
+    setFormMode(null);
     void reloadData();
   }, [isOpen, reloadData, resetImportPreview]);
 
@@ -201,17 +462,17 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
   const statusGroups = useMemo(() => groupByStatus(lineItems), [lineItems]);
 
+  const progressPercent = useMemo(
+    () => lineItems.length === 0 ? 0 : Math.round((lineItemStatusSummary.completed / lineItems.length) * 100),
+    [lineItems.length, lineItemStatusSummary.completed],
+  );
+
   const deadlineSummary = useMemo(() => {
     const actionable = lineItems.filter((item) => item.deadlineStatus !== 'unscheduled');
     const overdue = actionable.filter((item) => item.deadlineStatus === 'overdue').length;
     const atRisk = actionable.filter((item) => item.deadlineStatus === 'at-risk').length;
     const done = actionable.filter((item) => item.deadlineStatus === 'done-on-time' || item.deadlineStatus === 'done-late').length;
-    return {
-      total: actionable.length,
-      overdue,
-      atRisk,
-      done,
-    };
+    return { total: actionable.length, overdue, atRisk, done };
   }, [lineItems]);
 
   useEffect(() => {
@@ -244,14 +505,14 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
   );
 
   const handleReleaseToToday = useCallback(
-    async (lineItem: PlanLineItem) => {
+    (lineItem: PlanLineItem) => {
       if (!selectedPlan || !canExecute || lineItem.removedFromSource) return;
       const alreadyReleased = tasks.some(
         (task) => task.sourcePlanId === selectedPlan.id && task.sourceLineItemId === lineItem.id,
       );
       if (alreadyReleased) return;
 
-      await createTask(lineItemToCreateTaskInput(lineItem, {
+      void createTask(lineItemToCreateTaskInput(lineItem, {
         planId: selectedPlan.id,
         projectId: selectedPlan.projectId,
       }));
@@ -259,41 +520,37 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     [canExecute, selectedPlan, tasks],
   );
 
-  const handleMarkBlocked = useCallback(
-    async (lineItem: PlanLineItem) => {
+  const handleBlockSubmit = useCallback(
+    async (lineItemId: string, reason: string, category: BlockCategory | null) => {
       if (!canExecute || !selectedPlan) return;
-      const reason = window.prompt('Blocked reason (required)', lineItem.blockReason ?? '');
-      if (reason == null) return;
-      const trimmedReason = reason.trim();
-      if (trimmedReason.length === 0) return;
-
-      const categoryInput = window.prompt(
-        'Category (optional): access | materials | crew | dependency | other',
-        lineItem.blockCategory ?? '',
-      );
-      const category = normalizeBlockCategory(categoryInput);
-
-      await patchLineItem(lineItem.id, {
+      await patchLineItem(lineItemId, {
         executionStatus: 'blocked',
-        blockReason: trimmedReason,
+        blockReason: reason,
         blockCategory: category,
       });
-      await syncLineItemBlockToTasks(selectedPlan.id, lineItem.id, trimmedReason, category);
+      await syncLineItemBlockToTasks(selectedPlan.id, lineItemId, reason, category);
     },
     [canExecute, patchLineItem, selectedPlan],
   );
 
-  const handleMarkDeferred = useCallback(
-    async (lineItem: PlanLineItem) => {
+  const handleDeferSubmit = useCallback(
+    async (lineItemId: string, note: string | null) => {
       if (!canExecute) return;
-      const note = window.prompt('Deferred note (optional)', lineItem.deferredNote ?? '');
-      if (note == null) return;
-
-      await patchLineItem(lineItem.id, {
+      await patchLineItem(lineItemId, {
         executionStatus: 'deferred',
-        deferredNote: note.trim() || null,
+        deferredNote: note,
         blockReason: null,
         blockCategory: null,
+      });
+    },
+    [canExecute, patchLineItem],
+  );
+
+  const handleNoteSubmit = useCallback(
+    async (lineItemId: string, note: string | null) => {
+      if (!canExecute) return;
+      await patchLineItem(lineItemId, {
+        executorNote: note,
       });
     },
     [canExecute, patchLineItem],
@@ -318,18 +575,6 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
       await patchLineItem(lineItem.id, {
         executionStatus: 'pending',
         deferredNote: null,
-      });
-    },
-    [canExecute, patchLineItem],
-  );
-
-  const handleAddNote = useCallback(
-    async (lineItem: PlanLineItem) => {
-      if (!canExecute) return;
-      const note = window.prompt('Executor note', lineItem.executorNote ?? '');
-      if (note == null) return;
-      await patchLineItem(lineItem.id, {
-        executorNote: note.trim() || null,
       });
     },
     [canExecute, patchLineItem],
@@ -375,80 +620,22 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
     }
   }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
 
-  const progressPercent = lineItems.length === 0
-    ? 0
-    : Math.round((lineItemStatusSummary.completed / lineItems.length) * 100);
+  const closeForm = useCallback(() => setFormMode(null), []);
+
+  const openActions = useCallback(
+    (lineItem: FieldPlanLineItemSummary) => setFormMode({ kind: 'actions', lineItem }),
+    [],
+  );
+
+  // Derive ActionSheet title and content from formMode
+  const sheetTitle = formMode
+    ? formMode.kind === 'block' ? 'Mark Blocked'
+      : formMode.kind === 'defer' ? 'Mark Deferred'
+      : formMode.kind === 'note' ? 'Add Note'
+      : formMode.lineItem.item.title
+    : '';
 
   if (!isOpen) return null;
-
-  const renderLineItemRow = (lineItem: FieldPlanLineItemSummary) => {
-    const { item, status: liStatus } = lineItem;
-    const canRelease = canExecute && !item.removedFromSource && liStatus === 'pending' && lineItem.tasks.length === 0;
-
-    const leftAction = canRelease
-      ? {
-          label: 'Release',
-          icon: <PlayIcon className="swipeable-row__action-icon" />,
-          color: 'var(--color-primary)',
-          onAction: () => { void handleReleaseToToday(item); },
-        }
-      : undefined;
-
-    return (
-      <SwipeableRow
-        key={item.id}
-        leftAction={leftAction}
-        onLongPress={canExecute && !item.removedFromSource ? () => setActionSheetItem(lineItem) : undefined}
-      >
-        <button
-          type="button"
-          className={`field-plan-row field-plan-row--${liStatus}${item.removedFromSource ? ' field-plan-row--removed' : ''}`}
-          onClick={canExecute && !item.removedFromSource ? () => setActionSheetItem(lineItem) : undefined}
-        >
-          <div className="field-plan-row__status-col">
-            <span className={`field-plan-row__dot field-plan-row__dot--${liStatus}`} />
-          </div>
-          <div className="field-plan-row__content">
-            <span className="field-plan-row__title">{item.title}</span>
-            <span className="field-plan-row__meta">
-              {item.workTypeTitle} · {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {item.crew} crew · {item.timeHours.toFixed(1)}h
-            </span>
-            {item.blockReason && (
-              <span className="field-plan-row__chip field-plan-row__chip--blocked">
-                <BlockedIcon className="field-plan-row__chip-icon" />
-                {item.blockReason}
-              </span>
-            )}
-            {item.deferredNote && (
-              <span className="field-plan-row__chip field-plan-row__chip--deferred">
-                Deferred: {item.deferredNote}
-              </span>
-            )}
-            {item.executorNote && (
-              <span className="field-plan-row__note">
-                Note: {item.executorNote}
-              </span>
-            )}
-            {item.removedFromSource && (
-              <span className="field-plan-row__chip field-plan-row__chip--removed">Removed from source</span>
-            )}
-            {lineItem.deadlineStatus !== 'unscheduled' && (
-              <span className={`field-plan-row__deadline field-plan-row__deadline--${lineItem.deadlineStatus}`}>
-                {formatDeadlineStatusLabel(lineItem.deadlineStatus)}
-                {lineItem.dueDate ? ` · Due ${lineItem.dueDate}` : ''}
-              </span>
-            )}
-          </div>
-          <div className="field-plan-row__trail">
-            {lineItem.tasks.length > 0 && (
-              <CountBadge count={lineItem.tasks.length} variant="muted" size="compact" />
-            )}
-            <ChevronRightIcon className="field-plan-row__chevron" />
-          </div>
-        </button>
-      </SwipeableRow>
-    );
-  };
 
   return (
     <div className="field-plan-overlay" role="dialog" aria-modal="true" aria-label="Field Plan View">
@@ -523,9 +710,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                 type="button"
                 className="btn btn--primary btn--sm"
                 disabled={isApplyingImport || preview.conflict === 'planner-plan'}
-                onClick={() => {
-                  void handleApplyImport('replace');
-                }}
+                onClick={() => { void handleApplyImport('replace'); }}
               >
                 {preview.conflict === 'merge' ? 'Merge Import' : 'Apply Import'}
               </button>
@@ -534,9 +719,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                   type="button"
                   className="btn btn--secondary btn--sm"
                   disabled={isApplyingImport}
-                  onClick={() => {
-                    void handleApplyImport('skip');
-                  }}
+                  onClick={() => { void handleApplyImport('skip'); }}
                 >
                   Skip
                 </button>
@@ -655,7 +838,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                   </div>
                 </section>
 
-                {/* In Progress section */}
+                {/* In Progress */}
                 {statusGroups.inProgress.length > 0 && (
                   <section className="field-plan__section">
                     <h2 className="field-plan__section-title section-heading">
@@ -664,12 +847,20 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                       <CountBadge count={statusGroups.inProgress.length} variant="muted" />
                     </h2>
                     <div className="field-plan__task-list field-plan__task-list--active">
-                      {statusGroups.inProgress.map(renderLineItemRow)}
+                      {statusGroups.inProgress.map((li) => (
+                        <FieldPlanLineItemRow
+                          key={li.item.id}
+                          lineItem={li}
+                          canExecute={canExecute}
+                          onRelease={handleReleaseToToday}
+                          onOpenActions={openActions}
+                        />
+                      ))}
                     </div>
                   </section>
                 )}
 
-                {/* Blocked section */}
+                {/* Blocked */}
                 {statusGroups.blocked.length > 0 && (
                   <section className="field-plan__section">
                     <h2 className="field-plan__section-title section-heading section-heading--blocked">
@@ -678,12 +869,20 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                       <CountBadge count={statusGroups.blocked.length} variant="muted" />
                     </h2>
                     <div className="field-plan__task-list field-plan__task-list--blocked">
-                      {statusGroups.blocked.map(renderLineItemRow)}
+                      {statusGroups.blocked.map((li) => (
+                        <FieldPlanLineItemRow
+                          key={li.item.id}
+                          lineItem={li}
+                          canExecute={canExecute}
+                          onRelease={handleReleaseToToday}
+                          onOpenActions={openActions}
+                        />
+                      ))}
                     </div>
                   </section>
                 )}
 
-                {/* Pending section */}
+                {/* Pending */}
                 {statusGroups.pending.length > 0 && (
                   <section className="field-plan__section">
                     <h2 className="field-plan__section-title section-heading">
@@ -692,12 +891,20 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                       <CountBadge count={statusGroups.pending.length} variant="muted" />
                     </h2>
                     <div className="field-plan__task-list">
-                      {statusGroups.pending.map(renderLineItemRow)}
+                      {statusGroups.pending.map((li) => (
+                        <FieldPlanLineItemRow
+                          key={li.item.id}
+                          lineItem={li}
+                          canExecute={canExecute}
+                          onRelease={handleReleaseToToday}
+                          onOpenActions={openActions}
+                        />
+                      ))}
                     </div>
                   </section>
                 )}
 
-                {/* Completed section (collapsible) */}
+                {/* Completed (collapsible) */}
                 {statusGroups.completed.length > 0 && (
                   <section className="field-plan__section field-plan__section--completed">
                     <button
@@ -715,13 +922,21 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                     </button>
                     {completedExpanded && (
                       <div className="field-plan__task-list field-plan__task-list--completed">
-                        {statusGroups.completed.map(renderLineItemRow)}
+                        {statusGroups.completed.map((li) => (
+                          <FieldPlanLineItemRow
+                            key={li.item.id}
+                            lineItem={li}
+                            canExecute={canExecute}
+                            onRelease={handleReleaseToToday}
+                            onOpenActions={openActions}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>
                 )}
 
-                {/* Deferred section (collapsible) */}
+                {/* Deferred (collapsible) */}
                 {statusGroups.deferred.length > 0 && (
                   <section className="field-plan__section field-plan__section--deferred">
                     <button
@@ -738,13 +953,21 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                     </button>
                     {deferredExpanded && (
                       <div className="field-plan__task-list field-plan__task-list--deferred">
-                        {statusGroups.deferred.map(renderLineItemRow)}
+                        {statusGroups.deferred.map((li) => (
+                          <FieldPlanLineItemRow
+                            key={li.item.id}
+                            lineItem={li}
+                            canExecute={canExecute}
+                            onRelease={handleReleaseToToday}
+                            onOpenActions={openActions}
+                          />
+                        ))}
                       </div>
                     )}
                   </section>
                 )}
 
-                {/* Unplanned tasks (collapsible) */}
+                {/* Unplanned tasks */}
                 {unplannedTasks.length > 0 && (
                   <details className="field-plan__unplanned">
                     <summary>Unplanned tasks ({unplannedTasks.length})</summary>
@@ -760,9 +983,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
                 <button
                   type="button"
                   className="btn btn--primary btn--full"
-                  onClick={() => {
-                    void handleExportExecutionReturn();
-                  }}
+                  onClick={() => { void handleExportExecutionReturn(); }}
                 >
                   Export Execution Return
                 </button>
@@ -772,21 +993,21 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
         )}
       </div>
 
-      {/* Action sheet for line item actions */}
+      {/* Unified ActionSheet — actions menu or inline form */}
       <ActionSheet
-        isOpen={actionSheetItem !== null}
-        onClose={() => setActionSheetItem(null)}
-        title={actionSheetItem?.item.title ?? ''}
+        isOpen={formMode !== null}
+        onClose={closeForm}
+        title={sheetTitle}
       >
-        {actionSheetItem && (
+        {formMode?.kind === 'actions' && (
           <div className="field-plan__action-list">
-            {actionSheetItem.status === 'pending' && actionSheetItem.tasks.length === 0 && (
+            {formMode.lineItem.status === 'pending' && formMode.lineItem.tasks.length === 0 && (
               <button
                 type="button"
                 className="field-plan__action-btn"
                 onClick={() => {
-                  void handleReleaseToToday(actionSheetItem.item);
-                  setActionSheetItem(null);
+                  handleReleaseToToday(formMode.lineItem.item);
+                  closeForm();
                 }}
               >
                 <PlayIcon className="field-plan__action-btn-icon field-plan__action-btn-icon--primary" />
@@ -794,44 +1015,35 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
               </button>
             )}
 
-            {actionSheetItem.status !== 'completed' && actionSheetItem.status !== 'blocked' && (
+            {formMode.lineItem.status !== 'completed' && formMode.lineItem.status !== 'blocked' && (
               <button
                 type="button"
                 className="field-plan__action-btn"
-                onClick={() => {
-                  const item = actionSheetItem.item;
-                  setActionSheetItem(null);
-                  void handleMarkBlocked(item);
-                }}
+                onClick={() => setFormMode({ kind: 'block', lineItem: formMode.lineItem })}
               >
                 <BlockedIcon className="field-plan__action-btn-icon field-plan__action-btn-icon--warning" />
                 <span>Mark Blocked</span>
               </button>
             )}
 
-            {(actionSheetItem.status === 'pending' || actionSheetItem.status === 'blocked') && (
+            {(formMode.lineItem.status === 'pending' || formMode.lineItem.status === 'blocked') && (
               <button
                 type="button"
                 className="field-plan__action-btn"
-                onClick={() => {
-                  const item = actionSheetItem.item;
-                  setActionSheetItem(null);
-                  void handleMarkDeferred(item);
-                }}
+                onClick={() => setFormMode({ kind: 'defer', lineItem: formMode.lineItem })}
               >
                 <span className="field-plan__action-btn-icon field-plan__action-btn-icon--muted">—</span>
                 <span>Mark Deferred</span>
               </button>
             )}
 
-            {actionSheetItem.status === 'blocked' && (
+            {formMode.lineItem.status === 'blocked' && (
               <button
                 type="button"
                 className="field-plan__action-btn"
                 onClick={() => {
-                  const item = actionSheetItem.item;
-                  setActionSheetItem(null);
-                  void handleClearBlock(item);
+                  void handleClearBlock(formMode.lineItem.item);
+                  closeForm();
                 }}
               >
                 <CheckIcon className="field-plan__action-btn-icon field-plan__action-btn-icon--ready" />
@@ -839,14 +1051,13 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
               </button>
             )}
 
-            {actionSheetItem.status === 'deferred' && (
+            {formMode.lineItem.status === 'deferred' && (
               <button
                 type="button"
                 className="field-plan__action-btn"
                 onClick={() => {
-                  const item = actionSheetItem.item;
-                  setActionSheetItem(null);
-                  void handleReactivateDeferred(item);
+                  void handleReactivateDeferred(formMode.lineItem.item);
+                  closeForm();
                 }}
               >
                 <PlayIcon className="field-plan__action-btn-icon field-plan__action-btn-icon--primary" />
@@ -857,16 +1068,45 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
             <button
               type="button"
               className="field-plan__action-btn"
-              onClick={() => {
-                const item = actionSheetItem.item;
-                setActionSheetItem(null);
-                void handleAddNote(item);
-              }}
+              onClick={() => setFormMode({ kind: 'note', lineItem: formMode.lineItem })}
             >
-              <span className="field-plan__action-btn-icon field-plan__action-btn-icon--muted">+</span>
+              <PencilIcon className="field-plan__action-btn-icon field-plan__action-btn-icon--muted" />
               <span>Add Note</span>
             </button>
           </div>
+        )}
+
+        {formMode?.kind === 'block' && (
+          <BlockForm
+            lineItem={formMode.lineItem.item}
+            onSubmit={(reason, category) => {
+              void handleBlockSubmit(formMode.lineItem.item.id, reason, category);
+              closeForm();
+            }}
+            onCancel={closeForm}
+          />
+        )}
+
+        {formMode?.kind === 'defer' && (
+          <DeferForm
+            lineItem={formMode.lineItem.item}
+            onSubmit={(note) => {
+              void handleDeferSubmit(formMode.lineItem.item.id, note);
+              closeForm();
+            }}
+            onCancel={closeForm}
+          />
+        )}
+
+        {formMode?.kind === 'note' && (
+          <NoteForm
+            lineItem={formMode.lineItem.item}
+            onSubmit={(note) => {
+              void handleNoteSubmit(formMode.lineItem.item.id, note);
+              closeForm();
+            }}
+            onCancel={closeForm}
+          />
         )}
       </ActionSheet>
     </div>
