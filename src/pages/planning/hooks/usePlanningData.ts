@@ -18,10 +18,7 @@ import {
   hasExecutionReturnImportPending,
   clearExecutionReturnImportPending,
 } from '../../../lib/planning/execution-return-import-events';
-
-function isPlannerVisiblePlan(plan: Plan): boolean {
-  return plan.status === 'draft' || plan.status === 'active' || plan.status === 'reviewed';
-}
+import { isPlanInPlannerState } from '../../../lib/planning/plan-lifecycle';
 
 /**
  * Shared planning data layer — owns loading, CRUD, and derived state.
@@ -39,7 +36,7 @@ export function usePlanningData() {
 
   useEffect(() => {
     getAllPlans().then((loaded) => {
-      setPlans(loaded.filter(isPlannerVisiblePlan));
+      setPlans(loaded.filter(isPlanInPlannerState));
     });
   }, []);
 

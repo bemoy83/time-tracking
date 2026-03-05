@@ -25,7 +25,7 @@ import {
   getVisiblePlanWorkspaceTabs,
   type WorkspaceRenderContext,
 } from './workspace-tabs';
-import { ChevronLeftIcon, HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
+import { HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
 interface PlanningWorkspaceShellProps {
@@ -47,9 +47,7 @@ interface PlanningWorkspaceShellProps {
 
   // Sidebar preferences
   archiveExpanded: boolean;
-  sidebarCollapsed: 'expanded' | 'icons' | 'hidden';
   onToggleArchive: () => void;
-  onToggleSidebar: () => void;
 
   // Navigation
   onSelectPlan: (plan: Plan) => void;
@@ -82,9 +80,7 @@ export function PlanningWorkspaceShell({
   wrapUpPlan,
   selectedPlanIdsForSharedSchedule,
   archiveExpanded,
-  sidebarCollapsed,
   onToggleArchive,
-  onToggleSidebar,
   onSelectPlan,
   onCreatePlan,
   onDeletePlan,
@@ -98,8 +94,6 @@ export function PlanningWorkspaceShell({
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
-  const isSidebarVisible = sidebarCollapsed !== 'hidden';
-  const isSidebarIconsOnly = sidebarCollapsed === 'icons';
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
@@ -115,65 +109,55 @@ export function PlanningWorkspaceShell({
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
-      {isSidebarVisible && (
-        <aside className={`planning-workspace__sidebar${isSidebarIconsOnly ? ' planning-workspace__sidebar--icons' : ''}`}>
-          <div className="planning-workspace__sidebar-header">
+      <aside className="planning-workspace__sidebar">
+        <div className="planning-workspace__sidebar-header">
+          <button
+            type="button"
+            className="planning-workspace__exit"
+            onClick={onExit}
+            aria-label="Back to all plans"
+          >
+            <HomeIcon className="planning-workspace__exit-icon" />
+            <span>All Plans</span>
+          </button>
+        </div>
+        <div className="planning-workspace__sidebar-content">
+          <PlanList
+            plans={plans}
+            tasks={tasks}
+            onSelect={onSelectPlan}
+            onCreate={onCreatePlan}
+            onDelete={onDeletePlan}
+            onOpenWrapUp={onOpenWrapUp}
+            onOpenInsights={onOpenInsights}
+            selectedPlanId={activePlan?.id ?? null}
+            sidebarMode
+            archiveExpanded={archiveExpanded}
+            onToggleArchive={onToggleArchive}
+            showAddToScheduleButton={activeTab === 'shared-schedule'}
+            selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+            onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
+          />
+        </div>
+        <div className="planning-workspace__sidebar-footer">
+          {sidebarTabs.map((tab) => (
             <button
+              key={tab.id}
               type="button"
-              className="planning-workspace__exit"
-              onClick={onExit}
-              aria-label="Back to all plans"
+              className={`planning-workspace__sidebar-footer-item${activeTab === tab.id ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
+              onClick={tab.onSelect}
+              aria-label={tab.label}
             >
-              <HomeIcon className="planning-workspace__exit-icon" />
-              {!isSidebarIconsOnly && <span>All Plans</span>}
+              {tab.id === 'shared-schedule' ? (
+                <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
+              ) : (
+                <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
+              )}
+              <span>{tab.label}</span>
             </button>
-            <button
-              type="button"
-              className="planning-workspace__sidebar-collapse"
-              onClick={onToggleSidebar}
-              aria-label={isSidebarIconsOnly ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={isSidebarIconsOnly ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <ChevronLeftIcon className={`planning-workspace__sidebar-collapse-icon${isSidebarIconsOnly ? ' planning-workspace__sidebar-collapse-icon--collapsed' : ''}`} />
-            </button>
-          </div>
-          {!isSidebarIconsOnly && (
-            <div className="planning-workspace__sidebar-content">
-              <PlanList
-                plans={plans}
-                tasks={tasks}
-                onSelect={onSelectPlan}
-                onCreate={onCreatePlan}
-                onDelete={onDeletePlan}
-                onOpenWrapUp={onOpenWrapUp}
-                onOpenInsights={onOpenInsights}
-                selectedPlanId={activePlan?.id ?? null}
-                sidebarMode
-                archiveExpanded={archiveExpanded}
-                onToggleArchive={onToggleArchive}
-              />
-            </div>
-          )}
-          <div className="planning-workspace__sidebar-footer">
-            {sidebarTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`planning-workspace__sidebar-footer-item${activeTab === tab.id ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
-                onClick={tab.onSelect}
-                aria-label={tab.label}
-              >
-                {tab.id === 'shared-schedule' ? (
-                  <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
-                ) : (
-                  <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
-                )}
-                {!isSidebarIconsOnly && <span>{tab.label}</span>}
-              </button>
-            ))}
-          </div>
-        </aside>
-      )}
+          ))}
+        </div>
+      </aside>
 
       {/* Main pane */}
       <section className="planning-workspace__main">
@@ -182,7 +166,6 @@ export function PlanningWorkspaceShell({
             plans={plans}
             projects={projects}
             selectedPlanIds={selectedPlanIdsForSharedSchedule}
-            onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
             onSavePlan={onSavePlan}
           />
         ) : activePlan ? (

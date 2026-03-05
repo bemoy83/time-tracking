@@ -56,9 +56,7 @@ export function PlanningView({
         wrapUpPlan={workspace.wrapUpPlan}
         selectedPlanIdsForSharedSchedule={workspace.selectedPlanIdsForSharedSchedule}
         archiveExpanded={workspace.archiveExpanded}
-        sidebarCollapsed={workspace.sidebarCollapsed}
         onToggleArchive={workspace.toggleArchiveExpanded}
-        onToggleSidebar={workspace.toggleSidebarCollapsed}
         onSelectPlan={workspace.handleSelectPlan}
         onCreatePlan={workspace.handleCreatePlan}
         onDeletePlan={workspace.handleDeletePlan}

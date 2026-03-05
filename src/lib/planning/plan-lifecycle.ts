@@ -1,6 +1,15 @@
 import type { Task } from '../types';
 import type { Plan } from './plan-model';
 
+/** Plans in planner states are visible and can be included in shared schedule. */
+export function isPlanInPlannerState(plan: Plan): boolean {
+  return (
+    plan.status === 'draft' ||
+    plan.status === 'active' ||
+    plan.status === 'reviewed'
+  );
+}
+
 /** Plan is eligible for wrap-up when all tasks are completed OR when an execution return has been imported. */
 export function isPlanWrapUpEligible(
   plan: Plan,

@@ -61,6 +61,24 @@
   padding: var(--space-sm) var(--space-md);
 }
 
+/* Single-row inline strip (e.g. Crew Pool) */
+.schedule-view__block--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.schedule-view__block--row .planning-view__schedule-input {
+  flex-direction: row;
+  align-items: center;
+}
+
+.schedule-view__block--row .input[type="number"] {
+  width: 72px;
+  text-align: center;
+}
+
 .schedule-view__block-toggle {
   display: flex;
   align-items: center;
@@ -94,7 +112,6 @@
 .schedule-view .schedule-view__block--compact {
   background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
-  padding: var(--space-md);
 }
 
 /* Input/group styling shared with sticky summary — see planning.css */
@@ -915,37 +932,6 @@
 
 .schedule-grid__row--over-target .schedule-grid__line-item {
   border-inline-start: 3px solid var(--color-amber);
-}
-
-.shared-schedule__plan-selector {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-xs);
-}
-
-.shared-schedule__plan-option {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-xs) var(--space-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--color-surface-subtle);
-}
-
-.shared-schedule__plan-option > input {
-  margin: 0 0 4px;
-}
-
-.shared-schedule__plan-option-title {
-  font-size: var(--font-small);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.shared-schedule__plan-option-meta {
-  font-size: var(--font-caption);
-  color: var(--color-text-muted);
 }
 
 /* --- Work Calendar (week grid) --- */

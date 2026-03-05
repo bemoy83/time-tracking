@@ -24,6 +24,7 @@ import {
 } from './schema-version';
 import { sanitizeFileNameSegment } from '../../utils/sanitize-filename';
 import { downloadJson } from '../download-json';
+import { isPlanInPlannerState } from '../../planning/plan-lifecycle';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -134,10 +135,6 @@ async function hasExecutionStateForPlan(plan: Plan): Promise<boolean> {
   }
   const tasks = await getAllTasks();
   return tasks.some((task) => task.sourcePlanId === plan.id);
-}
-
-function isPlannerStatus(status: Plan['status']): boolean {
-  return status === 'draft' || status === 'active' || status === 'reviewed';
 }
 
 export function parsePlanPackageJson(
@@ -457,7 +454,7 @@ export async function previewPlanPackageImport(
 
   if (existing) {
     existingStatus = existing.status;
-    if (isPlannerStatus(existing.status)) {
+    if (isPlanInPlannerState(existing)) {
       conflict = 'planner-plan';
     } else if (await hasExecutionStateForPlan(existing)) {
       conflict = 'merge';
@@ -502,7 +499,7 @@ export async function applyPlanPackageImport(
   const importedPlan = normalizeIncomingPlan(envelope.payload.plan);
   const existing = await getPlan(importedPlan.id);
 
-  if (existing && isPlannerStatus(existing.status)) {
+  if (existing && isPlanInPlannerState(existing)) {
     return {
       applied: false,
       merged: false,

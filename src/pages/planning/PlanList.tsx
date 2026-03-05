@@ -4,11 +4,11 @@ import type { Task } from '../../lib/types';
 import {
   isPlanWrapUpEligible,
   isPlanArchived,
+  isPlanInPlannerState,
   sortPlansForSidebar,
 } from '../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from './hooks/usePlanIdsWithImportedExecutionReturns';
 import {
-  ChevronIcon,
   ChevronRightIcon,
   TrashIcon,
   PlusIcon,
@@ -17,8 +17,10 @@ import {
   PencilIcon,
   PlayIcon,
 } from '../../components/icons';
+import { SidebarZone } from './SidebarZone';
 import { Fab } from '../../components/Fab';
 import { StatusBadge } from '../../components/StatusBadge';
+import { AddToScheduleButton } from './AddToScheduleButton';
 
 interface PlanListProps {
   plans: Plan[];
@@ -36,6 +38,12 @@ interface PlanListProps {
   archiveExpanded?: boolean;
   /** Callback to toggle archive zone collapsed state. */
   onToggleArchive?: () => void;
+  /** When true, each item shows an add-to-schedule button (sidebar mode). */
+  showAddToScheduleButton?: boolean;
+  /** Selected plan IDs for shared schedule (when showAddToScheduleButton is true). */
+  selectedPlanIdsForSharedSchedule?: Set<string>;
+  /** Callback when shared schedule selection changes. */
+  onSelectedPlanIdsChange?: (planIds: Set<string>) => void;
 }
 
 export function PlanList({
@@ -50,6 +58,9 @@ export function PlanList({
   sidebarMode = false,
   archiveExpanded = false,
   onToggleArchive,
+  showAddToScheduleButton = false,
+  selectedPlanIdsForSharedSchedule,
+  onSelectedPlanIdsChange,
 }: PlanListProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
 
@@ -100,6 +111,9 @@ export function PlanList({
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
               compact
+              showAddToScheduleButton={showAddToScheduleButton}
+              selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+              onSelectedPlanIdsChange={onSelectedPlanIdsChange}
             />
           </SidebarZone>
         )}
@@ -121,6 +135,9 @@ export function PlanList({
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
               compact
+              showAddToScheduleButton={showAddToScheduleButton}
+              selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+              onSelectedPlanIdsChange={onSelectedPlanIdsChange}
             />
           </SidebarZone>
         )}
@@ -200,6 +217,9 @@ interface PlanItemsProps {
   onOpenWrapUp: (plan: Plan) => void;
   planIdsWithImportedExecutionReturns: Set<string>;
   compact?: boolean;
+  showAddToScheduleButton?: boolean;
+  selectedPlanIdsForSharedSchedule?: Set<string>;
+  onSelectedPlanIdsChange?: (planIds: Set<string>) => void;
 }
 
 function PlanItems({
@@ -211,6 +231,9 @@ function PlanItems({
   onOpenWrapUp,
   planIdsWithImportedExecutionReturns,
   compact,
+  showAddToScheduleButton,
+  selectedPlanIdsForSharedSchedule,
+  onSelectedPlanIdsChange,
 }: PlanItemsProps) {
   return (
     <ul className={`planning-view__list${compact ? ' planning-view__list--compact' : ''}`}>
@@ -225,6 +248,9 @@ function PlanItems({
           onOpenWrapUp={onOpenWrapUp}
           planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           compact={compact}
+          showAddToScheduleButton={showAddToScheduleButton}
+          selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+          onSelectedPlanIdsChange={onSelectedPlanIdsChange}
         />
       ))}
     </ul>
@@ -240,6 +266,9 @@ interface PlanListItemProps {
   onOpenWrapUp: (plan: Plan) => void;
   planIdsWithImportedExecutionReturns: Set<string>;
   compact?: boolean;
+  showAddToScheduleButton?: boolean;
+  selectedPlanIdsForSharedSchedule?: Set<string>;
+  onSelectedPlanIdsChange?: (planIds: Set<string>) => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -285,16 +314,36 @@ function PlanListItem({
   onOpenWrapUp,
   planIdsWithImportedExecutionReturns,
   compact,
+  showAddToScheduleButton,
+  selectedPlanIdsForSharedSchedule,
+  onSelectedPlanIdsChange,
 }: PlanListItemProps) {
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
+  const showAddButton =
+    showAddToScheduleButton &&
+    selectedPlanIdsForSharedSchedule != null &&
+    onSelectedPlanIdsChange != null &&
+    isPlanInPlannerState(plan);
+  const isChecked = selectedPlanIdsForSharedSchedule?.has(plan.id) ?? false;
+
+  const handleToggleAddToSchedule = () => {
+    if (!onSelectedPlanIdsChange || selectedPlanIdsForSharedSchedule == null) return;
+    const next = new Set(selectedPlanIdsForSharedSchedule);
+    if (isChecked) next.delete(plan.id);
+    else next.add(plan.id);
+    onSelectedPlanIdsChange(next);
+  };
+
   const badgeVariant = plan.reviewedAt != null
     ? 'reviewed'
     : wrapUpEligible
       ? 'review-ready'
       : plan.status;
 
-  return (
-    <li className={`planning-view__item${selectedPlanId === plan.id ? ' planning-view__item--selected' : ''}`}>
+  const rowClassName = `planning-view__row${selectedPlanId === plan.id ? ' planning-view__row--selected' : ''}`;
+
+  const itemContent = (
+    <>
       <button className="planning-view__item-btn" onClick={() => onSelect(plan)}>
         <span className="planning-view__item-content">
           <span className="planning-view__item-title">{plan.title}</span>
@@ -358,48 +407,20 @@ function PlanListItem({
       >
         <TrashIcon className="planning-view__item-delete-icon" />
       </button>
-    </li>
+    </>
   );
-}
-
-// --- Sidebar zone heading ---
-
-function SidebarZone({
-  label,
-  children,
-  collapsible = false,
-  expanded = true,
-  onToggle,
-}: {
-  label: string;
-  children: React.ReactNode;
-  collapsible?: boolean;
-  expanded?: boolean;
-  onToggle?: () => void;
-}) {
-  if (collapsible) {
-    return (
-      <div className="planning-sidebar__zone">
-        <button
-          type="button"
-          className="planning-sidebar__zone-toggle"
-          onClick={onToggle}
-          aria-expanded={expanded}
-        >
-          <ChevronIcon
-            className={`planning-sidebar__zone-chevron${expanded ? ' planning-sidebar__zone-chevron--expanded' : ''}`}
-          />
-          <span className="planning-sidebar__zone-heading">{label}</span>
-        </button>
-        {expanded && children}
-      </div>
-    );
-  }
 
   return (
-    <div className="planning-sidebar__zone">
-      <h3 className="planning-sidebar__zone-heading">{label}</h3>
-      {children}
-    </div>
+    <li className={rowClassName}>
+      <div className="planning-view__item">{itemContent}</div>
+      {showAddButton && (
+        <AddToScheduleButton
+          planId={plan.id}
+          planTitle={plan.title}
+          isChecked={isChecked}
+          onToggle={handleToggleAddToSchedule}
+        />
+      )}
+    </li>
   );
 }

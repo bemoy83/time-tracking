@@ -54,13 +54,6 @@ export function usePlanningWorkspaceState({
   const [archiveExpanded, setArchiveExpanded] = useState(() => {
     try { return sessionStorage.getItem('planning_archive_expanded') === 'true'; } catch { return false; }
   });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<'expanded' | 'icons' | 'hidden'>(() => {
-    try {
-      const stored = sessionStorage.getItem('planning_sidebar_collapsed');
-      if (stored === 'icons' || stored === 'hidden') return stored;
-    } catch { /* ignore */ }
-    return 'expanded';
-  });
 
   // --- Stack navigation state (mobile) ---
   const [subView, setSubView] = useState<PlanningSubView>('list');
@@ -235,14 +228,6 @@ export function usePlanningWorkspaceState({
     });
   }, []);
 
-  const toggleSidebarCollapsed = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = prev === 'expanded' ? 'icons' : 'expanded';
-      try { sessionStorage.setItem('planning_sidebar_collapsed', next); } catch { /* ignore */ }
-      return next;
-    });
-  }, []);
-
   const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan, success: boolean) => {
     await data.handleWrapUpCompleted(updatedPlan, success);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
@@ -282,9 +267,7 @@ export function usePlanningWorkspaceState({
 
     // Sidebar preferences
     archiveExpanded,
-    sidebarCollapsed,
     toggleArchiveExpanded,
-    toggleSidebarCollapsed,
 
     // Actions
     handleCreatePlan,

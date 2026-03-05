@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Project } from '../../lib/types';
 import type { Plan, PlanLineItem, WorkCalendarDay } from '../../lib/planning/plan-model';
-import { isPlanArchived } from '../../lib/planning/plan-lifecycle';
+import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { computeSharedCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import {
@@ -32,7 +32,6 @@ interface SharedScheduleViewProps {
   plans: Plan[];
   projects: Project[];
   selectedPlanIds: Set<string>;
-  onSelectedPlanIdsChange: (planIds: Set<string>) => void;
   onSavePlan: (plan: Plan) => void;
 }
 
@@ -46,26 +45,17 @@ function normalizeCrew(value: string): number {
   return Math.max(0, Math.floor(parsed));
 }
 
-function getStatusLabel(plan: Plan): string {
-  if (plan.status === 'draft') return 'Draft';
-  if (plan.status === 'active') return 'Active';
-  if (plan.status === 'reviewed') return 'Reviewed';
-  return plan.status;
-}
-
 export function SharedScheduleView({
   plans,
   projects,
   selectedPlanIds,
-  onSelectedPlanIdsChange,
   onSavePlan,
 }: SharedScheduleViewProps) {
-  const initSelectionRef = useRef(false);
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
 
   const selectablePlans = useMemo(
-    () => plans.filter((plan) => plan.status === 'draft' || plan.status === 'active' || plan.status === 'reviewed'),
+    () => plans.filter(isPlanInPlannerState),
     [plans],
   );
 
@@ -84,22 +74,7 @@ export function SharedScheduleView({
     trackTelemetryEvent('shared_schedule_tab_open');
   }, []);
 
-  useEffect(() => {
-    if (initSelectionRef.current) return;
-    if (selectablePlans.length === 0) return;
-    if (selectedPlanIds.size > 0) {
-      initSelectionRef.current = true;
-      return;
-    }
-    const defaults = selectablePlans
-      .filter((plan) => plan.status === 'draft' || plan.status === 'active')
-      .map((plan) => plan.id);
-    if (defaults.length > 0) {
-      onSelectedPlanIdsChange(new Set(defaults));
-      trackTelemetryEvent('shared_schedule_plan_selection_change');
-    }
-    initSelectionRef.current = true;
-  }, [onSelectedPlanIdsChange, selectablePlans, selectedPlanIds]);
+  /* No default selection — user explicitly adds plans via sidebar button */
 
   const selectedPlans = useMemo(
     () => selectablePlans
@@ -238,14 +213,6 @@ export function SharedScheduleView({
     }
   }, [applyPlanMutation]);
 
-  const handleTogglePlanSelection = useCallback((planId: string, checked: boolean) => {
-    const next = new Set(selectedPlanIds);
-    if (checked) next.add(planId);
-    else next.delete(planId);
-    onSelectedPlanIdsChange(next);
-    trackTelemetryEvent('shared_schedule_plan_selection_change');
-  }, [onSelectedPlanIdsChange, selectedPlanIds]);
-
   const handleDefaultCrewSizeChange = (value: string) => {
     setCrewPoolDefaultCrewSize(normalizeCrew(value));
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
@@ -271,37 +238,6 @@ export function SharedScheduleView({
         </h2>
       </header>
 
-      <section className="schedule-view__block">
-        <header className="schedule-view__block-header">
-          <h3 className="schedule-view__block-title">
-            Plan Selection ({selectedPlanIds.size})
-          </h3>
-        </header>
-        {selectablePlans.length === 0 ? (
-          <p className="schedule-view__muted">No plans available.</p>
-        ) : (
-          <div className="shared-schedule__plan-selector" role="group" aria-label="Shared schedule plan selection">
-            {selectablePlans.map((plan) => {
-              const projectName = plan.projectId
-                ? projects.find((project) => project.id === plan.projectId)?.name ?? 'Unknown project'
-                : 'No project';
-              const checked = selectedPlanIds.has(plan.id);
-              return (
-                <label key={plan.id} className="shared-schedule__plan-option">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) => handleTogglePlanSelection(plan.id, event.target.checked)}
-                  />
-                  <span className="shared-schedule__plan-option-title">{plan.title}</span>
-                  <span className="shared-schedule__plan-option-meta">{projectName} · {getStatusLabel(plan)}</span>
-                </label>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
       {selectedPlans.length === 0 ? (
         <section className="schedule-view__block">
           <p className="schedule-view__muted">Select at least one plan to build a shared schedule.</p>
@@ -311,23 +247,23 @@ export function SharedScheduleView({
           <FeasibilityBar capacity={capacity} />
           <ConflictResolutionBanner capacity={capacity} />
 
-          <section className="schedule-view__block schedule-view__block--compact">
-            <header className="schedule-view__block-header">
-              <h3 className="schedule-view__block-title">Crew Pool</h3>
-            </header>
-            <div className="planning-view__schedule-group-grid planning-view__schedule-group-grid--single">
-              <label className="planning-view__schedule-input">
-                <span className="planning-view__schedule-label-text">Global default crew</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={crewPoolDefaultCrewSize}
-                  onChange={(event) => handleDefaultCrewSizeChange(event.target.value)}
-                />
-              </label>
-            </div>
+          <section className="schedule-view__block schedule-view__block--compact schedule-view__block--row">
+            <h3 className="schedule-view__block-title">Crew Pool</h3>
+            <fieldset className="planning-view__schedule-group">
+              <div className="planning-view__schedule-group-grid planning-view__schedule-group-grid--single">
+                <label className="planning-view__schedule-input">
+                  <span className="planning-view__schedule-label-text">Global default crew</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={crewPoolDefaultCrewSize}
+                    onChange={(event) => handleDefaultCrewSizeChange(event.target.value)}
+                  />
+                </label>
+              </div>
+            </fieldset>
           </section>
 
           <WorkCalendarEditor

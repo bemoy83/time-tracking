@@ -4,6 +4,7 @@ import { createPlan, activatePlan, type Plan } from './plan-model';
 import {
   getPlanLinkedTasks,
   getUnplannedProjectTasks,
+  isPlanInPlannerState,
   isPlanReviewReady,
   isPlanWrapUpEligible,
   isPlanArchived,
@@ -100,6 +101,26 @@ describe('isPlanArchived', () => {
   it('returns false when reviewedAt is null', () => {
     const plan = makeActivePlan();
     expect(isPlanArchived(plan)).toBe(false);
+  });
+});
+
+describe('isPlanInPlannerState', () => {
+  it('returns true for draft, active, and reviewed plans', () => {
+    const draft = createPlan('Draft');
+    const active = makeActivePlan();
+    const reviewed = { ...makeActivePlan(), status: 'reviewed' as const };
+
+    expect(isPlanInPlannerState(draft)).toBe(true);
+    expect(isPlanInPlannerState(active)).toBe(true);
+    expect(isPlanInPlannerState(reviewed)).toBe(true);
+  });
+
+  it('returns false for received and session-closed plans', () => {
+    const received = { ...createPlan('Received'), status: 'received' as const };
+    const closed = { ...createPlan('Closed'), status: 'session-closed' as const };
+
+    expect(isPlanInPlannerState(received)).toBe(false);
+    expect(isPlanInPlannerState(closed)).toBe(false);
   });
 });
 

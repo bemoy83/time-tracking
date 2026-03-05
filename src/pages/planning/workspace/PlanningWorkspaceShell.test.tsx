@@ -4,7 +4,7 @@ import { createPlan } from '../../../lib/planning/plan-model';
 import { PlanningWorkspaceShell } from './PlanningWorkspaceShell';
 
 describe('PlanningWorkspaceShell', () => {
-  it('renders shared schedule tab content without an active plan', () => {
+  it('renders shared schedule tab with plan selection in the sidebar', () => {
     const plan = createPlan('Plan A');
 
     const html = renderToStaticMarkup(
@@ -22,9 +22,7 @@ describe('PlanningWorkspaceShell', () => {
         wrapUpPlan={null}
         selectedPlanIdsForSharedSchedule={new Set()}
         archiveExpanded={false}
-        sidebarCollapsed="expanded"
         onToggleArchive={vi.fn()}
-        onToggleSidebar={vi.fn()}
         onSelectPlan={vi.fn()}
         onCreatePlan={vi.fn()}
         onDeletePlan={vi.fn()}
@@ -41,6 +39,6 @@ describe('PlanningWorkspaceShell', () => {
     );
 
     expect(html).toContain('Shared Schedule');
-    expect(html).toContain('Plan Selection');
+    expect(html).toContain('Plan A');
   });
 });

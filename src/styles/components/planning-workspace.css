@@ -59,55 +59,6 @@
   height: 20px;
 }
 
-.planning-workspace__sidebar--icons {
-  width: 56px;
-  min-width: 56px;
-  max-width: 56px;
-}
-
-.planning-workspace__sidebar--icons .planning-workspace__sidebar-header {
-  justify-content: center;
-  padding: var(--space-sm) var(--space-xs);
-}
-
-.planning-workspace__sidebar--icons .planning-workspace__sidebar-collapse {
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-md);
-}
-
-.planning-workspace__sidebar--icons .planning-workspace__sidebar-collapse:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.planning-workspace__sidebar-collapse {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: var(--space-xs);
-  border-radius: var(--radius-md);
-  margin-left: auto;
-  transition: background-color 0.15s;
-}
-
-.planning-workspace__sidebar-collapse:hover {
-  background: var(--color-surface-hover);
-}
-
-.planning-workspace__sidebar-collapse-icon {
-  width: 18px;
-  height: 18px;
-  transition: transform 0.2s;
-}
-
-.planning-workspace__sidebar-collapse-icon--collapsed {
-  transform: rotate(180deg);
-}
-
 .planning-workspace__sidebar-content {
   flex: 1;
   overflow-y: auto;
@@ -163,6 +114,12 @@
 /* Override plan list styles inside sidebar: remove outer padding since sidebar provides it */
 .planning-workspace__sidebar-content .planning-view {
   gap: var(--space-sm);
+}
+
+/* Override a11y min 44px so add-to-schedule button stays 22px (matches status icon) */
+.planning-view__list--compact .planning-view__add-to-schedule-btn {
+  min-width: 22px;
+  min-height: 22px;
 }
 
 /* --- Sidebar actions (create + insights) --- */
@@ -252,6 +209,26 @@
   border-radius: var(--radius-lg);
 }
 
+/* First/last item radius to match list container */
+.planning-view__list--compact .planning-view__row:first-child .planning-view__item {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.planning-view__list--compact .planning-view__row:last-child .planning-view__item {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.planning-view__list--compact .planning-view__row {
+  gap: var(--space-xs);
+}
+
+/* When add-to-schedule button is present, small gap between item and button */
+.planning-view__list--compact .planning-view__row:has(.planning-view__add-to-schedule-btn) {
+  gap: var(--space-xs);
+}
+
 .planning-view__list--compact .planning-view__item {
   gap: var(--space-xs);
 }
@@ -276,12 +253,50 @@
 
 /* --- Selected plan highlight in sidebar --- */
 
-.planning-view__item--selected {
+.planning-view__row.planning-view__row--selected .planning-view__item {
   background: var(--color-surface-hover);
 }
 
-.planning-view__item--selected .planning-view__item-btn {
+.planning-view__row.planning-view__row--selected .planning-view__item-btn {
   font-weight: 600;
+}
+
+/* Add-to-schedule button (sidebar, when Shared Schedule tab active) */
+.planning-view__add-to-schedule-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.planning-view__add-to-schedule-btn:hover {
+  opacity: 0.85;
+}
+
+.planning-view__add-to-schedule-btn--checked {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.planning-view__add-to-schedule-btn--checked:hover {
+  opacity: 0.85;
+}
+
+.planning-view__add-to-schedule-icon {
+  width: 12px;
+  height: 12px;
 }
 
 /* --- Mobile zone heading (full-page list) --- */

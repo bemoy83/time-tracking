@@ -309,15 +309,11 @@
   }
 
   /* --- Planning View --- */
-  .planning-view__list {
-    background: #252525;
-  }
-
-  .planning-view__item:hover {
+  .planning-view__row:hover .planning-view__item {
     background: #2a2a2a;
   }
 
-  .planning-view__item:active {
+  .planning-view__row:active .planning-view__item {
     background: #2f2f2f;
   }
 

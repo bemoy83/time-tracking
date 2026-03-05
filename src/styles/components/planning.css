@@ -38,33 +38,58 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface-subtle);
+  gap: 0;
   border-radius: var(--radius-xl);
   overflow: hidden;
+}
+
+.planning-view__row {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  gap: var(--space-sm);
 }
 
 .planning-view__item {
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 0;
   position: relative;
+  background: var(--color-surface-subtle);
   transition: background-color 0.15s;
 }
 
-.planning-view__item:hover {
-  background: var(--color-surface-hover);
-}
-
-.planning-view__item:active {
-  background: var(--color-border);
-}
-
-.planning-view__item + .planning-view__item::before {
+/* Divider sits on item so it only spans item width (shrinks when add-to-schedule button is present) */
+.planning-view__row:not(:last-child) .planning-view__item::after {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: var(--space-md);
   right: var(--space-md);
   height: 1px;
+  background: var(--color-border);
+}
+
+.planning-view__row:has(.planning-view__add-to-schedule-btn) .planning-view__item {
+  margin-inline-end: var(--space-xs);
+}
+
+.planning-view__list .planning-view__row:first-child .planning-view__item {
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+
+.planning-view__list .planning-view__row:last-child .planning-view__item {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.planning-view__row:hover .planning-view__item {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__row:active .planning-view__item {
   background: var(--color-border);
 }
 
