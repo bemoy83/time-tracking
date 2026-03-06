@@ -10,7 +10,7 @@
 }
 
 .planning-view__items-header + .planning-view__items {
-  margin-top: var(--space-md);
+  margin-top: var(--space-sm);
 }
 
 .planning-view__items-title {
@@ -25,7 +25,7 @@
 .planning-view__items {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 12px;
 }
 
 .planning-view__empty-items {

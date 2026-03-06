@@ -79,7 +79,6 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
 
   return (
     <div className="planning-view__line-item planning-view__line-item--add">
-      <h3 className="planning-view__add-form-title">Add Work Package</h3>
       <div className="planning-view__add-fields">
         <div className="planning-view__field">
           <span className="planning-view__field-label">Title</span>
@@ -109,7 +108,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
         </div>
         <div className="planning-view__field">
           <span className="planning-view__field-label">
-            Quantity{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
+            Qty{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
           </span>
           <input
             className="input"
@@ -132,16 +131,23 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
             onFocus={selectOnFocus}
           />
         </div>
-      </div>
-      <div className="planning-view__add-actions">
-        {onCancel && <button className="btn btn--secondary" onClick={onCancel}>Cancel</button>}
         <button
-          className="btn btn--primary"
+          className="btn btn--primary planning-view__add-action-btn"
           onClick={handleSubmit}
           disabled={!title.trim() || !selectedWorkType}
+          aria-label="Add work package"
+          title="Add work package"
         >
-          Add
+          +
         </button>
+        {onCancel && (
+          <button
+            className="btn btn--secondary btn--sm planning-view__add-action-btn"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </div>
   );

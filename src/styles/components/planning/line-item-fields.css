@@ -1,13 +1,19 @@
-/* Line item fields — grid */
+/* Line item fields — two groups of related fields */
 .planning-view__line-item-fields {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.planning-view__field-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-sm);
 }
 
 @media (max-width: 480px) {
   .planning-view__line-item-fields {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 }
 

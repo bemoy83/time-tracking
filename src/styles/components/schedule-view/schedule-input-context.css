@@ -12,9 +12,9 @@
   padding: var(--space-md);
 }
 
-/* ScheduleInputsBlock (both views): no nested card; equal padding so content looks centered */
+/* ScheduleInputsBlock (both views): no nested card; block provides the 16px padding */
 .schedule-view__block .planning-view__schedule-inputs {
   background: transparent;
   border-radius: 0;
-  padding: var(--space-md); /* equal on all sides, matches block padding */
+  padding: 0;
 }

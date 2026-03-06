@@ -130,7 +130,6 @@ export function LineItemCard({
                   </option>
                 ))}
               </select>
-              <span className="planning-view__field-help">Category, phase, and unit</span>
             </>
           )}
         </div>
@@ -185,100 +184,108 @@ export function LineItemCard({
 
       {isLocked ? (
         <div className="planning-view__line-item-fields">
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">Quantity</span>
-            <span className="planning-view__field-value">{item.workQuantity}</span>
+          <div className="planning-view__field-group">
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">Quantity</span>
+              <span className="planning-view__field-value">{item.workQuantity}</span>
+            </div>
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">Rate</span>
+              <span className="planning-view__field-value">
+                {item.productivityRate} {WORK_UNIT_LABELS[item.workUnit]}/ph
+              </span>
+            </div>
           </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">Crew</span>
-            <span className="planning-view__field-value">{item.crew}</span>
-          </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">Time (hrs)</span>
-            <span className="planning-view__field-value">{item.timeHours}</span>
-          </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">Rate</span>
-            <span className="planning-view__field-value">
-              {item.productivityRate} {WORK_UNIT_LABELS[item.workUnit]}/ph
-            </span>
+          <div className="planning-view__field-group">
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">Crew</span>
+              <span className="planning-view__field-value">{item.crew}</span>
+            </div>
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">Time (hrs)</span>
+              <span className="planning-view__field-value">{item.timeHours}</span>
+            </div>
           </div>
         </div>
       ) : (
         <div className="planning-view__line-item-fields">
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">Quantity</span>
-            <input
-              type="number"
-              className="input"
-              value={item.workQuantity}
-              onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
-              onFocus={selectOnFocus}
-            />
-            <span className="planning-view__field-help">Total in {WORK_UNIT_LABELS[item.workUnit]}</span>
+          <div className="planning-view__field-group">
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">Quantity</span>
+              <input
+                type="number"
+                className="input"
+                value={item.workQuantity}
+                onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
+                onFocus={selectOnFocus}
+              />
+              <span className="planning-view__field-help">Total in {WORK_UNIT_LABELS[item.workUnit]}</span>
+            </div>
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">
+                Rate ({WORK_UNIT_LABELS[item.workUnit]}/ph)
+              </span>
+              <input
+                type="number"
+                className="input"
+                value={item.productivityRate}
+                step={0.1}
+                onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
+                onFocus={selectOnFocus}
+              />
+              <span className="planning-view__field-help">Productivity per person-hour</span>
+            </div>
           </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">
-              Crew
-              <button
-                className="planning-view__recompute-btn"
-                onClick={handleRecomputeCrew}
-                disabled={!canRecomputeCrew}
-                aria-label="Recompute crew from quantity, time, and rate"
-                title="Recompute crew"
-              >
-                <CalculatorIcon className="planning-view__recompute-icon" />
-              </button>
-            </span>
-            <input
-              type="number"
-              className="input"
-              value={item.crew}
-              min={1}
-              max={20}
-              onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
-              onFocus={selectOnFocus}
-            />
-            <span className="planning-view__field-help">
-              {suggestedCrew != null ? `Suggested: ${suggestedCrew} crew for phase` : 'Number of workers'}
-            </span>
-          </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">
-              Time (hrs)
-              <button
-                className="planning-view__recompute-btn"
-                onClick={handleRecomputeTime}
-                disabled={!canRecomputeTime}
-                aria-label="Recompute time from quantity, crew, and rate"
-                title="Recompute time"
-              >
-                <CalculatorIcon className="planning-view__recompute-icon" />
-              </button>
-            </span>
-            <input
-              type="number"
-              className="input"
-              value={item.timeHours}
-              step={0.5}
-              onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
-              onFocus={selectOnFocus}
-            />
-            <span className="planning-view__field-help">Estimated duration in hours</span>
-          </div>
-          <div className="planning-view__field">
-            <span className="planning-view__field-label">
-              Rate ({WORK_UNIT_LABELS[item.workUnit]}/ph)
-            </span>
-            <input
-              type="number"
-              className="input"
-              value={item.productivityRate}
-              step={0.1}
-              onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
-              onFocus={selectOnFocus}
-            />
-            <span className="planning-view__field-help">Productivity per person-hour</span>
+          <div className="planning-view__field-group">
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">
+                Crew
+                <button
+                  className="planning-view__recompute-btn"
+                  onClick={handleRecomputeCrew}
+                  disabled={!canRecomputeCrew}
+                  aria-label="Recompute crew from quantity, time, and rate"
+                  title="Recompute crew"
+                >
+                  <CalculatorIcon className="planning-view__recompute-icon" />
+                </button>
+              </span>
+              <input
+                type="number"
+                className="input"
+                value={item.crew}
+                min={1}
+                max={20}
+                onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
+                onFocus={selectOnFocus}
+              />
+              <span className="planning-view__field-help">
+                {suggestedCrew != null ? `Suggested: ${suggestedCrew} crew for phase` : 'Number of workers'}
+              </span>
+            </div>
+            <div className="planning-view__field">
+              <span className="planning-view__field-label">
+                Time (hrs)
+                <button
+                  className="planning-view__recompute-btn"
+                  onClick={handleRecomputeTime}
+                  disabled={!canRecomputeTime}
+                  aria-label="Recompute time from quantity, crew, and rate"
+                  title="Recompute time"
+                >
+                  <CalculatorIcon className="planning-view__recompute-icon" />
+                </button>
+              </span>
+              <input
+                type="number"
+                className="input"
+                value={item.timeHours}
+                step={0.5}
+                onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
+                onFocus={selectOnFocus}
+              />
+              <span className="planning-view__field-help">Estimated duration in hours</span>
+            </div>
           </div>
         </div>
       )}

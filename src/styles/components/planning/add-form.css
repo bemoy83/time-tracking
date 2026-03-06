@@ -3,34 +3,43 @@
    ============================================================ */
 
 .planning-view__line-item--add {
-  /* Inherits all styling from .planning-view__line-item; no overrides needed */
+  padding: var(--space-md);
 }
 
-.planning-view__add-form-title {
-  font-size: var(--font-small);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0;
-}
-
+/* Single inline row: [Title] [Work Type] [Qty] [Rate] [Add] */
 .planning-view__add-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
-}
-
-.planning-view__add-fields .planning-view__field:first-child {
-  grid-column: 1 / -1;
-}
-
-.planning-view__add-fields .planning-view__field:nth-child(2) {
-  grid-column: 1 / -1;
-}
-
-.planning-view__add-actions {
   display: flex;
+  align-items: flex-end;
   gap: var(--space-sm);
-  justify-content: flex-end;
+}
+
+/* Title — widest, takes remaining space */
+.planning-view__add-fields .planning-view__field:first-child {
+  flex: 2 1 0;
+  min-width: 120px;
+}
+
+/* Work Type select — moderately wide */
+.planning-view__add-fields .planning-view__field:nth-child(2) {
+  flex: 1.5 1 0;
+  min-width: 120px;
+}
+
+/* Quantity and Rate — compact number inputs */
+.planning-view__add-fields .planning-view__field:nth-child(3),
+.planning-view__add-fields .planning-view__field:nth-child(4) {
+  flex: 0 0 88px;
+}
+
+/* Add button — circular icon button at the end of the field row */
+.planning-view__add-fields .planning-view__add-action-btn {
+  flex-shrink: 0;
+  align-self: flex-end;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  font-size: 1.25rem;
+  line-height: 1;
 }
