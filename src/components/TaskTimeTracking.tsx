@@ -135,7 +135,7 @@ export function TaskTimeTracking({ taskId, subtaskIds, onEntriesChange }: TaskTi
         timeBadgeStatus={budgetStatus.status}
       >
         {isLoading ? (
-          <div className="task-time-tracking__loading">Loading...</div>
+          <div className="loading-spinner"><span className="loading-spinner__ring" />Loading...</div>
         ) : (
           <div className="task-time-tracking__content">
             {/* Time tracked section */}

@@ -36,6 +36,7 @@ import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplateP
 import { AddFromPlanSheet } from '../components/AddFromPlanSheet';
 import { Fab } from '../components/Fab';
 import { getFeatureFlag } from '../lib/flags/feature-flags';
+import { getContrastColor } from '../lib/utils/contrast';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
 import { FieldPlanOverlay } from './field-plan/FieldPlanOverlay';
@@ -161,7 +162,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       : 'Field Plan';
 
   if (error) return <div className="today-view__error">Error: {error}</div>;
-  if (isLoading) return <div className="today-view__loading">Loading tasks...</div>;
+  if (isLoading) return <div className="loading-spinner"><span className="loading-spinner__ring" />Loading tasks...</div>;
 
   return (
     <div className="today-view">
@@ -250,7 +251,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
             <div key={project.id} className="today-view__task-group">
               <h3 className="today-view__subsection-title section-heading">
                 <ProjectColorDot color={project.color} />
-                <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: 'white' }}>
+                <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: getContrastColor(project.color) }}>
                   {project.name}
                 </span>
                 <CountBadge count={projectTasks.length} variant="muted" />
@@ -319,9 +320,10 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       {ungroupedTasks.length === 0 &&
         groupedTasks.length === 0 &&
         blockedTasks.length === 0 && (
-          <div className="today-view__empty">
-            <p>No active tasks.</p>
-            <p>Add a task above to get started.</p>
+          <div className="empty-state">
+            <TaskListIcon className="empty-state__icon" />
+            <p className="empty-state__heading">No active tasks</p>
+            <p className="empty-state__text">Tap + to add a task and get started.</p>
           </div>
         )}
 

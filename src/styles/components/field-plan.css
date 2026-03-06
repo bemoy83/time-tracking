@@ -420,11 +420,11 @@
 }
 
 .field-plan-row--blocked {
-  background: #fffaf2;
+  background: var(--color-amber-bg-subtle);
 }
 
 .field-plan-row--blocked:hover {
-  background: #fff5e5;
+  background: var(--color-amber-bg-hover);
 }
 
 .field-plan-row--deferred {
@@ -703,23 +703,23 @@
 }
 
 .field-plan-import-card__diff-badge--new {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: var(--color-ready-bg-badge);
+  color: var(--color-ready);
 }
 
 .field-plan-import-card__diff-badge--updated {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  background: var(--color-primary-bg-badge);
+  color: var(--color-primary);
 }
 
 .field-plan-import-card__diff-badge--unchanged {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-muted-bg-badge);
   color: var(--color-text-muted);
 }
 
 .field-plan-import-card__diff-badge--removed {
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626;
+  background: var(--color-recording-bg-badge);
+  color: var(--color-recording);
 }
 
 .field-plan-import-card__actions {

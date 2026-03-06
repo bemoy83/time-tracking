@@ -35,6 +35,16 @@
     --color-budget-under-bg: rgba(34, 197, 94, 0.15);
     --color-budget-approaching: #fbbf24;
     --color-budget-approaching-bg: rgba(251, 191, 36, 0.15);
+
+    /* Amber subtle backgrounds (dark) */
+    --color-amber-bg-subtle: rgba(217, 119, 6, 0.15);
+    --color-amber-bg-hover: rgba(217, 119, 6, 0.22);
+
+    /* Semantic badge backgrounds (dark) */
+    --color-ready-bg-badge: rgba(34, 197, 94, 0.15);
+    --color-primary-bg-badge: rgba(59, 130, 246, 0.2);
+    --color-recording-bg-badge: rgba(239, 68, 68, 0.15);
+    --color-muted-bg-badge: rgba(255, 255, 255, 0.08);
   }
 
   /* --- Task Row --- */
@@ -319,6 +329,89 @@
   .insights-view__filter-btn--active {
     border-color: var(--color-text);
   }
+  /* --- Field Plan Overlay --- */
+  .field-plan-overlay {
+    background: var(--color-bg);
+  }
+
+  .field-plan-overlay__header {
+    background: var(--color-surface-subtle);
+    border-bottom-color: var(--color-border);
+  }
+
+  .field-plan-overlay__empty {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan__plan-btn {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan__plan-btn:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .field-plan__plan-btn--active {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan__header-card {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan-row {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan-row:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .field-plan-row--blocked {
+    background: var(--color-amber-bg-subtle);
+  }
+
+  .field-plan-row--blocked:hover {
+    background: var(--color-amber-bg-hover);
+  }
+
+  .field-plan__unplanned {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan-import-card {
+    background: var(--color-surface-subtle);
+  }
+
+  .field-plan__action-btn:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .field-plan__action-btn:active {
+    background: var(--color-border);
+  }
+
+  /* Import card diff badges — tokens handle dark mode automatically */
+  .field-plan-import-card__diff-badge--new {
+    background: var(--color-ready-bg-badge);
+    color: var(--color-ready);
+  }
+
+  .field-plan-import-card__diff-badge--updated {
+    background: var(--color-primary-bg-badge);
+    color: var(--color-primary);
+  }
+
+  .field-plan-import-card__diff-badge--unchanged {
+    background: var(--color-muted-bg-badge);
+    color: var(--color-text-muted);
+  }
+
+  .field-plan-import-card__diff-badge--removed {
+    background: var(--color-recording-bg-badge);
+    color: var(--color-recording);
+  }
+
   /* --- Planning workspace dividers — barely visible in dark mode --- */
   .planning-workspace__sidebar {
     border-right-color: rgba(255, 255, 255, 0.06);

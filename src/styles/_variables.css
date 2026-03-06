@@ -59,6 +59,16 @@
   --color-budget-under-bg: rgba(22, 163, 74, 0.1);
   --color-budget-approaching: #d97706;
   --color-budget-approaching-bg: rgba(217, 119, 6, 0.1);
+
+  /* Amber subtle backgrounds (for blocked/warning states) */
+  --color-amber-bg-subtle: #fffaf2;
+  --color-amber-bg-hover: #fff5e5;
+
+  /* Semantic badge backgrounds (for diff badges, status chips) */
+  --color-ready-bg-badge: rgba(22, 163, 74, 0.12);
+  --color-primary-bg-badge: rgba(59, 130, 246, 0.12);
+  --color-recording-bg-badge: rgba(239, 68, 68, 0.12);
+  --color-muted-bg-badge: rgba(0, 0, 0, 0.05);
 }
 
 /* High contrast mode support */

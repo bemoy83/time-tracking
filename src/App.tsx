@@ -99,7 +99,7 @@ function App() {
   if (isLoading) {
     return (
       <main>
-        <p>Loading...</p>
+        <div className="loading-spinner"><span className="loading-spinner__ring" />Loading...</div>
       </main>
     );
   }

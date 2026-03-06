@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { BackIcon } from '../../components/icons';
+import { BackIcon, TaskListIcon } from '../../components/icons';
 import { FieldPlanActionSheet } from './components/FieldPlanActionSheet';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
 import { FieldPlanPlanSelector } from './components/FieldPlanPlanSelector';
@@ -111,6 +111,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
 
         {model.plans.length === 0 ? (
           <section className="field-plan-overlay__empty">
+            <TaskListIcon className="empty-state__icon" />
             <h3>No received plans</h3>
             <p>Import a planner package to start execution in Field Plan View.</p>
             <button

@@ -64,9 +64,10 @@ export function ProjectList({ onSelectProject }: ProjectListProps) {
           })}
         </div>
       ) : (
-        <div className="project-list__empty">
-          <p>No projects yet.</p>
-          <p>Tap + to create one.</p>
+        <div className="empty-state">
+          <TaskListIcon className="empty-state__icon" />
+          <p className="empty-state__heading">No projects yet</p>
+          <p className="empty-state__text">Tap + to create your first project.</p>
         </div>
       )}
     </div>

@@ -36,7 +36,8 @@
 .tab-nav__btn--active {
   color: var(--color-primary);
   font-weight: 700;
-  box-shadow: inset 0 3px 0 0 var(--color-primary);
+  box-shadow: inset 0 4px 0 0 var(--color-primary);
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .tab-nav__icon {

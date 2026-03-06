@@ -162,7 +162,11 @@ export function PlanList({
       <Fab onClick={onCreate} aria-label="New plan" />
 
       {plans.length === 0 ? (
-        <p className="planning-view__empty">No plans yet. Create one to get started.</p>
+        <div className="empty-state">
+          <PencilIcon className="empty-state__icon" />
+          <p className="empty-state__heading">No plans yet</p>
+          <p className="empty-state__text">Create one to get started.</p>
+        </div>
       ) : (
         <>
           {activePlans.length > 0 && (

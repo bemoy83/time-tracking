@@ -125,7 +125,7 @@
   min-width: 120px;
   padding: var(--space-sm) var(--space-lg);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: var(--font-body);
   font-weight: 600;
   cursor: pointer;
