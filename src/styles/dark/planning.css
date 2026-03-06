@@ -1,0 +1,132 @@
+@media (prefers-color-scheme: dark) {
+/* --- Planning View --- */
+.planning-view__row:hover .planning-view__item {
+  background: #2a2a2a;
+}
+
+.planning-view__row:active .planning-view__item {
+  background: #2f2f2f;
+}
+
+.planning-view__line-item {
+  background: #1e1e1e;
+}
+
+.planning-view__line-item-type {
+  color: #858585;
+}
+
+.planning-view__field-label {
+  color: #858585;
+}
+
+.planning-view__field .input {
+  background: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+.planning-view__field .input:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.planning-view__field-value {
+  color: #e0e0e0;
+}
+
+select.planning-view__work-type-select {
+  background-color: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+select.planning-view__work-type-select:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.planning-view__rationale .input {
+  background: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+.planning-view__rationale .input::placeholder {
+  color: #858585;
+}
+
+.planning-view__rationale .input:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.planning-view__field-help {
+  color: #858585;
+}
+
+.planning-view__project-row {
+  background: #252525;
+}
+
+.planning-view__project-button {
+  background: #1e1e1e;
+  border-color: #404040;
+}
+
+.planning-view__project-button--empty {
+  background: none;
+  border: none;
+}
+
+.planning-view__project-button:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+.planning-view__project-button--empty:hover:not(:disabled) {
+  background: none;
+}
+
+.planning-view__line-item-duplicate:hover {
+  background: #2a2a2a;
+}
+
+.planning-view__suggestion {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.planning-view__risk-warnings .status-badge--danger {
+  background: #991b1b;
+}
+
+/* Add form uses .planning-view__line-item, inherits #1e1e1e from above */
+
+/* --- Plan Editor sticky summary — schedule inputs --- */
+.planning-view__sticky-summary .planning-view__schedule-inputs {
+  background: #1e1e1e;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-group-title,
+.planning-view__sticky-summary .planning-view__schedule-label-text {
+  color: #858585;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input .input {
+  background: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input .input:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.65;
+  filter: invert(1);
+}
+
+.planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.85;
+}
+.planning-view__phase-pill--active {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+}

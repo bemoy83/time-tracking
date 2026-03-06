@@ -1,0 +1,35 @@
+/* ============================================================
+   Line items list
+   ============================================================ */
+
+.planning-view__items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.planning-view__items-header + .planning-view__items {
+  margin-top: var(--space-md);
+}
+
+.planning-view__items-title {
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.planning-view__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.planning-view__empty-items {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}

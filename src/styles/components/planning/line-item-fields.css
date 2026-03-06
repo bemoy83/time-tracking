@@ -1,0 +1,98 @@
+/* Line item fields — grid */
+.planning-view__line-item-fields {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+@media (max-width: 480px) {
+  .planning-view__line-item-fields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.planning-view__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planning-view__field-label {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.planning-view__field .input {
+  font-size: var(--font-small);
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+
+.planning-view__field .input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.planning-view__field .input:hover {
+  border-color: var(--color-border);
+}
+
+.planning-view__field-value {
+  font-size: var(--font-body);
+  font-weight: 500;
+  padding: var(--space-xs) 0;
+}
+
+.planning-view__field-help {
+  margin-top: 4px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+/* Recompute button — inline calculator icon next to field label */
+.planning-view__recompute-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.planning-view__recompute-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.planning-view__recompute-btn:active:not(:disabled) {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.planning-view__recompute-btn:focus-visible {
+  outline-offset: 1px;
+}
+
+.planning-view__recompute-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.planning-view__recompute-icon {
+  width: 12px;
+  height: 12px;
+}

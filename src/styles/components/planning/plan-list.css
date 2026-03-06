@@ -1,0 +1,250 @@
+/* ============================================================
+   Plan List — main index
+   ============================================================ */
+
+.planning-view__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.planning-view__title {
+  font-size: var(--font-large);
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.planning-view__empty {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.planning-view__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.planning-view__row {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  gap: var(--space-sm);
+}
+
+.planning-view__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  background: var(--color-surface-subtle);
+  transition: background-color 0.15s;
+}
+
+/* Divider sits on item so it only spans item width (shrinks when add-to-schedule button is present) */
+.planning-view__row:not(:last-child) .planning-view__item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--space-md);
+  right: var(--space-md);
+  height: 1px;
+  background: var(--color-border);
+}
+
+.planning-view__row:has(.planning-view__add-to-schedule-btn) .planning-view__item {
+  margin-inline-end: var(--space-xs);
+}
+
+.planning-view__list .planning-view__row:first-child .planning-view__item {
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+
+.planning-view__list .planning-view__row:last-child .planning-view__item {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
+}
+
+.planning-view__row:hover .planning-view__item {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__row:active .planning-view__item {
+  background: var(--color-border);
+}
+
+.planning-view__item-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: none;
+  border: none;
+  padding: var(--space-md);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  min-height: var(--touch-min);
+}
+
+.planning-view__item-btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.planning-view__item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.planning-view__item-title {
+  font-weight: 500;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.planning-view__item-meta {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.planning-view__item-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: var(--space-sm);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+/* Status icons (compact sidebar) — replaces text badges to save space */
+.planning-view__item-badges {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.planning-view__status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.planning-view__status-icon-svg {
+  width: 12px;
+  height: 12px;
+  color: white;
+}
+
+.planning-view__status-icon--draft,
+.planning-view__status-icon--review-ready {
+  background: var(--color-amber);
+}
+
+.planning-view__status-icon--active,
+.planning-view__status-icon--reviewed {
+  background: var(--color-ready);
+}
+
+/* Icon-only wrap-up button (compact sidebar) — matches status badge size */
+/* Override _a11y.css min 44px so compact icons stay 22px */
+.planning-view__list--compact .planning-view__item-wrap-up-btn,
+.planning-view__list--compact .planning-view__item-delete {
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.planning-view__item-wrap-up-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: var(--color-ready);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: filter 0.15s;
+}
+
+.planning-view__item-wrap-up-btn:hover {
+  filter: brightness(1.08);
+}
+
+.planning-view__item-wrap-up-btn:active {
+  filter: brightness(0.95);
+}
+
+.planning-view__item-wrap-up-btn:focus-visible {
+  outline: 2px solid var(--color-ready);
+  outline-offset: 2px;
+}
+
+.planning-view__item-wrap-up-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Wrap-up badge uses StatusBadge--wrap-up; spacing defined below */
+.planning-view__item .status-badge--wrap-up {
+  margin-right: var(--space-sm);
+}
+
+.planning-view__list--compact .planning-view__item .status-badge--wrap-up {
+  font-size: var(--font-caption);
+  margin-right: var(--space-xs);
+}
+
+.planning-view__item-delete:hover {
+  background: var(--color-recording-bg);
+  color: var(--color-recording);
+}
+
+.planning-view__item-delete:focus-visible {
+  outline: 3px solid var(--color-recording);
+  outline-offset: -2px;
+}
+
+.planning-view__item-delete-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.planning-view__item-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}

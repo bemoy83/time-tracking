@@ -1,0 +1,184 @@
+@media (prefers-color-scheme: dark) {
+/* --- Schedule View (Event Inputs, Work Calendar, Schedule Grid, Capacity Summary) --- */
+
+/* Section blocks — softer contrast (Schedule View + Plan Editor ScheduleInputsBlock) */
+.schedule-view .schedule-view__block,
+.planning-view__sticky-summary .schedule-view__block--compact {
+  background: #1e1e1e;
+}
+
+/* Plan Editor ScheduleInputsBlock — match Schedule View colors exactly */
+.planning-view__sticky-summary .schedule-view__block .schedule-view__block-title,
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-group-title,
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-label-text {
+  color: var(--color-text-muted);
+}
+
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input {
+  background: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input::placeholder {
+  color: #858585;
+}
+
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.65;
+  filter: invert(1);
+}
+
+.planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.85;
+}
+
+/* Schedule grid — match block to avoid nested card look */
+.schedule-view .schedule-grid__header .schedule-grid__line-item-col,
+.schedule-view .schedule-grid__header .schedule-grid__day-col,
+.schedule-view .schedule-grid__line-item-col,
+.schedule-view .schedule-grid__line-item,
+.schedule-view .schedule-grid__footer .schedule-grid__line-item-col {
+  background: #1e1e1e;
+}
+
+.schedule-view .schedule-grid__line-item-col,
+.schedule-view .schedule-grid__line-item {
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-view .schedule-view__block-title {
+  color: var(--color-text-muted);
+}
+
+/* Schedule Inputs — muted labels, softer inputs */
+.schedule-view .planning-view__schedule-group-title {
+  color: var(--color-text-muted);
+}
+
+.schedule-view .planning-view__schedule-label-text {
+  color: var(--color-text-muted);
+}
+
+.schedule-view .planning-view__schedule-input .input {
+  background: #2a2a2a;
+  border-color: transparent;
+  color: #e0e0e0;
+}
+
+.schedule-view .planning-view__schedule-input .input:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.schedule-view .planning-view__schedule-input .input::placeholder {
+  color: #858585;
+}
+
+/* Date input calendar icon — lighter variant for dark backgrounds */
+.schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.65;
+  filter: invert(1);
+}
+
+.schedule-view .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.85;
+}
+
+/* Work Calendar — muted headers (Mon, Tue, Wk 1, etc.) */
+.schedule-view .wc-col-head,
+.schedule-view .wc-week-label {
+  color: #858585;
+}
+
+/* Work Calendar day cell content — softer text */
+.schedule-view .wc-cell__day-num {
+  color: #e0e0e0;
+}
+
+.schedule-view .wc-cell__value {
+  color: #e0e0e0;
+}
+
+.schedule-view .wc-cell__value--inherited {
+  color: #858585;
+}
+
+/* Work Calendar week grid */
+.wc-cell--work {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.wc-cell--off {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.wc-cell--out-of-range {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.wc-cell--off .wc-cell__day-num--toggle {
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+}
+
+.wc-cell__day-num--toggle:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.wc-cell__value:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.schedule-grid__cell--off {
+  background: transparent;
+}
+
+.schedule-grid__cell--phase-locked {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.025),
+    rgba(255, 255, 255, 0.025) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* Softer grid lines in dark mode */
+.schedule-grid__line-item-col,
+.schedule-grid__day-col,
+.schedule-grid__line-item,
+.schedule-grid__cell,
+.schedule-grid__summary-col {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+.schedule-grid__phase-label {
+  background: #1e1e1e;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  color: #858585;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-grid__phase-label:hover {
+  color: #e0e0e0;
+}
+
+.schedule-grid__phase-spacer {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.schedule-grid__cell {
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.schedule-grid__footer {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+}

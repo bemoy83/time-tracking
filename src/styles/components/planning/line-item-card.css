@@ -1,0 +1,180 @@
+/* ============================================================
+   Line Item Card
+   ============================================================ */
+
+.planning-view__line-item {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: border-color 0.15s;
+}
+
+.planning-view__line-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.planning-view__line-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.planning-view__line-item-info:has(.planning-view__work-type-select) {
+  gap: var(--space-xs);
+}
+
+.planning-view__line-item-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planning-view__line-item-type {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.planning-view__line-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.planning-view__line-item-magic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.planning-view__line-item-magic:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.planning-view__line-item-magic:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.planning-view__line-item-magic .planning-view__line-item-action-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.planning-view__line-item-duplicate,
+.planning-view__line-item-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.planning-view__line-item-duplicate:hover {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__line-item-duplicate:focus-visible {
+  outline-offset: 1px;
+}
+
+.planning-view__line-item-remove:hover {
+  background: var(--color-recording-bg);
+  color: var(--color-recording);
+}
+
+.planning-view__line-item-remove:focus-visible {
+  outline: 3px solid var(--color-recording);
+  outline-offset: -2px;
+}
+
+.planning-view__line-item-action-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Work type select in header */
+select.planning-view__work-type-select {
+  font-size: var(--font-small);
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
+  padding-right: 2rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  background-size: 14px 14px;
+  background-position: right var(--space-xs) center;
+}
+
+select.planning-view__work-type-select:focus-visible {
+  border-color: var(--color-primary);
+}
+
+select.planning-view__work-type-select:hover {
+  border-color: var(--color-border);
+}
+
+/* Unit change warning banner */
+.planning-view__unit-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: color-mix(in srgb, #d97706 10%, transparent);
+  color: #92400e;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-small);
+  font-weight: 500;
+}
+
+.planning-view__unit-warning span {
+  flex: 1;
+}
+
+.planning-view__unit-warning-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  font-size: var(--font-small);
+  opacity: 0.6;
+  transition: opacity 0.15s, background-color 0.15s;
+}
+
+.planning-view__unit-warning-dismiss:hover {
+  opacity: 1;
+  background: color-mix(in srgb, #d97706 12%, transparent);
+}
+

@@ -1,0 +1,35 @@
+/* ============================================================
+   Phase filter pills — segmented control
+   ============================================================ */
+
+.planning-view__phase-pills {
+  display: flex;
+  gap: 0;
+  background: var(--color-border);
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.planning-view__phase-pill {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planning-view__phase-pill:hover:not(.planning-view__phase-pill--active) {
+  color: var(--color-text);
+}
+
+.planning-view__phase-pill--active {
+  background: #1f1f1f;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}

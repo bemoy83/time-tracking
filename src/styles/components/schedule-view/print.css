@@ -1,0 +1,30 @@
+/* --- Print styles --- */
+
+@media print {
+  .planning-view__editor-header,
+  .event-context-bar__edit,
+  .amendment-popover {
+    display: none !important;
+  }
+
+  .schedule-view {
+    padding: 0;
+  }
+
+  .schedule-grid__cell {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .schedule-grid__cell--assigned {
+    /* No background in print — icon carries assigned state */
+  }
+
+  .schedule-grid__cell--over {
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .feasibility-bar--over {
+    background: rgba(239, 68, 68, 0.08) !important;
+  }
+}

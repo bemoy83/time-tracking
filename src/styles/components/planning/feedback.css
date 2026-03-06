@@ -1,0 +1,62 @@
+/* ============================================================
+   KPI Suggestion banner
+   ============================================================ */
+
+.planning-view__suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-small);
+}
+
+.planning-view__suggestion-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.planning-view__suggestion-text {
+  flex: 1;
+  color: var(--color-text);
+}
+
+.planning-view__suggestion-rate {
+  font-weight: 600;
+}
+
+/* ============================================================
+   Risk warnings
+   ============================================================ */
+
+.planning-view__risk-warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* Risk reasons use StatusBadge--danger */
+
+/* ============================================================
+   Rationale note
+   ============================================================ */
+
+.planning-view__rationale .input {
+  font-size: var(--font-small);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+
+.planning-view__rationale .input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.planning-view__rationale .input:hover {
+  border-color: var(--color-border);
+}

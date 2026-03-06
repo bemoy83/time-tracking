@@ -1,0 +1,178 @@
+/* --- Work Calendar (week grid) --- */
+
+.work-calendar-scroller {
+  overflow-x: auto;
+}
+
+.work-calendar-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(7, minmax(74px, 1fr));
+  gap: 3px;
+  min-width: 558px; /* 40 + 7×74 */
+}
+
+/* Each week row spans all 8 columns internally */
+.wc-week-row {
+  display: contents;
+}
+
+/* Column headers */
+.wc-col-head {
+  padding: 2px 4px 6px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wc-col-head--label {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Week label */
+.wc-week-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Day cells */
+.wc-cell {
+  border-radius: var(--radius-md);
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+}
+
+.wc-cell--work {
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+
+.wc-cell--off {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  opacity: 0.55;
+}
+
+.wc-cell--out-of-range {
+  background: none;
+  border: 1px dashed rgba(0, 0, 0, 0.06);
+  opacity: 0.25;
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 7px;
+}
+
+.wc-cell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.wc-cell__day-num {
+  font-size: var(--font-small);
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.wc-cell__day-num--toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: opacity 0.15s;
+}
+
+.wc-cell--off .wc-cell__day-num--toggle {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 0, 0, 0.3);
+}
+
+.wc-cell__day-num--toggle:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.wc-cell__times {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-wrap: nowrap;
+}
+
+.wc-cell__sep {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  padding: 0 1px;
+}
+
+.wc-cell__crew {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wc-cell__crew-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.wc-cell__value {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  transition: background 0.1s;
+  line-height: 1.4;
+}
+
+.wc-cell__value:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.wc-cell__value:disabled {
+  cursor: default;
+}
+
+.wc-cell__value--inherited {
+  color: var(--color-text-muted);
+}
+
+.wc-cell__input {
+  width: 100%;
+  font-size: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-height: 0;
+  line-height: 1.4;
+}
+
+.wc-cell__input--crew {
+  width: 42px;
+}
+
+

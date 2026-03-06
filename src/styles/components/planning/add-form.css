@@ -1,0 +1,36 @@
+/* ============================================================
+   Add Work Package form (uses shared line-item card shell)
+   ============================================================ */
+
+.planning-view__line-item--add {
+  /* Inherits all styling from .planning-view__line-item; no overrides needed */
+}
+
+.planning-view__add-form-title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.planning-view__add-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.planning-view__add-fields .planning-view__field:first-child {
+  grid-column: 1 / -1;
+}
+
+.planning-view__add-fields .planning-view__field:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+.planning-view__add-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}

@@ -1,0 +1,88 @@
+/* --- Conflict Resolution Banner --- */
+
+.conflict-banner {
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-small);
+}
+
+.conflict-banner__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.conflict-banner__icon {
+  width: 16px;
+  height: 16px;
+  color: rgb(217, 119, 6);
+  flex-shrink: 0;
+}
+
+.conflict-banner__title {
+  font-weight: 600;
+  color: rgb(146, 64, 14);
+  flex: 1;
+}
+
+.conflict-banner .btn {
+  color: rgb(217, 119, 6);
+}
+
+.conflict-banner .btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.conflict-banner__suggestions {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.conflict-banner__option {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.conflict-banner__option-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.conflict-banner__option-detail {
+  color: var(--color-text-muted);
+}
+
+
+.conflict-banner__option--info {
+  color: rgb(37, 99, 235);
+}
+
+.conflict-banner--info {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.conflict-banner--info .btn {
+  color: rgb(37, 99, 235);
+}
+
+.conflict-banner--info .btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.conflict-banner--info .conflict-banner__icon {
+  color: rgb(37, 99, 235);
+}
+
+.conflict-banner--info .conflict-banner__title {
+  color: rgb(30, 64, 175);
+}
+
+.conflict-banner__note {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-label);
+}

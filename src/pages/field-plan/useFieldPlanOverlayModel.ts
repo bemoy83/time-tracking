@@ -1,0 +1,335 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
+import { buildExecutionReturnEnvelope } from '../../lib/interop/data-transfer/execution-return';
+import { downloadJson } from '../../lib/interop/download-json';
+import type { BlockCategory, Plan, PlanLineItem } from '../../lib/planning/plan-model';
+import { updatePlanLineItem } from '../../lib/planning/plan-model';
+import { lineItemToCreateTaskInput } from '../../lib/planning/release-plan';
+import {
+  syncLineItemBlockToTasks,
+  syncLineItemUnblockToTasks,
+} from '../../lib/planning/task-plan-block-sync';
+import { createTask, useTaskStore } from '../../lib/stores/task-store';
+import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { nowUtc, type TimeEntry } from '../../lib/types';
+import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
+import {
+  buildFieldPlanLineItemSummaries,
+  summarizeLineItemStatuses,
+  type FieldPlanLineItemSummary,
+} from './field-plan-model';
+import {
+  formatPlanPersonHours,
+  groupByStatus,
+  isExecutorPlan,
+  sortExecutorPlans,
+} from './field-plan-overlay-helpers';
+import type { FormMode } from './field-plan-overlay-types';
+import { useFieldPlanImport } from './useFieldPlanImport';
+
+export function useFieldPlanOverlayModel(isOpen: boolean) {
+  const { tasks } = useTaskStore();
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [showPastEvents, setShowPastEvents] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [deferredExpanded, setDeferredExpanded] = useState(false);
+  const [formMode, setFormMode] = useState<FormMode | null>(null);
+
+  const hadDeadlineRiskRef = useRef(false);
+
+  const reloadData = useCallback(async () => {
+    const [allPlans, allTimeEntries] = await Promise.all([getAllPlans(), getAllTimeEntries()]);
+    setPlans(sortExecutorPlans(allPlans.filter(isExecutorPlan)));
+    setTimeEntries(allTimeEntries);
+  }, []);
+
+  const handleImportApplied = useCallback(async (planId: string) => {
+    await reloadData();
+    setSelectedPlanId(planId);
+  }, [reloadData]);
+
+  const {
+    isLoadingPreview,
+    preview,
+    isApplyingImport,
+    handleFileChange,
+    handleApplyImport,
+    resetImportPreview,
+  } = useFieldPlanImport({
+    onMessage: setMessage,
+    onImportApplied: handleImportApplied,
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setMessage(null);
+    resetImportPreview();
+    setCompletedExpanded(false);
+    setDeferredExpanded(false);
+    setFormMode(null);
+    void reloadData();
+  }, [isOpen, reloadData, resetImportPreview]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const hasSelection = selectedPlanId != null && plans.some((plan) => plan.id === selectedPlanId);
+    if (hasSelection) return;
+
+    const received = plans.find((plan) => plan.status === 'received');
+    if (received) {
+      setSelectedPlanId(received.id);
+      return;
+    }
+
+    if (plans.length > 0) {
+      setSelectedPlanId(plans[0].id);
+    } else {
+      setSelectedPlanId(null);
+    }
+  }, [isOpen, plans, selectedPlanId]);
+
+  const receivedPlans = useMemo(
+    () => plans.filter((plan) => plan.status === 'received'),
+    [plans],
+  );
+
+  const closedPlans = useMemo(
+    () => plans.filter((plan) => plan.status === 'session-closed'),
+    [plans],
+  );
+
+  const selectedPlan = useMemo(
+    () => plans.find((plan) => plan.id === selectedPlanId) ?? null,
+    [plans, selectedPlanId],
+  );
+
+  const lineItems = useMemo(() => {
+    if (!selectedPlan) return [];
+    return buildFieldPlanLineItemSummaries(selectedPlan, tasks, timeEntries);
+  }, [selectedPlan, tasks, timeEntries]);
+
+  const lineItemStatusSummary = useMemo(
+    () => summarizeLineItemStatuses(lineItems),
+    [lineItems],
+  );
+
+  const statusGroups = useMemo(() => groupByStatus(lineItems), [lineItems]);
+
+  const progressPercent = useMemo(
+    () => lineItems.length === 0 ? 0 : Math.round((lineItemStatusSummary.completed / lineItems.length) * 100),
+    [lineItems.length, lineItemStatusSummary.completed],
+  );
+
+  const deadlineSummary = useMemo(() => {
+    const actionable = lineItems.filter((item) => item.deadlineStatus !== 'unscheduled');
+    const overdue = actionable.filter((item) => item.deadlineStatus === 'overdue').length;
+    const atRisk = actionable.filter((item) => item.deadlineStatus === 'at-risk').length;
+    const done = actionable.filter((item) => item.deadlineStatus === 'done-on-time' || item.deadlineStatus === 'done-late').length;
+    return { total: actionable.length, overdue, atRisk, done };
+  }, [lineItems]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const hasRisk = deadlineSummary.overdue > 0 || deadlineSummary.atRisk > 0;
+    if (hasRisk && !hadDeadlineRiskRef.current) {
+      trackTelemetryEvent('schedule_deadline_risk_visible');
+    }
+    hadDeadlineRiskRef.current = hasRisk;
+  }, [deadlineSummary.atRisk, deadlineSummary.overdue, isOpen]);
+
+  const unplannedTasks = useMemo(() => {
+    if (!selectedPlan || selectedPlan.projectId == null) return [];
+    return tasks.filter(
+      (task) => task.projectId === selectedPlan.projectId && task.sourcePlanId == null,
+    );
+  }, [selectedPlan, tasks]);
+
+  const selectedPlanPersonHours = useMemo(() => {
+    if (!selectedPlan) return '0.0h';
+    return formatPlanPersonHours(selectedPlan, tasks, timeEntries);
+  }, [selectedPlan, tasks, timeEntries]);
+
+  const canExecute =
+    selectedPlan?.status === 'received' || selectedPlan?.status === 'session-closed';
+
+  const patchLineItem = useCallback(
+    async (lineItemId: string, updates: Partial<Omit<PlanLineItem, 'id'>>) => {
+      if (!selectedPlan) return;
+      const nextPlan = updatePlanLineItem(selectedPlan, lineItemId, updates);
+      await updatePlan(nextPlan);
+      setPlans((prev) => prev.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan)));
+    },
+    [selectedPlan],
+  );
+
+  const handleReleaseToToday = useCallback(
+    (lineItem: PlanLineItem) => {
+      if (!selectedPlan || !canExecute || lineItem.removedFromSource) return;
+      const alreadyReleased = tasks.some(
+        (task) => task.sourcePlanId === selectedPlan.id && task.sourceLineItemId === lineItem.id,
+      );
+      if (alreadyReleased) return;
+
+      void createTask(lineItemToCreateTaskInput(lineItem, {
+        planId: selectedPlan.id,
+        projectId: selectedPlan.projectId,
+      }));
+    },
+    [canExecute, selectedPlan, tasks],
+  );
+
+  const handleBlockSubmit = useCallback(
+    async (lineItemId: string, reason: string, category: BlockCategory | null) => {
+      if (!canExecute || !selectedPlan) return;
+      await patchLineItem(lineItemId, {
+        executionStatus: 'blocked',
+        blockReason: reason,
+        blockCategory: category,
+      });
+      await syncLineItemBlockToTasks(selectedPlan.id, lineItemId, reason, category);
+    },
+    [canExecute, patchLineItem, selectedPlan],
+  );
+
+  const handleDeferSubmit = useCallback(
+    async (lineItemId: string, note: string | null) => {
+      if (!canExecute) return;
+      await patchLineItem(lineItemId, {
+        executionStatus: 'deferred',
+        deferredNote: note,
+        blockReason: null,
+        blockCategory: null,
+      });
+    },
+    [canExecute, patchLineItem],
+  );
+
+  const handleNoteSubmit = useCallback(
+    async (lineItemId: string, note: string | null) => {
+      if (!canExecute) return;
+      await patchLineItem(lineItemId, {
+        executorNote: note,
+      });
+    },
+    [canExecute, patchLineItem],
+  );
+
+  const handleClearBlock = useCallback(
+    async (lineItem: PlanLineItem) => {
+      if (!canExecute || !selectedPlan) return;
+      await patchLineItem(lineItem.id, {
+        executionStatus: 'pending',
+        blockReason: null,
+        blockCategory: null,
+      });
+      await syncLineItemUnblockToTasks(selectedPlan.id, lineItem.id);
+    },
+    [canExecute, patchLineItem, selectedPlan],
+  );
+
+  const handleReactivateDeferred = useCallback(
+    async (lineItem: PlanLineItem) => {
+      if (!canExecute) return;
+      await patchLineItem(lineItem.id, {
+        executionStatus: 'pending',
+        deferredNote: null,
+      });
+    },
+    [canExecute, patchLineItem],
+  );
+
+  const handleExportExecutionReturn = useCallback(async () => {
+    if (!selectedPlan) return;
+
+    const summary = summarizeLineItemStatuses(lineItems);
+    const summaryText = [
+      `Completed: ${summary.completed}`,
+      `Blocked: ${summary.blocked}`,
+      `Deferred: ${summary.deferred}`,
+      `Unplanned tasks: ${unplannedTasks.length}`,
+    ].join('\n');
+
+    const confirmed = window.confirm(`Export execution return?\n\n${summaryText}\n\nYou can export again anytime until the plan is archived.`);
+    if (!confirmed) return;
+
+    try {
+      const latestEntries = await getAllTimeEntries();
+      setTimeEntries(latestEntries);
+
+      const envelope = await buildExecutionReturnEnvelope(selectedPlan, tasks, latestEntries);
+      const stamp = new Date().toISOString().slice(0, 10);
+      const titleKey = sanitizeFileNameSegment(selectedPlan.title);
+      downloadJson(`execution-return-${titleKey}-${stamp}.json`, envelope);
+      trackTelemetryEvent('interop_execution_return_export');
+
+      const now = nowUtc();
+      const updatedPlan: Plan = {
+        ...selectedPlan,
+        status: 'received',
+        sessionClosedAt: null,
+        updatedAt: now,
+      };
+      await updatePlan(updatedPlan);
+      setPlans((prev) => sortExecutorPlans(prev.map((plan) => (plan.id === updatedPlan.id ? updatedPlan : plan))));
+      setSelectedPlanId(updatedPlan.id);
+      setMessage('Execution return exported. You can continue working and export again when needed.');
+    } catch {
+      setMessage('Failed to export. Please try again.');
+    }
+  }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
+
+  const closeForm = useCallback(() => setFormMode(null), []);
+
+  const openActions = useCallback(
+    (lineItem: FieldPlanLineItemSummary) => setFormMode({ kind: 'actions', lineItem }),
+    [],
+  );
+
+  return {
+    isLoadingPreview,
+    preview,
+    isApplyingImport,
+    handleFileChange,
+    handleApplyImport,
+
+    plans,
+    receivedPlans,
+    closedPlans,
+    selectedPlan,
+    selectedPlanId,
+    showPastEvents,
+    message,
+    formMode,
+    completedExpanded,
+    deferredExpanded,
+
+    lineItems,
+    lineItemStatusSummary,
+    statusGroups,
+    progressPercent,
+    deadlineSummary,
+    selectedPlanPersonHours,
+    unplannedTasks,
+    canExecute,
+
+    setSelectedPlanId,
+    togglePastEvents: () => setShowPastEvents((prev) => !prev),
+    toggleCompletedExpanded: () => setCompletedExpanded((prev) => !prev),
+    toggleDeferredExpanded: () => setDeferredExpanded((prev) => !prev),
+    setFormMode,
+
+    closeForm,
+    openActions,
+    handleReleaseToToday,
+    handleBlockSubmit,
+    handleDeferSubmit,
+    handleNoteSubmit,
+    handleClearBlock,
+    handleReactivateDeferred,
+    handleExportExecutionReturn,
+  };
+}

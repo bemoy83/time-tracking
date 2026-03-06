@@ -1,0 +1,104 @@
+.schedule-view {
+  gap: var(--space-md);
+}
+
+.schedule-view__block {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.schedule-view__block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.schedule-view__block-title {
+  margin: 0;
+  font-size: var(--font-body);
+}
+
+.schedule-view__inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+@media (max-width: 780px) {
+  .schedule-view__inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.schedule-view__input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.schedule-view__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.schedule-view__muted {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+/* --- Block toggle/compact --- */
+
+.schedule-view__block--compact {
+  padding: var(--space-md);
+}
+
+/* Single-row inline strip (e.g. Crew Pool) */
+.schedule-view__block--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.schedule-view__block--row .input[type="number"] {
+  width: 72px;
+  text-align: center;
+}
+
+.schedule-view__block-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+}
+
+.schedule-view__block-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+
+.schedule-view__block-chevron--expanded {
+  transform: rotate(90deg);
+}
+
+.schedule-view__block-count,
+.schedule-view__block-summary {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+

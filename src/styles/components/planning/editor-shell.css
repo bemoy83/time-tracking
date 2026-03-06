@@ -1,0 +1,159 @@
+/* ============================================================
+   Plan Editor — edit/detail view
+   ============================================================ */
+
+.planning-view__sticky-summary {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  padding-bottom: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.planning-view__editor-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.planning-view__back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-body);
+  cursor: pointer;
+  padding: var(--space-xs);
+  margin: 0 calc(-1 * var(--space-xs));
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s;
+}
+
+.planning-view__back:hover {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__back:focus-visible {
+  outline-offset: -2px;
+}
+
+.planning-view__back-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.planning-view__title-input {
+  font-size: var(--font-large);
+  font-weight: 800;
+  flex: 1;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  min-width: 0;
+}
+
+.planning-view__title-input:focus-visible {
+  border-bottom-color: var(--color-primary);
+  outline: none;
+}
+
+.planning-view__title-input:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: var(--color-text);
+}
+
+.planning-view__project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+}
+
+.planning-view__project-label {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.planning-view__project-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 32px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-small);
+  font-weight: 500;
+  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.planning-view__project-button--selected {
+  border: none;
+}
+
+.planning-view__project-button--empty {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.planning-view__project-button--empty .planning-view__project-none {
+  color: inherit;
+}
+
+.planning-view__project-button--empty:hover:not(:disabled) {
+  background: none;
+  opacity: 1;
+}
+
+.planning-view__project-button:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.planning-view__project-button--selected:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.planning-view__project-button:focus-visible {
+  outline-offset: 1px;
+}
+
+.planning-view__project-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.planning-view__project-selected {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.planning-view__project-none {
+  color: var(--color-text-muted);
+}
+
+
+/* Actions bar */
+.planning-view__actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
