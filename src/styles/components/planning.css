@@ -1017,17 +1017,11 @@ select.planning-view__work-type-select:hover {
 }
 
 /* ============================================================
-   Add Work Package form
+   Add Work Package form (uses shared line-item card shell)
    ============================================================ */
 
-.planning-view__add-form {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  box-shadow: inset 0 0 0 2px var(--color-primary);
+.planning-view__line-item--add {
+  /* Inherits all styling from .planning-view__line-item; no overrides needed */
 }
 
 .planning-view__add-form-title {

@@ -409,9 +409,7 @@
     background: #991b1b;
   }
 
-  .planning-view__add-form {
-    background: #252525;
-  }
+  /* Add form uses .planning-view__line-item, inherits #1e1e1e from above */
 
   .planning-view__compare-summary {
     background: #252525;
@@ -646,8 +644,14 @@
     border-color: var(--color-text);
   }
 
+  /* --- Planning workspace dividers — barely visible in dark mode --- */
+  .planning-workspace__sidebar {
+    border-right-color: rgba(255, 255, 255, 0.06);
+  }
+
   /* --- Workspace tab scroll shadows --- */
   .planning-workspace__tabs {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
     background-color: var(--color-bg);
     --_scroll-shadow-color: var(--color-bg);
     background-image:

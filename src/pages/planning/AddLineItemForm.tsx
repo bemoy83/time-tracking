@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import {
   WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
@@ -25,6 +25,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
     () => workTypes.filter((wt) => wt.buildPhase === phaseFilter),
     [workTypes, phaseFilter],
   );
+  const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>('');
   const [workQuantity, setWorkQuantity] = useState(0);
@@ -71,22 +72,23 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
     onAdd(item);
     setTitle('');
     setWorkQuantity(0);
+    titleRef.current?.focus();
   };
 
   const noWorkTypesMessage = `No work types for ${BUILD_PHASE_LABELS[phaseFilter]}. Add work types in Settings.`;
 
   return (
-    <div className="planning-view__add-form">
+    <div className="planning-view__line-item planning-view__line-item--add">
       <h3 className="planning-view__add-form-title">Add Work Package</h3>
       <div className="planning-view__add-fields">
         <div className="planning-view__field">
           <span className="planning-view__field-label">Title</span>
           <input
+            ref={titleRef}
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Install drywall"
-            autoFocus
           />
         </div>
         <div className="planning-view__field">
