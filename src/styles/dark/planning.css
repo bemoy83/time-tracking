@@ -12,21 +12,27 @@
   background: #1e1e1e;
 }
 
-.planning-view__line-item-type {
+.planning-view__line-item-type,
+.planning-view__field-label,
+.planning-view__rationale .input::placeholder,
+.planning-view__field-help,
+.planning-view__sticky-summary .planning-view__schedule-group-title,
+.planning-view__sticky-summary .planning-view__schedule-label-text {
   color: #858585;
 }
 
-.planning-view__field-label {
-  color: #858585;
-}
-
-.planning-view__field .input {
+.planning-view__field .input,
+.planning-view__rationale .input,
+.planning-view__sticky-summary .planning-view__schedule-input .input {
   background: #2a2a2a;
   border-color: transparent;
   color: #e0e0e0;
 }
 
-.planning-view__field .input:hover {
+.planning-view__field .input:hover,
+select.planning-view__work-type-select:hover,
+.planning-view__rationale .input:hover,
+.planning-view__sticky-summary .planning-view__schedule-input .input:hover {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -38,28 +44,6 @@ select.planning-view__work-type-select {
   background-color: #2a2a2a;
   border-color: transparent;
   color: #e0e0e0;
-}
-
-select.planning-view__work-type-select:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.planning-view__rationale .input {
-  background: #2a2a2a;
-  border-color: transparent;
-  color: #e0e0e0;
-}
-
-.planning-view__rationale .input::placeholder {
-  color: #858585;
-}
-
-.planning-view__rationale .input:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.planning-view__field-help {
-  color: #858585;
 }
 
 .planning-view__project-row {
@@ -76,16 +60,13 @@ select.planning-view__work-type-select:hover {
   border: none;
 }
 
-.planning-view__project-button:hover:not(:disabled) {
+.planning-view__project-button:hover:not(:disabled),
+.planning-view__line-item-duplicate:hover {
   background: #2a2a2a;
 }
 
 .planning-view__project-button--empty:hover:not(:disabled) {
   background: none;
-}
-
-.planning-view__line-item-duplicate:hover {
-  background: #2a2a2a;
 }
 
 .planning-view__suggestion {
@@ -103,21 +84,6 @@ select.planning-view__work-type-select:hover {
   background: #1e1e1e;
 }
 
-.planning-view__sticky-summary .planning-view__schedule-group-title,
-.planning-view__sticky-summary .planning-view__schedule-label-text {
-  color: #858585;
-}
-
-.planning-view__sticky-summary .planning-view__schedule-input .input {
-  background: #2a2a2a;
-  border-color: transparent;
-  color: #e0e0e0;
-}
-
-.planning-view__sticky-summary .planning-view__schedule-input .input:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
 .planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.65;
   filter: invert(1);
@@ -126,6 +92,7 @@ select.planning-view__work-type-select:hover {
 .planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0.85;
 }
+
 .planning-view__phase-pill--active {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
