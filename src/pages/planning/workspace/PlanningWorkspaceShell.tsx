@@ -5,7 +5,7 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -25,6 +25,18 @@ import {
   getVisiblePlanWorkspaceTabs,
   type WorkspaceRenderContext,
 } from './workspace-tabs';
+import {
+  getGlobalFallbackMetrics,
+  resolveSidebarMetrics,
+  getPlanEditorMetrics,
+  getScheduleViewMetrics,
+  getProgressViewMetrics,
+  getSharedScheduleMetrics,
+  getInsightsViewMetrics,
+  getEventReportMetrics,
+  type SidebarMetricDescriptor,
+} from './workspace-metrics';
+import { SidebarMetrics } from './SidebarMetrics';
 import { HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
@@ -106,6 +118,30 @@ export function PlanningWorkspaceShell({
   };
   const sidebarTabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
 
+  const resolvedMetrics = useMemo(() => {
+    const computeViewMetrics = (): SidebarMetricDescriptor[] => {
+      if (activeTab === 'shared-schedule') {
+        return getSharedScheduleMetrics(plans, selectedPlanIdsForSharedSchedule);
+      }
+      if (activeTab === 'insights' && !activePlan) {
+        return getInsightsViewMetrics(kpis);
+      }
+      if (!activePlan) return [];
+      switch (activeTab) {
+        case 'edit': return getPlanEditorMetrics(activePlan);
+        case 'schedule': return getScheduleViewMetrics(activePlan);
+        case 'progress': return getProgressViewMetrics(activePlan, tasks, timeEntries);
+        case 'insights': return getInsightsViewMetrics(kpis);
+        case 'report': return getEventReportMetrics(activePlan);
+        case 'review': return [];
+        default: return [];
+      }
+    };
+    const viewMetrics = computeViewMetrics();
+    const fallbacks = getGlobalFallbackMetrics(plans, tasks);
+    return resolveSidebarMetrics(viewMetrics, fallbacks);
+  }, [activeTab, activePlan, plans, tasks, timeEntries, kpis, selectedPlanIdsForSharedSchedule]);
+
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
@@ -121,6 +157,7 @@ export function PlanningWorkspaceShell({
             <span>All Plans</span>
           </button>
         </div>
+        <SidebarMetrics metrics={resolvedMetrics} />
         <div className="planning-workspace__sidebar-content">
           <PlanList
             plans={plans}
