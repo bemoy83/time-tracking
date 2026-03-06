@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeftIcon, ChevronIcon } from '../../components/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeftIcon } from '../../components/icons';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
@@ -22,6 +22,7 @@ import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
+import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import {
   type PhaseDateField,
@@ -43,13 +44,6 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
-function formatShortDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
 export function ScheduleView({
   plan,
   onSave,
@@ -69,7 +63,6 @@ export function ScheduleView({
   const primaryRangeEnd = primaryRange?.end ?? null;
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
-  const inputsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
@@ -243,54 +236,28 @@ export function ScheduleView({
       <FeasibilityBar capacity={capacity} />
       <ConflictResolutionBanner capacity={capacity} />
 
-      <section className="schedule-view__block schedule-view__block--compact" ref={inputsRef}>
-        <header className="schedule-view__block-header">
-          <button
-            type="button"
-            className="schedule-view__block-toggle"
-            onClick={() => setInputsExpanded((prev) => !prev)}
-            aria-expanded={inputsExpanded}
-          >
-            <ChevronIcon
-              className={`schedule-view__block-chevron${inputsExpanded ? ' schedule-view__block-chevron--expanded' : ''}`}
-            />
-            <h3 className="schedule-view__block-title">
-              Schedule Inputs
-              {!inputsExpanded &&
-                primaryRange != null && (
-                  <span className="schedule-view__block-summary">
-                    {' '}— {formatShortDate(primaryRange.start)}-{formatShortDate(primaryRange.end)}
-                    · {currentPlan.workCalendar.length}{' '}
-                    {currentPlan.workCalendar.length === 1 ? 'day' : 'days'} · {currentPlan.defaultCrewSize ?? '–'} crew · {capacity.totalAvailablePersonHours.toFixed(0)}h
-                    available
-                    {primaryRange.source === 'phase' &&
-                      currentPlan.eventStartDate &&
-                      currentPlan.eventEndDate && (
-                        <>
-                          {' '}· Event {formatShortDate(currentPlan.eventStartDate)}-{formatShortDate(currentPlan.eventEndDate)}
-                        </>
-                      )}
-                  </span>
-                )}
-            </h3>
-          </button>
-        </header>
-        {inputsExpanded && (
-          <PlanScheduleInputs
-            buildUpStartDate={phaseDates.buildUpStartDate}
-            buildUpEndDate={phaseDates.buildUpEndDate}
-            tearDownStartDate={phaseDates.tearDownStartDate}
-            tearDownEndDate={phaseDates.tearDownEndDate}
-            eventStartDate={currentPlan.eventStartDate}
-            eventEndDate={currentPlan.eventEndDate}
-            defaultCrewSize={currentPlan.defaultCrewSize}
-            readOnly={readOnly}
-            onPhaseDateChange={handlePlanPhaseDateChange}
-            onEventDateChange={handlePlanDateChange}
-            onDefaultCrewSizeChange={handleDefaultCrewChange}
-          />
-        )}
-      </section>
+      <ScheduleInputsBlock
+        expanded={inputsExpanded}
+        onToggle={() => setInputsExpanded((prev) => !prev)}
+        primaryRange={primaryRange}
+        dayCount={currentPlan.workCalendar.length}
+        crewSize={currentPlan.defaultCrewSize ?? null}
+        totalAvailable={capacity.totalAvailablePersonHours}
+      >
+        <PlanScheduleInputs
+          buildUpStartDate={phaseDates.buildUpStartDate}
+          buildUpEndDate={phaseDates.buildUpEndDate}
+          tearDownStartDate={phaseDates.tearDownStartDate}
+          tearDownEndDate={phaseDates.tearDownEndDate}
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
+          defaultCrewSize={currentPlan.defaultCrewSize}
+          readOnly={readOnly}
+          onPhaseDateChange={handlePlanPhaseDateChange}
+          onEventDateChange={handlePlanDateChange}
+          onDefaultCrewSizeChange={handleDefaultCrewChange}
+        />
+      </ScheduleInputsBlock>
 
       <WorkCalendarEditor
         calendar={currentPlan.workCalendar}

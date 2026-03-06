@@ -3,7 +3,6 @@ import { usePlanEditorState } from './hooks/usePlanEditorState';
 import {
   BUILD_PHASE_LABELS,
   BUILD_PHASES,
-  formatDurationShort,
   type BuildPhase,
   type Project,
 } from '../../lib/types';
@@ -28,15 +27,14 @@ import {
   generateDefaultWorkCalendar,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { ChevronLeftIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../../components/icons';
-import { Fab } from '../../components/Fab';
+import { ChevronLeftIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
-import { MetricCard } from '../../components/MetricCard';
 import { AddLineItemForm } from './AddLineItemForm';
 import { LineItemCard } from './LineItemCard';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
+import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -74,7 +72,6 @@ export function PlanEditor({
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
-  const [showAddItem, setShowAddItem] = useState(false);
   const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
 
@@ -83,7 +80,6 @@ export function PlanEditor({
   }, [plan.id, plan.updatedAt, plan.title]);
 
   useEffect(() => {
-    setShowAddItem(false);
     setShowProjectPicker(false);
     setPhaseFilter('build-up');
   }, [plan.id]);
@@ -94,6 +90,8 @@ export function PlanEditor({
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
+  const isEmpty = primaryRange == null;
+  const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
   const totalPersonHours = planTotalPersonHours(currentPlan);
@@ -142,7 +140,6 @@ export function PlanEditor({
 
   const handleAddLineItem = (item: PlanLineItem) => {
     mutatePlan((prev) => addLineItemToPlan(prev, item));
-    setShowAddItem(false);
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -233,64 +230,29 @@ export function PlanEditor({
           </button>
         </div>
 
-        <PlanScheduleInputs
-          buildUpStartDate={phaseDates.buildUpStartDate}
-          buildUpEndDate={phaseDates.buildUpEndDate}
-          tearDownStartDate={phaseDates.tearDownStartDate}
-          tearDownEndDate={phaseDates.tearDownEndDate}
-          eventStartDate={currentPlan.eventStartDate}
-          eventEndDate={currentPlan.eventEndDate}
-          defaultCrewSize={currentPlan.defaultCrewSize}
-          readOnly={readOnly || isLocked}
-          onPhaseDateChange={handleSetPhaseDate}
-          onEventDateChange={handleSetEventDate}
-          onDefaultCrewSizeChange={handleSetDefaultCrewSize}
-        />
+        <ScheduleInputsBlock
+          expanded={inputsExpanded}
+          onToggle={() => setInputsExpanded((p) => !p)}
+          primaryRange={primaryRange}
+          dayCount={availableScope?.workDayCount ?? 0}
+          crewSize={currentPlan.defaultCrewSize ?? null}
+          totalAvailable={availableScope?.totalAvailable ?? 0}
+        >
+          <PlanScheduleInputs
+            buildUpStartDate={phaseDates.buildUpStartDate}
+            buildUpEndDate={phaseDates.buildUpEndDate}
+            tearDownStartDate={phaseDates.tearDownStartDate}
+            tearDownEndDate={phaseDates.tearDownEndDate}
+            eventStartDate={currentPlan.eventStartDate}
+            eventEndDate={currentPlan.eventEndDate}
+            defaultCrewSize={currentPlan.defaultCrewSize}
+            readOnly={readOnly || isLocked}
+            onPhaseDateChange={handleSetPhaseDate}
+            onEventDateChange={handleSetEventDate}
+            onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+          />
+        </ScheduleInputsBlock>
 
-        {/* Summary stats */}
-        <div className="planning-view__summary metric-card-row">
-          <MetricCard
-            icon={<TaskListIcon />}
-            iconVariant="tasks"
-            value={currentPlan.lineItems.length}
-            label="Work packages"
-          />
-          <MetricCard
-            icon={<PeopleIcon />}
-            iconVariant="people"
-            value={formatDurationShort(totalPersonHours * 3_600_000)}
-            label="Person-hours (req)"
-          />
-          {availableScope && (
-            <>
-              <MetricCard
-                icon={<ClockIcon />}
-                iconVariant="time"
-                value={`${availableScope.workDayCount}d`}
-                label="Work days"
-              />
-              <MetricCard
-                icon={<PeopleIcon />}
-                iconVariant="people"
-                value={`${availableScope.totalAvailable.toFixed(0)}h`}
-                label="Available"
-                meta={
-                  availableScope.headroom >= 0
-                    ? `+${availableScope.headroom.toFixed(0)}h headroom`
-                    : `${availableScope.headroom.toFixed(0)}h deficit`
-                }
-                variant={availableScope.headroom < 0 ? 'risk' : 'default'}
-              />
-            </>
-          )}
-          {suggestions.highRiskCount > 0 && (
-            <MetricCard
-              value={suggestions.highRiskCount}
-              label="High risk"
-              variant="risk"
-            />
-          )}
-        </div>
 
         {isEditable && (
           <div className="planning-view__phase-pills" role="group" aria-label="Build phase filter">
@@ -310,17 +272,11 @@ export function PlanEditor({
 
       </div>
 
-      {/* FAB — Add Work Package (when editable) */}
+      {/* Add form — always visible when editable */}
       {isEditable && (
-        <Fab onClick={() => setShowAddItem(true)} aria-label="Add work package" />
-      )}
-
-      {/* Add form */}
-      {showAddItem && isEditable && (
         <AddLineItemForm
           phaseFilter={phaseFilter}
           onAdd={handleAddLineItem}
-          onCancel={() => setShowAddItem(false)}
         />
       )}
 
@@ -350,7 +306,7 @@ export function PlanEditor({
         </div>
       ) : (
         <p className="planning-view__empty-items">
-          No work packages yet. Tap + to add one.
+          No work packages yet. Use the form above to add one.
         </p>
       )}
 

@@ -16,7 +16,7 @@ const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select
 interface AddLineItemFormProps {
   phaseFilter: BuildPhase;
   onAdd: (item: PlanLineItem) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFormProps) {
@@ -69,6 +69,8 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
       selectedWorkType.id,
     );
     onAdd(item);
+    setTitle('');
+    setWorkQuantity(0);
   };
 
   const noWorkTypesMessage = `No work types for ${BUILD_PHASE_LABELS[phaseFilter]}. Add work types in Settings.`;
@@ -130,7 +132,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
         </div>
       </div>
       <div className="planning-view__add-actions">
-        <button className="btn btn--secondary" onClick={onCancel}>Cancel</button>
+        {onCancel && <button className="btn btn--secondary" onClick={onCancel}>Cancel</button>}
         <button
           className="btn btn--primary"
           onClick={handleSubmit}

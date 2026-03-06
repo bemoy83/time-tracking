@@ -456,9 +456,40 @@
 
   /* --- Schedule View (Event Inputs, Work Calendar, Schedule Grid, Capacity Summary) --- */
 
-  /* Section blocks — softer contrast */
-  .schedule-view .schedule-view__block {
+  /* Section blocks — softer contrast (Schedule View + Plan Editor ScheduleInputsBlock) */
+  .schedule-view .schedule-view__block,
+  .planning-view__sticky-summary .schedule-view__block--compact {
     background: #1e1e1e;
+  }
+
+  /* Plan Editor ScheduleInputsBlock — match Schedule View colors exactly */
+  .planning-view__sticky-summary .schedule-view__block .schedule-view__block-title,
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-group-title,
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-label-text {
+    color: var(--color-text-muted);
+  }
+
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input {
+    background: #2a2a2a;
+    border-color: transparent;
+    color: #e0e0e0;
+  }
+
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input .input::placeholder {
+    color: #858585;
+  }
+
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.65;
+    filter: invert(1);
+  }
+
+  .planning-view__sticky-summary .schedule-view__block .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.85;
   }
 
   /* Schedule grid — match block to avoid nested card look */

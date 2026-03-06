@@ -58,7 +58,7 @@
 /* --- Block toggle/compact --- */
 
 .schedule-view__block--compact {
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-md);
 }
 
 /* Single-row inline strip (e.g. Crew Pool) */
@@ -107,11 +107,20 @@
   color: var(--color-text-muted);
 }
 
-/* --- Schedule Inputs block (schedule view) --- */
+/* --- Schedule Inputs block (schedule view + plan editor) --- */
 
-.schedule-view .schedule-view__block--compact {
+.schedule-view .schedule-view__block--compact,
+.planning-view__sticky-summary .schedule-view__block--compact {
   background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
+  padding: var(--space-md);
+}
+
+/* ScheduleInputsBlock (both views): no nested card; equal padding so content looks centered */
+.schedule-view__block .planning-view__schedule-inputs {
+  background: transparent;
+  border-radius: 0;
+  padding: var(--space-md); /* equal on all sides, matches block padding */
 }
 
 /* Input/group styling shared with sticky summary — see planning.css */
