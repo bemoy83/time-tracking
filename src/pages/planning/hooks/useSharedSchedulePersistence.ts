@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 
-interface SharedSchedulePersistenceControllerParams {
-  plansById: Map<string, Plan>;
-  autosaveDelay: number;
-  getOnSavePlan: () => (plan: Plan) => void | Promise<void>;
-  onChange?: () => void;
-}
-
 export interface UseSharedSchedulePersistenceParams {
   plansById: Map<string, Plan>;
   onSavePlan: (plan: Plan) => void | Promise<void>;
@@ -20,123 +13,96 @@ export interface UseSharedSchedulePersistenceResult {
   flushAllPending: () => Promise<void>;
 }
 
-export interface SharedSchedulePersistenceController {
-  setPersistedPlansById: (plansById: Map<string, Plan>) => void;
-  getEffectivePlansById: () => Map<string, Plan>;
-  applyPlanMutation: (planId: string, mutateFn: (plan: Plan) => Plan) => boolean;
-  flushAllPending: () => Promise<void>;
-  dispose: () => Promise<void>;
-}
+/**
+ * Shared schedule persistence — aligned with usePlanEditorState pattern.
+ *
+ * Single schedule: currentPlan in React state → setCurrentPlan on mutate → immediate re-render.
+ * Shared schedule: optimisticOverrides in React state → setOptimisticOverrides on mutate → immediate re-render.
+ *
+ * Previously used an external controller + revision counter, which caused delayed/stale UI updates
+ * because the data lived outside React and required an indirect setState(revision) to trigger re-reads.
+ */
+export function useSharedSchedulePersistence({
+  plansById,
+  onSavePlan,
+  autosaveDelay = 500,
+}: UseSharedSchedulePersistenceParams): UseSharedSchedulePersistenceResult {
+  const onSavePlanRef = useRef(onSavePlan);
+  onSavePlanRef.current = onSavePlan;
 
-function removeSyncedOptimisticPlans(
-  optimisticPlansById: Map<string, Plan>,
-  pendingSavesById: Map<string, Plan>,
-  timersByPlanId: Map<string, ReturnType<typeof setTimeout>>,
-  persistedPlansById: Map<string, Plan>,
-): boolean {
-  let changed = false;
+  // Optimistic overrides — React state, same pattern as usePlanEditorState's currentPlan.
+  // UI reads from effectivePlansById (merge of plansById + optimisticOverrides) immediately.
+  const [optimisticOverrides, setOptimisticOverrides] = useState<Map<string, Plan>>(() => new Map());
 
-  for (const [planId, optimisticPlan] of optimisticPlansById) {
-    const persistedPlan = persistedPlansById.get(planId);
-    const isSynced = persistedPlan && persistedPlan.updatedAt === optimisticPlan.updatedAt;
+  // Save queue — refs for debouncing (like usePlanEditorState's pendingSaveRef + timerRef)
+  const pendingSavesByIdRef = useRef<Map<string, Plan>>(new Map());
+  const timersByPlanIdRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-    if (persistedPlan && !isSynced) {
-      continue;
-    }
-
-    optimisticPlansById.delete(planId);
-    pendingSavesById.delete(planId);
-
-    const timer = timersByPlanId.get(planId);
-    if (timer) {
-      clearTimeout(timer);
-      timersByPlanId.delete(planId);
-    }
-
-    changed = true;
-  }
-
-  return changed;
-}
-
-export function createSharedSchedulePersistenceController({
-  plansById: initialPlansById,
-  autosaveDelay,
-  getOnSavePlan,
-  onChange,
-}: SharedSchedulePersistenceControllerParams): SharedSchedulePersistenceController {
-  let persistedPlansById = initialPlansById;
-  const optimisticPlansById = new Map<string, Plan>();
-  const pendingSavesById = new Map<string, Plan>();
-  const timersByPlanId = new Map<string, ReturnType<typeof setTimeout>>();
-
-  const emitChange = () => {
-    onChange?.();
-  };
-
-  const flushPlan = async (planId: string): Promise<void> => {
-    const timer = timersByPlanId.get(planId);
-    if (timer) {
-      clearTimeout(timer);
-      timersByPlanId.delete(planId);
-    }
-
-    const plan = pendingSavesById.get(planId);
-    if (!plan) return;
-
-    pendingSavesById.delete(planId);
-    await getOnSavePlan()(plan);
-  };
-
-  const queuePlanSave = (plan: Plan): void => {
-    optimisticPlansById.set(plan.id, plan);
-    pendingSavesById.set(plan.id, plan);
-
-    const existingTimer = timersByPlanId.get(plan.id);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-
-    const timer = setTimeout(() => {
-      void flushPlan(plan.id);
-    }, autosaveDelay);
-
-    timersByPlanId.set(plan.id, timer);
-    emitChange();
-  };
-
-  const getEffectivePlansById = (): Map<string, Plan> => {
-    const merged = new Map(persistedPlansById);
-    for (const [planId, optimisticPlan] of optimisticPlansById) {
-      merged.set(planId, optimisticPlan);
+  // Effective plans = persisted + optimistic. Derived from state, updates synchronously with UI.
+  const effectivePlansById = useMemo(() => {
+    const merged = new Map(plansById);
+    for (const [planId, plan] of optimisticOverrides) {
+      merged.set(planId, plan);
     }
     return merged;
-  };
+  }, [plansById, optimisticOverrides]);
 
-  const flushAllPending = async (): Promise<void> => {
-    const pendingPlanIds = Array.from(pendingSavesById.keys());
-    for (const planId of pendingPlanIds) {
-      await flushPlan(planId);
-    }
-    emitChange();
-  };
+  // Clear optimistic overrides when parent has synced (plan saved, plansById updated).
+  useEffect(() => {
+    setOptimisticOverrides((prev) => {
+      if (prev.size === 0) return prev;
+      let changed = false;
+      const next = new Map(prev);
+      for (const [planId, optimisticPlan] of prev) {
+        const persisted = plansById.get(planId);
+        if (persisted && persisted.updatedAt === optimisticPlan.updatedAt) {
+          next.delete(planId);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [plansById]);
 
-  return {
-    setPersistedPlansById(nextPlansById: Map<string, Plan>) {
-      persistedPlansById = nextPlansById;
-      const changed = removeSyncedOptimisticPlans(
-        optimisticPlansById,
-        pendingSavesById,
-        timersByPlanId,
-        persistedPlansById,
-      );
-      if (changed) emitChange();
+  const queueSave = useCallback(
+    (plan: Plan) => {
+      const existingTimer = timersByPlanIdRef.current.get(plan.id);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      pendingSavesByIdRef.current.set(plan.id, plan);
+
+      const timer = setTimeout(() => {
+        timersByPlanIdRef.current.delete(plan.id);
+        const pending = pendingSavesByIdRef.current.get(plan.id);
+        pendingSavesByIdRef.current.delete(plan.id);
+        if (pending) {
+          void onSavePlanRef.current(pending);
+        }
+      }, autosaveDelay);
+
+      timersByPlanIdRef.current.set(plan.id, timer);
     },
+    [autosaveDelay],
+  );
 
-    getEffectivePlansById,
+  const flushAllPending = useCallback(async () => {
+    const pending = new Map(pendingSavesByIdRef.current);
+    for (const timer of timersByPlanIdRef.current.values()) {
+      clearTimeout(timer);
+    }
+    timersByPlanIdRef.current.clear();
+    pendingSavesByIdRef.current.clear();
 
-    applyPlanMutation(planId: string, mutateFn: (plan: Plan) => Plan): boolean {
-      const currentPlan = getEffectivePlansById().get(planId);
+    for (const plan of pending.values()) {
+      await onSavePlanRef.current(plan);
+    }
+  }, []);
+
+  const applyPlanMutation = useCallback(
+    (planId: string, mutateFn: (plan: Plan) => Plan): boolean => {
+      const currentPlan = effectivePlansById.get(planId);
       if (!currentPlan) return false;
 
       const nextPlan = mutateFn(currentPlan);
@@ -144,72 +110,34 @@ export function createSharedSchedulePersistenceController({
         return false;
       }
 
-      queuePlanSave(nextPlan);
+      // Immediate UI update — setState, same as single schedule's setCurrentPlan
+      setOptimisticOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(planId, nextPlan);
+        return next;
+      });
+
+      // Queue save in background (like usePlanEditorState's debounced save)
+      queueSave(nextPlan);
       return true;
     },
+    [effectivePlansById, queueSave],
+  );
 
-    flushAllPending,
-
-    async dispose(): Promise<void> {
-      await flushAllPending();
-      for (const timer of timersByPlanId.values()) {
-        clearTimeout(timer);
-      }
-      timersByPlanId.clear();
-    },
-  };
-}
-
-export function useSharedSchedulePersistence({
-  plansById,
-  onSavePlan,
-  autosaveDelay = 500,
-}: UseSharedSchedulePersistenceParams): UseSharedSchedulePersistenceResult {
-  const onSavePlanRef = useRef(onSavePlan);
-  const isMountedRef = useRef(true);
-  const [revision, setRevision] = useState(0);
-
-  useEffect(() => {
-    onSavePlanRef.current = onSavePlan;
-  }, [onSavePlan]);
-
-  const controllerRef = useRef<SharedSchedulePersistenceController | null>(null);
-  if (controllerRef.current == null) {
-    controllerRef.current = createSharedSchedulePersistenceController({
-      plansById,
-      autosaveDelay,
-      getOnSavePlan: () => onSavePlanRef.current,
-      onChange: () => {
-        if (isMountedRef.current) {
-          setRevision((prev) => prev + 1);
-        }
-      },
-    });
-  }
-
-  const controller = controllerRef.current;
-
-  useEffect(() => {
-    controller.setPersistedPlansById(plansById);
-  }, [controller, plansById]);
-
+  // Flush on unmount
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
-      void controller.dispose();
+      for (const timer of timersByPlanIdRef.current.values()) {
+        clearTimeout(timer);
+      }
+      timersByPlanIdRef.current.clear();
+      const pending = Array.from(pendingSavesByIdRef.current.values());
+      pendingSavesByIdRef.current.clear();
+      for (const plan of pending) {
+        void onSavePlanRef.current(plan);
+      }
     };
-  }, [controller]);
-
-  const applyPlanMutation = useCallback((planId: string, mutateFn: (plan: Plan) => Plan) => (
-    controller.applyPlanMutation(planId, mutateFn)
-  ), [controller]);
-
-  const flushAllPending = useCallback(() => controller.flushAllPending(), [controller]);
-
-  const effectivePlansById = useMemo(
-    () => controller.getEffectivePlansById(),
-    [controller, revision],
-  );
+  }, []);
 
   return {
     effectivePlansById,

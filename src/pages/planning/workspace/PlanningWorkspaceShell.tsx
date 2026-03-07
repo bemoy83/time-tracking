@@ -37,7 +37,7 @@ import {
   type SidebarMetricDescriptor,
 } from './workspace-metrics';
 import { SidebarMetrics } from './SidebarMetrics';
-import { HomeIcon, SparklesIcon, TaskListIcon } from '../../../components/icons';
+import { SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
 
 interface PlanningWorkspaceShellProps {
@@ -151,10 +151,9 @@ export function PlanningWorkspaceShell({
             type="button"
             className="planning-workspace__exit"
             onClick={onExit}
-            aria-label="Back to all plans"
+            aria-label="Exit workspace"
           >
-            <HomeIcon className="planning-workspace__exit-icon" />
-            <span>All Plans</span>
+            <span>Exit workspace</span>
           </button>
         </div>
         <SidebarMetrics metrics={resolvedMetrics} />

@@ -5,6 +5,7 @@ import type { WrapUpV2Projection } from '../../lib/planning/wrap-up-v2-model';
 import { loadWrapUpV2Projection } from '../../lib/planning/wrap-up-v2-projection';
 import { buildEventReportV2 } from '../../lib/reports/event-report-v2';
 import { ChevronLeftIcon } from '../../components/icons';
+import { LoadingBlock } from '../../components/LoadingBlock';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 
 interface EventReportViewProps {
@@ -52,7 +53,7 @@ export function EventReportView({
             Event Report
           </h2>
         </header>
-        <p>Loading report...</p>
+        <LoadingBlock message="Loading report…" />
       </div>
     );
   }

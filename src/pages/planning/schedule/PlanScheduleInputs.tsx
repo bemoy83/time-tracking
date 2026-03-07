@@ -3,8 +3,6 @@ import {
   type PhaseDateField,
   type PhaseDateValues,
   getScheduleDateValidationErrors,
-  hasAnyPhaseDates,
-  hasCompletePhaseDates,
 } from './schedule-date-ui';
 
 interface PlanScheduleInputsProps extends PhaseDateValues {
@@ -41,7 +39,6 @@ export function PlanScheduleInputs({
     () => getScheduleDateValidationErrors(phaseDates, eventStartDate, eventEndDate),
     [phaseDates, eventStartDate, eventEndDate],
   );
-  const isPhasePartial = hasAnyPhaseDates(phaseDates) && !hasCompletePhaseDates(phaseDates);
 
   return (
     <>
@@ -135,12 +132,6 @@ export function PlanScheduleInputs({
           </div>
         </fieldset>
       </div>
-
-      {isPhasePartial && (
-        <p className="planning-view__schedule-validation planning-view__schedule-validation--hint">
-          Set all four phase dates to enable phase-based scheduling windows.
-        </p>
-      )}
 
       {validationErrors.length > 0 && (
         <div className="planning-view__schedule-validation planning-view__schedule-validation--error" role="alert">

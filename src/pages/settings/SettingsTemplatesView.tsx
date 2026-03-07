@@ -6,6 +6,7 @@ import type { TaskTemplate } from '../../lib/types';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { TemplateFormSheet } from '../../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../../components/DeleteTemplateConfirm';
+import { PencilIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportTemplatesCsv } from '../../lib/interop/template-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
@@ -93,7 +94,11 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
         <p className="settings-view__helper">Create reusable presets for faster task creation</p>
 
         {templates.length === 0 ? (
-          <p className="settings-view__empty">No templates yet. Add one to speed up task creation.</p>
+          <div className="empty-state">
+            <PencilIcon className="empty-state__icon" aria-hidden />
+            <p className="empty-state__heading">No templates yet</p>
+            <p className="empty-state__text">Add one to speed up task creation.</p>
+          </div>
         ) : (
           <div className="settings-view__list">
             {templates.map((template) => (

@@ -119,6 +119,34 @@ export function syncPlanWorkCalendarFromCrewPool(
 }
 
 /**
+ * Sync the full crew pool calendar to a plan's workCalendar.
+ * Used when the global default crew changes — all work days get the crew pool's
+ * effective crew (day.crewSize ?? crewPoolDefaultCrewSize) so the global default
+ * overrides any locally set crew on the plan.
+ */
+export function syncCrewPoolCalendarToPlan(
+  plan: Plan,
+  crewPoolCalendar: WorkCalendarDay[],
+  crewPoolDefaultCrewSize: number,
+): Plan {
+  const span = getPlanEffectiveSpan(plan);
+  if (!span) return plan;
+
+  let result = plan;
+  for (const day of crewPoolCalendar) {
+    if (day.date < span.start || day.date > span.end) continue;
+    const effectiveCrew = day.crewSize ?? crewPoolDefaultCrewSize;
+    result = syncPlanWorkCalendarFromCrewPool(result, day.date, {
+      isWorkDay: day.isWorkDay,
+      accessStart: day.accessStart ?? undefined,
+      accessEnd: day.accessEnd ?? undefined,
+      crewSize: day.isWorkDay ? effectiveCrew : null,
+    });
+  }
+  return result;
+}
+
+/**
  * Apply a schedule span change to a line item, managing crewByDate lifecycle:
  * - When span extends: initialize crewByDate for new dates with item.crew.
  * - When span shrinks: prune crewByDate entries outside new span.

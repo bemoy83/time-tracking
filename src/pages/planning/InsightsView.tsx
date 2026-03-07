@@ -8,6 +8,7 @@ import {
   type WorkTypeKpi,
   type WorkTypeTrend,
 } from '../../lib/kpi';
+import { LoadingBlock } from '../../components/LoadingBlock';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../lib/types';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../lib/types';
@@ -234,7 +235,7 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
       </div>
 
       {loading ? (
-        <p className="insights-view__empty">Loading insights…</p>
+        <LoadingBlock message="Loading insights…" />
       ) : allRows.length === 0 ? (
         <p className="insights-view__empty">
           {effectivePlanId

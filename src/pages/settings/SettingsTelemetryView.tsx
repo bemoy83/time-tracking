@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getTelemetrySnapshot, type TelemetryEventName } from '../../lib/telemetry/telemetry';
+import { ClockIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 
 interface SettingsTelemetryViewProps {
@@ -29,7 +30,11 @@ export function SettingsTelemetryView({ onBack }: SettingsTelemetryViewProps) {
         <p className="settings-view__helper">Quality/adoption event counters (local aggregate)</p>
 
         {Object.keys(telemetrySnapshot).length === 0 ? (
-          <p className="settings-view__empty">No telemetry events captured yet.</p>
+          <div className="empty-state">
+            <ClockIcon className="empty-state__icon" aria-hidden />
+            <p className="empty-state__heading">No telemetry events yet</p>
+            <p className="empty-state__text">Events will appear as you use the app.</p>
+          </div>
         ) : (
           <div className="settings-view__list">
             {(Object.entries(telemetrySnapshot) as Array<[TelemetryEventName, { count: number; lastAt: string }]>).map(([name, record]) => (

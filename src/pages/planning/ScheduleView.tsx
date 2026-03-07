@@ -27,6 +27,8 @@ import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
+  hasAnyPhaseDates,
+  hasCompletePhaseDates,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -54,6 +56,8 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const phaseDates = readPhaseDateValues(currentPlan);
+  const isPhasePartial =
+    hasAnyPhaseDates(phaseDates) && !hasCompletePhaseDates(phaseDates);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -243,6 +247,7 @@ export function ScheduleView({
         dayCount={currentPlan.workCalendar.length}
         crewSize={currentPlan.defaultCrewSize ?? null}
         totalAvailable={capacity.totalAvailablePersonHours}
+        phaseHint={isPhasePartial}
       >
         <PlanScheduleInputs
           buildUpStartDate={phaseDates.buildUpStartDate}

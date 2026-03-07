@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTaskStore } from '../../lib/stores/task-store';
 import { getAttributionPolicy, setAttributionPolicy } from '../../lib/stores/attribution-settings';
 import type { AttributionPolicy } from '../../lib/types';
+import { LoadingBlock } from '../../components/LoadingBlock';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import {
   loadAttributionDiagnostics,
@@ -92,7 +93,7 @@ export function SettingsAttributionView({ onBack, onOpenRemediation }: SettingsA
         </label>
 
         {isLoading && diagnostics == null ? (
-          <p className="settings-view__empty">Loading...</p>
+          <LoadingBlock />
         ) : diagnostics && diagnostics.summary.totalEntries === 0 ? (
           <p className="settings-view__empty">No time entries yet.</p>
         ) : diagnostics ? (

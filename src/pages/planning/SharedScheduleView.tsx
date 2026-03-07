@@ -13,7 +13,10 @@ import {
   setSharedCrewForDate,
   toggleSharedAssignment,
 } from '../../lib/planning/scheduling/shared-schedule-mutations';
-import { syncPlanWorkCalendarFromCrewPool } from '../../lib/planning/scheduling/plan-schedule-update';
+import {
+  syncPlanWorkCalendarFromCrewPool,
+  syncCrewPoolCalendarToPlan,
+} from '../../lib/planning/scheduling/plan-schedule-update';
 import type { ScheduledLineItemRef } from '../../lib/planning/scheduling/shared-schedule-types';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
@@ -195,8 +198,7 @@ export function SharedScheduleView({
     lineItemId: string,
     date: string,
   ) => {
-    const changed = applyPlanMutation(planId, (plan) => toggleSharedAssignment(plan, lineItemId, date));
-    if (changed) {
+    if (applyPlanMutation(planId, (plan) => toggleSharedAssignment(plan, lineItemId, date))) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
   }, [applyPlanMutation]);
@@ -207,14 +209,26 @@ export function SharedScheduleView({
     date: string,
     crew: number,
   ) => {
-    const changed = applyPlanMutation(planId, (plan) => setSharedCrewForDate(plan, lineItemId, date, crew));
-    if (changed) {
+    if (applyPlanMutation(planId, (plan) => setSharedCrewForDate(plan, lineItemId, date, crew))) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
   }, [applyPlanMutation]);
 
   const handleDefaultCrewSizeChange = (value: string) => {
-    setCrewPoolDefaultCrewSize(normalizeCrew(value));
+    const newCrew = normalizeCrew(value);
+    setCrewPoolDefaultCrewSize(newCrew);
+    // Clear per-day crew overrides so all days inherit the new global default.
+    const clearedCalendar = crewPoolCalendar.map((day) =>
+      ({ ...day, crewSize: day.isWorkDay ? null : day.crewSize }));
+    setCrewPoolCalendar(clearedCalendar);
+    // Sync the crew pool calendar to each plan in one mutation per plan.
+    // This ensures the global default overrides any locally set crew on plans.
+    for (const plan of selectedPlans) {
+      if (isPlanArchived(plan)) continue;
+      applyPlanMutation(plan.id, (currentPlan) =>
+        syncCrewPoolCalendarToPlan(currentPlan, clearedCalendar, newCrew),
+      );
+    }
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
   };
 

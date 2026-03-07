@@ -115,6 +115,12 @@ export function usePlanningWorkspaceState({
     if (!updated) {
       setActivePlan(null);
       if (mode === 'stack') setSubView('list');
+      return;
+    }
+    // When the plan was updated in the list (e.g. save completed), sync activePlan
+    // so child views (ScheduleView, PlanEditor) receive the latest data.
+    if (updated.updatedAt !== activePlan.updatedAt) {
+      setActivePlan(updated);
     }
   }, [activePlan, data.plans, mode]);
 

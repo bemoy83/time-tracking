@@ -24,6 +24,8 @@ import {
 import { buildAttributedRollup } from '../lib/attributed-rollup';
 import { pluralize } from '../lib/utils/pluralize';
 import { useWorkTypeStore } from '../lib/stores/work-type-store';
+import { CalculatorIcon } from './icons';
+import { LoadingBlock } from './LoadingBlock';
 
 const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
   high: 'High',
@@ -95,14 +97,16 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
   }, [tasks, workTypes, outlierMode]);
 
   if (isLoading) {
-    return <p className="settings-view__empty">Loading...</p>;
+    return <LoadingBlock />;
   }
 
   if (kpis.length === 0) {
     return (
-      <p className="settings-view__empty">
-        No completed tasks with work data yet.
-      </p>
+      <div className="empty-state">
+        <CalculatorIcon className="empty-state__icon" aria-hidden />
+        <p className="empty-state__heading">No productivity data yet</p>
+        <p className="empty-state__text">Complete tasks with work quantity to see KPIs.</p>
+      </div>
     );
   }
 

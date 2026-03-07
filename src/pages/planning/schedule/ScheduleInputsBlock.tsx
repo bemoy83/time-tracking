@@ -15,6 +15,8 @@ interface ScheduleInputsBlockProps {
   dayCount: number;
   crewSize: number | null;
   totalAvailable: number;
+  /** When true, shows a hint in the header to complete phase dates (visible even when collapsed). */
+  phaseHint?: boolean;
   children: ReactNode;
 }
 
@@ -25,6 +27,7 @@ export function ScheduleInputsBlock({
   dayCount,
   crewSize,
   totalAvailable,
+  phaseHint = false,
   children,
 }: ScheduleInputsBlockProps) {
   return (
@@ -52,6 +55,11 @@ export function ScheduleInputsBlock({
             )}
           </h3>
         </button>
+        {phaseHint && (
+          <p className="planning-view__schedule-validation planning-view__schedule-validation--hint schedule-view__block-phase-hint">
+            Set all four phase dates to enable phase-based scheduling windows.
+          </p>
+        )}
       </header>
       {expanded && children}
     </section>

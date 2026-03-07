@@ -3,10 +3,12 @@ import { ReassignEntrySheet } from '../../components/ReassignEntrySheet';
 import { RemediationIssueCard } from '../../components/RemediationIssueCard';
 import { RemediationQueueSummary } from '../../components/RemediationQueueSummary';
 import { RemediationWorkTypeAssignSheet } from '../../components/RemediationWorkTypeAssignSheet';
+import { LoadingBlock } from '../../components/LoadingBlock';
 import { useRemediationData } from '../../lib/hooks/useRemediationData';
 import type { BaseIssueItem, EntryLevelIssueItem, IssueQueueItem } from '../../lib/remediation/issue-queue';
 import type { BulkClassifyResult } from '../../lib/remediation/worktype-classify';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { CheckIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 
 interface SettingsRemediationViewProps {
@@ -132,7 +134,7 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
         )}
 
         {isLoading && queues == null ? (
-          <p className="settings-view__empty">Loading...</p>
+          <LoadingBlock />
         ) : (
           <>
             {error && (
@@ -180,7 +182,11 @@ export function SettingsRemediationView({ onBack }: SettingsRemediationViewProps
             )}
 
             {queues && queues.totalIssues === 0 && (
-              <p className="settings-view__empty">No open remediation issues.</p>
+              <div className="empty-state">
+                <CheckIcon className="empty-state__icon" aria-hidden />
+                <p className="empty-state__heading">No open issues</p>
+                <p className="empty-state__text">All attribution and work data is in good shape.</p>
+              </div>
             )}
 
             {queues && queues.totalIssues > 0 && !hasAutoApplicable && (

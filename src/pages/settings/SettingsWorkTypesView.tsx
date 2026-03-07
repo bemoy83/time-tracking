@@ -3,6 +3,7 @@ import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-sto
 import type { WorkType } from '../../lib/types';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
+import { RulerIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
@@ -106,7 +107,11 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
 
         {editableWorkTypes.length === 0 ? (
-          <p className="settings-view__empty">No work types yet. Add one to categorise tasks.</p>
+          <div className="empty-state">
+            <RulerIcon className="empty-state__icon" aria-hidden />
+            <p className="empty-state__heading">No work types yet</p>
+            <p className="empty-state__text">Add one to categorise tasks.</p>
+          </div>
         ) : (
           <div className="settings-view__list">
             {editableWorkTypes.map((wt) => (

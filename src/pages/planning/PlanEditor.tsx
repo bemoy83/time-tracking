@@ -27,6 +27,7 @@ import {
   generateDefaultWorkCalendar,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
+import { getContrastColor } from '../../lib/utils/contrast';
 import { ChevronLeftIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -38,6 +39,8 @@ import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
+  hasAnyPhaseDates,
+  hasCompletePhaseDates,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -85,6 +88,8 @@ export function PlanEditor({
   }, [plan.id]);
 
   const phaseDates = readPhaseDateValues(currentPlan);
+  const isPhasePartial =
+    hasAnyPhaseDates(phaseDates) && !hasCompletePhaseDates(phaseDates);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -216,7 +221,7 @@ export function PlanEditor({
             disabled={readOnly || isLocked}
             style={
               selectedProject
-                ? { backgroundColor: selectedProject.color, color: 'white' }
+                ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
                 : undefined
             }
           >
@@ -237,6 +242,7 @@ export function PlanEditor({
           dayCount={availableScope?.workDayCount ?? 0}
           crewSize={currentPlan.defaultCrewSize ?? null}
           totalAvailable={availableScope?.totalAvailable ?? 0}
+          phaseHint={isPhasePartial}
         >
           <PlanScheduleInputs
             buildUpStartDate={phaseDates.buildUpStartDate}

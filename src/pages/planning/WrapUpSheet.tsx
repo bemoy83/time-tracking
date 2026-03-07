@@ -6,6 +6,7 @@ import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { useWrapUpSheetModel } from './hooks/useWrapUpSheetModel';
 import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
 import { getFeatureFlag } from '../../lib/flags/feature-flags';
+import { LoadingBlock } from '../../components/LoadingBlock';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 
 interface WrapUpSheetProps {
@@ -130,7 +131,7 @@ export function WrapUpSheet({
   return (
     <ActionSheet isOpen={isOpen} onClose={onClose} title="Wrap Up Review v2">
       {modelV2.isLoadingProjection && (
-        <p className="wrap-up-sheet__empty">Loading execution return data...</p>
+        <LoadingBlock message="Loading execution return data…" />
       )}
 
       {!modelV2.isLoadingProjection && modelV2.projectionLoadError && (
