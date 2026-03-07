@@ -25,7 +25,7 @@ import { FieldPlanView } from './pages/field-plan/FieldPlanView';
 import { getFeatureFlag } from './lib/flags/feature-flags';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 
-type Tab = 'today' | 'projects' | 'planning' | 'settings';
+type Tab = 'today' | 'projects' | 'planning' | 'fieldPlan' | 'settings';
 type SettingsSection =
   | 'workTypes'
   | 'templates'
@@ -42,7 +42,7 @@ type View =
   | { type: 'detail'; taskId: string; returnTab: Tab }
   | { type: 'projectDetail'; projectId: string; returnTo: ReturnTo }
   | { type: 'settingsDetail'; section: SettingsSection; returnTab: Tab }
-  | { type: 'fieldPlan'; returnTo: ReturnTo };
+;
 
 function App() {
   const [initialized, setInitialized] = useState(false);
@@ -118,7 +118,7 @@ function App() {
   };
 
   const handleBack = () => {
-    if (view.type === 'projectDetail' || view.type === 'fieldPlan') {
+    if (view.type === 'projectDetail') {
       setView(view.returnTo);
     } else if (view.type === 'settingsDetail') {
       setView({ type: 'tab', tab: view.returnTab });
@@ -171,7 +171,6 @@ function App() {
         {view.type === 'tab' && view.tab === 'today' && (
           <TodayView
             onSelectTask={handleSelectTask}
-            onNavigateToFieldPlan={getFeatureFlag('fieldPlanExecution') ? () => setView({ type: 'fieldPlan', returnTo: { type: 'tab', tab: 'today' } }) : undefined}
           />
         )}
         {view.type === 'tab' && view.tab === 'projects' && (
@@ -184,6 +183,9 @@ function App() {
             onInitialNavigationHandled={() => setPlanningLaunch(null)}
             onExitWorkspace={handleExitWorkspace}
           />
+        )}
+        {view.type === 'tab' && view.tab === 'fieldPlan' && (
+          <FieldPlanView />
         )}
         {view.type === 'tab' && view.tab === 'settings' && (
           <SettingsView
@@ -210,9 +212,6 @@ function App() {
               setView({ type: 'tab', tab: 'planning' });
             }}
           />
-        )}
-        {view.type === 'fieldPlan' && (
-          <FieldPlanView onBack={handleBack} />
         )}
         {view.type === 'settingsDetail' && view.section === 'workTypes' && (
           <SettingsWorkTypesView onBack={handleBack} />
@@ -253,6 +252,15 @@ function App() {
             <span>Today</span>
           </button>
           <button
+            className={`tab-nav__btn ${currentTab === 'fieldPlan' ? 'tab-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('fieldPlan')}
+            aria-label="Field Plan"
+            aria-current={currentTab === 'fieldPlan' ? 'page' : undefined}
+          >
+            <FieldPlanIcon />
+            <span>Field Plan</span>
+          </button>
+          <button
             className={`tab-nav__btn ${currentTab === 'projects' ? 'tab-nav__btn--active' : ''}`}
             onClick={() => handleTabChange('projects')}
             aria-label="Projects"
@@ -261,15 +269,17 @@ function App() {
             <ProjectsIcon />
             <span>Projects</span>
           </button>
-          <button
-            className={`tab-nav__btn ${currentTab === 'planning' ? 'tab-nav__btn--active' : ''}`}
-            onClick={() => handleTabChange('planning')}
-            aria-label="Planning"
-            aria-current={currentTab === 'planning' ? 'page' : undefined}
-          >
-            <PlanningIcon />
-            <span>Planning</span>
-          </button>
+          {isWideScreen && (
+            <button
+              className={`tab-nav__btn ${currentTab === 'planning' ? 'tab-nav__btn--active' : ''}`}
+              onClick={() => handleTabChange('planning')}
+              aria-label="Planning"
+              aria-current={currentTab === 'planning' ? 'page' : undefined}
+            >
+              <PlanningIcon />
+              <span>Planning</span>
+            </button>
+          )}
           <button
             className={`tab-nav__btn ${currentTab === 'settings' ? 'tab-nav__btn--active' : ''}`}
             onClick={() => handleTabChange('settings')}
@@ -310,6 +320,14 @@ function PlanningIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className="tab-nav__icon">
       <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z" />
+    </svg>
+  );
+}
+
+function FieldPlanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="tab-nav__icon">
+      <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
     </svg>
   );
 }

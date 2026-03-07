@@ -2,24 +2,18 @@ import { useRef } from 'react';
 import { BreadcrumbNav } from '../../components/BreadcrumbNav';
 import { Fab } from '../../components/Fab';
 import { ImportIcon, TaskListIcon } from '../../components/icons';
-import { getFeatureFlag } from '../../lib/flags/feature-flags';
 import { FieldPlanActionSheet } from './components/FieldPlanActionSheet';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
 import { FieldPlanPlanSelector } from './components/FieldPlanPlanSelector';
 import { useFieldPlanModel } from './useFieldPlanModel';
 
 interface FieldPlanViewProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export function FieldPlanView({ onBack }: FieldPlanViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const model = useFieldPlanModel();
-
-  if (!getFeatureFlag('fieldPlanExecution')) {
-    onBack();
-    return null;
-  }
 
   const breadcrumbSegments = model.selectedPlan
     ? [{ label: 'Field Plan' }, { label: model.selectedPlan.title }]
@@ -28,7 +22,11 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
   return (
     <div className="field-plan-view">
       <div className="field-plan-view__title-section">
-        <BreadcrumbNav onBack={onBack} segments={breadcrumbSegments} />
+        {onBack ? (
+          <BreadcrumbNav onBack={onBack} segments={breadcrumbSegments} />
+        ) : (
+          <h1 className="field-plan-view__title">Field Plan</h1>
+        )}
       </div>
 
       <input
@@ -108,19 +106,11 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
         {model.message && <p className="field-plan-view__message">{model.message}</p>}
 
         {model.plans.length === 0 ? (
-          <section className="field-plan-view__empty">
+          <div className="empty-state">
             <TaskListIcon className="empty-state__icon" />
-            <h3>No received plans</h3>
-            <p>Import a planner package to start execution in Field Plan View.</p>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={model.isLoadingPreview || model.isApplyingImport}
-            >
-              Import Plan Package
-            </button>
-          </section>
+            <p className="empty-state__heading">No received plans</p>
+            <p className="empty-state__text">Import a plan package to get started.</p>
+          </div>
         ) : (
           <>
             <FieldPlanPlanSelector

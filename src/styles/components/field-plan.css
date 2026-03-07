@@ -13,6 +13,14 @@
 .field-plan-view__title-section {
   display: flex;
   flex-direction: column;
+  padding-top: var(--space-sm);
+}
+
+.field-plan-view__title {
+  font-size: var(--font-large);
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-text);
 }
 
 .field-plan-view__content {
@@ -32,19 +40,6 @@
   color: var(--color-text-muted);
 }
 
-.field-plan-view__empty {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.field-plan-view__empty h3,
-.field-plan-view__empty p {
-  margin: 0;
-}
 
 /* ============================================================
    Plan Selector (matches TodayView project groups)
