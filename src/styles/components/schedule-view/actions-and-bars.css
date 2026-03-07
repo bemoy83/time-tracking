@@ -129,7 +129,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: rgb(37, 99, 235);
+  color: var(--color-amber);
   font-weight: 500;
 }
 

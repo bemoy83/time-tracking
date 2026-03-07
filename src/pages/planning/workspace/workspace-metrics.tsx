@@ -1,8 +1,17 @@
 import type { ReactNode } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import { planTotalPersonHours } from '../../../lib/planning/plan-model';
-import { isPlanArchived } from '../../../lib/planning/plan-lifecycle';
-import { computeCapacitySummary } from '../../../lib/planning/scheduling/capacity';
+import { isPlanArchived, isPlanInPlannerState } from '../../../lib/planning/plan-lifecycle';
+import {
+  computeCapacitySummary,
+  computeSharedCapacitySummary,
+} from '../../../lib/planning/scheduling/capacity';
+import {
+  deriveCrewPoolCalendar,
+  deriveCrewPoolDefaultCrewSize,
+} from '../../../lib/planning/scheduling/crew-pool-calendar';
+import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
+import type { ScheduledLineItemRef } from '../../../lib/planning/scheduling/shared-schedule-types';
 import { computePlanProgress } from '../../../lib/planning/plan-progress';
 import {
   generateDefaultWorkCalendar,
@@ -19,7 +28,7 @@ import {
   CheckIcon,
   ClockIcon,
   CompleteCircleIcon,
-  PlayIcon,
+  PeopleIcon,
   RulerIcon,
   SparklesIcon,
   SpeedIcon,
@@ -28,6 +37,34 @@ import {
 } from '../../../components/icons';
 
 type MetricCardIconVariant = 'tasks' | 'done' | 'time' | 'people' | 'blocked' | 'estimate';
+
+// ---------------------------------------------------------------------------
+// Reusable utilization metric
+// ---------------------------------------------------------------------------
+
+export interface UtilizationInput {
+  totalRequiredPersonHours: number;
+  totalAvailablePersonHours: number;
+}
+
+/**
+ * Creates a reusable utilization metric descriptor (crew capacity used vs available).
+ * Returns "—" when no capacity data; shows percentage with risk variant when over-allocated.
+ */
+export function createUtilizationMetric(input: UtilizationInput | null): SidebarMetricDescriptor {
+  if (!input || input.totalAvailablePersonHours <= 0) {
+    return { value: '—', label: 'Utilization', icon: <PeopleIcon />, iconVariant: 'people' };
+  }
+  const ratio = input.totalRequiredPersonHours / input.totalAvailablePersonHours;
+  const pct = Math.round(ratio * 100);
+  return {
+    value: `${pct}%`,
+    label: 'Utilization',
+    icon: <PeopleIcon />,
+    iconVariant: 'people',
+    variant: ratio > 1 ? 'risk' : 'default',
+  };
+}
 
 export interface SidebarMetricDescriptor {
   value: ReactNode;
@@ -73,8 +110,9 @@ export function getGlobalFallbackMetrics(plans: Plan[], tasks: Task[]): SidebarM
   const totalPackages = activePlans.reduce((sum, p) => sum + p.lineItems.length, 0);
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
 
+  // Utilization only derives from selected plans; fallbacks have no selection → show "—"
   return [
-    { value: activePlans.length, label: 'Active plans', icon: <PlayIcon />, iconVariant: 'tasks' },
+    createUtilizationMetric(null),
     { value: Math.round(totalHours), label: 'Person-hrs', icon: <ClockIcon />, iconVariant: 'time' },
     { value: totalPackages, label: 'Work packages', icon: <TaskListIcon />, iconVariant: 'estimate' },
     { value: completedTasks, label: 'Tasks done', icon: <CheckIcon />, iconVariant: 'done' },
@@ -165,14 +203,45 @@ export function getProgressViewMetrics(
 export function getSharedScheduleMetrics(
   plans: Plan[],
   selectedPlanIds: Set<string>,
+  capacityFromView?: { totalRequiredPersonHours: number; totalAvailablePersonHours: number } | null,
 ): SidebarMetricDescriptor[] {
-  const selected = plans.filter((p) => selectedPlanIds.has(p.id));
+  const selectablePlans = plans.filter(isPlanInPlannerState);
+  const selected = selectablePlans.filter((p) => selectedPlanIds.has(p.id));
   const totalItems = selected.reduce((sum, p) => sum + p.lineItems.length, 0);
   const totalPH = selected.reduce((sum, p) => sum + planTotalPersonHours(p), 0);
+
+  // Use capacity from main view when provided (matches FeasibilityBar); otherwise derive
+  let utilizationMetric = createUtilizationMetric(null);
+  if (capacityFromView && capacityFromView.totalAvailablePersonHours > 0) {
+    utilizationMetric = createUtilizationMetric(capacityFromView);
+  } else if (selected.length > 0) {
+    const calendar = deriveCrewPoolCalendar(selected);
+    const defaultCrewSize = deriveCrewPoolDefaultCrewSize(selected);
+    const lineItems: ScheduledLineItemRef[] = selected.flatMap((plan) =>
+      plan.lineItems.map((item) => ({
+        planId: plan.id,
+        lineItemId: item.id,
+        plan,
+        item,
+        readOnly: isPlanArchived(plan),
+      })),
+    );
+    const cap = computeSharedCapacitySummary({
+      calendar,
+      defaultCrewSize,
+      lineItems,
+    });
+    utilizationMetric = createUtilizationMetric({
+      totalRequiredPersonHours: cap.totalRequiredPersonHours,
+      totalAvailablePersonHours: cap.totalAvailablePersonHours,
+    });
+  }
+
   return [
     { value: selectedPlanIds.size, label: 'Selected plans', icon: <CheckIcon />, iconVariant: 'tasks' },
     { value: totalItems, label: 'Line items', icon: <TaskListIcon />, iconVariant: 'estimate' },
     { value: Math.round(totalPH), label: 'Person-hrs', icon: <ClockIcon />, iconVariant: 'time' },
+    utilizationMetric,
   ];
 }
 

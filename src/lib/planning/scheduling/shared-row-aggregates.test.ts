@@ -46,9 +46,9 @@ describe('shared-row-aggregates', () => {
     const itemRow = result.get(`item:${plan.id}:${item.id}`)!;
 
     // day 3 is outside build-up phase window and therefore filtered out
-    expect(itemRow.get('2026-03-01')).toEqual({ requiredHours: 8, assignedCrew: 1 });
-    expect(itemRow.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1 });
-    expect(itemRow.get('2026-03-03')).toEqual({ requiredHours: 0, assignedCrew: 0 });
+    expect(itemRow.get('2026-03-01')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
+    expect(itemRow.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
+    expect(itemRow.get('2026-03-03')).toEqual({ requiredHours: 0, assignedCrew: 0, assignedCapacityHours: 0, shortfallHours: 0 });
 
     expect(phase.get('2026-03-01')).toEqual(itemRow.get('2026-03-01'));
     expect(phase.get('2026-03-02')).toEqual(itemRow.get('2026-03-02'));
@@ -107,12 +107,12 @@ describe('shared-row-aggregates', () => {
     const projectA = result.get(`project:${planA.id}`)!;
     const projectB = result.get(`project:${planB.id}`)!;
 
-    expect(projectA.get('2026-03-01')).toEqual({ requiredHours: 8, assignedCrew: 1 });
-    expect(projectA.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1 });
-    expect(projectA.get('2026-03-03')).toEqual({ requiredHours: 0, assignedCrew: 0 });
+    expect(projectA.get('2026-03-01')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
+    expect(projectA.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
+    expect(projectA.get('2026-03-03')).toEqual({ requiredHours: 0, assignedCrew: 0, assignedCapacityHours: 0, shortfallHours: 0 });
 
-    expect(projectB.get('2026-03-01')).toEqual({ requiredHours: 0, assignedCrew: 0 });
-    expect(projectB.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1 });
-    expect(projectB.get('2026-03-03')).toEqual({ requiredHours: 8, assignedCrew: 1 });
+    expect(projectB.get('2026-03-01')).toEqual({ requiredHours: 0, assignedCrew: 0, assignedCapacityHours: 0, shortfallHours: 0 });
+    expect(projectB.get('2026-03-02')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
+    expect(projectB.get('2026-03-03')).toEqual({ requiredHours: 8, assignedCrew: 1, assignedCapacityHours: 8, shortfallHours: 0 });
   });
 });

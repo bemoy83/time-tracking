@@ -3,7 +3,10 @@ import type { Project } from '../../lib/types';
 import type { Plan, PlanLineItem, WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
-import { computeSharedCapacitySummary } from '../../lib/planning/scheduling/capacity';
+import {
+  computeSharedCapacitySummary,
+  type CapacitySummary,
+} from '../../lib/planning/scheduling/capacity';
 import {
   deriveCrewPoolCalendar,
   deriveCrewPoolDefaultCrewSize,
@@ -36,6 +39,8 @@ interface SharedScheduleViewProps {
   projects: Project[];
   selectedPlanIds: Set<string>;
   onSavePlan: (plan: Plan) => void;
+  /** Called when capacity is computed; used by sidebar to show matching utilization. Pass null when no plans selected. */
+  onCapacityChange?: (capacity: CapacitySummary | null) => void;
 }
 
 function mapKey(planId: string, lineItemId: string): string {
@@ -53,6 +58,7 @@ export function SharedScheduleView({
   projects,
   selectedPlanIds,
   onSavePlan,
+  onCapacityChange,
 }: SharedScheduleViewProps) {
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
@@ -192,6 +198,12 @@ export function SharedScheduleView({
     defaultCrewSize: crewPoolDefaultCrewSize,
     lineItems: lineItemRefs,
   }), [crewPoolCalendar, crewPoolDefaultCrewSize, lineItemRefs]);
+
+  useEffect(() => {
+    if (onCapacityChange) {
+      onCapacityChange(selectedPlans.length > 0 ? capacity : null);
+    }
+  }, [capacity, selectedPlans.length, onCapacityChange]);
 
   const handleToggleAssignment = useCallback((
     planId: string,

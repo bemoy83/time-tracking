@@ -5,7 +5,8 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -106,6 +107,7 @@ export function PlanningWorkspaceShell({
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
+  const [sharedScheduleCapacity, setSharedScheduleCapacity] = useState<CapacitySummary | null>(null);
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
@@ -121,7 +123,10 @@ export function PlanningWorkspaceShell({
   const resolvedMetrics = useMemo(() => {
     const computeViewMetrics = (): SidebarMetricDescriptor[] => {
       if (activeTab === 'shared-schedule') {
-        return getSharedScheduleMetrics(plans, selectedPlanIdsForSharedSchedule);
+        const cap = sharedScheduleCapacity
+          ? { totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours, totalAvailablePersonHours: sharedScheduleCapacity.totalAvailablePersonHours }
+          : undefined;
+        return getSharedScheduleMetrics(plans, selectedPlanIdsForSharedSchedule, cap);
       }
       if (activeTab === 'insights' && !activePlan) {
         return getInsightsViewMetrics(kpis);
@@ -140,7 +145,7 @@ export function PlanningWorkspaceShell({
     const viewMetrics = computeViewMetrics();
     const fallbacks = getGlobalFallbackMetrics(plans, tasks);
     return resolveSidebarMetrics(viewMetrics, fallbacks);
-  }, [activeTab, activePlan, plans, tasks, timeEntries, kpis, selectedPlanIdsForSharedSchedule]);
+  }, [activeTab, activePlan, plans, tasks, timeEntries, kpis, selectedPlanIdsForSharedSchedule, sharedScheduleCapacity]);
 
   return (
     <div className="planning-workspace">
@@ -203,6 +208,7 @@ export function PlanningWorkspaceShell({
             projects={projects}
             selectedPlanIds={selectedPlanIdsForSharedSchedule}
             onSavePlan={onSavePlan}
+            onCapacityChange={setSharedScheduleCapacity}
           />
         ) : activePlan ? (
           <WorkspaceMainPane

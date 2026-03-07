@@ -48,6 +48,7 @@ function buildDayMapFromCalendar(
       assignedCapacityPersonHours: 0,
       isCompletionDay: false,
       needToMeetTargetPersonHours: 0,
+      shortfallPersonHours: 0,
       isOverStaffed: false,
     });
   }
@@ -69,20 +70,29 @@ function applyScheduledItem(
     const effectiveCrew = getEffectiveCrewForDate(item, date);
     const capacity = day.isWorkDay ? effectiveCrew * (day.accessHours || 8) : 0;
 
-    if (remaining <= 0) {
-      day.lineItemCount += 1;
-      continue;
+    // Always count assigned crew for days in span (user may assign more crew than work needs)
+    if (day.isWorkDay && effectiveCrew > 0) {
+      day.assignedCrewTotal += effectiveCrew;
     }
+    day.lineItemCount += 1;
+
+    if (remaining <= 0) continue;
 
     const work = Math.min(remaining, capacity);
     day.requiredPersonHours += work;
-    if (day.isWorkDay) day.assignedCrewTotal += effectiveCrew;
-    day.lineItemCount += 1;
     remaining -= work;
 
     if (date === lastDate && remaining > 0.01) {
-      day.isOverWorkerCapacity = true;
-      day.needToMeetTargetPersonHours += work + remaining;
+      // Only accumulate shortfall on work days so the badge displays it
+      const targetDay = day.isWorkDay ? day : (() => {
+        for (let i = dates.length - 1; i >= 0; i--) {
+          const d = dayMap.get(dates[i]);
+          if (d?.isWorkDay) return d;
+        }
+        return day;
+      })();
+      targetDay.needToMeetTargetPersonHours += work + remaining;
+      targetDay.shortfallPersonHours += remaining;
     }
   }
 
@@ -102,9 +112,11 @@ function finalizeCapacitySummary(
       const available = round2(day.availablePersonHours);
       const utilization = available > 0 ? round2(required / available) : null;
       const isOverAssignedCrew = day.isWorkDay && day.assignedCrewTotal > day.availableCrew;
+      const isOverWorkerCapacity = isOverAssignedCrew; // Derived from crew display (assigned/available)
       const assignedCapacityPersonHours = round2(day.assignedCrewTotal * (day.accessHours || 8));
       const needToMeetTargetPersonHours = round2(day.needToMeetTargetPersonHours || 0);
-      const isOverStaffed = day.isWorkDay && required > 0.01 && assignedCapacityPersonHours > required + 0.01;
+      const shortfallPersonHours = round2(day.shortfallPersonHours || 0);
+      const isOverStaffed = day.isWorkDay && required > 0.01 && day.assignedCrewTotal < day.availableCrew; // Derived from crew display: assigned < available = spare capacity
       return {
         ...day,
         requiredPersonHours: required,
@@ -112,8 +124,10 @@ function finalizeCapacitySummary(
         utilization,
         isOverAllocated: available > 0 ? required > available : required > 0,
         isOverAssignedCrew,
+        isOverWorkerCapacity,
         assignedCapacityPersonHours,
         needToMeetTargetPersonHours,
+        shortfallPersonHours,
         isOverStaffed,
       };
     });

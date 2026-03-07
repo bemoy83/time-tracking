@@ -21,17 +21,21 @@ function formatDayLabel(date: string, index: number): string {
   return `Day ${index + 1} | ${formatted}`;
 }
 
-function formatUtilBadge(
-  cap: {
-    requiredPersonHours: number;
-    availablePersonHours: number;
-  },
-): string {
-  const required = cap.requiredPersonHours;
-  const available = cap.availablePersonHours;
+/**
+ * Format: allocated crew capacity / total work required this day.
+ * Numerator = assignedCapacityPersonHours (crew capacity deployed).
+ * Denominator = requiredPersonHours + shortfallPersonHours (work needed to meet all targets).
+ * Under-allocated when numerator < denominator (shortfall exists).
+ * Over-allocated when numerator > denominator (excess crew, flagged by warning color).
+ */
+function formatUtilBadge(cap: DailyCapacity): string {
+  const allocated = cap.assignedCapacityPersonHours;
+  const required = cap.requiredPersonHours + cap.shortfallPersonHours;
 
-  if (available <= 0) return `${required.toFixed(0)}h`;
-  return `${required.toFixed(0)} / ${available.toFixed(0)}h`;
+  if (required <= 0 && allocated <= 0) return '—';
+  if (required <= 0) return `${allocated.toFixed(0)}h`;
+  if (allocated <= 0) return `${required.toFixed(0)}h needed`;
+  return `${allocated.toFixed(0)} / ${required.toFixed(0)}h`;
 }
 
 export function ScheduleGridHeader({
@@ -71,8 +75,10 @@ export function ScheduleGridHeader({
             <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
             {cap && day.isWorkDay && (
               <>
-                {cap.availablePersonHours > 0 && (() => {
-                  const pct = Math.round((cap.requiredPersonHours / cap.availablePersonHours) * 100);
+                {(() => {
+                  const required = cap.requiredPersonHours + cap.shortfallPersonHours;
+                  if (required <= 0) return null;
+                  const pct = Math.round((cap.assignedCapacityPersonHours / required) * 100);
                   const barWidth = Math.min(pct, 100);
                   return (
                     <span

@@ -109,7 +109,7 @@
 }
 
 .schedule-grid__day-col--over-staffed {
-  background: rgba(59, 130, 246, 0.06);
+  background: rgba(217, 119, 6, 0.06);
 }
 
 .schedule-grid__day-crew {
@@ -171,7 +171,7 @@
 }
 
 .schedule-grid__day-util--over-staffed {
-  color: rgb(37, 99, 235);
+  color: var(--color-amber);
   font-weight: 600;
 }
 

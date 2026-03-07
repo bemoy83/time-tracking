@@ -26,7 +26,7 @@ export interface GroupRowRenderInput {
   row: SharedScheduleRow;
   calendar: WorkCalendarDay[];
   gridColumns: string;
-  aggregateByDate?: Map<string, { requiredHours: number; assignedCrew: number }>;
+  aggregateByDate?: Map<string, { requiredHours: number; assignedCrew: number; assignedCapacityHours: number; shortfallHours: number }>;
   isCollapsed: boolean;
   onToggle: () => void;
 }

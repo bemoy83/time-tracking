@@ -32,9 +32,17 @@ export function ScheduleGridGroupRow({
           const aggregate = aggregateByDate?.get(day.date);
           return (
             <span key={day.date} className="schedule-grid__group-day" aria-hidden="true">
-              {aggregate && (aggregate.requiredHours > 0 || aggregate.assignedCrew > 0) && (
+              {aggregate && (aggregate.requiredHours + aggregate.shortfallHours > 0 || aggregate.assignedCapacityHours > 0) && (
                 <>
-                  <span className="schedule-grid__group-day-hours">{aggregate.requiredHours.toFixed(1)}h</span>
+                  <span className="schedule-grid__group-day-hours">
+                    {(() => {
+                      const allocated = aggregate.assignedCapacityHours;
+                      const required = aggregate.requiredHours + aggregate.shortfallHours;
+                      if (required <= 0) return allocated > 0 ? `${allocated.toFixed(0)}h` : null;
+                      if (allocated <= 0) return `${required.toFixed(1)}h needed`;
+                      return `${allocated.toFixed(0)} / ${required.toFixed(1)}h`;
+                    })()}
+                  </span>
                   {day.isWorkDay && aggregate.assignedCrew > 0 && (
                     <span className="schedule-grid__group-day-crew">
                       {aggregate.assignedCrew.toFixed(0)} crew

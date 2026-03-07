@@ -27,7 +27,7 @@ export interface DailyCapacity {
   isOverAllocated: boolean;
   /** True when assignedCrewTotal > availableCrew. */
   isOverAssignedCrew: boolean;
-  /** True when any line item on this day has personHours > effectiveCrew × accessHours. */
+  /** True when assignedCrewTotal > availableCrew (derived from crew display: assigned/available). */
   isOverWorkerCapacity: boolean;
   /** Assigned crew × access hours — the person-hours the assigned crew can provide. */
   assignedCapacityPersonHours: number;
@@ -35,7 +35,9 @@ export interface DailyCapacity {
   isCompletionDay: boolean;
   /** When over-worker: work still needed at start of this day to meet estimate (required + deficit). */
   needToMeetTargetPersonHours: number;
-  /** True when assigned crew capacity exceeds required person-hours on a work day with work. */
+  /** Person-hours of work that could not be placed on the last day of each item's span (sum across all items). */
+  shortfallPersonHours: number;
+  /** True when assignedCrewTotal < availableCrew on a work day with work (excess spare capacity; derived from crew display). */
   isOverStaffed: boolean;
 }
 
@@ -47,11 +49,11 @@ export interface CapacitySummary {
   overAllocatedDayCount: number;
   /** Number of days where assigned crew exceeds available crew. */
   overAssignedCrewDayCount: number;
-  /** Number of days where any line item exceeds worker capacity (personHours > crew × accessHours). */
+  /** Number of days where assigned crew exceeds available crew (derived from crew display: X/Y crew). */
   overWorkerCapacityDayCount: number;
   unscheduledLineItemCount: number;
   scheduledLineItemCount: number;
-  /** Number of days where assigned crew capacity exceeds required person-hours. */
+  /** Number of days where assigned crew < available crew (excess spare capacity; derived from crew display X/Y crew). */
   overStaffedDayCount: number;
 }
 

@@ -7,6 +7,10 @@ import type { SharedScheduleRow } from './shared-schedule-types';
 export interface RowAggregate {
   requiredHours: number;
   assignedCrew: number;
+  /** Assigned crew capacity in person-hours (assignedCrew × accessHours). */
+  assignedCapacityHours: number;
+  /** Work hours that could not be placed on the last day of an item's span within this group. */
+  shortfallHours: number;
 }
 
 export interface ComputeSharedRowAggregatesInput {
@@ -66,7 +70,7 @@ export function computeSharedRowAggregates(
   for (const [rowId, itemRefs] of byRow) {
     const byDate = new Map<string, RowAggregate>();
     for (const day of calendar) {
-      byDate.set(day.date, { requiredHours: 0, assignedCrew: 0 });
+      byDate.set(day.date, { requiredHours: 0, assignedCrew: 0, assignedCapacityHours: 0, shortfallHours: 0 });
     }
 
     for (const { planId, item } of itemRefs) {
@@ -75,24 +79,42 @@ export function computeSharedRowAggregates(
       if (assignedDates.length === 0) continue;
 
       let remaining = item.timeHours * item.crew;
+      const lastDate = assignedDates[assignedDates.length - 1];
       for (const date of assignedDates) {
         const day = dayByDate.get(date);
-        if (!day || remaining <= 0) continue;
+        if (!day) continue;
         const aggregate = byDate.get(date);
         if (!aggregate) continue;
         const crew = getEffectiveCrewForDate(item, date);
-        const dayCapacity = day.isWorkDay ? crew * (day.accessHours || 8) : 0;
+        const accessHours = day.accessHours || 8;
+
+        // Always count assigned crew for days in span (user may assign more crew than work needs)
+        if (day.isWorkDay && crew > 0) {
+          aggregate.assignedCrew += crew;
+          aggregate.assignedCapacityHours += crew * accessHours;
+        }
+
+        if (remaining <= 0) continue;
+
+        const dayCapacity = day.isWorkDay ? crew * accessHours : 0;
         const work = Math.min(remaining, dayCapacity);
         aggregate.requiredHours += work;
-        if (day.isWorkDay) aggregate.assignedCrew += crew;
         remaining -= work;
+
+        if (date === lastDate && remaining > 0.01) {
+          aggregate.shortfallHours += remaining;
+        }
       }
     }
 
     for (const [date, aggregate] of byDate) {
+      const day = dayByDate.get(date);
+      const accessHours = day?.accessHours ?? 8;
       byDate.set(date, {
         requiredHours: Math.round(aggregate.requiredHours * 10) / 10,
         assignedCrew: Math.round(aggregate.assignedCrew * 10) / 10,
+        assignedCapacityHours: Math.round(aggregate.assignedCapacityHours * 10) / 10,
+        shortfallHours: Math.round(aggregate.shortfallHours * 10) / 10,
       });
     }
 

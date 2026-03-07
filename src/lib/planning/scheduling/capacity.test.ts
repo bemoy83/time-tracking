@@ -98,8 +98,8 @@ describe('computeCapacitySummary', () => {
     // All 20h done on Day 1 (capacity 32h > 20h needed)
     expect(summary.days[0].requiredPersonHours).toBe(20);
     expect(summary.days[1].requiredPersonHours).toBe(0);
-    // Day 2 has no crew assigned (work already complete)
-    expect(summary.days[1].assignedCrewTotal).toBe(0);
+    // Day 2 still has crew assigned (item spans both days) — badge shows assigned/required for planning
+    expect(summary.days[1].assignedCrewTotal).toBe(4);
     expect(summary.days[0].isOverWorkerCapacity).toBe(false);
   });
 
@@ -111,7 +111,7 @@ describe('computeCapacitySummary', () => {
     expect(summary.scheduledLineItemCount).toBe(0);
   });
 
-  it('flags over-worker when total work exceeds total capacity', () => {
+  it('tracks shortfall when total work exceeds total capacity (item cannot complete)', () => {
     // 1 crew × 8h = 8h capacity/day. 20h total, 2 days = 16h capacity. 4h deficit.
     const plan: Plan = {
       ...createPlan('Deficit Plan'),
@@ -134,11 +134,40 @@ describe('computeCapacitySummary', () => {
     // Day 1: 8h (full capacity), Day 2: 8h (full capacity), 4h left over
     expect(summary.days[0].requiredPersonHours).toBe(8);
     expect(summary.days[1].requiredPersonHours).toBe(8);
-    // Last day flagged as over-worker (item can't be completed)
-    expect(summary.days[1].isOverWorkerCapacity).toBe(true);
+    // isOverWorkerCapacity = assigned crew > available crew (derived from crew display). 1 assigned < 4 available.
+    expect(summary.days[1].isOverWorkerCapacity).toBe(false);
     expect(summary.days[0].isOverWorkerCapacity).toBe(false);
     // Day 2 need to meet target = 8h work + 4h deficit = 12h
     expect(summary.days[1].needToMeetTargetPersonHours).toBe(12);
+    // Shortfall = just the deficit that didn't fit (4h)
+    expect(summary.days[1].shortfallPersonHours).toBe(4);
+    expect(summary.days[0].shortfallPersonHours).toBe(0);
+  });
+
+  it('flags over-worker when assigned crew exceeds available crew (derived from crew display)', () => {
+    // 6 crew assigned but calendar only has 4 available → 6/4 crew = exceeds worker capacity
+    const plan: Plan = {
+      ...createPlan('Over Crew Plan'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-03',
+      defaultCrewSize: 4,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    };
+    const item = createLineItem('Rigging', 'Rigging', 'm2', 'build-up', 10, 1);
+    item.crew = 6; // 6 crew assigned
+    item.timeHours = 8;
+    item.scheduledStart = '2026-03-02';
+    item.scheduledEnd = '2026-03-03';
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    // Assigned 6 crew > available 4 crew → isOverWorkerCapacity (derived from crew display)
+    expect(summary.days[0].isOverWorkerCapacity).toBe(true);
+    expect(summary.days[1].isOverWorkerCapacity).toBe(true);
+    expect(summary.overWorkerCapacityDayCount).toBe(2);
   });
 
   it('fills correctly with varying crew via crewByDate', () => {
@@ -168,10 +197,10 @@ describe('computeCapacitySummary', () => {
     expect(summary.totalRequiredPersonHours).toBe(60);
   });
 
-  it('does not flag overStaffed when capacity matches demand', () => {
-    // 20h total, 2 days, 4 crew each → 10h/day required, 4×8=32h capacity/day → not over-staffed (balanced)
+  it('does not flag overStaffed when assigned equals available (derived from crew display)', () => {
+    // 4 crew assigned, 4 available → 4/4 crew, no excess spare capacity
     const plan: Plan = {
-      ...createPlan('Balanced Plan'),
+      ...createPlan('At Capacity Plan'),
       eventStartDate: '2026-03-02',
       eventEndDate: '2026-03-03',
       defaultCrewSize: 4,
@@ -181,21 +210,20 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Flooring', 'Flooring', 'm2', 'build-up', 100, 1);
-    item.crew = 2;
-    item.timeHours = 10; // 20h total. Day 1: 2×8=16h capacity, does 16h. Day 2: 2×8=16h capacity, does 4h.
+    item.crew = 4;
+    item.timeHours = 8; // 32h total
     item.scheduledStart = '2026-03-02';
     item.scheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
-    // Day 1: required 16h, assignedCapacity 16h → not over-staffed
+    // 4/4 crew on both days → no excess (assigned not < available)
     expect(summary.days[0].isOverStaffed).toBe(false);
-    // Day 2: required 4h, assignedCapacity 16h → over-staffed
-    expect(summary.days[1].isOverStaffed).toBe(true);
-    expect(summary.overStaffedDayCount).toBe(1);
+    expect(summary.days[1].isOverStaffed).toBe(false);
+    expect(summary.overStaffedDayCount).toBe(0);
   });
 
-  it('flags overStaffed when crew capacity exceeds required person-hours', () => {
+  it('flags overStaffed when assigned is less than available (excess spare capacity, derived from crew display)', () => {
     // 10h total, 2 days, 6 crew each → Day 1: 6×8=48h capacity, 10h required → isOverStaffed true
     const plan: Plan = {
       ...createPlan('Excess Plan'),
@@ -215,10 +243,10 @@ describe('computeCapacitySummary', () => {
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
-    // Day 2 has 2h required but 8h assigned capacity → over-staffed
+    // 1/6 crew on both days → excess spare capacity (assigned < available)
+    expect(summary.days[0].isOverStaffed).toBe(true);
     expect(summary.days[1].isOverStaffed).toBe(true);
-    expect(summary.days[1].assignedCapacityPersonHours).toBe(8);
-    expect(summary.overStaffedDayCount).toBe(1);
+    expect(summary.overStaffedDayCount).toBe(2);
   });
 
   it('shows balanced capacity when crew matches required exactly', () => {
@@ -280,11 +308,11 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[2].assignedCrewTotal).toBe(0);
     expect(summary.days[3].isWorkDay).toBe(false);
     expect(summary.days[3].assignedCrewTotal).toBe(0);
-    // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job. Tue has 0 crew (work done)
+    // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job. Tue has crew (item spans all days)
     expect(summary.days[0].assignedCrewTotal).toBe(1);
     expect(summary.days[1].assignedCrewTotal).toBe(1);
     expect(summary.days[4].assignedCrewTotal).toBe(1);
-    expect(summary.days[5].assignedCrewTotal).toBe(0); // Work complete on Mon
+    expect(summary.days[5].assignedCrewTotal).toBe(1); // Crew assigned for planning even when work done
   });
 
   it('computes shared capacity across plans using a single crew-pool calendar', () => {
