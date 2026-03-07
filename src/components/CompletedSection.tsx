@@ -7,6 +7,7 @@ import { SwipeableTaskRow } from './SwipeableTaskRow';
 interface CompletedSectionProps {
   tasks: Task[];
   getTotalMs: (task: Task) => number | undefined;
+  getProjectColor?: (task: Task) => string | undefined;
   onSelectTask: (task: Task) => void;
   sectionClassName: string;
   contentId: string;
@@ -16,6 +17,7 @@ interface CompletedSectionProps {
 export function CompletedSection({
   tasks,
   getTotalMs,
+  getProjectColor,
   onSelectTask,
   sectionClassName,
   contentId,
@@ -44,6 +46,7 @@ export function CompletedSection({
             <SwipeableTaskRow
               key={task.id}
               task={task}
+              projectColor={getProjectColor?.(task)}
               totalMs={getTotalMs(task)}
               onSelect={onSelectTask}
             />

@@ -29,7 +29,6 @@ import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
 import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
 import { WarningIcon, TaskListIcon } from '../components/icons';
-import { ProjectColorDot } from '../components/ProjectColorDot';
 import { CompletedSection } from '../components/CompletedSection';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
@@ -59,6 +58,13 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const taskTimes = useTaskTimes(tasks, activeTimers);
   const { durationByTask, personMsByTask } = taskTimes;
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
+  const projectColorById = useMemo(() => {
+    const byId = new Map<string, string>();
+    projects.forEach((project) => {
+      byId.set(project.id, project.color);
+    });
+    return byId;
+  }, [projects]);
   const {
     confirmTarget,
     promptParent,
@@ -132,6 +138,10 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   const getSubtasks = (parentId: string) =>
     tasks.filter((t) => t.parentId === parentId);
+
+  const getTaskProjectColor = (task: Task) => (
+    task.projectId ? projectColorById.get(task.projectId) : undefined
+  );
 
   const toggleExpanded = (taskId: string) => {
     setExpandedTaskIds((prev) => {
@@ -227,6 +237,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                 <TaskCard
                   key={task.id}
                   task={task}
+                  projectColor={getTaskProjectColor(task)}
+                  getProjectColor={getTaskProjectColor}
                   isTimerActive={activeTimerTaskIds.has(task.id)}
                   totalMs={durationByTask.get(task.id)}
                   totalPersonMs={personMsByTask.get(task.id)}
@@ -250,7 +262,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
           {groupedTasks.map(({ project, tasks: projectTasks }) => (
             <div key={project.id} className="today-view__task-group">
               <h3 className="today-view__subsection-title section-heading">
-                <ProjectColorDot color={project.color} />
                 <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: getContrastColor(project.color) }}>
                   {project.name}
                 </span>
@@ -261,6 +272,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
                   <TaskCard
                     key={task.id}
                     task={task}
+                    projectColor={project.color}
+                    getProjectColor={getTaskProjectColor}
                     isTimerActive={activeTimerTaskIds.has(task.id)}
                     totalMs={durationByTask.get(task.id)}
                     totalPersonMs={personMsByTask.get(task.id)}
@@ -296,6 +309,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
               <SwipeableTaskRow
                 key={task.id}
                 task={task}
+                projectColor={getTaskProjectColor(task)}
                 totalMs={durationByTask.get(task.id)}
                 onSelect={onSelectTask}
                 onComplete={() => handleComplete(task)}
@@ -310,6 +324,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
         <CompletedSection
           tasks={completedTasks}
           getTotalMs={(t) => durationByTask.get(t.id)}
+          getProjectColor={getTaskProjectColor}
           onSelectTask={onSelectTask}
           sectionClassName="today-view__section today-view__section--completed section--completed"
           contentId="today-view__completed-list"

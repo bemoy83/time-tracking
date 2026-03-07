@@ -333,6 +333,7 @@ export function ProjectDetail({
               <TaskCard
                 key={task.id}
                 task={task}
+                projectColor={project.color}
                 isTimerActive={activeTimerTaskIds.has(task.id)}
                 totalMs={durationByTask.get(task.id)}
                 totalPersonMs={personMsByTask.get(task.id)}
@@ -366,6 +367,7 @@ export function ProjectDetail({
               <SwipeableTaskRow
                 key={task.id}
                 task={task}
+                projectColor={project.color}
                 totalMs={durationByTask.get(task.id)}
                 onSelect={onSelectTask}
                 onComplete={() => handleComplete(task)}
@@ -380,6 +382,7 @@ export function ProjectDetail({
         <CompletedSection
           tasks={completedTasks}
           getTotalMs={(t) => durationByTask.get(t.id)}
+          getProjectColor={() => project.color}
           onSelectTask={onSelectTask}
           sectionClassName="project-detail__section project-detail__section--completed section--completed"
           contentId="project-detail__completed-list"

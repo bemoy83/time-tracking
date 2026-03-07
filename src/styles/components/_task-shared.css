@@ -12,6 +12,23 @@
   flex-shrink: 0;
 }
 
+.task-item__recording-dot--trailing {
+  margin-left: 2px;
+}
+
+/* Project color dot */
+.task-item__project-dot {
+  flex-shrink: 0;
+  opacity: 0.92;
+  box-shadow: 0 0 0 1px var(--color-bg);
+}
+
+/* Keep dot-to-title spacing tighter than row/card global gaps */
+.task-row__title-row .task-item__project-dot,
+.task-card__main .task-item__project-dot {
+  margin-right: 2px;
+}
+
 /* Time badge */
 .task-item__time-badge {
   display: inline-flex;

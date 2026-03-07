@@ -105,6 +105,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         <TaskDetailSubtasks
           task={task}
           subtasks={subtasks}
+          projectColor={project?.color}
           taskTimes={detail.taskTimes}
           onSelectTask={onSelectTask}
           onStartTimer={detail.handleStartTimer}

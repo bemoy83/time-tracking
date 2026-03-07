@@ -21,9 +21,12 @@ import {
   ClockIcon,
 } from './icons';
 import { StatusProgressBar } from './StatusProgressBar';
+import { ProjectColorDot } from './ProjectColorDot';
 
 export interface TaskCardProps {
   task: Task;
+  projectColor?: string;
+  getProjectColor?: (task: Task) => string | undefined;
   isTimerActive: boolean;
   totalMs?: number;
   totalPersonMs?: number;
@@ -42,6 +45,8 @@ export interface TaskCardProps {
 
 export function TaskCard({
   task,
+  projectColor,
+  getProjectColor,
   isTimerActive,
   totalMs = 0,
   totalPersonMs = 0,
@@ -73,6 +78,7 @@ export function TaskCard({
   const timeBadgeText = hasBudget
     ? formatTrackedVsEstimatePersonHours(totalPersonMs, estimatedPersonMs)
     : formatDurationShort(totalMs);
+  const hasTimeBadge = totalMs > 0 || hasBudget;
 
   return (
     <>
@@ -99,23 +105,28 @@ export function TaskCard({
           onClick={onSelect}
         >
           <div className="task-card__main">
-            {/* Timer indicator */}
-            {isTimerActive && (
-              <span className="task-item__recording-dot" aria-label="Timer running" />
-            )}
-
             {/* Title */}
+            {projectColor && <ProjectColorDot color={projectColor} size="sm" className="task-item__project-dot" />}
             <span className="task-card__title">{task.title}</span>
 
-            {/* Time badge */}
-            {(totalMs > 0 || hasBudget) && (
-              <span
-                className={`task-item__time-badge${
-                  hasBudget ? ` task-item__time-badge--${budgetStatus.status}` : ''
-                }`}
-              >
-                <ClockIcon className="task-item__time-badge-icon" />
-                {timeBadgeText}
+            {(hasTimeBadge || isTimerActive) && (
+              <span className="task-card__meta">
+                {hasTimeBadge && (
+                  <span
+                    className={`task-item__time-badge${
+                      hasBudget ? ` task-item__time-badge--${budgetStatus.status}` : ''
+                    }`}
+                  >
+                    <ClockIcon className="task-item__time-badge-icon" />
+                    {timeBadgeText}
+                  </span>
+                )}
+                {isTimerActive && (
+                  <span
+                    className="task-item__recording-dot task-item__recording-dot--trailing"
+                    aria-label="Timer running"
+                  />
+                )}
               </span>
             )}
           </div>
@@ -182,6 +193,7 @@ export function TaskCard({
             <SwipeableTaskRow
               key={subtask.id}
               task={subtask}
+              projectColor={getProjectColor?.(subtask) ?? projectColor}
               isSubtask
               totalMs={taskTimes?.durationByTask.get(subtask.id)}
               onSelect={onSelectTask}

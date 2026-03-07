@@ -12,6 +12,7 @@ import { PlayIcon, CheckIcon } from './icons';
 
 interface SwipeableTaskRowProps {
   task: Task;
+  projectColor?: string;
   isSubtask?: boolean;
   subtaskCount?: number;
   totalMs?: number;
@@ -24,6 +25,7 @@ interface SwipeableTaskRowProps {
 
 export function SwipeableTaskRow({
   task,
+  projectColor,
   isSubtask,
   subtaskCount,
   totalMs,
@@ -66,6 +68,7 @@ export function SwipeableTaskRow({
     >
       <TaskRow
         task={task}
+        projectColor={projectColor}
         isSubtask={isSubtask}
         subtaskCount={subtaskCount}
         totalMs={totalMs}

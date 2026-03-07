@@ -20,9 +20,11 @@ import {
   ExpandChevronIcon,
   ClockIcon,
 } from './icons';
+import { ProjectColorDot } from './ProjectColorDot';
 
 interface TaskRowProps {
   task: Task;
+  projectColor?: string;
   subtaskCount?: number;
   totalMs?: number;
   isExpanded?: boolean;
@@ -33,6 +35,7 @@ interface TaskRowProps {
 
 export function TaskRow({
   task,
+  projectColor,
   subtaskCount = 0,
   totalMs = 0,
   isExpanded = false,
@@ -72,7 +75,6 @@ export function TaskRow({
     >
       {/* Status indicator */}
       <div className="task-row__status" aria-hidden="true">
-        {isTimerActive && <span className="task-item__recording-dot" />}
         {isCompleted && <CheckIcon className="task-row__icon task-row__icon--check" />}
         {!isTimerActive && !isBlocked && !isCompleted && (
           <span className="task-row__status-dot" />
@@ -82,6 +84,7 @@ export function TaskRow({
       {/* Task content */}
       <div className="task-row__content">
         <div className="task-row__title-row">
+          {projectColor && <ProjectColorDot color={projectColor} size="sm" className="task-item__project-dot" />}
           <span className="task-row__title">{task.title}</span>
           {isBlocked && (
             <span className="task-row__blocked-chip">
@@ -106,24 +109,32 @@ export function TaskRow({
         )}
       </div>
 
-      {/* Expand chevron for parents with subtasks, or nav chevron */}
-      {!isSubtask && hasSubtasks && onExpandToggle ? (
-        <button
-          type="button"
-          className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpandToggle(e);
-          }}
-          aria-expanded={isExpanded}
-          aria-controls={`subtasks-${task.id}`}
-          aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
-        >
-          <ExpandChevronIcon className="task-item__expand-icon" />
-        </button>
-      ) : (
-        <ChevronIcon className="task-row__chevron" />
-      )}
+      <div className="task-row__actions">
+        {/* Expand chevron for parents with subtasks, or nav chevron */}
+        {!isSubtask && hasSubtasks && onExpandToggle ? (
+          <button
+            type="button"
+            className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onExpandToggle(e);
+            }}
+            aria-expanded={isExpanded}
+            aria-controls={`subtasks-${task.id}`}
+            aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+          >
+            <ExpandChevronIcon className="task-item__expand-icon" />
+          </button>
+        ) : (
+          <ChevronIcon className="task-row__chevron" />
+        )}
+        {isTimerActive && (
+          <span
+            className="task-item__recording-dot task-item__recording-dot--trailing"
+            aria-label="Timer running"
+          />
+        )}
+      </div>
     </div>
   );
 }

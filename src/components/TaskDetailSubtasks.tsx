@@ -15,6 +15,7 @@ import { CreateTaskSheet } from './CreateTaskSheet';
 interface TaskDetailSubtasksProps {
   task: Task;
   subtasks: Task[];
+  projectColor?: string;
   taskTimes?: TaskTimes;
   onSelectTask: (task: Task) => void;
   onStartTimer: (task: Task) => void;
@@ -24,6 +25,7 @@ interface TaskDetailSubtasksProps {
 export function TaskDetailSubtasks({
   task,
   subtasks,
+  projectColor,
   taskTimes,
   onSelectTask,
   onStartTimer,
@@ -45,6 +47,7 @@ export function TaskDetailSubtasks({
         <SwipeableTaskRow
           key={subtask.id}
           task={subtask}
+          projectColor={projectColor}
           isSubtask
           totalMs={taskTimes?.durationByTask.get(subtask.id)}
           onSelect={onSelectTask}

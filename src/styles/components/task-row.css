@@ -153,6 +153,14 @@
   color: var(--color-text-muted);
 }
 
+.task-row__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 /* Chevron */
 .task-row__chevron {
   width: 20px;
@@ -176,4 +184,3 @@
 .task-row--subtask:hover {
   background: #e0e0e0;
 }
-
