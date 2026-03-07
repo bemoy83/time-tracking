@@ -1,4 +1,5 @@
 import { CountBadge } from '../../../components/CountBadge';
+import { ProjectColorDot } from '../../../components/ProjectColorDot';
 import {
   CheckIcon,
   ClockIcon,
@@ -24,6 +25,7 @@ interface DeadlineSummary {
 
 interface FieldPlanPlanDetailProps {
   selectedPlan: Plan;
+  projectColor?: string;
   progressPercent: number;
   lineItemStatusSummary: LineItemStatusSummary;
   lineItems: FieldPlanLineItemSummary[];
@@ -43,6 +45,7 @@ interface FieldPlanPlanDetailProps {
 
 export function FieldPlanPlanDetail({
   selectedPlan,
+  projectColor,
   progressPercent,
   lineItemStatusSummary,
   lineItems,
@@ -62,7 +65,12 @@ export function FieldPlanPlanDetail({
   return (
     <>
       <section className="field-plan__header-card">
-        <h3 className="field-plan__plan-title">{selectedPlan.title}</h3>
+        <div className="field-plan__header-title-row">
+          {projectColor && (
+            <ProjectColorDot color={projectColor} size="xl" className="field-plan__header-dot" />
+          )}
+          <h3 className="field-plan__plan-title">{selectedPlan.title}</h3>
+        </div>
         <div className="field-plan__progress">
           <div className="field-plan__progress-track" aria-hidden="true">
             <div
@@ -104,6 +112,7 @@ export function FieldPlanPlanDetail({
               <FieldPlanLineItemRow
                 key={li.item.id}
                 lineItem={li}
+                projectColor={projectColor}
                 canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
@@ -125,6 +134,7 @@ export function FieldPlanPlanDetail({
               <FieldPlanLineItemRow
                 key={li.item.id}
                 lineItem={li}
+                projectColor={projectColor}
                 canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
@@ -146,6 +156,7 @@ export function FieldPlanPlanDetail({
               <FieldPlanLineItemRow
                 key={li.item.id}
                 lineItem={li}
+                projectColor={projectColor}
                 canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
@@ -176,6 +187,7 @@ export function FieldPlanPlanDetail({
                 <FieldPlanLineItemRow
                   key={li.item.id}
                   lineItem={li}
+                  projectColor={projectColor}
                   canExecute={canExecute}
                   onRelease={onReleaseToToday}
                   onOpenActions={onOpenActions}
@@ -206,6 +218,7 @@ export function FieldPlanPlanDetail({
                 <FieldPlanLineItemRow
                   key={li.item.id}
                   lineItem={li}
+                  projectColor={projectColor}
                   canExecute={canExecute}
                   onRelease={onReleaseToToday}
                   onOpenActions={onOpenActions}

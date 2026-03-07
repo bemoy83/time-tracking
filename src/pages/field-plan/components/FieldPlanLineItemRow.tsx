@@ -6,6 +6,7 @@ import {
 } from '../../../components/icons';
 import { CountBadge } from '../../../components/CountBadge';
 import { SwipeableRow } from '../../../components/SwipeableRow';
+import { TaskProjectDot } from '../../../components/TaskItemMeta';
 import { formatDeadlineStatusLabel } from '../../../lib/planning/scheduling/deadline-label';
 import type { PlanLineItem } from '../../../lib/planning/plan-model';
 import { WORK_UNIT_LABELS } from '../../../lib/types';
@@ -13,6 +14,7 @@ import type { FieldPlanLineItemSummary } from '../field-plan-model';
 
 interface FieldPlanLineItemRowProps {
   lineItem: FieldPlanLineItemSummary;
+  projectColor?: string;
   canExecute: boolean;
   onRelease: (item: PlanLineItem) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
@@ -20,6 +22,7 @@ interface FieldPlanLineItemRowProps {
 
 export function FieldPlanLineItemRow({
   lineItem,
+  projectColor,
   canExecute,
   onRelease,
   onOpenActions,
@@ -58,7 +61,12 @@ export function FieldPlanLineItemRow({
         onClick={canAct ? () => onOpenActions(lineItem) : undefined}
       >
         <div className="field-plan-row__status-col">
-          <span className={`field-plan-row__dot field-plan-row__dot--${status}`} />
+          {projectColor && (
+            <TaskProjectDot
+              color={projectColor}
+              className="field-plan-row__project-dot"
+            />
+          )}
         </div>
         <div className="field-plan-row__content">
           <span className="field-plan-row__title">{item.title}</span>

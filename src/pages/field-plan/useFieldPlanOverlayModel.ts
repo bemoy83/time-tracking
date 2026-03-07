@@ -28,7 +28,7 @@ import type { FormMode } from './field-plan-overlay-types';
 import { useFieldPlanImport } from './useFieldPlanImport';
 
 export function useFieldPlanOverlayModel(isOpen: boolean) {
-  const { tasks } = useTaskStore();
+  const { tasks, projects } = useTaskStore();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -106,6 +106,11 @@ export function useFieldPlanOverlayModel(isOpen: boolean) {
     () => plans.find((plan) => plan.id === selectedPlanId) ?? null,
     [plans, selectedPlanId],
   );
+
+  const projectColor = useMemo(() => {
+    if (!selectedPlan?.projectId) return undefined;
+    return projects.find((p) => p.id === selectedPlan.projectId)?.color;
+  }, [selectedPlan?.projectId, projects]);
 
   const lineItems = useMemo(() => {
     if (!selectedPlan) return [];
@@ -301,6 +306,7 @@ export function useFieldPlanOverlayModel(isOpen: boolean) {
     closedPlans,
     selectedPlan,
     selectedPlanId,
+    projectColor,
     showPastEvents,
     message,
     formMode,

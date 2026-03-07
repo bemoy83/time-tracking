@@ -137,6 +137,7 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
             {model.selectedPlan && (
               <FieldPlanPlanDetail
                 selectedPlan={model.selectedPlan}
+                projectColor={model.projectColor}
                 progressPercent={model.progressPercent}
                 lineItemStatusSummary={model.lineItemStatusSummary}
                 lineItems={model.lineItems}
