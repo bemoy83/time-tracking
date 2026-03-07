@@ -64,6 +64,7 @@
 @import './styles/components/schedule-view.css';
 @import './styles/components/progress-view.css';
 @import './styles/components/wrap-up-sheet.css';
+@import './styles/components/wrap-up-review-pane.css';
 @import './styles/components/event-report.css';
 @import './styles/components/insights-view.css';
 @import './styles/components/task-attribution-breakdown.css';

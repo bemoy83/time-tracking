@@ -100,16 +100,14 @@
 
 .wrap-up-sheet__card-v2 {
   background: var(--color-surface-subtle);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  padding: var(--space-sm);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .wrap-up-sheet__card-v2--error {
-  border-color: var(--color-recording);
   background: var(--color-recording-bg);
 }
 
@@ -193,13 +191,18 @@
   position: sticky;
   bottom: 0;
   background: var(--color-bg);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Negative-margin hack to break out of ActionSheet padding — scoped so it
+   doesn't affect the inline WrapUpReviewPane. */
+.action-sheet .wrap-up-sheet__actions-bar {
   margin-left: calc(-1 * var(--space-lg));
   margin-right: calc(-1 * var(--space-lg));
   padding-left: var(--space-lg);
   padding-right: var(--space-lg);
   padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
   margin-bottom: calc(-1 * (var(--space-lg) + env(safe-area-inset-bottom, 0px)));
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .action-sheet__actions--stacked {

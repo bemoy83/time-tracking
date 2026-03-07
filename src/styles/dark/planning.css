@@ -79,6 +79,23 @@ select.planning-view__work-type-select {
 
 /* Add form uses .planning-view__line-item, inherits #1e1e1e from above */
 
+/* --- Progress View (same card bg as line items) --- */
+.progress-view__item,
+.progress-view__summary,
+.progress-view__block {
+  background: #1e1e1e;
+}
+
+/* --- Event Report (same card style as line items) --- */
+.event-report__section {
+  background: #1e1e1e;
+}
+
+/* --- Wrap-up Review cards (same card style as line items) --- */
+.wrap-up-sheet__card-v2 {
+  background: #1e1e1e;
+}
+
 /* --- Plan Editor sticky summary — schedule inputs --- */
 .planning-view__sticky-summary .planning-view__schedule-inputs {
   background: #1e1e1e;

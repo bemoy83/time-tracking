@@ -39,7 +39,7 @@ import {
 } from './workspace-metrics';
 import { SidebarMetrics } from './SidebarMetrics';
 import { SparklesIcon, TaskListIcon } from '../../../components/icons';
-import { PlanningWrapUpSheet } from '../PlanningWrapUpSheet';
+import { WrapUpReviewPane } from '../WrapUpReviewPane';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -202,7 +202,15 @@ export function PlanningWorkspaceShell({
 
       {/* Main pane */}
       <section className="planning-workspace__main">
-        {activeTab === 'shared-schedule' ? (
+        {wrapUpPlan ? (
+          <WrapUpReviewPane
+            plan={wrapUpPlan}
+            tasks={tasks}
+            timeEntriesByTask={timeEntriesByTask}
+            onClose={onCloseWrapUp}
+            onCompleted={onWrapUpCompleted}
+          />
+        ) : activeTab === 'shared-schedule' ? (
           <SharedScheduleView
             plans={plans}
             projects={projects}
@@ -249,14 +257,6 @@ export function PlanningWorkspaceShell({
           </div>
         )}
       </section>
-
-      <PlanningWrapUpSheet
-        wrapUpPlan={wrapUpPlan}
-        tasks={tasks}
-        timeEntriesByTask={timeEntriesByTask}
-        onClose={onCloseWrapUp}
-        onCompleted={onWrapUpCompleted}
-      />
     </div>
   );
 }
