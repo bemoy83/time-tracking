@@ -47,9 +47,12 @@
   background: #1e1e1e;
 }
 
-.schedule-view .schedule-grid__line-item-col,
-.schedule-view .schedule-grid__line-item {
+.schedule-view .schedule-grid__line-item-col {
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-view .schedule-grid__line-item {
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Work Calendar — muted headers (Mon, Tue, Wk 1, etc.) */
@@ -112,7 +115,6 @@
 /* Softer grid lines in dark mode */
 .schedule-grid__line-item-col,
 .schedule-grid__day-col,
-.schedule-grid__line-item,
 .schedule-grid__cell,
 .schedule-grid__summary-col {
   border-bottom-color: rgba(255, 255, 255, 0.06);

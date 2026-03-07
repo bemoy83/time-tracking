@@ -59,11 +59,15 @@
 }
 
 .schedule-grid__line-item-col {
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-radius: 0;
 }
 
+/* Rounded left corners on row cells — border-bottom is replaced with an inset
+   box-shadow so the hairline stays straight (doesn't follow the curve). */
 .schedule-grid__line-item {
   border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-bottom: none;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .schedule-grid__line-item-col {

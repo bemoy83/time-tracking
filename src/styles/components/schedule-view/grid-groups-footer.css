@@ -34,7 +34,7 @@
   left: 0;
   z-index: 2;
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-radius: 0;
 }
 
 .schedule-grid__phase-label--depth-0 {
