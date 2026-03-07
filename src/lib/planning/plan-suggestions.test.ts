@@ -168,6 +168,20 @@ describe('generatePlanSuggestions', () => {
 
     const result = generatePlanSuggestions([item], [], plan);
     expect(result.items[0].suggestedCrew).toBe(2);
+    expect(result.items[0].phaseWorkDayCount).toBeGreaterThan(0);
+  });
+
+  it('sets phaseWorkDayCount to 0 when phase has no work days', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-07',
+      buildUpEndDate: '2026-03-08',
+      tearDownStartDate: '2026-03-09',
+      tearDownEndDate: '2026-03-10',
+    });
+    const item = makeLineItem({ buildPhase: 'build-up' });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].phaseWorkDayCount).toBe(0);
   });
 
   it('uses KPI rate for suggested crew when line-item rate is invalid', () => {
@@ -186,6 +200,24 @@ describe('generatePlanSuggestions', () => {
 
     const result = generatePlanSuggestions([item], [kpi], plan);
     expect(result.items[0].suggestedCrew).toBe(1);
+  });
+
+  it('computes phaseWorkDayCount and suggestedCrew for build-up when only build-up dates are set (tear-down optional)', () => {
+    const plan = makePlan({
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-06',
+      tearDownStartDate: null,
+      tearDownEndDate: null,
+    });
+    const item = makeLineItem({
+      workQuantity: 500,
+      productivityRate: 10,
+      buildPhase: 'build-up',
+    });
+
+    const result = generatePlanSuggestions([item], [], plan);
+    expect(result.items[0].phaseWorkDayCount).toBeGreaterThan(0);
+    expect(result.items[0].suggestedCrew).toBe(2);
   });
 
   it('returns null suggested crew when phase dates are missing', () => {

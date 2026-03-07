@@ -1,56 +1,25 @@
 /* ============================================================
-   Field Plan View Overlay
-   Styled to match TodayView visual language
+   Field Plan View Page
+   Styled to match TodayView / ProjectDetail visual language
    ============================================================ */
 
-.field-plan-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: var(--color-bg);
+.field-plan-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-bottom: calc(var(--touch-min) + var(--space-xl) * 2);
+}
+
+.field-plan-view__title-section {
   display: flex;
   flex-direction: column;
 }
 
-.field-plan-overlay__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface-subtle);
-}
-
-.field-plan-overlay__back {
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: var(--touch-min);
-  padding: 0;
-  cursor: pointer;
-}
-
-.field-plan-overlay__back-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.field-plan-overlay__title {
-  margin: 0;
-  font-size: var(--font-large);
-  font-weight: 800;
-  flex: 1;
-  color: var(--color-text);
-}
-
-.field-plan-overlay__content {
+.field-plan-view__content {
   max-width: 720px;
   margin: 0 auto;
   width: 100%;
-  padding: var(--space-md);
+  padding: 0 var(--space-md);
   padding-bottom: calc(var(--space-xl) + 64px);
   overflow-y: auto;
   display: flex;
@@ -58,12 +27,12 @@
   gap: var(--space-lg);
 }
 
-.field-plan-overlay__message {
+.field-plan-view__message {
   margin: 0;
   color: var(--color-text-muted);
 }
 
-.field-plan-overlay__empty {
+.field-plan-view__empty {
   background: var(--color-surface-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-lg);
@@ -72,8 +41,8 @@
   gap: var(--space-sm);
 }
 
-.field-plan-overlay__empty h3,
-.field-plan-overlay__empty p {
+.field-plan-view__empty h3,
+.field-plan-view__empty p {
   margin: 0;
 }
 

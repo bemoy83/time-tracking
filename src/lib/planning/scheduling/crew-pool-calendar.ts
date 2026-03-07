@@ -1,5 +1,6 @@
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { getPlanEffectiveSpan } from '../plan-model';
+import { readPhaseDateValues } from './schedule-span';
+import { getScheduleRangeForWorkCalendar } from './schedule-span';
 import { generateDefaultWorkCalendar, reconcileWorkCalendar } from './work-calendar';
 
 interface CrewPoolCalendarOptions {
@@ -19,7 +20,13 @@ export function deriveCrewPoolCalendar(
   options: CrewPoolCalendarOptions = {},
 ): WorkCalendarDay[] {
   const spans = plans
-    .map((plan) => getPlanEffectiveSpan(plan))
+    .map((plan) =>
+      getScheduleRangeForWorkCalendar(
+        readPhaseDateValues(plan),
+        plan.eventStartDate ?? null,
+        plan.eventEndDate ?? null,
+      ),
+    )
     .filter((span): span is { start: string; end: string } => span != null);
 
   if (spans.length === 0) return [];

@@ -57,7 +57,7 @@ export function ScheduleInputsBlock({
         </button>
         {phaseHint && (
           <p className="planning-view__schedule-validation planning-view__schedule-validation--hint schedule-view__block-phase-hint">
-            Set all four phase dates to enable phase-based scheduling windows.
+            Set start and end for each phase (build-up, tear-down) to enable phase-based scheduling. Phases can be set independently.
           </p>
         )}
       </header>

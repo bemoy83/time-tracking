@@ -27,7 +27,7 @@ import {
 import type { FormMode } from './field-plan-overlay-types';
 import { useFieldPlanImport } from './useFieldPlanImport';
 
-export function useFieldPlanOverlayModel(isOpen: boolean) {
+export function useFieldPlanModel() {
   const { tasks, projects } = useTaskStore();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -64,18 +64,18 @@ export function useFieldPlanOverlayModel(isOpen: boolean) {
     onImportApplied: handleImportApplied,
   });
 
+  // Reset state and load data on mount
   useEffect(() => {
-    if (!isOpen) return;
     setMessage(null);
     resetImportPreview();
     setCompletedExpanded(false);
     setDeferredExpanded(false);
     setFormMode(null);
     void reloadData();
-  }, [isOpen, reloadData, resetImportPreview]);
+  }, [reloadData, resetImportPreview]);
 
+  // Auto-select a plan when plans change
   useEffect(() => {
-    if (!isOpen) return;
     const hasSelection = selectedPlanId != null && plans.some((plan) => plan.id === selectedPlanId);
     if (hasSelection) return;
 
@@ -90,7 +90,7 @@ export function useFieldPlanOverlayModel(isOpen: boolean) {
     } else {
       setSelectedPlanId(null);
     }
-  }, [isOpen, plans, selectedPlanId]);
+  }, [plans, selectedPlanId]);
 
   const receivedPlans = useMemo(
     () => plans.filter((plan) => plan.status === 'received'),
@@ -138,13 +138,12 @@ export function useFieldPlanOverlayModel(isOpen: boolean) {
   }, [lineItems]);
 
   useEffect(() => {
-    if (!isOpen) return;
     const hasRisk = deadlineSummary.overdue > 0 || deadlineSummary.atRisk > 0;
     if (hasRisk && !hadDeadlineRiskRef.current) {
       trackTelemetryEvent('schedule_deadline_risk_visible');
     }
     hadDeadlineRiskRef.current = hasRisk;
-  }, [deadlineSummary.atRisk, deadlineSummary.overdue, isOpen]);
+  }, [deadlineSummary.atRisk, deadlineSummary.overdue]);
 
   const unplannedTasks = useMemo(() => {
     if (!selectedPlan || selectedPlan.projectId == null) return [];

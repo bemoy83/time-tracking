@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import type { WorkType } from '../../lib/types';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
-import { RulerIcon } from '../../components/icons';
+import { ExportIcon, RulerIcon } from '../../components/icons';
+import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
@@ -25,11 +26,11 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [workTypeCsvInput, setWorkTypeCsvInput] = useState('');
-  const [workTypeParseErrors, setWorkTypeParseErrors] = useState<string[]>([]);
   const [workTypePreview, setWorkTypePreview] = useState<WorkTypeImportPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isApplyingImport, setIsApplyingImport] = useState(false);
   const [importSummary, setImportSummary] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddWorkType = () => {
     setEditingWorkType(null);
@@ -65,17 +66,31 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
     }
   };
 
-  const handleParseWorkTypes = () => {
-    const parsed = parseWorkTypeCsv(workTypeCsvInput);
-    if (!parsed.valid) {
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      event.target.value = '';
+      setImportSummary(null);
       setWorkTypePreview(null);
-      setWorkTypeParseErrors(parsed.errors.map((error) => `Row ${error.row}: ${error.field} - ${error.message}`));
-      return;
-    }
+      setIsLoadingPreview(true);
 
-    setWorkTypeParseErrors([]);
-    setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, editableWorkTypes));
-  };
+      try {
+        const text = await file.text();
+        const parsed = parseWorkTypeCsv(text);
+        if (!parsed.valid) {
+          setImportSummary(
+            parsed.errors.map((e) => `Row ${e.row}: ${e.field} - ${e.message}`).join('; '),
+          );
+          return;
+        }
+        setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, editableWorkTypes));
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    },
+    [editableWorkTypes],
+  );
 
   const handleApplyImport = async () => {
     if (!workTypePreview) return;
@@ -84,8 +99,6 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
       const result = await applyWorkTypeImport(workTypePreview.items.map((item) => item.item));
       setImportSummary(`Applied import: ${result.created} created, ${result.updated} updated.`);
       setWorkTypePreview(null);
-      setWorkTypeCsvInput('');
-      setWorkTypeParseErrors([]);
     } finally {
       setIsApplyingImport(false);
     }
@@ -98,10 +111,10 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
           <h2 className="settings-view__sub-header">Work Types</h2>
           <button
             type="button"
-            className="btn btn--primary btn--sm"
+            className="btn btn--primary btn--sm btn--circle"
             onClick={handleAddWorkType}
           >
-            + Add
+            +
           </button>
         </div>
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
@@ -135,25 +148,22 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
       <div className="settings-view__card">
         <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Export Work Types</h2>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
+          <IconButton
+            icon={<ExportIcon className="settings-view__export-icon" />}
+            ariaLabel={isExporting ? 'Exporting...' : 'Export work types'}
             onClick={handleExportWorkTypes}
             disabled={isExporting}
-          >
-            {isExporting ? 'Exporting...' : 'Export'}
-          </button>
+          />
         </div>
         <p className="settings-view__helper">Export work type definitions as CSV.</p>
       </div>
 
       <WorkTypeImportCard
         summaryMessage={importSummary}
-        csvInput={workTypeCsvInput}
-        onCsvInputChange={setWorkTypeCsvInput}
-        onParse={handleParseWorkTypes}
-        parseErrors={workTypeParseErrors}
+        fileInputRef={fileInputRef}
+        onFileChange={handleFileChange}
         preview={workTypePreview}
+        isLoadingPreview={isLoadingPreview}
         isApplying={isApplyingImport}
         onApply={() => {
           void handleApplyImport();

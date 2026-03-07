@@ -329,17 +329,8 @@
   .insights-view__filter-btn--active {
     border-color: var(--color-text);
   }
-  /* --- Field Plan Overlay --- */
-  .field-plan-overlay {
-    background: var(--color-bg);
-  }
-
-  .field-plan-overlay__header {
-    background: var(--color-surface-subtle);
-    border-bottom-color: var(--color-border);
-  }
-
-  .field-plan-overlay__empty {
+  /* --- Field Plan View --- */
+  .field-plan-view__empty {
     background: var(--color-surface-subtle);
   }
 

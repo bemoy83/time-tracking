@@ -39,8 +39,8 @@ import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
-  hasAnyPhaseDates,
-  hasCompletePhaseDates,
+  getScheduleRangeForWorkCalendar,
+  hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -88,14 +88,20 @@ export function PlanEditor({
   }, [plan.id]);
 
   const phaseDates = readPhaseDateValues(currentPlan);
-  const isPhasePartial =
-    hasAnyPhaseDates(phaseDates) && !hasCompletePhaseDates(phaseDates);
+  const showPhaseHint =
+    !hasPhaseDatesFor(phaseDates, 'build-up') && !hasPhaseDatesFor(phaseDates, 'tear-down');
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
-  const isEmpty = primaryRange == null;
+  const workCalendarRange = getScheduleRangeForWorkCalendar(
+    phaseDates,
+    currentPlan.eventStartDate,
+    currentPlan.eventEndDate,
+  );
+  const summaryRange = workCalendarRange ?? primaryRange;
+  const isEmpty = summaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
@@ -103,11 +109,11 @@ export function PlanEditor({
 
   const availableScope = (() => {
     const { defaultCrewSize, workCalendar } = currentPlan;
-    if (!primaryRange) return null;
+    if (!summaryRange) return null;
     const calendar =
       workCalendar.length > 0
         ? workCalendar
-        : generateDefaultWorkCalendar(primaryRange.start, primaryRange.end, defaultCrewSize);
+        : generateDefaultWorkCalendar(summaryRange.start, summaryRange.end, defaultCrewSize);
     const workDays = calendar.filter((d) => d.isWorkDay);
     const totalAvailable = calendar.reduce(
       (sum, d) => sum + dayAvailablePersonHours(d, defaultCrewSize),
@@ -238,11 +244,11 @@ export function PlanEditor({
         <ScheduleInputsBlock
           expanded={inputsExpanded}
           onToggle={() => setInputsExpanded((p) => !p)}
-          primaryRange={primaryRange}
+          primaryRange={summaryRange}
           dayCount={availableScope?.workDayCount ?? 0}
           crewSize={currentPlan.defaultCrewSize ?? null}
           totalAvailable={availableScope?.totalAvailable ?? 0}
-          phaseHint={isPhasePartial}
+          phaseHint={showPhaseHint}
         >
           <PlanScheduleInputs
             buildUpStartDate={phaseDates.buildUpStartDate}

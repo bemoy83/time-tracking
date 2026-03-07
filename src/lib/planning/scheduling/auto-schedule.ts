@@ -1,132 +1,183 @@
 /**
  * Auto-schedule: distribute unscheduled line items across work days
- * using a greedy load-balancing algorithm.
+ * using a greedy crew-pool-aware algorithm.
+ *
+ * Core model: crew headcount is the finite resource. Each work day has
+ * a crew pool (day.crewSize ?? plan.defaultCrewSize). The algorithm
+ * places items by deducting crew from that pool, so later items see
+ * what's actually left.
  */
 
 import type { Plan } from '../plan-model';
-import { getPhaseSpan, hasPhaseDates, updatePlanLineItem } from '../plan-model';
-import { dayAvailablePersonHours } from './work-calendar';
-import { listDateRange } from './work-calendar';
+import { getPhaseSpan, updatePlanLineItem } from '../plan-model';
+import { dayAccessHours, dayCrewSize } from './work-calendar';
 
-interface DayLoad {
+interface DayState {
   date: string;
-  available: number;
-  assigned: number;
+  accessHours: number;
+  totalCrew: number;
+  remainingCrew: number;
 }
 
 /**
  * Auto-schedule unscheduled line items into the plan's work calendar.
- * Strategy: sort items by person-hours descending, then for each item
- * find the earliest contiguous span of work days that minimizes peak load.
- * Initializes crewByDate with item.crew for each assigned day.
+ *
+ * Math: requiredPH = workQuantity / productivityRate.
+ * Each work day can deliver min(requestedCrew, remainingCrew) × accessHours
+ * person-hours toward that requirement.
+ *
+ * Algorithm:
+ * 1. Build per-day state tracking crew headcount.
+ * 2. Reserve crew for already-scheduled items.
+ * 3. For each unscheduled item (largest required PH first):
+ *    a. Walk candidate days from each start position, accumulating
+ *       deliverable PH per day until requiredPH is met — this gives
+ *       the minimum span length for that start.
+ *    b. Pick the start position that needs the fewest days (tightest fit),
+ *       breaking ties by most remaining crew (least-loaded).
+ *    c. Allocate crew, reducing the day pool for subsequent items.
+ *    d. If no window can fully cover requiredPH, use all candidate days
+ *       (capacity view will flag the shortfall).
  */
 export function autoSchedule(plan: Plan): Plan {
   const { defaultCrewSize, workCalendar } = plan;
-  const calendar = workCalendar.length > 0 ? workCalendar : [];
-  if (calendar.length === 0) return plan;
+  if (workCalendar.length === 0) return plan;
 
-  const workDays = calendar.filter((d) => d.isWorkDay);
+  const workDays = workCalendar.filter((d) => d.isWorkDay);
   if (workDays.length === 0) return plan;
-  const hasPhaseWindows = hasPhaseDates(plan);
 
-  // Build day load tracker
-  const dayLoadMap = new Map<string, DayLoad>();
+  // 1. Build per-day state
+  const dayStateMap = new Map<string, DayState>();
   for (const day of workDays) {
-    dayLoadMap.set(day.date, {
+    const crew = dayCrewSize(day, defaultCrewSize);
+    dayStateMap.set(day.date, {
       date: day.date,
-      available: dayAvailablePersonHours(day, defaultCrewSize),
-      assigned: 0,
+      accessHours: dayAccessHours(day),
+      totalCrew: crew,
+      remainingCrew: crew,
     });
   }
 
-  // Account for already-scheduled items
+  // 2. Reserve crew for already-scheduled items
   for (const item of plan.lineItems) {
     if (!item.scheduledStart || !item.scheduledEnd) continue;
-    const dates = listDateRange(item.scheduledStart, item.scheduledEnd);
-    const totalPH = item.timeHours * item.crew;
-    const perDay = dates.length > 0 ? totalPH / dates.length : 0;
-    for (const date of dates) {
-      const load = dayLoadMap.get(date);
-      if (load) load.assigned += perDay;
+    for (const [date, state] of dayStateMap) {
+      if (date < item.scheduledStart || date > item.scheduledEnd) continue;
+      const crew = item.crewByDate?.[date] ?? item.crew;
+      state.remainingCrew -= crew;
     }
   }
 
-  // Collect unscheduled items, sort by person-hours descending
+  // 3. Collect unscheduled items
   const unscheduled = plan.lineItems
     .filter((item) => !item.scheduledStart || !item.scheduledEnd)
-    .map((item) => ({
-      item,
-      totalPH: item.timeHours * item.crew,
-    }))
-    .sort((a, b) => b.totalPH - a.totalPH);
+    .map((item) => {
+      const effectiveRate = item.productivityRate > 0 ? item.productivityRate : 1;
+      const requiredPH = item.workQuantity / effectiveRate;
+      return { item, requiredPH };
+    })
+    .filter((x) => x.requiredPH > 0)
+    .sort((a, b) => b.requiredPH - a.requiredPH);
 
   if (unscheduled.length === 0) return plan;
 
   let result = plan;
 
-  for (const { item, totalPH } of unscheduled) {
-    const candidateWorkDays = hasPhaseWindows
-      ? (() => {
-          const phaseSpan = getPhaseSpan(plan, item.buildPhase);
-          if (!phaseSpan) return [];
-          return workDays.filter((d) => d.date >= phaseSpan.start && d.date <= phaseSpan.end);
-        })()
-      : workDays;
-    if (candidateWorkDays.length === 0) continue;
+  for (const { item, requiredPH } of unscheduled) {
+    // Get candidate work days: constrain to item's phase span when that phase has dates, else use all days
+    const span = getPhaseSpan(plan, item.buildPhase);
+    const candidates = span
+      ? workDays
+          .filter((d) => d.date >= span.start && d.date <= span.end)
+          .map((d) => dayStateMap.get(d.date)!)
+          .filter(Boolean)
+      : workDays.map((d) => dayStateMap.get(d.date)!).filter(Boolean);
 
-    const workDayDates = candidateWorkDays.map((d) => d.date);
+    if (candidates.length === 0) continue;
 
-    // Determine min span length needed: ceil(totalPH / maxDailyAvailable)
-    const maxDailyAvail = Math.max(
-      ...candidateWorkDays.map((d) => dayAvailablePersonHours(d, defaultCrewSize)),
-      1,
-    );
-    const minSpanDays = Math.max(1, Math.ceil(totalPH / maxDailyAvail));
-    const spanLength = Math.min(minSpanDays, workDayDates.length);
+    const requestedCrew = item.crew > 0 ? item.crew : 1;
 
-    // Find best starting position (lowest peak load after assignment)
+    // For each possible start position, walk forward accumulating
+    // deliverable PH until requiredPH is met. Track the span length needed.
     let bestStart = 0;
-    let bestPeakUtil = Infinity;
+    let bestSpanLength = candidates.length; // fallback: use all days
+    let bestMinRemaining = -Infinity;
+    let bestCovers = false; // whether the best window fully covers requiredPH
 
-    for (let start = 0; start <= workDayDates.length - spanLength; start++) {
-      const span = workDayDates.slice(start, start + spanLength);
-      const perDay = totalPH / span.length;
-      let peakUtil = 0;
-      for (const date of span) {
-        const load = dayLoadMap.get(date)!;
-        const util = load.available > 0 ? (load.assigned + perDay) / load.available : Infinity;
-        if (util > peakUtil) peakUtil = util;
+    for (let start = 0; start < candidates.length; start++) {
+      let accumulated = 0;
+      let spanLen = 0;
+      let minRemaining = Infinity;
+
+      for (let i = start; i < candidates.length; i++) {
+        const day = candidates[i];
+        const usableCrew = Math.max(1, Math.min(requestedCrew, day.remainingCrew));
+        accumulated += usableCrew * day.accessHours;
+        spanLen++;
+        if (day.remainingCrew < minRemaining) minRemaining = day.remainingCrew;
+        if (accumulated >= requiredPH) break;
       }
-      if (peakUtil < bestPeakUtil) {
-        bestPeakUtil = peakUtil;
+
+      const covers = accumulated >= requiredPH;
+
+      // Prefer windows that fully cover requiredPH.
+      // Among covering windows: fewest days, then most remaining crew.
+      // A non-covering window only wins if no covering window exists.
+      const dominated =
+        bestCovers && !covers ? true
+        : !bestCovers && covers ? false
+        : spanLen > bestSpanLength ? true
+        : spanLen < bestSpanLength ? false
+        : minRemaining <= bestMinRemaining;
+
+      if (!dominated) {
+        bestSpanLength = spanLen;
+        bestMinRemaining = minRemaining;
         bestStart = start;
+        bestCovers = covers;
       }
     }
 
-    const assignedDates = workDayDates.slice(bestStart, bestStart + spanLength);
-    const perDay = totalPH / assignedDates.length;
+    const assignedSlice = candidates.slice(bestStart, bestStart + bestSpanLength);
+    if (assignedSlice.length === 0) continue;
 
-    // Update load tracker
-    for (const date of assignedDates) {
-      const load = dayLoadMap.get(date)!;
-      load.assigned += perDay;
-    }
-
-    // Build crewByDate
+    // Build crewByDate: allocate min(requested, remaining) per day,
+    // distributing exactly requiredPH across the span.
     const crewByDate: Record<string, number> = {};
-    for (const date of assignedDates) {
-      crewByDate[date] = item.crew;
+    let phLeft = requiredPH;
+
+    for (const dayState of assignedSlice) {
+      const usableCrew = Math.max(1, Math.min(requestedCrew, dayState.remainingCrew));
+      const dayPH = usableCrew * dayState.accessHours;
+      const delivered = Math.min(dayPH, phLeft);
+      // Crew actually needed this day (may be less on the final day)
+      const crewThisDay = dayState.accessHours > 0
+        ? Math.max(1, Math.ceil(delivered / dayState.accessHours))
+        : usableCrew;
+      crewByDate[dayState.date] = crewThisDay;
+      dayState.remainingCrew -= crewThisDay;
+      phLeft -= delivered;
     }
 
-    // The scheduled span must be contiguous calendar dates (not just work days)
-    const startDate = assignedDates[0];
-    const endDate = assignedDates[assignedDates.length - 1];
+    const startDate = assignedSlice[0].date;
+    const endDate = assignedSlice[assignedSlice.length - 1].date;
+    // Actual total crew used is the max across days (for timeHours derivation)
+    const maxCrewUsed = Math.max(...Object.values(crewByDate));
+    const timeHours = requiredPH / maxCrewUsed;
 
-    result = updatePlanLineItem(result, item.id, {
+    const updates: Parameters<typeof updatePlanLineItem>[2] = {
       scheduledStart: startDate,
       scheduledEnd: endDate,
       crewByDate,
-    });
+    };
+    if (item.crew <= 0) {
+      updates.crew = maxCrewUsed;
+    }
+    if (item.timeHours <= 0 || Math.abs(item.timeHours - timeHours) > 0.01) {
+      updates.timeHours = Math.round(timeHours * 100) / 100;
+    }
+
+    result = updatePlanLineItem(result, item.id, updates);
   }
 
   return result;

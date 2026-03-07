@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronIcon } from '../../../components/icons';
-import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import type { Plan, PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import { getPhaseWorkDayCount } from '../../../lib/planning/plan-suggestions';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
 import { computeSharedRowAggregates } from '../../../lib/planning/scheduling/shared-row-aggregates';
@@ -41,6 +42,7 @@ function groupByPhase(lineItems: PlanLineItem[]): PhaseGroup[] {
 
 interface SingleScheduleGridProps {
   mode?: 'single';
+  plan: Plan;
   lineItems: PlanLineItem[];
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
@@ -81,6 +83,7 @@ function mapKey(planId: string, lineItemId: string): string {
 }
 
 function SingleScheduleGrid({
+  plan,
   lineItems,
   calendar,
   capacity,
@@ -95,7 +98,20 @@ function SingleScheduleGrid({
     [capacity.days],
   );
   const hasPhaseWindows = hasCompletePhaseDates(phaseDates);
+  const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
   const unscheduled = lineItems.filter((item) => item.scheduledStart == null || item.scheduledEnd == null);
+  const schedulableUnscheduled = useMemo(() => {
+    return lineItems
+      .filter((item) => item.scheduledStart == null || item.scheduledEnd == null)
+      .filter((item) => {
+        const requiredPH = item.productivityRate > 0 ? item.workQuantity / item.productivityRate : 0;
+        if (requiredPH <= 0) return false;
+        if (hasPhaseWindows) {
+          return getPhaseWorkDayCount(plan, item.buildPhase) > 0;
+        }
+        return workDays.length > 0;
+      });
+  }, [lineItems, hasPhaseWindows, plan, workDays.length]);
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
 
@@ -205,8 +221,9 @@ function SingleScheduleGrid({
             gridColumns={gridColumns}
             label="Work package"
             onAutoSchedule={onAutoSchedule}
-            unscheduledCount={unscheduled.length}
+            unscheduledCount={schedulableUnscheduled.length}
             readOnly={readOnly}
+            hasWorkDays={workDays.length > 0}
           />
 
           <div className="schedule-grid__body">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState, type ChangeEvent } from 'react';
 import { generateImportPreview, type ImportPreview } from '../../../lib/interop/import-preview';
 import { parseWorkPackageCsv } from '../../../lib/interop/import';
 import { applyWorkPackageImportItems } from '../../../lib/interop/work-package-import-apply';
@@ -16,28 +16,46 @@ export function useTemplateImport({
   templates,
   workTypeTitleById,
 }: UseTemplateImportOptions) {
-  const [csvInput, setCsvInput] = useState('');
-  const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [applySummary, setApplySummary] = useState<string | null>(null);
 
   const importApplyGateOpen = true;
 
-  const handleParse = () => {
-    const parsed = parseWorkPackageCsv(csvInput);
-    if (!parsed.valid) {
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      event.target.value = '';
+      setApplySummary(null);
       setPreview(null);
-      setParseErrors(parsed.errors.map((error) => `Row ${error.row}: ${error.field} - ${error.message}`));
-      return;
-    }
+      setIsLoadingPreview(true);
 
-    const nextPreview = generateImportPreview(parsed.items, tasks, templates, workTypeTitleById);
-    setParseErrors([]);
-    setPreview(nextPreview);
-  };
+      try {
+        const text = await file.text();
+        const parsed = parseWorkPackageCsv(text);
+        if (!parsed.valid) {
+          setApplySummary(
+            parsed.errors.map((e) => `Row ${e.row}: ${e.field} - ${e.message}`).join('; '),
+          );
+          return;
+        }
+        const nextPreview = generateImportPreview(
+          parsed.items,
+          tasks,
+          templates,
+          workTypeTitleById,
+        );
+        setPreview(nextPreview);
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    },
+    [tasks, templates, workTypeTitleById],
+  );
 
-  const handleApply = async () => {
+  const handleApply = useCallback(async () => {
     if (!preview || preview.duplicateKeys.length > 0) return;
 
     setIsApplying(true);
@@ -62,25 +80,23 @@ export function useTemplateImport({
       }
 
       const { created, updated, skipped } = await applyWorkPackageImportItems(revalidated.items);
-      setApplySummary(`Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${conflicts} conflicts.`);
+      setApplySummary(
+        `Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${conflicts} conflicts.`,
+      );
       trackTelemetryEvent('interop_import_apply');
       setPreview(null);
-      setCsvInput('');
-      setParseErrors([]);
     } finally {
       setIsApplying(false);
     }
-  };
+  }, [preview, tasks, templates, workTypeTitleById]);
 
   return {
-    csvInput,
-    setCsvInput,
-    parseErrors,
     preview,
+    isLoadingPreview,
     isApplying,
     applySummary,
     importApplyGateOpen,
-    handleParse,
+    handleFileChange,
     handleApply,
   };
 }

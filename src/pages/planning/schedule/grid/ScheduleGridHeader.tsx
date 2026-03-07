@@ -57,7 +57,8 @@ export function ScheduleGridHeader({
             className="btn btn--secondary btn--sm schedule-grid__auto-schedule-btn"
             onClick={onAutoSchedule}
             disabled={readOnly || (unscheduledCount ?? 0) === 0}
-            aria-label={(unscheduledCount ?? 0) > 0 ? `Auto-schedule ${unscheduledCount} unscheduled item${unscheduledCount === 1 ? '' : 's'}` : 'No unscheduled items'}
+            aria-label={(unscheduledCount ?? 0) > 0 ? `Auto-schedule ${unscheduledCount} schedulable item${unscheduledCount === 1 ? '' : 's'}` : 'No schedulable items — set phase dates, add crew and time'}
+            title={(unscheduledCount ?? 0) > 0 ? `Auto-schedule ${unscheduledCount} item${unscheduledCount === 1 ? '' : 's'} with crew, time, and phase work days` : 'Set phase dates and add crew/time to items to enable'}
           >
             Auto-schedule ({unscheduledCount ?? 0})
           </button>

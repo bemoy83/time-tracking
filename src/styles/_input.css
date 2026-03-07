@@ -18,6 +18,16 @@
   border-color: var(--color-primary);
 }
 
+/* Textarea / multi-line — overrides pill shape for notes, CSV paste, etc. */
+.input--textarea,
+textarea.input {
+  border-radius: var(--radius-md);
+  min-height: 6rem;
+  line-height: 1.5;
+  resize: none;
+  font-family: inherit;
+}
+
 /* Select: custom chevron, centered vertically and from right */
 select.input {
   appearance: none;

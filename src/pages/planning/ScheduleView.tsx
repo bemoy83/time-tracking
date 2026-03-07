@@ -27,8 +27,8 @@ import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
-  hasAnyPhaseDates,
-  hasCompletePhaseDates,
+  getScheduleRangeForWorkCalendar,
+  hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -56,15 +56,22 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const phaseDates = readPhaseDateValues(currentPlan);
-  const isPhasePartial =
-    hasAnyPhaseDates(phaseDates) && !hasCompletePhaseDates(phaseDates);
+  const showPhaseHint =
+    !hasPhaseDatesFor(phaseDates, 'build-up') && !hasPhaseDatesFor(phaseDates, 'tear-down');
   const primaryRange = getPrimaryScheduleRange(
+    phaseDates,
+    currentPlan.eventStartDate,
+    currentPlan.eventEndDate,
+  );
+  const workCalendarRange = getScheduleRangeForWorkCalendar(
     phaseDates,
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
   const primaryRangeStart = primaryRange?.start ?? null;
   const primaryRangeEnd = primaryRange?.end ?? null;
+  const workCalendarStart = workCalendarRange?.start ?? null;
+  const workCalendarEnd = workCalendarRange?.end ?? null;
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
 
@@ -72,23 +79,23 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_tab_open');
   }, [plan.id]);
 
-  // Derive work calendar when schedule dates exist but workCalendar is empty
-  // (e.g. dates set in editor and user switched tabs before debounced save completed).
+  // Derive work calendar when at least one phase (or event) has dates but workCalendar is empty.
+  // Uses getScheduleRangeForWorkCalendar so build-up only or tear-down only is enough.
   useEffect(() => {
-    if (primaryRangeStart && primaryRangeEnd && currentPlan.workCalendar.length === 0) {
+    if (workCalendarStart && workCalendarEnd && currentPlan.workCalendar.length === 0) {
       mutatePlan((prev) => ({
         ...prev,
         workCalendar: reconcileWorkCalendar(
           prev.workCalendar,
-          primaryRangeStart,
-          primaryRangeEnd,
+          workCalendarStart,
+          workCalendarEnd,
           prev.defaultCrewSize,
         ),
       }));
     }
   }, [
-    primaryRangeStart,
-    primaryRangeEnd,
+    workCalendarStart,
+    workCalendarEnd,
     currentPlan.workCalendar.length,
     mutatePlan,
   ]);
@@ -243,11 +250,11 @@ export function ScheduleView({
       <ScheduleInputsBlock
         expanded={inputsExpanded}
         onToggle={() => setInputsExpanded((prev) => !prev)}
-        primaryRange={primaryRange}
+        primaryRange={workCalendarRange ?? primaryRange}
         dayCount={currentPlan.workCalendar.length}
         crewSize={currentPlan.defaultCrewSize ?? null}
         totalAvailable={capacity.totalAvailablePersonHours}
-        phaseHint={isPhasePartial}
+        phaseHint={showPhaseHint}
       >
         <PlanScheduleInputs
           buildUpStartDate={phaseDates.buildUpStartDate}
@@ -272,6 +279,7 @@ export function ScheduleView({
       />
 
       <ScheduleGrid
+        plan={currentPlan}
         lineItems={currentPlan.lineItems}
         calendar={currentPlan.workCalendar}
         capacity={capacity}

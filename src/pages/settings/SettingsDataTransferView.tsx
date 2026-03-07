@@ -1,4 +1,6 @@
 import { useRef, useState, type ChangeEvent } from 'react';
+import { ImportIcon } from '../../components/icons';
+import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import {
   applyPlanPackageImport,
@@ -130,14 +132,12 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
       <div className="settings-view__card">
         <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Import Plan Package</h2>
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
+          <IconButton
+            icon={<ImportIcon className="settings-view__import-icon" />}
+            ariaLabel={isLoadingPlanPreview ? 'Reading...' : 'Choose JSON'}
             onClick={() => planFileInputRef.current?.click()}
             disabled={isLoadingPlanPreview || isApplyingPlanImport}
-          >
-            {isLoadingPlanPreview ? 'Reading...' : 'Choose JSON'}
-          </button>
+          />
         </div>
         <p className="settings-view__helper">
           Import planner package exports for Field Plan execution.
@@ -235,14 +235,12 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
       <div className="settings-view__card">
         <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Import Execution Return</h2>
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
+          <IconButton
+            icon={<ImportIcon className="settings-view__import-icon" />}
+            ariaLabel={isLoadingExecutionPreview ? 'Reading...' : 'Choose JSON'}
             onClick={() => executionFileInputRef.current?.click()}
             disabled={isLoadingExecutionPreview || isApplyingExecutionImport}
-          >
-            {isLoadingExecutionPreview ? 'Reading...' : 'Choose JSON'}
-          </button>
+          />
         </div>
         <p className="settings-view__helper">
           Import executor execution-return exports for planner wrap-up review.

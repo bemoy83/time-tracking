@@ -98,6 +98,17 @@
   margin: 0;
 }
 
+.settings-view__export-icon,
+.settings-view__import-icon {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  display: block;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
 /* ============================================================
    Rows — flat divider pattern inside cards
    ============================================================ */

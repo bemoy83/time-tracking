@@ -21,6 +21,7 @@ import { SettingsAttributionView } from './pages/settings/SettingsAttributionVie
 import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
 import { SettingsTelemetryView } from './pages/settings/SettingsTelemetryView';
 import { SettingsDataTransferView } from './pages/settings/SettingsDataTransferView';
+import { FieldPlanView } from './pages/field-plan/FieldPlanView';
 import { getFeatureFlag } from './lib/flags/feature-flags';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 
@@ -40,7 +41,8 @@ type View =
   | { type: 'tab'; tab: Tab }
   | { type: 'detail'; taskId: string; returnTab: Tab }
   | { type: 'projectDetail'; projectId: string; returnTo: ReturnTo }
-  | { type: 'settingsDetail'; section: SettingsSection; returnTab: Tab };
+  | { type: 'settingsDetail'; section: SettingsSection; returnTab: Tab }
+  | { type: 'fieldPlan'; returnTo: ReturnTo };
 
 function App() {
   const [initialized, setInitialized] = useState(false);
@@ -116,7 +118,7 @@ function App() {
   };
 
   const handleBack = () => {
-    if (view.type === 'projectDetail') {
+    if (view.type === 'projectDetail' || view.type === 'fieldPlan') {
       setView(view.returnTo);
     } else if (view.type === 'settingsDetail') {
       setView({ type: 'tab', tab: view.returnTab });
@@ -167,7 +169,10 @@ function App() {
         className={isPlanningWorkspaceActive ? 'main--workspace' : undefined}
       >
         {view.type === 'tab' && view.tab === 'today' && (
-          <TodayView onSelectTask={handleSelectTask} />
+          <TodayView
+            onSelectTask={handleSelectTask}
+            onNavigateToFieldPlan={getFeatureFlag('fieldPlanExecution') ? () => setView({ type: 'fieldPlan', returnTo: { type: 'tab', tab: 'today' } }) : undefined}
+          />
         )}
         {view.type === 'tab' && view.tab === 'projects' && (
           <ProjectList onSelectProject={handleNavigateToProject} />
@@ -205,6 +210,9 @@ function App() {
               setView({ type: 'tab', tab: 'planning' });
             }}
           />
+        )}
+        {view.type === 'fieldPlan' && (
+          <FieldPlanView onBack={handleBack} />
         )}
         {view.type === 'settingsDetail' && view.section === 'workTypes' && (
           <SettingsWorkTypesView onBack={handleBack} />

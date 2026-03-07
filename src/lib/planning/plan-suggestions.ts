@@ -9,12 +9,8 @@
 
 import type { WorkTypeKpi } from '../kpi';
 import { findKpiByKey, type ConfidenceLevel } from '../kpi';
-import {
-  getPhaseSpan,
-  hasPhaseDates,
-  type Plan,
-  type PlanLineItem,
-} from './plan-model';
+import type { BuildPhase } from '../types';
+import { getPhaseSpan, type Plan, type PlanLineItem } from './plan-model';
 import { lineItemWorkTypeKey } from '../work-package-core';
 import { dayAccessHours, generateDefaultWorkCalendar } from './scheduling/work-calendar';
 
@@ -33,6 +29,8 @@ export interface LineItemSuggestion {
   suggestedTimeHours: number | null;
   /** Suggested minimum crew size for the scheduled phase window, when available. */
   suggestedCrew: number | null;
+  /** Number of work days in this line item's phase span. Used to gate magic apply. */
+  phaseWorkDayCount: number;
   /** Confidence of the suggestion. */
   confidence: ConfidenceLevel | null;
   /** Risk assessment for this line item. */
@@ -106,8 +104,7 @@ function resolvePhaseSuggestedCrew(
   plan: Plan | null | undefined,
   suggestedRate: number | null,
 ): number | null {
-  if (!plan || !hasPhaseDates(plan)) return null;
-  if (item.workQuantity <= 0) return null;
+  if (!plan || item.workQuantity <= 0) return null;
 
   const phaseSpan = getPhaseSpan(plan, item.buildPhase);
   if (!phaseSpan) return null;
@@ -137,6 +134,19 @@ function resolvePhaseSuggestedCrew(
   return Math.max(1, Math.ceil(personHours / totalAvailableHours));
 }
 
+/** Work days in the given phase span. Returns 0 when phase has no dates or no work days. Exported for phase-aware UI (e.g. Auto-schedule). */
+export function getPhaseWorkDayCount(plan: Plan | null | undefined, phase: BuildPhase): number {
+  if (!plan) return 0;
+  const phaseSpan = getPhaseSpan(plan, phase);
+  if (!phaseSpan) return 0;
+  const workDays = (
+    plan.workCalendar.length > 0
+      ? plan.workCalendar
+      : generateDefaultWorkCalendar(phaseSpan.start, phaseSpan.end, plan.defaultCrewSize)
+  ).filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end && day.isWorkDay);
+  return workDays.length;
+}
+
 /**
  * Generate KPI-backed suggestions for all line items in a plan.
  */
@@ -163,6 +173,7 @@ export function generatePlanSuggestions(
       suggestedRate,
       suggestedTimeHours,
       suggestedCrew: resolvePhaseSuggestedCrew(item, plan, suggestedRate),
+      phaseWorkDayCount: getPhaseWorkDayCount(plan, item.buildPhase),
       confidence,
       risk,
       riskReasons: reasons,

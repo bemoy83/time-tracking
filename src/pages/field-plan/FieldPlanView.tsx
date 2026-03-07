@@ -1,47 +1,45 @@
 import { useRef } from 'react';
-import { BackIcon, TaskListIcon } from '../../components/icons';
+import { BreadcrumbNav } from '../../components/BreadcrumbNav';
+import { Fab } from '../../components/Fab';
+import { ImportIcon, TaskListIcon } from '../../components/icons';
+import { getFeatureFlag } from '../../lib/flags/feature-flags';
 import { FieldPlanActionSheet } from './components/FieldPlanActionSheet';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
 import { FieldPlanPlanSelector } from './components/FieldPlanPlanSelector';
-import { useFieldPlanOverlayModel } from './useFieldPlanOverlayModel';
+import { useFieldPlanModel } from './useFieldPlanModel';
 
-interface FieldPlanOverlayProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface FieldPlanViewProps {
+  onBack: () => void;
 }
 
-export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
+export function FieldPlanView({ onBack }: FieldPlanViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const model = useFieldPlanOverlayModel(isOpen);
+  const model = useFieldPlanModel();
 
-  if (!isOpen) return null;
+  if (!getFeatureFlag('fieldPlanExecution')) {
+    onBack();
+    return null;
+  }
+
+  const breadcrumbSegments = model.selectedPlan
+    ? [{ label: 'Field Plan' }, { label: model.selectedPlan.title }]
+    : [{ label: 'Field Plan' }];
 
   return (
-    <div className="field-plan-overlay" role="dialog" aria-modal="true" aria-label="Field Plan View">
-      <header className="field-plan-overlay__header">
-        <button type="button" className="field-plan-overlay__back" onClick={onClose}>
-          <BackIcon className="field-plan-overlay__back-icon" />
-          <span>Today</span>
-        </button>
-        <h1 className="field-plan-overlay__title">Field Plan</h1>
-        <button
-          type="button"
-          className="btn btn--secondary btn--sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={model.isLoadingPreview || model.isApplyingImport}
-        >
-          {model.isLoadingPreview ? 'Reading...' : 'Import'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: 'none' }}
-          onChange={model.handleFileChange}
-        />
-      </header>
+    <div className="field-plan-view">
+      <div className="field-plan-view__title-section">
+        <BreadcrumbNav onBack={onBack} segments={breadcrumbSegments} />
+      </div>
 
-      <div className="field-plan-overlay__content">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={model.handleFileChange}
+      />
+
+      <div className="field-plan-view__content">
         {model.preview && (
           <section className="field-plan-import-card">
             <p className="field-plan-import-card__title">
@@ -107,10 +105,10 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
           </section>
         )}
 
-        {model.message && <p className="field-plan-overlay__message">{model.message}</p>}
+        {model.message && <p className="field-plan-view__message">{model.message}</p>}
 
         {model.plans.length === 0 ? (
-          <section className="field-plan-overlay__empty">
+          <section className="field-plan-view__empty">
             <TaskListIcon className="empty-state__icon" />
             <h3>No received plans</h3>
             <p>Import a planner package to start execution in Field Plan View.</p>
@@ -158,6 +156,13 @@ export function FieldPlanOverlay({ isOpen, onClose }: FieldPlanOverlayProps) {
           </>
         )}
       </div>
+
+      <Fab
+        onClick={() => fileInputRef.current?.click()}
+        aria-label="Import plan"
+      >
+        <ImportIcon className="fab__icon" />
+      </Fab>
 
       <FieldPlanActionSheet
         formMode={model.formMode}

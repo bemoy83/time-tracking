@@ -62,11 +62,14 @@ export function LineItemCard({
   };
 
   const effectiveRate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 0);
+  /** Magic button shows when all are met: editable, has quantity, has rate, and at least one suggestion (crew/rate/time). Phase-agnostic. */
+  const hasActionableSuggestion =
+    suggestedCrew != null || suggestion?.suggestedRate != null || suggestion?.suggestedTimeHours != null;
   const canMagicApply =
     !isLocked &&
     item.workQuantity > 0 &&
     effectiveRate > 0 &&
-    (suggestedCrew != null || suggestion?.suggestedRate != null || suggestion?.suggestedTimeHours != null);
+    hasActionableSuggestion;
   const handleMagicApply = () => {
     const crew = suggestedCrew ?? item.crew;
     const rate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 1);
@@ -140,8 +143,8 @@ export function LineItemCard({
                 type="button"
                 className="planning-view__line-item-magic"
                 onClick={handleMagicApply}
-                aria-label="Apply suggested crew and time"
-                title="Apply suggested crew and time"
+                aria-label="Apply suggestions"
+                title="Apply suggested crew, rate, and time"
               >
                 <SparklesIcon className="planning-view__line-item-action-icon" />
               </button>

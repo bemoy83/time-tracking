@@ -15,6 +15,9 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
+  /* Default fill: primary (variants override) */
+  background: var(--color-primary);
+  color: white;
 }
 
 .btn:active {
@@ -93,6 +96,12 @@
 .btn--sm {
   min-height: 36px;
   padding: var(--space-xs) var(--space-sm);
+}
+
+.btn--circle {
+  aspect-ratio: 1;
+  padding: var(--space-xs);
+  border-radius: var(--radius-full);
 }
 
 .btn--lg {

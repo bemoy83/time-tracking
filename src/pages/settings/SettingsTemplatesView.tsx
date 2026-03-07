@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTaskStore } from '../../lib/stores/task-store';
 import { useTemplateStore, deleteTemplate } from '../../lib/stores/template-store';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
@@ -6,7 +6,8 @@ import type { TaskTemplate } from '../../lib/types';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
 import { TemplateFormSheet } from '../../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../../components/DeleteTemplateConfirm';
-import { PencilIcon } from '../../components/icons';
+import { ExportIcon, PencilIcon } from '../../components/icons';
+import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportTemplatesCsv } from '../../lib/interop/template-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
@@ -37,6 +38,7 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
     [workTypes],
   );
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const templateImport = useTemplateImport({
     tasks,
     templates,
@@ -85,10 +87,10 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
           <h2 className="settings-view__sub-header">Templates</h2>
           <button
             type="button"
-            className="btn btn--primary btn--sm"
+            className="btn btn--primary btn--sm btn--circle"
             onClick={handleAddTemplate}
           >
-            + Add
+            +
           </button>
         </div>
         <p className="settings-view__helper">Create reusable presets for faster task creation</p>
@@ -127,14 +129,12 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
       <div className="settings-view__card">
         <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Export Templates</h2>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
+          <IconButton
+            icon={<ExportIcon className="settings-view__export-icon" />}
+            ariaLabel={isExporting ? 'Exporting...' : 'Export templates'}
             onClick={handleExportTemplates}
             disabled={isExporting}
-          >
-            {isExporting ? 'Exporting...' : 'Export'}
-          </button>
+          />
         </div>
         <p className="settings-view__helper">Export template definitions as CSV.</p>
         {exportSummary && (
@@ -146,11 +146,10 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
 
       <WorkPackageImportCard
         title="Import Templates"
-        csvInput={templateImport.csvInput}
-        onCsvInputChange={templateImport.setCsvInput}
-        onParse={templateImport.handleParse}
-        parseErrors={templateImport.parseErrors}
+        fileInputRef={fileInputRef}
+        onFileChange={templateImport.handleFileChange}
         preview={templateImport.preview}
+        isLoadingPreview={templateImport.isLoadingPreview}
         isApplying={templateImport.isApplying}
         importApplyGateOpen={templateImport.importApplyGateOpen}
         onApply={() => {

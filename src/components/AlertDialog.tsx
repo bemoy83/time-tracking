@@ -44,14 +44,15 @@ export function AlertDialog({
 
   if (!isOpen) return null;
 
-  const variantClass = (variant: AlertAction['variant'] = 'secondary') => {
+  const variantClass = (variant: AlertAction['variant'] = 'primary') => {
     switch (variant) {
       case 'primary': return 'btn btn--primary btn--lg';
       case 'danger': return 'btn btn--danger btn--lg';
       case 'success': return 'btn btn--success btn--lg';
       case 'ghost': return 'btn btn--ghost btn--lg';
       case 'outline-success': return 'btn alert-dialog__btn--outline-success btn--lg';
-      default: return 'btn btn--secondary btn--lg';
+      case 'secondary': return 'btn btn--secondary btn--lg';
+      default: return 'btn btn--primary btn--lg';
     }
   };
 

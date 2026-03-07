@@ -34,23 +34,22 @@ import { getFeatureFlag } from '../lib/flags/feature-flags';
 import { useProjectColorResolver } from '../lib/hooks/useProjectColorResolver';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
-import { FieldPlanOverlay } from './field-plan/FieldPlanOverlay';
 import { ActiveSection } from './today/ActiveSection';
 import { BlockedSection } from './today/BlockedSection';
 import { CompletedSectionContainer } from './today/CompletedSectionContainer';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
+  onNavigateToFieldPlan?: () => void;
 }
 
-export function TodayView({ onSelectTask }: TodayViewProps) {
+export function TodayView({ onSelectTask, onNavigateToFieldPlan }: TodayViewProps) {
   const { tasks, projects, isLoading, error } = useTaskStore();
   const { activeTimers } = useTimerStore();
   const fieldPlanEnabled = getFeatureFlag('fieldPlanExecution');
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showPlanSheet, setShowPlanSheet] = useState(false);
-  const [showFieldPlan, setShowFieldPlan] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const [executorPlans, setExecutorPlans] = useState<Plan[]>([]);
@@ -151,7 +150,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
         plan.status === 'received' || plan.status === 'session-closed'
       )));
     });
-  }, [fieldPlanEnabled, showFieldPlan]);
+  }, [fieldPlanEnabled]);
 
   const fieldPlanIndicator =
     executorPlans.length > 0
@@ -167,23 +166,16 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     <div className="today-view">
       <header className="today-view__header">
         <h1 className="today-view__title">Tasks</h1>
-        {fieldPlanEnabled && (
+        {fieldPlanEnabled && onNavigateToFieldPlan && (
           <button
             type="button"
             className="today-view__plan-indicator"
-            onClick={() => setShowFieldPlan(true)}
+            onClick={() => onNavigateToFieldPlan()}
           >
             {fieldPlanIndicator}
           </button>
         )}
       </header>
-
-      {fieldPlanEnabled && (
-        <FieldPlanOverlay
-          isOpen={showFieldPlan}
-          onClose={() => setShowFieldPlan(false)}
-        />
-      )}
 
       {/* FAB + Create Flow */}
       <Fab onClick={() => setShowTemplatePicker(true)} aria-label="New task" />
