@@ -10,7 +10,6 @@ import {
   deriveCrewPoolCalendar,
   deriveCrewPoolDefaultCrewSize,
 } from '../../../lib/planning/scheduling/crew-pool-calendar';
-import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import type { ScheduledLineItemRef } from '../../../lib/planning/scheduling/shared-schedule-types';
 import { computePlanProgress } from '../../../lib/planning/plan-progress';
 import {
