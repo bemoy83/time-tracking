@@ -14,6 +14,10 @@
 
 .task-item__recording-dot--trailing {
   margin-left: 2px;
+  width: 8px;
+  height: 8px;
+  animation: none;
+  box-shadow: 0 0 0 1px var(--color-bg);
 }
 
 /* Project color dot */
@@ -21,12 +25,6 @@
   flex-shrink: 0;
   opacity: 0.92;
   box-shadow: 0 0 0 1px var(--color-bg);
-}
-
-/* Keep dot-to-title spacing tighter than row/card global gaps */
-.task-row__title-row .task-item__project-dot,
-.task-card__main .task-item__project-dot {
-  margin-right: 2px;
 }
 
 /* Time badge */

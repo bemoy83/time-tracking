@@ -18,9 +18,8 @@ import {
   WarningIcon,
   ChevronIcon,
   ExpandChevronIcon,
-  ClockIcon,
 } from './icons';
-import { ProjectColorDot } from './ProjectColorDot';
+import { TaskProjectDot, TaskRecordingDot, TaskTimeBadge } from './TaskItemMeta';
 
 interface TaskRowProps {
   task: Task;
@@ -48,6 +47,7 @@ export function TaskRow({
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
   const hasSubtasks = subtaskCount > 0;
+  const showDefaultStatusDot = !isTimerActive && !isBlocked && !isCompleted;
 
   const handleClick = () => {
     onSelect(task);
@@ -76,15 +76,28 @@ export function TaskRow({
       {/* Status indicator */}
       <div className="task-row__status" aria-hidden="true">
         {isCompleted && <CheckIcon className="task-row__icon task-row__icon--check" />}
-        {!isTimerActive && !isBlocked && !isCompleted && (
+        {showDefaultStatusDot && (
           <span className="task-row__status-dot" />
+        )}
+        {!isCompleted && !showDefaultStatusDot && (
+          <span className="task-row__status-placeholder" />
+        )}
+      </div>
+
+      <div className="task-row__project" aria-hidden="true">
+        {projectColor ? (
+          <TaskProjectDot
+            color={projectColor}
+            className="task-row__project-dot"
+          />
+        ) : (
+          <span className="task-row__project-placeholder" />
         )}
       </div>
 
       {/* Task content */}
       <div className="task-row__content">
         <div className="task-row__title-row">
-          {projectColor && <ProjectColorDot color={projectColor} size="sm" className="task-item__project-dot" />}
           <span className="task-row__title">{task.title}</span>
           {isBlocked && (
             <span className="task-row__blocked-chip">
@@ -102,10 +115,7 @@ export function TaskRow({
           </span>
         )}
         {totalMs > 0 && (
-          <span className="task-item__time-badge">
-            <ClockIcon className="task-item__time-badge-icon" />
-            {formatDurationShort(totalMs)}
-          </span>
+          <TaskTimeBadge text={formatDurationShort(totalMs)} />
         )}
       </div>
 
@@ -129,10 +139,7 @@ export function TaskRow({
           <ChevronIcon className="task-row__chevron" />
         )}
         {isTimerActive && (
-          <span
-            className="task-item__recording-dot task-item__recording-dot--trailing"
-            aria-label="Timer running"
-          />
+          <TaskRecordingDot trailing />
         )}
       </div>
     </div>

@@ -190,6 +190,8 @@ export function ProjectDetail({
     });
   };
 
+  const resolveProjectColor = () => project.color;
+
   return (
     <div className="project-detail">
       {/* Header: breadcrumb + editable name with color dot */}
@@ -333,7 +335,7 @@ export function ProjectDetail({
               <TaskCard
                 key={task.id}
                 task={task}
-                projectColor={project.color}
+                resolveProjectColor={resolveProjectColor}
                 isTimerActive={activeTimerTaskIds.has(task.id)}
                 totalMs={durationByTask.get(task.id)}
                 totalPersonMs={personMsByTask.get(task.id)}

@@ -23,22 +23,21 @@ import {
 } from '../lib/stores/timer-store';
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
 import { useTaskTimes } from '../lib/hooks/useTaskTimes';
-import { TaskCard } from '../components/TaskCard';
-import { CountBadge } from '../components/CountBadge';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
-import { SwipeableTaskRow } from '../components/SwipeableTaskRow';
-import { WarningIcon, TaskListIcon } from '../components/icons';
-import { CompletedSection } from '../components/CompletedSection';
+import { TaskListIcon } from '../components/icons';
 import { CreateTaskSheet } from '../components/CreateTaskSheet';
 import { TemplatePickerSheet, FROM_PLAN_SENTINEL } from '../components/TemplatePickerSheet';
 import { AddFromPlanSheet } from '../components/AddFromPlanSheet';
 import { Fab } from '../components/Fab';
 import { getFeatureFlag } from '../lib/flags/feature-flags';
-import { getContrastColor } from '../lib/utils/contrast';
+import { useProjectColorResolver } from '../lib/hooks/useProjectColorResolver';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
 import { FieldPlanOverlay } from './field-plan/FieldPlanOverlay';
+import { ActiveSection } from './today/ActiveSection';
+import { BlockedSection } from './today/BlockedSection';
+import { CompletedSectionContainer } from './today/CompletedSectionContainer';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -56,15 +55,9 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
   const [executorPlans, setExecutorPlans] = useState<Plan[]>([]);
   const taskTimes = useTaskTimes(tasks, activeTimers);
-  const { durationByTask, personMsByTask } = taskTimes;
+  const { durationByTask } = taskTimes;
   const activeTimerTaskIds = new Set(activeTimers.map((t) => t.taskId));
-  const projectColorById = useMemo(() => {
-    const byId = new Map<string, string>();
-    projects.forEach((project) => {
-      byId.set(project.id, project.color);
-    });
-    return byId;
-  }, [projects]);
+  const getTaskProjectColor = useProjectColorResolver(projects);
   const {
     confirmTarget,
     promptParent,
@@ -138,10 +131,6 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
 
   const getSubtasks = (parentId: string) =>
     tasks.filter((t) => t.parentId === parentId);
-
-  const getTaskProjectColor = (task: Task) => (
-    task.projectId ? projectColorById.get(task.projectId) : undefined
-  );
 
   const toggleExpanded = (taskId: string) => {
     setExpandedTaskIds((prev) => {
@@ -221,115 +210,35 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
         onClose={() => setShowPlanSheet(false)}
       />
 
-      {/* Active — section header when there are active tasks */}
-      {(ungroupedTasks.length > 0 || groupedTasks.length > 0) && (
-        <section className="today-view__section today-view__section--active">
-          <h2 className="today-view__section-title section-heading section-heading--active">
-            <TaskListIcon className="today-view__icon" />
-            Active
-            <CountBadge count={ungroupedTasks.length + groupedTasks.reduce((s, g) => s + g.tasks.length, 0)} variant="muted" />
-          </h2>
+      <ActiveSection
+        ungroupedTasks={ungroupedTasks}
+        groupedTasks={groupedTasks}
+        activeTimerTaskIds={activeTimerTaskIds}
+        expandedTaskIds={expandedTaskIds}
+        taskTimes={taskTimes}
+        onSelectTask={onSelectTask}
+        onStartTimer={handleStartTimer}
+        onCompleteTask={handleComplete}
+        onToggleExpanded={toggleExpanded}
+        resolveProjectColor={getTaskProjectColor}
+        getSubtaskProgress={getSubtaskProgress}
+        getSubtasks={getSubtasks}
+      />
 
-          {/* Ungrouped tasks — no sub-label */}
-          {ungroupedTasks.length > 0 && (
-            <div className="today-view__task-list">
-              {ungroupedTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  projectColor={getTaskProjectColor(task)}
-                  getProjectColor={getTaskProjectColor}
-                  isTimerActive={activeTimerTaskIds.has(task.id)}
-                  totalMs={durationByTask.get(task.id)}
-                  totalPersonMs={personMsByTask.get(task.id)}
-                  taskTimes={taskTimes}
-                  progress={getSubtaskProgress(task.id)}
-                  isExpanded={expandedTaskIds.has(task.id)}
-                  subtasks={getSubtasks(task.id)}
-                  onSelect={() => onSelectTask(task)}
-                  onSelectTask={onSelectTask}
-                  onStartTimer={() => handleStartTimer(task)}
-                  onStartTimerForTask={handleStartTimer}
-                  onComplete={() => handleComplete(task)}
-                  onCompleteTask={handleComplete}
-                  onExpandToggle={() => toggleExpanded(task.id)}
-                />
-              ))}
-            </div>
-          )}
+      <BlockedSection
+        blockedTasks={blockedTasks}
+        getTotalMs={(task) => durationByTask.get(task.id)}
+        getProjectColor={getTaskProjectColor}
+        onSelectTask={onSelectTask}
+        onCompleteTask={handleComplete}
+      />
 
-          {/* Grouped by project */}
-          {groupedTasks.map(({ project, tasks: projectTasks }) => (
-            <div key={project.id} className="today-view__task-group">
-              <h3 className="today-view__subsection-title section-heading">
-                <span className="today-view__project-badge" style={{ backgroundColor: project.color, color: getContrastColor(project.color) }}>
-                  {project.name}
-                </span>
-                <CountBadge count={projectTasks.length} variant="muted" />
-              </h3>
-              <div className="today-view__task-list">
-                {projectTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    projectColor={project.color}
-                    getProjectColor={getTaskProjectColor}
-                    isTimerActive={activeTimerTaskIds.has(task.id)}
-                    totalMs={durationByTask.get(task.id)}
-                    totalPersonMs={personMsByTask.get(task.id)}
-                    taskTimes={taskTimes}
-                    progress={getSubtaskProgress(task.id)}
-                    isExpanded={expandedTaskIds.has(task.id)}
-                    subtasks={getSubtasks(task.id)}
-                    onSelect={() => onSelectTask(task)}
-                    onSelectTask={onSelectTask}
-                    onStartTimer={() => handleStartTimer(task)}
-                    onStartTimerForTask={handleStartTimer}
-                    onComplete={() => handleComplete(task)}
-                    onCompleteTask={handleComplete}
-                    onExpandToggle={() => toggleExpanded(task.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {/* Blocked Tasks */}
-      {blockedTasks.length > 0 && (
-        <section className="today-view__section today-view__section--blocked">
-          <h2 className="today-view__section-title section-heading section-heading--blocked">
-            <WarningIcon className="today-view__icon" />
-            Blocked
-            <CountBadge count={blockedTasks.length} variant="muted" />
-          </h2>
-          <div className="today-view__task-list">
-            {blockedTasks.map((task) => (
-              <SwipeableTaskRow
-                key={task.id}
-                task={task}
-                projectColor={getTaskProjectColor(task)}
-                totalMs={durationByTask.get(task.id)}
-                onSelect={onSelectTask}
-                onComplete={() => handleComplete(task)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Completed Tasks */}
-      {completedTasks.length > 0 && (
-        <CompletedSection
-          tasks={completedTasks}
-          getTotalMs={(t) => durationByTask.get(t.id)}
-          getProjectColor={getTaskProjectColor}
-          onSelectTask={onSelectTask}
-          sectionClassName="today-view__section today-view__section--completed section--completed"
-          contentId="today-view__completed-list"
-        />
-      )}
+      <CompletedSectionContainer
+        completedTasks={completedTasks}
+        getTotalMs={(task) => durationByTask.get(task.id)}
+        getProjectColor={getTaskProjectColor}
+        onSelectTask={onSelectTask}
+      />
 
       {/* Empty State */}
       {ungroupedTasks.length === 0 &&
