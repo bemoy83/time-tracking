@@ -108,8 +108,6 @@ export function computeSharedRowAggregates(
     }
 
     for (const [date, aggregate] of byDate) {
-      const day = dayByDate.get(date);
-      const accessHours = day?.accessHours ?? 8;
       byDate.set(date, {
         requiredHours: Math.round(aggregate.requiredHours * 10) / 10,
         assignedCrew: Math.round(aggregate.assignedCrew * 10) / 10,

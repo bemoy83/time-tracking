@@ -9,6 +9,7 @@ interface ScheduleGridHeaderProps {
   onAutoSchedule?: () => void;
   unscheduledCount?: number;
   readOnly?: boolean;
+  hasWorkDays?: boolean;
 }
 
 function formatDayLabel(date: string, index: number): string {

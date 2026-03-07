@@ -68,8 +68,6 @@ export function ScheduleView({
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
-  const primaryRangeStart = primaryRange?.start ?? null;
-  const primaryRangeEnd = primaryRange?.end ?? null;
   const workCalendarStart = workCalendarRange?.start ?? null;
   const workCalendarEnd = workCalendarRange?.end ?? null;
   const isEmpty = primaryRange == null;

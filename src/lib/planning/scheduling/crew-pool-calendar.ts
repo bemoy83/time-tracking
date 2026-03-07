@@ -1,5 +1,5 @@
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { readPhaseDateValues } from './schedule-span';
+import { readPhaseDateValues, type PrimaryScheduleRange } from './schedule-span';
 import { getScheduleRangeForWorkCalendar } from './schedule-span';
 import { generateDefaultWorkCalendar, reconcileWorkCalendar } from './work-calendar';
 
@@ -27,7 +27,7 @@ export function deriveCrewPoolCalendar(
         plan.eventEndDate ?? null,
       ),
     )
-    .filter((span): span is { start: string; end: string } => span != null);
+    .filter((span): span is PrimaryScheduleRange => span != null);
 
   if (spans.length === 0) return [];
 
