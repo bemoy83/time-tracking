@@ -66,10 +66,11 @@
   padding: var(--space-sm) var(--space-md);
 }
 
-/* Compact metric cards inside the sidebar */
+/* Compact metric cards inside the sidebar — inset surface for stacking distinction */
 .planning-workspace__sidebar-metrics .metric-card {
   padding: var(--space-sm) var(--space-sm) var(--space-md);
   gap: var(--space-xs);
+  background: var(--surface-contained-inset);
 }
 .planning-workspace__sidebar-metrics .metric-card__value {
   font-size: 1.25rem;

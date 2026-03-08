@@ -73,10 +73,6 @@ select.planning-view__work-type-select {
   background: var(--surface-brand-subtle);
 }
 
-.planning-view__risk-warnings .status-badge--danger {
-  background: var(--state-danger-fg-strong);
-}
-
 /* Add form uses .planning-view__line-item, inherits #1e1e1e from above */
 
 /* --- Progress View (same card bg as line items) --- */
