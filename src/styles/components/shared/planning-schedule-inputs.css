@@ -99,7 +99,7 @@
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input .input:hover {
-  border-color: var(--color-border);
+  border-color: var(--surface-border-hover);
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {

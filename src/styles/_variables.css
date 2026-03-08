@@ -8,6 +8,7 @@
   --surface-base-border: #e0e0e0;
   --surface-contained-bg: #ffffff;
   --surface-contained-border: #e0e0e0;
+  --surface-border-hover: #cbd5e1;
   --surface-contained-hover: #f3f4f6;
   --surface-contained-active: #e5e7eb;
   --surface-contained-muted: #e8e8e8;
@@ -134,6 +135,7 @@
 @media (prefers-contrast: high) {
   :root {
     --surface-contained-border: #000000;
+    --surface-border-hover: #000000;
     --color-recording: #b91c1c;
     --color-recording-bg: #ffffff;
     --color-recording-border: #b91c1c;

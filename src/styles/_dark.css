@@ -26,6 +26,7 @@
     --surface-base-border: rgba(255, 255, 255, 0.08);
     --surface-contained-bg: #1e1e1e;
     --surface-contained-border: #333333;
+    --surface-border-hover: rgba(255, 255, 255, 0.18);
     --surface-contained-hover: #2a2a2a;
     --surface-contained-active: #2f2f2f;
     --surface-contained-muted: rgba(255, 255, 255, 0.03);

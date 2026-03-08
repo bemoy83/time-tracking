@@ -58,5 +58,5 @@
 }
 
 .planning-view__rationale .input:hover {
-  border-color: var(--color-border);
+  border-color: var(--surface-border-hover);
 }

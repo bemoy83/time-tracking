@@ -33,7 +33,7 @@
 select.planning-view__work-type-select:hover,
 .planning-view__rationale .input:hover,
 .planning-view__sticky-summary .planning-view__schedule-input .input:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--surface-border-hover);
 }
 
 .planning-view__field-value {

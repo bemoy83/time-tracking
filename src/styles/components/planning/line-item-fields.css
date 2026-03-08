@@ -48,7 +48,7 @@
 }
 
 .planning-view__field .input:hover {
-  border-color: var(--color-border);
+  border-color: var(--surface-border-hover);
 }
 
 .planning-view__field-value {

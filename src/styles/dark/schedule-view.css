@@ -21,7 +21,7 @@
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--surface-border-hover);
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input::placeholder {

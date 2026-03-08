@@ -135,7 +135,7 @@ select.planning-view__work-type-select:focus-visible {
 }
 
 select.planning-view__work-type-select:hover {
-  border-color: var(--color-border);
+  border-color: var(--surface-border-hover);
 }
 
 /* Unit change warning banner */
