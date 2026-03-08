@@ -62,8 +62,8 @@
   border-radius: 999px;
   font-size: var(--font-caption);
   font-weight: 600;
-  color: rgb(146, 64, 14);
-  background: rgba(245, 158, 11, 0.16);
+  color: var(--state-warning-fg-strong);
+  background: var(--state-warning-bg-strong);
 }
 
 .schedule-grid__group-day {
@@ -165,13 +165,13 @@
   border-radius: 10px;
   font-size: var(--font-caption);
   font-weight: 600;
-  background: rgba(245, 158, 11, 0.15);
-  color: #b45309;
+  background: var(--state-warning-bg-strong);
+  color: var(--state-warning-fg-strong);
   vertical-align: middle;
 }
 
 .schedule-grid__row--unscheduled .schedule-grid__line-item {
-  border-inline-start: 3px solid var(--color-amber, #f59e0b);
+  border-inline-start: 3px solid var(--color-amber);
 }
 
 .schedule-grid__row--on-target .schedule-grid__line-item {
@@ -185,4 +185,3 @@
 .schedule-grid__row--over-target .schedule-grid__line-item {
   border-inline-start: 3px solid var(--color-amber);
 }
-

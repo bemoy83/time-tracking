@@ -3,7 +3,7 @@
 }
 
 .schedule-view__block {
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
   padding: var(--space-md);
   display: flex;
@@ -101,4 +101,3 @@
   font-weight: 400;
   color: var(--color-text-muted);
 }
-

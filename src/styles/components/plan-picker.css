@@ -14,8 +14,8 @@
   display: flex;
   align-items: center;
   min-height: var(--touch-min);
-  background: var(--color-surface-subtle);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
 }
 
 /* Select-all button — checkbox target in the header */
@@ -54,7 +54,7 @@
 }
 
 .plan-picker__plan-toggle:active {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .plan-picker__plan-toggle:focus-visible {
@@ -111,9 +111,9 @@
   min-height: var(--touch-min);
   padding: var(--space-sm) var(--space-md);
   padding-left: calc(var(--space-md) + 24px);
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--surface-contained-border);
   cursor: pointer;
   text-align: left;
   font-size: var(--font-body);
@@ -126,15 +126,15 @@
 }
 
 .plan-picker__item:active {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .plan-picker__item--selected {
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--surface-brand-subtle);
 }
 
 .plan-picker__item--selected:active {
-  background: rgba(37, 99, 235, 0.15);
+  background: var(--surface-brand-subtle-hover);
 }
 
 /* Checkbox — shared between select-all and item rows */
@@ -147,8 +147,8 @@
   flex-shrink: 0;
   margin-top: 2px;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--color-border);
-  background: var(--color-bg);
+  border: 2px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
   transition: all 0.15s;
 }
 
@@ -164,7 +164,7 @@
 .plan-picker__check-icon {
   width: 14px;
   height: 14px;
-  color: #fff;
+  color: var(--state-on-solid);
 }
 
 /* Partial/indeterminate dash indicator */

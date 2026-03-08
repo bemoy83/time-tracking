@@ -13,8 +13,8 @@
   min-height: var(--action-bar-height);
   padding: var(--space-md);
   padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
-  background: var(--color-bg);
-  border-top: 1.5px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  border-top: 1.5px solid var(--surface-contained-border);
   z-index: 90;
   transition: transform 0.28s ease-out, background-color 0.2s, border-color 0.2s;
 }

@@ -19,12 +19,12 @@
 }
 
 .schedule-grid__cell-badge--need {
-  color: rgb(185, 28, 28);
+  color: var(--state-danger-fg-strong);
   font-weight: 700;
 }
 
 .schedule-grid__cell-badge--over {
-  color: #b45309;
+  color: var(--state-warning-fg-strong);
   font-weight: 700;
 }
 
@@ -115,24 +115,24 @@
   box-shadow:
     inset -1px 0 0 rgba(0, 0, 0, 0.06),
     inset 0 -1px 0 rgba(0, 0, 0, 0.06),
-    inset 0 0 0 2px rgba(220, 38, 38, 0.35);
+    inset 0 0 0 2px var(--state-danger-border-strong);
 }
 
 .schedule-grid__cell--over {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--state-danger-bg);
   color: var(--color-recording);
 }
 
 .schedule-grid__cell--over-crew {
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--state-warning-bg);
 }
 
 .schedule-grid__cell--over-worker {
-  background: rgba(185, 28, 28, 0.08);
+  background: var(--state-danger-bg-soft);
 }
 
 .schedule-grid__day-col--over-worker {
-  background: rgba(185, 28, 28, 0.05);
+  background: var(--state-danger-bg-soft);
 }
 
 .schedule-grid__cell-icon {
@@ -143,9 +143,8 @@
 }
 
 .schedule-grid__cell-icon--warning {
-  color: rgb(185, 28, 28);
+  color: var(--state-danger-fg-strong);
 }
 
 /* --- Inline crew controls (per cell) --- */
-
 

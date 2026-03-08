@@ -50,8 +50,8 @@
 }
 
 .status-badge--session-closed {
-  background: #6b7280;
-  color: white;
+  background: var(--state-neutral-solid);
+  color: var(--state-on-solid);
 }
 
 .status-badge--wrap-up {

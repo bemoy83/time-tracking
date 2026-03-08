@@ -46,7 +46,7 @@
   flex: 1;
   min-width: 0;
   position: relative;
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   transition: background-color 0.15s;
 }
 
@@ -76,11 +76,11 @@
 }
 
 .planning-view__row:hover .planning-view__item {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__row:active .planning-view__item {
-  background: var(--color-border);
+  background: var(--surface-contained-active);
 }
 
 .planning-view__item-btn {

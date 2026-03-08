@@ -4,7 +4,7 @@
 /* Section blocks — softer contrast (Schedule View + Plan Editor ScheduleInputsBlock) */
 .schedule-view .schedule-view__block,
 .planning-view__sticky-summary .schedule-view__block--compact {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 /* Schedule Inputs — muted labels, softer inputs */
@@ -15,9 +15,9 @@
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input {
-  background: #2a2a2a;
+  background: var(--surface-contained-hover);
   border-color: transparent;
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input:hover {
@@ -25,7 +25,7 @@
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input::placeholder {
-  color: #858585;
+  color: var(--color-text-muted);
 }
 
 /* Date input calendar icon — lighter variant for dark backgrounds */
@@ -44,7 +44,7 @@
 .schedule-view .schedule-grid__line-item-col,
 .schedule-view .schedule-grid__line-item,
 .schedule-view .schedule-grid__footer .schedule-grid__line-item-col {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 .schedule-view .schedule-grid__line-item-col {
@@ -58,36 +58,36 @@
 /* Work Calendar — muted headers (Mon, Tue, Wk 1, etc.) */
 .schedule-view .wc-col-head,
 .schedule-view .wc-week-label {
-  color: #858585;
+  color: var(--color-text-muted);
 }
 
 /* Work Calendar day cell content — softer text */
 .schedule-view .wc-cell__day-num,
 .schedule-view .wc-cell__value {
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 .schedule-view .wc-cell__value--inherited {
-  color: #858585;
+  color: var(--color-text-muted);
 }
 
 /* Work Calendar week grid */
 .wc-cell--work {
-  background: rgba(96, 165, 250, 0.08);
-  border-color: rgba(96, 165, 250, 0.2);
+  background: var(--state-info-bg);
+  border-color: var(--state-info-border);
 }
 
 .wc-cell--off {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: var(--state-neutral-bg);
+  border-color: var(--state-neutral-border);
 }
 
 .wc-cell--out-of-range {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--state-neutral-border);
 }
 
 .wc-cell--off .wc-cell__day-num--toggle {
-  text-decoration-color: rgba(255, 255, 255, 0.3);
+  text-decoration-color: var(--state-neutral-fg);
 }
 
 .wc-cell__day-num--toggle:hover:not(:disabled) {
@@ -122,14 +122,14 @@
 }
 
 .schedule-grid__phase-label {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
   border-bottom-color: rgba(255, 255, 255, 0.05);
-  color: #858585;
+  color: var(--color-text-muted);
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
 }
 
 .schedule-grid__phase-label:hover {
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 .schedule-grid__phase-spacer {

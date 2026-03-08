@@ -20,7 +20,7 @@
 }
 
 .network-status--offline {
-  background: #6b7280;
+  background: var(--state-neutral-solid);
 }
 
 .network-status--error {

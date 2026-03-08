@@ -11,8 +11,8 @@
   justify-content: space-between;
   gap: var(--space-md);
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
 }
 
 .wrap-up-review-pane__header-text {
@@ -65,8 +65,8 @@
   flex-direction: column;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg);
+  border-top: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
 }
 
 .wrap-up-review-pane__footer-actions {

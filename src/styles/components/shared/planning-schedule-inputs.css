@@ -153,11 +153,11 @@
 }
 
 .planning-view__schedule-validation--hint {
-  background: rgba(59, 130, 246, 0.08);
-  color: rgb(30, 64, 175);
+  background: var(--state-info-bg);
+  color: var(--state-info-fg-strong);
 }
 
 .planning-view__schedule-validation--error {
-  background: rgba(220, 38, 38, 0.1);
-  color: rgb(153, 27, 27);
+  background: var(--state-danger-bg);
+  color: var(--state-danger-fg-strong);
 }

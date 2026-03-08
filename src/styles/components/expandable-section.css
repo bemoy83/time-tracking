@@ -3,7 +3,7 @@
    ============================================================ */
 
 .expandable-section {
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
   padding: var(--space-xs) var(--space-md) var(--space-md);
 }
@@ -16,7 +16,7 @@
 /* Flush variant — flat look matching today-view__task-list (no border, subtle fill) */
 .expandable-section--flush {
   padding: 0;
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border: none;
   border-radius: var(--radius-xl);
   overflow: hidden;

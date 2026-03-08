@@ -52,8 +52,8 @@
   left: 0;
   right: 0;
   min-height: var(--timer-bar-height);
-  background: var(--color-bg);
-  border-top: 2px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  border-top: 2px solid var(--surface-contained-border);
   padding: var(--space-md);
   padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
   display: flex;
@@ -194,7 +194,7 @@
   min-width: 32px;
   height: 24px;
   padding: 0 var(--space-xs);
-  background: var(--color-border);
+  background: var(--surface-contained-active);
   border: none;
   border-radius: 12px;
   font-size: var(--font-small);
@@ -206,7 +206,7 @@
 }
 
 .timer-bar__workers-badge:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .timer-bar__workers-badge--active {

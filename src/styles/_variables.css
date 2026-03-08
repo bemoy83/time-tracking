@@ -3,27 +3,86 @@
    ============================================================ */
 
 :root {
+  /* Surface layers */
+  --surface-base-bg: #f0f0f0;
+  --surface-base-border: #e0e0e0;
+  --surface-contained-bg: #ffffff;
+  --surface-contained-border: #e0e0e0;
+  --surface-contained-hover: #f3f4f6;
+  --surface-contained-active: #e5e7eb;
+  --surface-contained-muted: #e8e8e8;
+  --surface-contained-muted-hover: #e0e0e0;
+  --surface-elevated-bg: #ffffff;
+  --surface-elevated-border: #e0e0e0;
+  --surface-elevated-hover: #f3f4f6;
+  --surface-elevated-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  --surface-elevated-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Interaction surface accents */
+  --surface-brand-subtle: rgba(37, 99, 235, 0.08);
+  --surface-brand-subtle-hover: rgba(37, 99, 235, 0.12);
+
+  /* Semantic state palette */
+  --state-on-solid: #ffffff;
+
+  --state-info-fg: #2563eb;
+  --state-info-fg-strong: #1e40af;
+  --state-info-bg: rgba(59, 130, 246, 0.08);
+  --state-info-bg-strong: rgba(59, 130, 246, 0.12);
+  --state-info-bg-stronger: rgba(59, 130, 246, 0.2);
+  --state-info-border: rgba(59, 130, 246, 0.2);
+
+  --state-success-fg: #16a34a;
+  --state-success-fg-strong: #15803d;
+  --state-success-bg: rgba(22, 163, 74, 0.12);
+  --state-success-bg-strong: rgba(22, 163, 74, 0.16);
+  --state-success-border: rgba(22, 163, 74, 0.3);
+
+  --state-warning-fg: #d97706;
+  --state-warning-fg-strong: #92400e;
+  --state-warning-bg-soft: rgba(245, 158, 11, 0.06);
+  --state-warning-bg: rgba(245, 158, 11, 0.1);
+  --state-warning-bg-strong: rgba(245, 158, 11, 0.15);
+  --state-warning-bg-stronger: rgba(245, 158, 11, 0.2);
+  --state-warning-border: rgba(245, 158, 11, 0.3);
+
+  --state-danger-fg: #dc2626;
+  --state-danger-fg-strong: #991b1b;
+  --state-danger-bg-soft: rgba(239, 68, 68, 0.08);
+  --state-danger-bg: rgba(239, 68, 68, 0.1);
+  --state-danger-bg-strong: rgba(220, 38, 38, 0.15);
+  --state-danger-bg-stronger: rgba(220, 38, 38, 0.25);
+  --state-danger-border: rgba(220, 38, 38, 0.3);
+  --state-danger-border-strong: rgba(220, 38, 38, 0.35);
+
+  --state-neutral-fg: #6b7280;
+  --state-neutral-bg: rgba(107, 114, 128, 0.15);
+  --state-neutral-bg-strong: rgba(107, 114, 128, 0.2);
+  --state-neutral-border: rgba(107, 114, 128, 0.2);
+  --state-neutral-solid: #6b7280;
+
   /* Colors - designed for high contrast and visibility */
-  --color-bg: #f0f0f0;
+  --color-bg: var(--surface-base-bg);
   --color-text: #1a1a1a;
   --color-text-muted: #666666;
-  --color-border: #e0e0e0;
+  --color-border: var(--surface-contained-border);
 
   /* Timer states */
-  --color-recording: #dc2626;
+  --color-recording: var(--state-danger-fg);
   --color-recording-bg: #fef2f2;
   --color-recording-border: #fecaca;
-  --color-ready: #16a34a;
+  --color-ready: var(--state-success-fg);
   --color-ready-bg: #f0fdf4;
 
   /* Interactive */
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
-  --color-amber: #d97706;
+  --color-amber: var(--state-warning-fg);
 
   /* Interaction surfaces */
-  --color-surface-hover: #d1d5db;
-  --color-surface-subtle: #ffffff;
+  --color-surface-hover: var(--surface-contained-hover);
+  --color-surface-subtle: var(--surface-contained-bg);
   --color-danger-hover: #b91c1c;
   --color-success-hover: #15803d;
   --color-danger-bg-hover: #fecaca;
@@ -55,30 +114,31 @@
   --radius-full: 9999px;
 
   /* Budget status colors */
-  --color-budget-under: #16a34a;
-  --color-budget-under-bg: rgba(22, 163, 74, 0.1);
-  --color-budget-approaching: #d97706;
-  --color-budget-approaching-bg: rgba(217, 119, 6, 0.1);
+  --color-budget-under: var(--state-success-fg);
+  --color-budget-under-bg: var(--state-success-bg);
+  --color-budget-approaching: var(--state-warning-fg);
+  --color-budget-approaching-bg: var(--state-warning-bg);
 
   /* Amber subtle backgrounds (for blocked/warning states) */
-  --color-amber-bg-subtle: #fffaf2;
-  --color-amber-bg-hover: #fff5e5;
+  --color-amber-bg-subtle: var(--state-warning-bg);
+  --color-amber-bg-hover: var(--state-warning-bg-strong);
 
   /* Semantic badge backgrounds (for diff badges, status chips) */
-  --color-ready-bg-badge: rgba(22, 163, 74, 0.12);
-  --color-primary-bg-badge: rgba(59, 130, 246, 0.12);
-  --color-recording-bg-badge: rgba(239, 68, 68, 0.12);
-  --color-muted-bg-badge: rgba(0, 0, 0, 0.05);
+  --color-ready-bg-badge: var(--state-success-bg);
+  --color-primary-bg-badge: var(--state-info-bg-strong);
+  --color-recording-bg-badge: var(--state-danger-bg);
+  --color-muted-bg-badge: var(--state-neutral-bg);
 }
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
+    --surface-contained-border: #000000;
     --color-recording: #b91c1c;
     --color-recording-bg: #ffffff;
     --color-recording-border: #b91c1c;
     --color-ready: #15803d;
-    --color-border: #000000;
+    --color-border: var(--surface-contained-border);
     --color-budget-under: #15803d;
     --color-budget-approaching: #92400e;
   }

@@ -16,8 +16,8 @@
   max-width: 360px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-bg);
+  border-right: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
   overflow: hidden;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .planning-workspace__exit:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .planning-workspace__exit:focus-visible {
@@ -113,7 +113,7 @@
 }
 
 .planning-workspace__sidebar-footer-item:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
   color: var(--color-text);
 }
 
@@ -122,7 +122,7 @@
 }
 
 .planning-workspace__sidebar-footer-item--active {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -162,7 +162,7 @@
   border: none;
   border-radius: var(--radius-lg);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--state-on-solid);
   font-size: var(--font-small);
   font-weight: 600;
   cursor: pointer;
@@ -276,7 +276,7 @@
 /* --- Selected plan highlight in sidebar --- */
 
 .planning-view__row.planning-view__row--selected .planning-view__item {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__row.planning-view__row--selected .planning-view__item-btn {
@@ -298,7 +298,7 @@
   border: none;
   border-radius: 50%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--state-on-solid);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -309,7 +309,7 @@
 
 .planning-view__add-to-schedule-btn--checked {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--state-on-solid);
 }
 
 .planning-view__add-to-schedule-btn--checked:hover {
@@ -343,7 +343,7 @@
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  background: var(--color-bg);
+  background: var(--surface-base-bg);
 }
 
 .planning-workspace__main-inner {
@@ -390,7 +390,7 @@
 .planning-workspace__tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--surface-contained-border);
   padding: 0 var(--space-md);
   flex-shrink: 0;
   position: sticky;
@@ -400,10 +400,10 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: var(--color-bg);
+  background-color: var(--surface-contained-bg);
   /* Scroll shadow indicators — fade at overflowing edges */
   --_scroll-shadow-size: 24px;
-  --_scroll-shadow-color: var(--color-bg);
+  --_scroll-shadow-color: var(--surface-contained-bg);
   background-image:
     linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / var(--_scroll-shadow-size) 100% no-repeat local,
     linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / var(--_scroll-shadow-size) 100% no-repeat local,
@@ -474,7 +474,7 @@
 
 .planning-workspace__reviewed-banner {
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
   border-radius: var(--radius-md);
   font-size: var(--font-small);
   color: var(--color-text-muted);

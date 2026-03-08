@@ -82,11 +82,11 @@
 }
 
 .planning-view__recompute-btn:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.1);
+  background: var(--state-info-bg);
 }
 
 .planning-view__recompute-btn:active:not(:disabled) {
-  background: rgba(37, 99, 235, 0.2);
+  background: var(--state-info-bg-stronger);
 }
 
 .planning-view__recompute-btn:focus-visible {

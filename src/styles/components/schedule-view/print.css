@@ -21,10 +21,10 @@
   }
 
   .schedule-grid__cell--over {
-    background: rgba(239, 68, 68, 0.1) !important;
+    background: var(--state-danger-bg) !important;
   }
 
   .feasibility-bar--over {
-    background: rgba(239, 68, 68, 0.08) !important;
+    background: var(--state-danger-bg-soft) !important;
   }
 }

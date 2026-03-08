@@ -73,7 +73,7 @@
 }
 
 .btn--warning:hover:not(:disabled) {
-  background: #d97706;
+  background: var(--state-warning-fg);
 }
 
 .btn--ghost {

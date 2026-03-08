@@ -84,7 +84,7 @@
 }
 
 .feasibility-bar--over {
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--state-danger-bg-soft);
 }
 
 .feasibility-bar__metric {
@@ -113,11 +113,11 @@
 }
 
 .feasibility-bar__warning--crew {
-  color: rgb(217, 119, 6);
+  color: var(--state-warning-fg);
 }
 
 .feasibility-bar__warning--worker {
-  color: rgb(185, 28, 28);
+  color: var(--state-danger-fg-strong);
 }
 
 .feasibility-bar__warning-icon {
@@ -132,5 +132,4 @@
   color: var(--color-amber);
   font-weight: 500;
 }
-
 

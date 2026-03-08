@@ -7,7 +7,7 @@
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--state-info-bg);
   border-radius: var(--radius-lg);
   font-size: var(--font-small);
 }

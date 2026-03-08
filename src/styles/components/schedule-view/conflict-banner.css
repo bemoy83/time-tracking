@@ -1,7 +1,7 @@
 /* --- Conflict Resolution Banner --- */
 
 .conflict-banner {
-  background: rgba(245, 158, 11, 0.08);
+  background: var(--state-warning-bg-soft);
   border-radius: var(--radius-lg);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-small);
@@ -16,22 +16,22 @@
 .conflict-banner__icon {
   width: 16px;
   height: 16px;
-  color: rgb(217, 119, 6);
+  color: var(--state-warning-fg);
   flex-shrink: 0;
 }
 
 .conflict-banner__title {
   font-weight: 600;
-  color: rgb(146, 64, 14);
+  color: var(--state-warning-fg-strong);
   flex: 1;
 }
 
 .conflict-banner .btn {
-  color: rgb(217, 119, 6);
+  color: var(--state-warning-fg);
 }
 
 .conflict-banner .btn:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--state-warning-bg-strong);
 }
 
 .conflict-banner__suggestions {
@@ -58,27 +58,27 @@
 
 
 .conflict-banner__option--info {
-  color: rgb(37, 99, 235);
+  color: var(--state-info-fg);
 }
 
 .conflict-banner--info {
-  background: rgba(59, 130, 246, 0.06);
+  background: var(--state-info-bg);
 }
 
 .conflict-banner--info .btn {
-  color: rgb(37, 99, 235);
+  color: var(--state-info-fg);
 }
 
 .conflict-banner--info .btn:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.12);
+  background: var(--state-info-bg-strong);
 }
 
 .conflict-banner--info .conflict-banner__icon {
-  color: rgb(37, 99, 235);
+  color: var(--state-info-fg);
 }
 
 .conflict-banner--info .conflict-banner__title {
-  color: rgb(30, 64, 175);
+  color: var(--state-info-fg-strong);
 }
 
 .conflict-banner__note {

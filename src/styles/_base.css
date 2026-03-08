@@ -49,7 +49,7 @@ body {
   font-size: 18px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background: var(--color-bg);
+  background: var(--surface-base-bg);
   color: var(--color-text);
   /* Prevent pull-to-refresh interfering with app */
   overscroll-behavior: contain;

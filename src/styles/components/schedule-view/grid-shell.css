@@ -105,15 +105,15 @@
 }
 
 .schedule-grid__day-col--over {
-  background: rgba(239, 68, 68, 0.06);
+  background: var(--state-danger-bg-soft);
 }
 
 .schedule-grid__day-col--over-crew {
-  background: rgba(245, 158, 11, 0.06);
+  background: var(--state-warning-bg-soft);
 }
 
 .schedule-grid__day-col--over-staffed {
-  background: rgba(217, 119, 6, 0.06);
+  background: var(--state-warning-bg-soft);
 }
 
 .schedule-grid__day-crew {
@@ -125,7 +125,7 @@
 }
 
 .schedule-grid__day-crew--over {
-  color: rgb(217, 119, 6);
+  color: var(--state-warning-fg);
   font-weight: 600;
 }
 
@@ -197,7 +197,7 @@
 }
 
 .schedule-grid__hours-compare--under {
-  color: var(--color-recording, #dc2626);
+  color: var(--color-recording);
   font-weight: 500;
 }
 
@@ -212,17 +212,16 @@
 }
 
 .schedule-grid__estimate-badge--under {
-  background: rgba(220, 38, 38, 0.15);
-  color: var(--color-recording, #dc2626);
+  background: var(--state-danger-bg-strong);
+  color: var(--color-recording);
 }
 
 .schedule-grid__estimate-badge--over {
-  background: rgba(245, 158, 11, 0.2);
-  color: #b45309;
+  background: var(--state-warning-bg-stronger);
+  color: var(--state-warning-fg-strong);
 }
 
 .schedule-grid__estimate-badge--at {
-  background: rgba(34, 197, 94, 0.12);
-  color: #15803d;
+  background: var(--state-success-bg);
+  color: var(--state-success-fg-strong);
 }
-

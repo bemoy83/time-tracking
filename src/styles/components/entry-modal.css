@@ -5,7 +5,7 @@
 .entry-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--surface-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,12 +15,13 @@
 }
 
 .entry-modal {
-  background: var(--color-bg);
+  background: var(--surface-elevated-bg);
+  border: 1px solid var(--surface-elevated-border);
   border-radius: 12px;
   padding: var(--space-lg);
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--surface-elevated-shadow);
   animation: slideUp 0.2s ease-out;
 }
 
@@ -169,7 +170,7 @@
 /* Person-hours display */
 .entry-modal__person-hours {
   padding: var(--space-sm) var(--space-md);
-  background: #f0f9ff;
+  background: var(--surface-brand-subtle);
   border-radius: 8px;
   font-size: var(--font-body);
   font-weight: 600;
@@ -223,4 +224,3 @@
 .workers-stepper--large .stepper-pill {
   margin-left: auto;
 }
-

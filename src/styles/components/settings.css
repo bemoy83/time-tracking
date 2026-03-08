@@ -54,7 +54,7 @@
    ============================================================ */
 
 .settings-view__card {
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
   padding: var(--space-md);
 }
@@ -71,11 +71,11 @@
 }
 
 .settings-view__card--tappable:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .settings-view__card--tappable:active {
-  background: var(--color-border);
+  background: var(--surface-contained-active);
 }
 
 .settings-view__card-chevron {
@@ -133,11 +133,11 @@
 
 /* Hover / active / focus-visible affordances */
 button.settings-view__row:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 button.settings-view__row:active {
-  background: var(--color-border);
+  background: var(--surface-contained-active);
 }
 
 .settings-view__row:focus-visible {
@@ -187,7 +187,7 @@ button.settings-view__row:active {
   align-self: center;
   appearance: none;
   -webkit-appearance: none;
-  background: var(--color-border);
+  background: var(--surface-contained-active);
   border-radius: 12px;
   position: relative;
   cursor: pointer;
@@ -201,7 +201,7 @@ button.settings-view__row:active {
   left: 2px;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--surface-elevated-bg);
   border-radius: 50%;
   transition: transform 0.2s;
 }
@@ -350,7 +350,7 @@ button.settings-view__row:active {
 }
 
 .kpi-badge--medium {
-  background: rgba(217, 119, 6, 0.15);
+  background: var(--state-warning-bg-strong);
   color: var(--color-amber);
 }
 
@@ -360,7 +360,7 @@ button.settings-view__row:active {
 }
 
 .kpi-badge--insufficient {
-  background: rgba(107, 114, 128, 0.15);
+  background: var(--state-neutral-bg);
   color: var(--color-text-muted);
 }
 
@@ -403,11 +403,11 @@ button.settings-view__row:active {
 }
 
 .settings-view__link-row:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .settings-view__link-row:active {
-  background: var(--color-border);
+  background: var(--surface-contained-active);
 }
 
 .settings-view__link-row:focus-visible {
@@ -459,7 +459,7 @@ button.settings-view__row:active {
 }
 
 .settings-detail__back:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .settings-detail__back:focus-visible {

@@ -19,7 +19,7 @@
 }
 
 .progress-view__summary--risk {
-  background: rgba(245, 158, 11, 0.06);
+  background: var(--state-warning-bg-soft);
 }
 
 .progress-view__summary-metric {
@@ -109,28 +109,28 @@
 }
 
 .progress-view__status--completed {
-  background: rgba(22, 163, 74, 0.16);
+  background: var(--state-success-bg-strong);
   color: var(--color-ready);
 }
 
 .progress-view__status--in-progress {
-  background: rgba(217, 119, 6, 0.16);
-  color: #8a4b00;
+  background: var(--state-warning-bg-strong);
+  color: var(--state-warning-fg-strong);
 }
 
 .progress-view__status--not-started,
 .progress-view__status--unreleased {
-  background: rgba(107, 114, 128, 0.16);
+  background: var(--state-neutral-bg);
   color: var(--color-text-muted);
 }
 
 .progress-view__status--blocked {
-  background: rgba(220, 38, 38, 0.16);
+  background: var(--state-danger-bg-strong);
   color: var(--color-recording);
 }
 
 .progress-view__status--deferred {
-  background: rgba(107, 114, 128, 0.2);
+  background: var(--state-neutral-bg-strong);
   color: var(--color-text-muted);
 }
 

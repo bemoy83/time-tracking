@@ -3,7 +3,7 @@
    ============================================================ */
 
 .planning-view__line-item {
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
   padding: var(--space-md);
   display: flex;
@@ -96,7 +96,7 @@
 }
 
 .planning-view__line-item-duplicate:hover {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__line-item-duplicate:focus-visible {
@@ -144,8 +144,8 @@ select.planning-view__work-type-select:hover {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
-  background: color-mix(in srgb, #d97706 10%, transparent);
-  color: #92400e;
+  background: var(--state-warning-bg);
+  color: var(--state-warning-fg-strong);
   border-radius: var(--radius-lg);
   font-size: var(--font-small);
   font-weight: 500;
@@ -175,6 +175,5 @@ select.planning-view__work-type-select:hover {
 
 .planning-view__unit-warning-dismiss:hover {
   opacity: 1;
-  background: color-mix(in srgb, #d97706 12%, transparent);
+  background: var(--state-warning-bg-strong);
 }
-

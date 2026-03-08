@@ -11,10 +11,10 @@
   height: 56px;
   border-radius: 50%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--state-on-solid);
   border: none;
   font-size: 1.75rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--surface-elevated-shadow-soft);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s, transform 0.1s;

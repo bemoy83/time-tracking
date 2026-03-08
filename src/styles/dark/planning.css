@@ -1,15 +1,15 @@
 @media (prefers-color-scheme: dark) {
 /* --- Planning View --- */
 .planning-view__row:hover .planning-view__item {
-  background: #2a2a2a;
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__row:active .planning-view__item {
-  background: #2f2f2f;
+  background: var(--surface-contained-active);
 }
 
 .planning-view__line-item {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 .planning-view__line-item-type,
@@ -18,15 +18,15 @@
 .planning-view__field-help,
 .planning-view__sticky-summary .planning-view__schedule-group-title,
 .planning-view__sticky-summary .planning-view__schedule-label-text {
-  color: #858585;
+  color: var(--color-text-muted);
 }
 
 .planning-view__field .input,
 .planning-view__rationale .input,
 .planning-view__sticky-summary .planning-view__schedule-input .input {
-  background: #2a2a2a;
+  background: var(--surface-contained-hover);
   border-color: transparent;
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 .planning-view__field .input:hover,
@@ -37,22 +37,22 @@ select.planning-view__work-type-select:hover,
 }
 
 .planning-view__field-value {
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 select.planning-view__work-type-select {
-  background-color: #2a2a2a;
+  background-color: var(--surface-contained-hover);
   border-color: transparent;
-  color: #e0e0e0;
+  color: var(--color-text);
 }
 
 .planning-view__project-row {
-  background: #252525;
+  background: var(--surface-contained-bg);
 }
 
 .planning-view__project-button {
-  background: #1e1e1e;
-  border-color: #404040;
+  background: var(--surface-contained-bg);
+  border-color: var(--surface-elevated-border);
 }
 
 .planning-view__project-button--empty {
@@ -62,7 +62,7 @@ select.planning-view__work-type-select {
 
 .planning-view__project-button:hover:not(:disabled),
 .planning-view__line-item-duplicate:hover {
-  background: #2a2a2a;
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__project-button--empty:hover:not(:disabled) {
@@ -70,11 +70,11 @@ select.planning-view__work-type-select {
 }
 
 .planning-view__suggestion {
-  background: rgba(37, 99, 235, 0.12);
+  background: var(--surface-brand-subtle);
 }
 
 .planning-view__risk-warnings .status-badge--danger {
-  background: #991b1b;
+  background: var(--state-danger-fg-strong);
 }
 
 /* Add form uses .planning-view__line-item, inherits #1e1e1e from above */
@@ -83,22 +83,22 @@ select.planning-view__work-type-select {
 .progress-view__item,
 .progress-view__summary,
 .progress-view__block {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 /* --- Event Report (same card style as line items) --- */
 .event-report__section {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 /* --- Wrap-up Review cards (same card style as line items) --- */
 .wrap-up-sheet__card-v2 {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 /* --- Plan Editor sticky summary — schedule inputs --- */
 .planning-view__sticky-summary .planning-view__schedule-inputs {
-  background: #1e1e1e;
+  background: var(--surface-contained-bg);
 }
 
 .planning-view__sticky-summary .planning-view__schedule-input input[type="date"]::-webkit-calendar-picker-indicator {
