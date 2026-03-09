@@ -2,19 +2,6 @@
    Work Package Table (Phase 4 unified row editor)
    ============================================================ */
 
-.planning-view__wp-section {
-  background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
-}
-
-.planning-view__wp-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: var(--space-md) var(--space-md) 0;
-}
-
 .planning-view__items-summary {
   display: flex;
   align-items: center;
@@ -34,10 +21,10 @@
 }
 
 .planning-view__work-package-table-wrap {
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-xl);
   overflow-x: auto;
   overflow-y: visible;
-  scrollbar-gutter: stable;
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .planning-view__work-package-table {
@@ -68,7 +55,7 @@
 
 .planning-view__work-package-table thead th {
   position: sticky;
-  background: var(--wp-header-bg);
+  background: var(--surface-contained-bg);
   color: var(--color-text-muted);
   font-weight: 600;
   z-index: 3;
@@ -79,8 +66,8 @@
   position: relative;
 }
 
-.planning-view__wp-header-group th::after,
-.planning-view__wp-header-columns th::after {
+.planning-view__wp-header-columns th::after,
+.planning-view__wp-actions-col::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -91,13 +78,11 @@
   pointer-events: none;
 }
 
-.planning-view__wp-header-group th:first-child::after,
 .planning-view__wp-header-columns th:first-child::after {
   left: var(--space-md);
 }
 
-.planning-view__wp-header-group th:last-child::after,
-.planning-view__wp-header-columns th:last-child::after {
+.planning-view__wp-actions-col::after {
   right: var(--space-md);
 }
 
@@ -129,8 +114,8 @@
 }
 
 .planning-view__wp-actions-col {
-  width: 120px;
-  min-width: 120px;
+  width: 104px;
+  min-width: 104px;
 }
 
 .planning-view__wp-cell {
@@ -249,7 +234,8 @@
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   font-size: var(--font-small);
-  border-bottom: 1px solid var(--wp-add-bar-divider);
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-xl);
 }
 
 .planning-view__wp-add-bar-icon {
@@ -366,7 +352,7 @@
 }
 
 .planning-view__wp-actions-cell {
-  width: 120px;
+  width: 104px;
 }
 
 .planning-view__wp-actions {

@@ -328,87 +328,86 @@ export function PlanEditor({
 
       </div>
 
-      <div className="planning-view__wp-section">
-        <div className="planning-view__wp-section-header">
-          <h2 className="planning-view__items-title">Work Packages</h2>
-          <div className="planning-view__items-summary">
-            <span>{currentPlan.lineItems.length} packages</span>
-            <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
-            <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
-          </div>
+      {!(readOnly || isLocked) && (
+        <div className="planning-view__wp-add-bar">
+          <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
+          <input
+            ref={addTitleRef}
+            className="input planning-view__wp-add-bar-title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddRow();
+              }
+            }}
+            placeholder="Add work package..."
+            aria-label="New work package title"
+          />
+          <select
+            className="input planning-view__wp-add-bar-type"
+            value={newWorkTypeId}
+            onChange={(e) => setNewWorkTypeId(e.target.value)}
+            disabled={selectableWorkTypes.length === 0}
+            aria-label="New work package type"
+          >
+            {selectableWorkTypes.length === 0 && (
+              <option value="">No work types. Add in Settings.</option>
+            )}
+            {selectableWorkTypes.map((wt) => (
+              <option key={wt.id} value={wt.id}>
+                {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+              </option>
+            ))}
+          </select>
+          <input
+            className="input planning-view__wp-add-bar-qty"
+            type="number"
+            min={0.01}
+            step="any"
+            value={newQuantity}
+            onChange={(e) => setNewQuantity(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddRow();
+              }
+            }}
+            placeholder="Qty"
+            aria-label="New work package quantity"
+          />
+          <span className="planning-view__wp-add-bar-unit">
+            {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
+          </span>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
+            onClick={handleAddRow}
+            disabled={addDisabledReason != null}
+            title={addDisabledReason ?? 'Add work package'}
+          >
+            Add
+          </button>
         </div>
-        {!(readOnly || isLocked) && (
-          <div className="planning-view__wp-add-bar">
-            <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
-            <input
-              ref={addTitleRef}
-              className="input planning-view__wp-add-bar-title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddRow();
-                }
-              }}
-              placeholder="Add work package..."
-              aria-label="New work package title"
-            />
-            <select
-              className="input planning-view__wp-add-bar-type"
-              value={newWorkTypeId}
-              onChange={(e) => setNewWorkTypeId(e.target.value)}
-              disabled={selectableWorkTypes.length === 0}
-              aria-label="New work package type"
-            >
-              {selectableWorkTypes.length === 0 && (
-                <option value="">No work types. Add in Settings.</option>
-              )}
-              {selectableWorkTypes.map((wt) => (
-                <option key={wt.id} value={wt.id}>
-                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
-                </option>
-              ))}
-            </select>
-            <input
-              className="input planning-view__wp-add-bar-qty"
-              type="number"
-              min={0.01}
-              step="any"
-              value={newQuantity}
-              onChange={(e) => setNewQuantity(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddRow();
-                }
-              }}
-              placeholder="Qty"
-              aria-label="New work package quantity"
-            />
-            <span className="planning-view__wp-add-bar-unit">
-              {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
-            </span>
-            <button
-              type="button"
-              className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
-              onClick={handleAddRow}
-              disabled={addDisabledReason != null}
-              title={addDisabledReason ?? 'Add work package'}
-            >
-              Add
-            </button>
-          </div>
-        )}
-        <WorkPackageTable
-          lineItems={currentPlan.lineItems}
-          suggestionsByLineItemId={suggestionsByLineItemId}
-          isLocked={readOnly || isLocked}
-          onUpdate={handleUpdateItem}
-          onDuplicate={handleDuplicateItem}
-          onRemove={handleRemoveItem}
-        />
+      )}
+
+      <div className="planning-view__items-header">
+        <h2 className="planning-view__items-title">Work Packages</h2>
+        <div className="planning-view__items-summary">
+          <span>{currentPlan.lineItems.length} packages</span>
+          <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
+          <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
+        </div>
       </div>
+      <WorkPackageTable
+        lineItems={currentPlan.lineItems}
+        suggestionsByLineItemId={suggestionsByLineItemId}
+        isLocked={readOnly || isLocked}
+        onUpdate={handleUpdateItem}
+        onDuplicate={handleDuplicateItem}
+        onRemove={handleRemoveItem}
+      />
 
       <ProjectPicker
         isOpen={showProjectPicker}
