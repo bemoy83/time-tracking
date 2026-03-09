@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type KeyboardEvent } from 'react';
 import {
   BUILD_PHASES,
   WORK_UNIT_LABELS,
@@ -32,8 +32,8 @@ function parseInputNumber(value: string): number {
   return Math.max(0, parsed);
 }
 
-function roundTo2(value: number): number {
-  return Math.round(value * 100) / 100;
+function roundTo1(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
 function getSuggestionForPhase(
@@ -69,7 +69,7 @@ function getMagicPhaseUpdates(
 
   const updates: Partial<PlanLineItem> = phaseFieldUpdates(phase, {
     crew: nextCrew,
-    timeHours: roundTo2(nextTimeHours),
+    timeHours: roundTo1(nextTimeHours),
   });
 
   if (suggestion.suggestedRate != null && pf.rate !== suggestion.suggestedRate) {
@@ -112,11 +112,11 @@ export function WorkPackageTable({
     const tearDownQuantity = item.tearDownQuantity ?? item.workQuantity;
     const buildUpTimeHours =
       item.workQuantity > 0 && buildUpCrew > 0 && nextWorkType.buildUpRate > 0
-        ? roundTo2(item.workQuantity / (nextWorkType.buildUpRate * buildUpCrew))
+        ? roundTo1(item.workQuantity / (nextWorkType.buildUpRate * buildUpCrew))
         : 0;
     const tearDownTimeHours =
       tearDownQuantity > 0 && tearDownCrew > 0 && nextWorkType.tearDownRate > 0
-        ? roundTo2(tearDownQuantity / (nextWorkType.tearDownRate * tearDownCrew))
+        ? roundTo1(tearDownQuantity / (nextWorkType.tearDownRate * tearDownCrew))
         : 0;
 
     onUpdate(item.id, {
@@ -152,41 +152,102 @@ export function WorkPackageTable({
     }
   };
 
+  const getPhaseActivationProps = (
+    item: PlanLineItem,
+    phase: BuildPhase,
+    inactive: boolean,
+  ) => {
+    if (isLocked || !inactive) return {};
+    const activate = () => handleActivatePhase(item, phase);
+    const phaseLabel = phase === 'build-up' ? 'build-up' : 'tear-down';
+    return {
+      role: 'button' as const,
+      tabIndex: 0,
+      onClick: activate,
+      onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          activate();
+        }
+      },
+      title: `Click or press Enter to activate ${phaseLabel} phase`,
+      'aria-label': `Activate ${phaseLabel} phase for ${item.title}`,
+      'aria-disabled': false,
+    };
+  };
+
   return (
     <div className="planning-view__work-package-table-wrap">
       <table className="planning-view__work-package-table">
+        <caption className="sr-only">
+          Work packages with editable quantity, type, and build-up/tear-down staffing fields.
+        </caption>
         <thead>
           <tr className="planning-view__wp-header-group">
-            <th colSpan={4} className="planning-view__wp-group-heading">Work Package</th>
+            <th colSpan={4} className="planning-view__wp-group-heading" scope="colgroup">
+              Work Package
+            </th>
             <th
               colSpan={3}
-              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-phase-group-start"
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--buildup planning-view__wp-phase-group-start"
+              scope="colgroup"
+              title="Defaults from work type. Edit values only when overriding."
+              aria-label="Build-up defaults from work type; editable to override"
             >
               Build-up
             </th>
             <th
               colSpan={3}
-              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-phase-group-start"
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--teardown planning-view__wp-phase-group-start"
+              scope="colgroup"
+              title="Defaults from work type. Edit values only when overriding."
+              aria-label="Tear-down defaults from work type; editable to override"
             >
               Tear-down
             </th>
-            <th rowSpan={2} className="planning-view__wp-actions-col">Actions</th>
+            <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">Actions</th>
           </tr>
           <tr className="planning-view__wp-header-columns">
-            <th className="planning-view__wp-title-col">Title</th>
-            <th className="planning-view__wp-type-col">Type</th>
-            <th className="planning-view__wp-qty-col">Qty</th>
-            <th className="planning-view__wp-unit-col">Unit</th>
-            <th className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-group-start">
+            <th className="planning-view__wp-title-col" scope="col">Title</th>
+            <th className="planning-view__wp-type-col" scope="col">Type</th>
+            <th className="planning-view__wp-qty-col" scope="col">Qty</th>
+            <th className="planning-view__wp-unit-col" scope="col">Unit</th>
+            <th
+              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup planning-view__wp-phase-group-start"
+              scope="col"
+            >
               Rate
             </th>
-            <th className="planning-view__wp-crew-col planning-view__wp-phase-col">Crew</th>
-            <th className="planning-view__wp-hours-col planning-view__wp-phase-col">Hrs</th>
-            <th className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-group-start">
+            <th
+              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup"
+              scope="col"
+            >
+              Crew
+            </th>
+            <th
+              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup"
+              scope="col"
+            >
+              Hrs
+            </th>
+            <th
+              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown planning-view__wp-phase-group-start"
+              scope="col"
+            >
               Rate
             </th>
-            <th className="planning-view__wp-crew-col planning-view__wp-phase-col">Crew</th>
-            <th className="planning-view__wp-hours-col planning-view__wp-phase-col">Hrs</th>
+            <th
+              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown"
+              scope="col"
+            >
+              Crew
+            </th>
+            <th
+              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown"
+              scope="col"
+            >
+              Hrs
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -205,6 +266,8 @@ export function WorkPackageTable({
             const buildUpInactive = !isPhaseActive(item, 'build-up');
             const tearDownInactive = !isPhaseActive(item, 'tear-down');
             const currentWorkTypeLabel = `${resolveLineItemWorkTypeTitle(item)} · ${WORK_UNIT_LABELS[item.workUnit]}`;
+            const buildUpActivationProps = getPhaseActivationProps(item, 'build-up', buildUpInactive);
+            const tearDownActivationProps = getPhaseActivationProps(item, 'tear-down', tearDownInactive);
 
             return (
               <tr key={item.id} className="planning-view__wp-row">
@@ -268,22 +331,21 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'build-up')}
-                  title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell planning-view__wp-phase-group-start${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...buildUpActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{buildUpFields.rate}</span>
+                    <span className="planning-view__wp-static">{roundTo1(buildUpFields.rate)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={buildUpFields.rate}
+                      value={roundTo1(buildUpFields.rate)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('build-up', { rate: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('build-up', { rate: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
                       disabled={buildUpInactive}
@@ -293,9 +355,8 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'build-up')}
-                  title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...buildUpActivationProps}
                 >
                   {isLocked ? (
                     <span className="planning-view__wp-static">{buildUpFields.crew}</span>
@@ -319,22 +380,21 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'build-up')}
-                  title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...buildUpActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{buildUpFields.timeHours}</span>
+                    <span className="planning-view__wp-static">{roundTo1(buildUpFields.timeHours)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={buildUpFields.timeHours}
+                      value={roundTo1(buildUpFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('build-up', { timeHours: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('build-up', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
                       disabled={buildUpInactive}
@@ -344,22 +404,21 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'tear-down')}
-                  title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell planning-view__wp-phase-group-start${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...tearDownActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{tearDownFields.rate}</span>
+                    <span className="planning-view__wp-static">{roundTo1(tearDownFields.rate)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={tearDownFields.rate}
+                      value={roundTo1(tearDownFields.rate)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('tear-down', { rate: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('tear-down', { rate: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
                       disabled={tearDownInactive}
@@ -369,9 +428,8 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'tear-down')}
-                  title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...tearDownActivationProps}
                 >
                   {isLocked ? (
                     <span className="planning-view__wp-static">{tearDownFields.crew}</span>
@@ -395,22 +453,21 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  onClick={() => handleActivatePhase(item, 'tear-down')}
-                  title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...tearDownActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{tearDownFields.timeHours}</span>
+                    <span className="planning-view__wp-static">{roundTo1(tearDownFields.timeHours)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={tearDownFields.timeHours}
+                      value={roundTo1(tearDownFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('tear-down', { timeHours: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('tear-down', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
                       disabled={tearDownInactive}

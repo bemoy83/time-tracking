@@ -86,7 +86,7 @@ select.planning-view__work-type-select {
 
 .planning-view__wp-add-bar .input {
   background: var(--surface-elevated-bg);
-  border-color: var(--surface-elevated-border);
+  border-color: transparent;
 }
 
 .planning-view__wp-add-bar .input:hover {

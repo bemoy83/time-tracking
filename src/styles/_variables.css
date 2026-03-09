@@ -29,6 +29,14 @@
   --wp-phase-bg-hover: #ededf0;
   --wp-phase-header-bg: #eaeaed;
   --wp-phase-header-col-bg: #efefef;
+  --wp-phase-buildup-bg: rgba(37, 99, 235, 0.03);
+  --wp-phase-buildup-bg-hover: rgba(37, 99, 235, 0.06);
+  --wp-phase-teardown-bg: rgba(217, 119, 6, 0.03);
+  --wp-phase-teardown-bg-hover: rgba(217, 119, 6, 0.06);
+  --wp-phase-buildup-header-bg: rgba(37, 99, 235, 0.08);
+  --wp-phase-buildup-header-col-bg: rgba(37, 99, 235, 0.05);
+  --wp-phase-teardown-header-bg: rgba(217, 119, 6, 0.1);
+  --wp-phase-teardown-header-col-bg: rgba(217, 119, 6, 0.06);
   --wp-phase-inactive-bg: #ebebed;
   --wp-phase-inactive-bg-hover: #e3e3e6;
   --wp-phase-activatable-hover: #eef2fb;

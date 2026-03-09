@@ -101,6 +101,14 @@
     --wp-phase-bg-hover: #262626;
     --wp-phase-header-bg: #181818;
     --wp-phase-header-col-bg: #1c1c1c;
+    --wp-phase-buildup-bg: rgba(96, 165, 250, 0.04);
+    --wp-phase-buildup-bg-hover: rgba(96, 165, 250, 0.09);
+    --wp-phase-teardown-bg: rgba(245, 158, 11, 0.04);
+    --wp-phase-teardown-bg-hover: rgba(245, 158, 11, 0.09);
+    --wp-phase-buildup-header-bg: rgba(59, 130, 246, 0.12);
+    --wp-phase-buildup-header-col-bg: rgba(59, 130, 246, 0.08);
+    --wp-phase-teardown-header-bg: rgba(245, 158, 11, 0.16);
+    --wp-phase-teardown-header-col-bg: rgba(245, 158, 11, 0.1);
     --wp-phase-inactive-bg: #161616;
     --wp-phase-inactive-bg-hover: #202020;
     --wp-phase-activatable-hover: #1e2333;
@@ -199,7 +207,7 @@
 
   .planning-view__wp-add-bar .input {
     background: var(--surface-elevated-bg);
-    border-color: var(--surface-elevated-border);
+    border-color: transparent;
   }
 
   .planning-view__wp-add-bar .input:hover {
