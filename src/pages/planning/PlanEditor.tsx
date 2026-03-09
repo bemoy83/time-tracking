@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import {
+  WORK_UNIT_LABELS,
   type Project,
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
+import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
   addLineItemToPlan,
+  createLineItem,
   removeLineItemFromPlan,
   updatePlanLineItem,
   duplicateLineItem,
@@ -25,7 +28,7 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
-import { ChevronLeftIcon } from '../../components/icons';
+import { ChevronLeftIcon, PlusIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -127,6 +130,64 @@ export function PlanEditor({
   const selectedProject = currentPlan.projectId
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
+
+  const { workTypes } = useWorkTypeStore();
+  const selectableWorkTypes = useMemo(
+    () => workTypes.filter((wt) => wt.readOnly !== true),
+    [workTypes],
+  );
+  const addTitleRef = useRef<HTMLInputElement>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newWorkTypeId, setNewWorkTypeId] = useState('');
+  const [newQuantity, setNewQuantity] = useState('');
+
+  useEffect(() => {
+    if (selectableWorkTypes.length === 0) {
+      if (newWorkTypeId) setNewWorkTypeId('');
+      return;
+    }
+    const isCurrentValid = selectableWorkTypes.some((wt) => wt.id === newWorkTypeId);
+    if (!isCurrentValid) {
+      setNewWorkTypeId(selectableWorkTypes[0].id);
+    }
+  }, [newWorkTypeId, selectableWorkTypes]);
+
+  const newWorkType = newWorkTypeId
+    ? selectableWorkTypes.find((wt) => wt.id === newWorkTypeId) ?? null
+    : null;
+  const newQuantityValue = (() => {
+    const parsed = Number(newQuantity);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  })();
+  const hasValidNewQuantity = newQuantity.trim() !== '' && newQuantityValue > 0;
+  const addDisabledReason = selectableWorkTypes.length === 0
+    ? 'No work types available'
+    : !newTitle.trim()
+    ? 'Title required'
+    : newWorkType == null
+      ? 'Type required'
+      : !hasValidNewQuantity
+        ? 'Quantity must be greater than 0'
+      : null;
+
+  const handleAddRow = () => {
+    if (!newWorkType || !newTitle.trim() || !hasValidNewQuantity) return;
+    handleAddLineItem(
+      createLineItem(
+        newTitle.trim(),
+        newWorkType.title,
+        newWorkType.workUnit,
+        newQuantityValue,
+        newWorkType.buildUpRate,
+        newWorkType.tearDownRate,
+        'template',
+        newWorkType.id,
+      ),
+    );
+    setNewTitle('');
+    setNewQuantity('');
+    addTitleRef.current?.focus();
+  };
 
   const handleSave = () => {
     mutatePlan((prev) => ({ ...prev, title }));
@@ -267,8 +328,8 @@ export function PlanEditor({
 
       </div>
 
-      <div>
-        <div className="planning-view__items-header">
+      <div className="planning-view__wp-section">
+        <div className="planning-view__wp-section-header">
           <h2 className="planning-view__items-title">Work Packages</h2>
           <div className="planning-view__items-summary">
             <span>{currentPlan.lineItems.length} packages</span>
@@ -276,11 +337,73 @@ export function PlanEditor({
             <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
           </div>
         </div>
+        {!(readOnly || isLocked) && (
+          <div className="planning-view__wp-add-bar">
+            <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
+            <input
+              ref={addTitleRef}
+              className="input planning-view__wp-add-bar-title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddRow();
+                }
+              }}
+              placeholder="Add work package..."
+              aria-label="New work package title"
+            />
+            <select
+              className="input planning-view__wp-add-bar-type"
+              value={newWorkTypeId}
+              onChange={(e) => setNewWorkTypeId(e.target.value)}
+              disabled={selectableWorkTypes.length === 0}
+              aria-label="New work package type"
+            >
+              {selectableWorkTypes.length === 0 && (
+                <option value="">No work types. Add in Settings.</option>
+              )}
+              {selectableWorkTypes.map((wt) => (
+                <option key={wt.id} value={wt.id}>
+                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                </option>
+              ))}
+            </select>
+            <input
+              className="input planning-view__wp-add-bar-qty"
+              type="number"
+              min={0.01}
+              step="any"
+              value={newQuantity}
+              onChange={(e) => setNewQuantity(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddRow();
+                }
+              }}
+              placeholder="Qty"
+              aria-label="New work package quantity"
+            />
+            <span className="planning-view__wp-add-bar-unit">
+              {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
+            </span>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
+              onClick={handleAddRow}
+              disabled={addDisabledReason != null}
+              title={addDisabledReason ?? 'Add work package'}
+            >
+              Add
+            </button>
+          </div>
+        )}
         <WorkPackageTable
           lineItems={currentPlan.lineItems}
           suggestionsByLineItemId={suggestionsByLineItemId}
           isLocked={readOnly || isLocked}
-          onAdd={handleAddLineItem}
           onUpdate={handleUpdateItem}
           onDuplicate={handleDuplicateItem}
           onRemove={handleRemoveItem}

@@ -93,6 +93,22 @@
     --color-budget-approaching: var(--state-warning-fg-strong);
     --color-budget-approaching-bg: var(--state-warning-bg);
 
+    /* Work-package table phase tints (dark) */
+    --wp-header-bg: #222222;
+    --wp-row-divider: rgba(255, 255, 255, 0.07);
+    --wp-phase-divider: rgba(255, 255, 255, 0.05);
+    --wp-phase-bg: #1a1a1a;
+    --wp-phase-bg-hover: #262626;
+    --wp-phase-header-bg: #181818;
+    --wp-phase-header-col-bg: #1c1c1c;
+    --wp-phase-inactive-bg: #161616;
+    --wp-phase-inactive-bg-hover: #202020;
+    --wp-phase-activatable-hover: #1e2333;
+    --wp-phase-activatable-focus-hover: #1c2130;
+    --wp-add-bar-divider: rgba(255, 255, 255, 0.06);
+    --wp-cell-input-hover-bg: rgba(255, 255, 255, 0.04);
+    --wp-summary-badge-bg: #171717;
+
     /* Amber subtle backgrounds (dark) */
     --color-amber-bg-subtle: var(--state-warning-bg-soft);
     --color-amber-bg-hover: var(--state-warning-bg-strong);
@@ -168,6 +184,26 @@
     background-repeat: no-repeat;
     background-position: right var(--space-md) center;
     background-size: 20px 20px;
+  }
+
+  /* Keep work package row inputs visually flat in dark mode; add-row stays boxed. */
+  .planning-view__work-package-table .planning-view__wp-cell-input {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .planning-view__work-package-table .planning-view__wp-cell-input:hover {
+    border-color: var(--surface-border-hover);
+    background: var(--wp-cell-input-hover-bg);
+  }
+
+  .planning-view__wp-add-bar .input {
+    background: var(--surface-elevated-bg);
+    border-color: var(--surface-elevated-border);
+  }
+
+  .planning-view__wp-add-bar .input:hover {
+    border-color: var(--surface-border-hover);
   }
 
   /* --- Task Time Tracking --- */

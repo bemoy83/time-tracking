@@ -21,6 +21,22 @@
   --surface-elevated-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.2);
   --surface-overlay: rgba(0, 0, 0, 0.5);
 
+  /* Work-package table phase tints */
+  --wp-header-bg: #f7f7f8;
+  --wp-row-divider: rgba(0, 0, 0, 0.08);
+  --wp-phase-divider: rgba(0, 0, 0, 0.06);
+  --wp-phase-bg: #f5f5f7;
+  --wp-phase-bg-hover: #ededf0;
+  --wp-phase-header-bg: #eaeaed;
+  --wp-phase-header-col-bg: #efefef;
+  --wp-phase-inactive-bg: #ebebed;
+  --wp-phase-inactive-bg-hover: #e3e3e6;
+  --wp-phase-activatable-hover: #eef2fb;
+  --wp-phase-activatable-focus-hover: #e8edf8;
+  --wp-add-bar-divider: rgba(0, 0, 0, 0.07);
+  --wp-cell-input-hover-bg: rgba(0, 0, 0, 0.03);
+  --wp-summary-badge-bg: #f7f7f8;
+
   /* Interaction surface accents */
   --surface-brand-subtle: rgba(37, 99, 235, 0.08);
   --surface-brand-subtle-hover: rgba(37, 99, 235, 0.12);

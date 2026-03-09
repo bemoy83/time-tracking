@@ -2,6 +2,19 @@
    Work Package Table (Phase 4 unified row editor)
    ============================================================ */
 
+.planning-view__wp-section {
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-xl);
+}
+
+.planning-view__wp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) 0;
+}
+
 .planning-view__items-summary {
   display: flex;
   align-items: center;
@@ -17,25 +30,18 @@
   min-height: 24px;
   padding: 0 var(--space-sm);
   border-radius: var(--radius-full);
-  background: var(--surface-contained-bg);
-  border: 1px solid var(--surface-contained-border);
+  background: var(--wp-summary-badge-bg);
 }
 
 .planning-view__work-package-table-wrap {
-  margin-top: var(--space-sm);
-  border-radius: var(--radius-xl);
-  background: var(--surface-contained-bg);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--surface-contained-border) 56%, transparent);
   overflow-x: auto;
   overflow-y: visible;
   scrollbar-gutter: stable;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
 .planning-view__work-package-table {
   --wp-group-header-height: 34px;
-  --wp-header-bg: color-mix(in srgb, var(--surface-contained-bg) 88%, var(--color-bg));
-  --wp-row-divider: color-mix(in srgb, var(--surface-contained-border) 66%, transparent);
-  --wp-phase-divider: color-mix(in srgb, var(--surface-contained-border) 48%, transparent);
   width: 100%;
   min-width: 1080px;
   border-collapse: separate;
@@ -50,6 +56,16 @@
   white-space: nowrap;
 }
 
+.planning-view__work-package-table th:first-child,
+.planning-view__work-package-table td:first-child {
+  padding-left: var(--space-md);
+}
+
+.planning-view__work-package-table th:last-child,
+.planning-view__work-package-table td:last-child {
+  padding-right: var(--space-md);
+}
+
 .planning-view__work-package-table thead th {
   position: sticky;
   background: var(--wp-header-bg);
@@ -58,10 +74,36 @@
   z-index: 3;
 }
 
+.planning-view__wp-header-group th,
+.planning-view__wp-header-columns th {
+  position: relative;
+}
+
+.planning-view__wp-header-group th::after,
+.planning-view__wp-header-columns th::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--wp-row-divider);
+  pointer-events: none;
+}
+
+.planning-view__wp-header-group th:first-child::after,
+.planning-view__wp-header-columns th:first-child::after {
+  left: var(--space-md);
+}
+
+.planning-view__wp-header-group th:last-child::after,
+.planning-view__wp-header-columns th:last-child::after {
+  right: var(--space-md);
+}
+
 .planning-view__wp-header-group th {
   top: 0;
   height: var(--wp-group-header-height);
-  border-bottom: 1px solid var(--wp-row-divider);
   font-size: var(--font-caption);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -70,7 +112,6 @@
 .planning-view__wp-header-columns th {
   top: var(--wp-group-header-height);
   height: 36px;
-  border-bottom: 1px solid var(--wp-row-divider);
   font-size: var(--font-caption);
   letter-spacing: 0.02em;
 }
@@ -80,11 +121,11 @@
 }
 
 .planning-view__wp-group-heading--phase {
-  background: color-mix(in srgb, var(--wp-header-bg) 76%, var(--surface-contained-inset));
+  background: var(--wp-phase-header-bg);
 }
 
 .planning-view__wp-phase-col {
-  background: color-mix(in srgb, var(--wp-header-bg) 84%, var(--surface-contained-inset));
+  background: var(--wp-phase-header-col-bg);
 }
 
 .planning-view__wp-actions-col {
@@ -99,7 +140,34 @@
 }
 
 .planning-view__work-package-table tbody tr:not(:last-child) .planning-view__wp-cell {
-  box-shadow: inset 0 -1px 0 var(--wp-row-divider);
+  position: relative;
+}
+
+.planning-view__work-package-table tbody tr:not(:last-child) .planning-view__wp-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--wp-row-divider);
+  pointer-events: none;
+}
+
+.planning-view__work-package-table tbody tr:not(:last-child) td:first-child::after {
+  left: var(--space-md);
+}
+
+.planning-view__work-package-table tbody tr:not(:last-child) td:last-child::after {
+  right: var(--space-md);
+}
+
+.planning-view__work-package-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-xl);
+}
+
+.planning-view__work-package-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-xl);
 }
 
 .planning-view__wp-row:focus-within .planning-view__wp-cell {
@@ -143,11 +211,11 @@
 }
 
 .planning-view__wp-phase-cell {
-  background: color-mix(in srgb, var(--surface-contained-bg) 92%, var(--surface-contained-inset));
+  background: var(--wp-phase-bg);
 }
 
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell {
-  background: color-mix(in srgb, var(--surface-contained-hover) 90%, var(--surface-contained-inset));
+  background: var(--wp-phase-bg-hover);
 }
 
 .planning-view__wp-cell-input {
@@ -157,6 +225,11 @@
   border: 1px solid transparent;
   font-size: var(--font-small);
   background: transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.planning-view__wp-cell-select {
+  background-color: transparent;
 }
 
 .planning-view__wp-cell-input:focus-visible {
@@ -167,6 +240,72 @@
 
 .planning-view__wp-cell-input:hover {
   border-color: var(--surface-border-hover);
+  background: var(--wp-cell-input-hover-bg);
+}
+
+.planning-view__wp-add-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-small);
+  border-bottom: 1px solid var(--wp-add-bar-divider);
+}
+
+.planning-view__wp-add-bar-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.planning-view__wp-add-bar .input {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-contained-border);
+  font-size: var(--font-small);
+  background: var(--color-bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.planning-view__wp-add-bar .input:hover {
+  border-color: var(--surface-border-hover);
+}
+
+.planning-view__wp-add-bar .input:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.planning-view__wp-add-bar-title {
+  flex: 2 1 0;
+  min-width: 120px;
+}
+
+.planning-view__wp-add-bar-type {
+  flex: 1.5 1 0;
+  min-width: 120px;
+}
+
+.planning-view__wp-add-bar-qty {
+  flex: 0 0 88px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.planning-view__wp-add-bar-unit {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+}
+
+.planning-view__wp-add-bar-btn {
+  flex-shrink: 0;
+  min-width: 64px;
+  min-height: 34px;
+  padding: 0 var(--space-sm);
+  font-size: var(--font-small);
+  border-radius: var(--radius-md);
 }
 
 .planning-view__wp-cell-input--number {
@@ -201,12 +340,12 @@
 }
 
 .planning-view__wp-phase-cell--inactive {
-  background: color-mix(in srgb, var(--surface-contained-inset) 84%, var(--surface-contained-bg));
+  background: var(--wp-phase-inactive-bg);
   color: var(--color-text-muted);
 }
 
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--inactive {
-  background: color-mix(in srgb, var(--surface-contained-inset) 80%, var(--surface-contained-hover));
+  background: var(--wp-phase-inactive-bg-hover);
 }
 
 .planning-view__wp-phase-cell--inactive .planning-view__wp-cell-input {
@@ -219,11 +358,11 @@
 }
 
 .planning-view__wp-phase-cell--activatable:hover {
-  background: color-mix(in srgb, var(--surface-contained-hover) 76%, var(--state-info-bg));
+  background: var(--wp-phase-activatable-hover);
 }
 
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--activatable:hover {
-  background: color-mix(in srgb, var(--surface-contained-hover) 68%, var(--state-info-bg));
+  background: var(--wp-phase-activatable-focus-hover);
 }
 
 .planning-view__wp-actions-cell {
@@ -288,30 +427,6 @@
   height: 16px;
 }
 
-.planning-view__wp-add-row .planning-view__wp-cell {
-  background: color-mix(in srgb, var(--surface-contained-bg) 52%, var(--surface-contained-hover));
-}
-
-.planning-view__wp-add-row .planning-view__wp-phase-cell {
-  background: color-mix(in srgb, var(--surface-contained-hover) 84%, var(--surface-contained-inset));
-}
-
-.planning-view__wp-add-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.planning-view__wp-add-plus {
-  width: 16px;
-  height: 16px;
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-.planning-view__wp-add-btn {
-  min-width: 64px;
-}
 
 .planning-view__wp-empty {
   padding: var(--space-lg) var(--space-md);

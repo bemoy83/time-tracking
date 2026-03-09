@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import {
   BUILD_PHASES,
   WORK_UNIT_LABELS,
@@ -8,7 +8,6 @@ import {
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import {
   type PlanLineItem,
-  createLineItem,
   getPhaseFields,
   getPhaseQuantity,
   isPhaseActive,
@@ -16,13 +15,12 @@ import {
   resolveLineItemWorkTypeTitle,
 } from '../../lib/planning/plan-model';
 import type { LineItemSuggestion, PhaseSuggestion } from '../../lib/planning/plan-suggestions';
-import { DuplicateIcon, PlusIcon, SparklesIcon, TrashIcon } from '../../components/icons';
+import { DuplicateIcon, SparklesIcon, TrashIcon } from '../../components/icons';
 
 interface WorkPackageTableProps {
   lineItems: PlanLineItem[];
   suggestionsByLineItemId: Map<string, LineItemSuggestion>;
   isLocked: boolean;
-  onAdd: (item: PlanLineItem) => void;
   onUpdate: (lineItemId: string, updates: Partial<PlanLineItem>) => void;
   onDuplicate: (item: PlanLineItem) => void;
   onRemove: (lineItemId: string) => void;
@@ -98,7 +96,6 @@ export function WorkPackageTable({
   lineItems,
   suggestionsByLineItemId,
   isLocked,
-  onAdd,
   onUpdate,
   onDuplicate,
   onRemove,
@@ -108,45 +105,6 @@ export function WorkPackageTable({
     () => workTypes.filter((wt) => wt.readOnly !== true),
     [workTypes],
   );
-
-  const addTitleRef = useRef<HTMLInputElement>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newWorkTypeId, setNewWorkTypeId] = useState('');
-  const [newQuantity, setNewQuantity] = useState(0);
-
-  useEffect(() => {
-    if (selectableWorkTypes.length === 0) {
-      if (newWorkTypeId) setNewWorkTypeId('');
-      return;
-    }
-    const isCurrentValid = selectableWorkTypes.some((wt) => wt.id === newWorkTypeId);
-    if (!isCurrentValid) {
-      setNewWorkTypeId(selectableWorkTypes[0].id);
-    }
-  }, [newWorkTypeId, selectableWorkTypes]);
-
-  const newWorkType = newWorkTypeId
-    ? selectableWorkTypes.find((wt) => wt.id === newWorkTypeId) ?? null
-    : null;
-
-  const handleAddRow = () => {
-    if (!newWorkType || !newTitle.trim()) return;
-    onAdd(
-      createLineItem(
-        newTitle.trim(),
-        newWorkType.title,
-        newWorkType.workUnit,
-        newQuantity,
-        newWorkType.buildUpRate,
-        newWorkType.tearDownRate,
-        'template',
-        newWorkType.id,
-      ),
-    );
-    setNewTitle('');
-    setNewQuantity(0);
-    addTitleRef.current?.focus();
-  };
 
   const handleWorkTypeChange = (item: PlanLineItem, nextWorkType: WorkType) => {
     const buildUpCrew = nextWorkType.buildUpRate > 0 ? Math.max(1, item.buildUpCrew) : 0;
@@ -498,96 +456,6 @@ export function WorkPackageTable({
               </tr>
             );
           })}
-
-          {!isLocked && (
-            <tr className="planning-view__wp-add-row">
-              <td className="planning-view__wp-cell">
-                <div className="planning-view__wp-add-title-wrap">
-                  <PlusIcon className="planning-view__wp-add-plus" />
-                  <input
-                    ref={addTitleRef}
-                    className="input planning-view__wp-cell-input"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddRow();
-                      }
-                    }}
-                    placeholder="Add work package..."
-                    aria-label="New work package title"
-                  />
-                </div>
-              </td>
-              <td className="planning-view__wp-cell">
-                <select
-                  className="input planning-view__wp-cell-input planning-view__wp-cell-select"
-                  value={newWorkTypeId}
-                  onChange={(e) => setNewWorkTypeId(e.target.value)}
-                  disabled={selectableWorkTypes.length === 0}
-                  aria-label="New work package type"
-                >
-                  {selectableWorkTypes.length === 0 && (
-                    <option value="">No work types. Add in Settings.</option>
-                  )}
-                  {selectableWorkTypes.map((wt) => (
-                    <option key={wt.id} value={wt.id}>
-                      {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell">
-                <input
-                  className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
-                  type="number"
-                  value={newQuantity}
-                  onChange={(e) => setNewQuantity(parseInputNumber(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddRow();
-                    }
-                  }}
-                  aria-label="New work package quantity"
-                />
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-unit-cell">
-                <span className="planning-view__wp-static">
-                  {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
-                </span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
-                <span className="planning-view__wp-static">—</span>
-              </td>
-              <td className="planning-view__wp-cell planning-view__wp-actions-cell">
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm planning-view__wp-add-btn"
-                  onClick={handleAddRow}
-                  disabled={!newTitle.trim() || newWorkType == null}
-                >
-                  Add
-                </button>
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>
