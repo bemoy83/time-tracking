@@ -1,6 +1,4 @@
 import {
-  type BuildPhase,
-  BUILD_PHASES,
   type WorkType,
   type WorkUnit,
   WORK_UNITS,
@@ -17,8 +15,8 @@ export interface ImportedWorkType {
   mappingKey: string;
   title: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase;
-  expectedProductivity: number;
+  buildUpRate: number;
+  tearDownRate: number;
 }
 
 export interface ImportValidationError {
@@ -53,7 +51,7 @@ export interface WorkTypeImportPreview {
 
 /**
  * Parse CSV text into validated WorkType definitions.
- * Required columns: title, workUnit, buildPhase, expectedProductivity
+ * Required columns: title, workUnit, buildUpRate, tearDownRate
  */
 export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
   const lines = csvText.trim().split('\n');
@@ -67,7 +65,7 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
 
   const delimiter = detectCsvDelimiter(lines[0]);
   const headers = parseCsvLine(lines[0], delimiter).map((header) => header.trim().toLowerCase());
-  const requiredHeaders = ['title', 'workunit', 'buildphase', 'expectedproductivity'];
+  const requiredHeaders = ['title', 'workunit', 'builduprate', 'teardownrate'];
   const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
   if (missingHeaders.length > 0) {
     return {
@@ -109,30 +107,17 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
       });
     }
 
-    const buildPhaseRaw = row.buildphase;
-    if (!buildPhaseRaw) {
-      rowErrors.push({ row: rowNum, field: 'buildPhase', message: 'Build phase is required' });
-    } else if (!BUILD_PHASES.includes(buildPhaseRaw as BuildPhase)) {
-      rowErrors.push({
-        row: rowNum,
-        field: 'buildPhase',
-        message: `Invalid build phase: "${buildPhaseRaw}". Valid: ${BUILD_PHASES.join(', ')}`,
-      });
+    const buildUpRate = parseOptionalNumber(row.builduprate, rowNum, 'buildUpRate', rowErrors);
+    const tearDownRate = parseOptionalNumber(row.teardownrate, rowNum, 'tearDownRate', rowErrors);
+
+    if ((buildUpRate ?? 0) < 0) {
+      rowErrors.push({ row: rowNum, field: 'buildUpRate', message: 'Build-up rate cannot be negative' });
     }
-
-    const expectedProductivity = parseRequiredNumber(
-      row.expectedproductivity,
-      rowNum,
-      'expectedProductivity',
-      rowErrors,
-    );
-
-    if (expectedProductivity != null && expectedProductivity <= 0) {
-      rowErrors.push({
-        row: rowNum,
-        field: 'expectedProductivity',
-        message: 'Expected productivity must be a positive number',
-      });
+    if ((tearDownRate ?? 0) < 0) {
+      rowErrors.push({ row: rowNum, field: 'tearDownRate', message: 'Tear-down rate cannot be negative' });
+    }
+    if ((buildUpRate ?? 0) === 0 && (tearDownRate ?? 0) === 0) {
+      rowErrors.push({ row: rowNum, field: 'rates', message: 'At least one rate must be greater than 0' });
     }
 
     if (rowErrors.length > 0) {
@@ -141,11 +126,11 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     }
 
     items.push({
-      mappingKey: workTypeKeyString(title, workUnitRaw as WorkUnit, buildPhaseRaw as BuildPhase),
+      mappingKey: workTypeKeyString(title, workUnitRaw as WorkUnit),
       title,
       workUnit: workUnitRaw as WorkUnit,
-      buildPhase: buildPhaseRaw as BuildPhase,
-      expectedProductivity: expectedProductivity as number,
+      buildUpRate: buildUpRate ?? 0,
+      tearDownRate: tearDownRate ?? 0,
     });
   }
 
@@ -157,7 +142,7 @@ export function generateWorkTypeImportPreview(
   existingWorkTypes: WorkType[],
 ): WorkTypeImportPreview {
   const existingByKey = new Map(
-    existingWorkTypes.map((workType) => [workTypeKeyString(workType.title, workType.workUnit, workType.buildPhase), workType]),
+    existingWorkTypes.map((workType) => [workTypeKeyString(workType.title, workType.workUnit), workType]),
   );
 
   const keyCounts = new Map<string, number>();
@@ -202,14 +187,14 @@ export async function applyWorkTypeImport(
   let updated = 0;
 
   for (const item of items) {
-    const existing = findWorkTypeByKey(item.title, item.workUnit, item.buildPhase);
+    const existing = findWorkTypeByKey(item.title, item.workUnit);
 
     if (existing) {
       await updateWorkTypeFields(existing.id, {
         title: item.title,
         workUnit: item.workUnit,
-        buildPhase: item.buildPhase,
-        expectedProductivity: item.expectedProductivity,
+        buildUpRate: item.buildUpRate,
+        tearDownRate: item.tearDownRate,
       });
       updated += 1;
       continue;
@@ -218,8 +203,8 @@ export async function applyWorkTypeImport(
     await createWorkType({
       title: item.title,
       workUnit: item.workUnit,
-      buildPhase: item.buildPhase,
-      expectedProductivity: item.expectedProductivity,
+      buildUpRate: item.buildUpRate,
+      tearDownRate: item.tearDownRate,
     });
     created += 1;
   }
@@ -227,15 +212,14 @@ export async function applyWorkTypeImport(
   return { created, updated };
 }
 
-function parseRequiredNumber(
+function parseOptionalNumber(
   value: string | undefined,
   row: number,
   field: string,
   errors: ImportValidationError[],
 ): number | null {
   if (!value || value === '') {
-    errors.push({ row, field, message: `${field} is required` });
-    return null;
+    return 0;
   }
 
   const num = Number(value);

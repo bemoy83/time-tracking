@@ -40,9 +40,8 @@ export async function deleteAllWorkTypes(): Promise<void> {
 export async function findWorkTypeByKey(
   title: string,
   workUnit: string,
-  buildPhase: string,
 ): Promise<WorkType | null> {
   const db = await getDB();
-  const result = await db.getFromIndex('workTypes', 'by-title-unit-phase', [title, workUnit, buildPhase]);
+  const result = await db.getFromIndex('workTypes', 'by-title-unit', [title, workUnit]);
   return result ?? null;
 }

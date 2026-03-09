@@ -37,15 +37,15 @@ export const BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
 
 /**
  * Reusable Work Type definition.
- * Represents a unique combination of title + unit + build phase → expected productivity.
- * The composite key (title, workUnit, buildPhase) must be unique.
+ * Phase-agnostic: one record per work category with dual rates.
+ * The composite key (title, workUnit) must be unique.
  */
 export interface WorkType {
   id: string;
   title: string;                   // e.g. "Carpet Tiles"
   workUnit: WorkUnit;              // m2 | m | pcs | orders
-  buildPhase: BuildPhase;          // build-up | tear-down
-  expectedProductivity: number;    // units/person-hr (required)
+  buildUpRate: number;             // units/person-hr for build-up (0 = not applicable)
+  tearDownRate: number;            // units/person-hr for tear-down (0 = not applicable)
   /** Read-only imported definitions are scoped to plan handoff on executor device. */
   readOnly?: boolean;
   /** Source plan ID for imported read-only work types. null/undefined for regular library types. */
@@ -76,8 +76,8 @@ export function normalizeWorkTypeTitle(title: string | null | undefined): string
   return title.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-export function workTypeKeyString(title: string, workUnit: WorkUnit, buildPhase: BuildPhase): string {
-  return `${normalizeWorkTypeTitle(title)}:${workUnit}:${buildPhase}`;
+export function workTypeKeyString(title: string, workUnit: WorkUnit): string {
+  return `${normalizeWorkTypeTitle(title)}:${workUnit}`;
 }
 
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {

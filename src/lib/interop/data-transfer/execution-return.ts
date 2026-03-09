@@ -1,6 +1,7 @@
 import type { Plan, LineItemExecutionStatus } from '../../planning/plan-model';
+import { getPhaseFields, isPhaseActive, getEffectiveCrewForDate } from '../../planning/plan-model';
 import type { Task, TimeEntry, WorkType } from '../../types';
-import { durationMs, nowUtc } from '../../types';
+import { BUILD_PHASES, durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
 import { getAllWorkTypes } from '../../db';
 import {
@@ -10,8 +11,15 @@ import {
   type ScheduleSection,
   type ScheduleDayEntry,
 } from './contracts';
-import { getEffectiveCrewForDate } from '../../planning/plan-model';
 import { listDateRange } from '../../planning/scheduling/work-calendar';
+
+const PHASE_LINE_ITEM_ID_SEPARATOR = '::phase::';
+
+function resolveSourceWorkPackageId(lineItemId: string): string | null {
+  const idx = lineItemId.lastIndexOf(PHASE_LINE_ITEM_ID_SEPARATOR);
+  if (idx <= 0) return null;
+  return lineItemId.slice(0, idx);
+}
 
 function deriveStatusFromTasks(
   itemStatus: LineItemExecutionStatus,
@@ -24,6 +32,7 @@ function deriveStatusFromTasks(
   if (linkedTasks.some((task) => task.status === 'active')) return 'in-progress';
   return itemStatus;
 }
+
 
 export async function buildExecutionReturnEnvelope(
   plan: Plan,
@@ -66,36 +75,50 @@ export async function buildExecutionReturnEnvelope(
     deferred: 0,
   };
 
-  const lineItems = plan.lineItems.map((item) => {
+  // For each line item, emit one entry per active phase
+  const lineItems = plan.lineItems.flatMap((item) => {
     const linked = planTasksByLineItem.get(item.id) ?? [];
-    const linkedEntries = linked.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
-    const status = deriveStatusFromTasks(item.executionStatus, linked);
-    const blockedTaskReason =
-      status === 'blocked' && item.blockReason == null
-        ? (linked.find((task) => task.status === 'blocked')?.blockReason ?? null)
-        : null;
-    const deadline = evaluateLineItemDeadline(item, linked, linkedEntries, todayDate);
-    if (status === 'pending') summaryByStatus.pending += 1;
-    if (status === 'in-progress') summaryByStatus.inProgress += 1;
-    if (status === 'completed') summaryByStatus.completed += 1;
-    if (status === 'blocked') summaryByStatus.blocked += 1;
-    if (status === 'deferred') summaryByStatus.deferred += 1;
-    return {
-      lineItemId: item.id,
-      title: item.title,
-      executionStatus: status,
-      blockReason: blockedTaskReason ?? item.blockReason,
-      blockCategory: item.blockCategory,
-      executorNote: item.executorNote,
-      deferredNote: item.deferredNote,
-      removedFromSource: item.removedFromSource,
-      scheduledStart: item.scheduledStart,
-      scheduledEnd: item.scheduledEnd,
-      crewByDate: item.crewByDate ?? undefined,
-      actualStartDate: deadline.actualStartDate,
-      actualEndDate: deadline.actualEndDate,
-      deadlineStatusAtClose: deadline.status,
-    };
+
+    return BUILD_PHASES
+      .filter((phase) => isPhaseActive(item, phase))
+      .map((phase) => {
+        const pf = getPhaseFields(item, phase);
+        // Filter linked tasks to this phase
+        const phaseTasks = linked.filter((task) => task.buildPhase === phase);
+        const status = deriveStatusFromTasks(pf.executionStatus, phaseTasks);
+        const blockedTaskReason =
+          status === 'blocked' && pf.blockReason == null
+            ? (phaseTasks.find((task) => task.status === 'blocked')?.blockReason ?? null)
+            : null;
+
+        const phaseEntries = phaseTasks.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
+        const deadline = evaluateLineItemDeadline(item, phase, phaseTasks, phaseEntries, todayDate);
+
+        if (status === 'pending') summaryByStatus.pending += 1;
+        if (status === 'in-progress') summaryByStatus.inProgress += 1;
+        if (status === 'completed') summaryByStatus.completed += 1;
+        if (status === 'blocked') summaryByStatus.blocked += 1;
+        if (status === 'deferred') summaryByStatus.deferred += 1;
+
+        return {
+          lineItemId: item.id,
+          phase,
+          sourceWorkPackageId: resolveSourceWorkPackageId(item.id),
+          title: item.title,
+          executionStatus: status,
+          blockReason: blockedTaskReason ?? pf.blockReason,
+          blockCategory: pf.blockCategory,
+          executorNote: pf.executorNote,
+          deferredNote: pf.deferredNote,
+          removedFromSource: item.removedFromSource,
+          scheduledStart: pf.scheduledStart,
+          scheduledEnd: pf.scheduledEnd,
+          crewByDate: pf.crewByDate ?? undefined,
+          actualStartDate: deadline.actualStartDate,
+          actualEndDate: deadline.actualEndDate,
+          deadlineStatusAtClose: deadline.status,
+        };
+      });
   });
 
   // Build structured schedule section
@@ -143,18 +166,19 @@ export async function buildExecutionReturnEnvelope(
         id: syntheticId,
         title: lineItem.workTypeTitle,
         workUnit: lineItem.workUnit,
-        buildPhase: lineItem.buildPhase,
-        expectedProductivity: lineItem.productivityRate,
+        buildUpRate: lineItem.buildUpRate,
+        tearDownRate: lineItem.tearDownRate,
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
     } else {
+      const isTearDown = task.buildPhase === 'tear-down';
       workTypes.push({
         id: syntheticId,
         title: task.title,
         workUnit: task.workUnit ?? 'm2',
-        buildPhase: task.buildPhase ?? 'build-up',
-        expectedProductivity: 10,
+        buildUpRate: isTearDown ? 0 : 10,
+        tearDownRate: isTearDown ? 10 : 0,
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
@@ -210,22 +234,25 @@ function buildScheduleSection(plan: Plan): ScheduleSection {
   const dayMap = new Map<string, ScheduleDayEntry>();
 
   for (const item of plan.lineItems) {
-    if (!item.scheduledStart || !item.scheduledEnd) continue;
-    const dates = listDateRange(item.scheduledStart, item.scheduledEnd);
-    const totalPH = item.timeHours * item.crew;
-    // Always even-split: person-hours distributed equally across days.
-    // crewByDate reflects assigned workers per day (for capacity), not workload proportion.
-    const perDay = dates.length > 0 ? totalPH / dates.length : 0;
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
+      if (!pf.scheduledStart || !pf.scheduledEnd) continue;
 
-    for (const date of dates) {
-      const crew = getEffectiveCrewForDate(item, date);
-      if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
-      dayMap.get(date)!.lineItems.push({
-        lineItemId: item.id,
-        title: item.title,
-        assignedCrew: crew,
-        plannedPersonHours: Number(perDay.toFixed(2)),
-      });
+      const dates = listDateRange(pf.scheduledStart, pf.scheduledEnd);
+      const totalPH = pf.timeHours * pf.crew;
+      const perDay = dates.length > 0 ? totalPH / dates.length : 0;
+
+      for (const date of dates) {
+        const crew = getEffectiveCrewForDate(item, phase, date);
+        if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
+        dayMap.get(date)!.lineItems.push({
+          lineItemId: item.id,
+          title: item.title,
+          assignedCrew: crew,
+          plannedPersonHours: Number(perDay.toFixed(2)),
+        });
+      }
     }
   }
 

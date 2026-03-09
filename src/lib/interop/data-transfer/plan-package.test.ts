@@ -17,9 +17,13 @@ vi.mock('../../db', () => ({
   updatePlan: vi.fn(),
 }));
 
-vi.mock('../../types', () => ({
-  nowUtc: vi.fn(),
-}));
+vi.mock('../../types', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../types')>();
+  return {
+    ...actual,
+    nowUtc: vi.fn(),
+  };
+});
 
 vi.mock('../download-json', () => ({
   downloadJson: vi.fn(),
@@ -36,24 +40,39 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
     workTypeId: 'wt-1',
     workQuantity: 100,
-    crew: 2,
-    timeHours: 8,
-    productivityRate: 12.5,
-    rateSource: 'manual',
+    tearDownQuantity: null,
+    buildUpRate: 12.5,
+    buildUpCrew: 2,
+    buildUpTimeHours: 8,
+    buildUpRateSource: 'manual',
+    tearDownRate: 0,
+    tearDownCrew: 0,
+    tearDownTimeHours: 0,
+    tearDownRateSource: 'manual',
+    buildUpScheduledStart: null,
+    buildUpScheduledEnd: null,
+    buildUpOriginalScheduledStart: null,
+    buildUpOriginalScheduledEnd: null,
+    buildUpCrewByDate: undefined,
+    tearDownScheduledStart: null,
+    tearDownScheduledEnd: null,
+    tearDownOriginalScheduledStart: null,
+    tearDownOriginalScheduledEnd: null,
+    tearDownCrewByDate: undefined,
+    buildUpExecutionStatus: 'pending',
+    buildUpBlockReason: null,
+    buildUpBlockCategory: null,
+    buildUpExecutorNote: null,
+    buildUpDeferredNote: null,
+    tearDownExecutionStatus: 'pending',
+    tearDownBlockReason: null,
+    tearDownBlockCategory: null,
+    tearDownExecutorNote: null,
+    tearDownDeferredNote: null,
     rationale: null,
-    executionStatus: 'pending',
-    blockReason: null,
-    blockCategory: null,
-    executorNote: null,
-    deferredNote: null,
     removedFromSource: false,
-    scheduledStart: null,
-    scheduledEnd: null,
-    originalScheduledStart: null,
-    originalScheduledEnd: null,
     amendmentNote: null,
     amendedAt: null,
     ...overrides,
@@ -99,8 +118,8 @@ describe('plan-package export', () => {
       id: 'wt-1',
       title: 'Carpet Tiles',
       workUnit: 'm2',
-      buildPhase: 'build-up',
-      expectedProductivity: 10,
+      buildUpRate: 10,
+      tearDownRate: 0,
       createdAt: '2026-02-01T00:00:00.000Z',
       updatedAt: '2026-02-01T00:00:00.000Z',
     };
@@ -123,7 +142,12 @@ describe('plan-package export', () => {
 
     expect(mockGetAllWorkTypes).toHaveBeenCalledTimes(1);
     expect(payload.workTypes).toEqual([existing]);
-    expect(payload.plan.lineItems[0].workTypeId).toBe('wt-1');
+    expect(payload.plan.lineItems[0]).toMatchObject({
+      id: 'line-1::phase::build-up',
+      sourceWorkPackageId: 'line-1',
+      workTypeId: 'wt-1',
+      buildPhase: 'build-up',
+    });
     expect(payload.plan.lineItems[1].workTypeId).toBeNull();
     expect(payload.lastModifiedAt).toBe(plan.updatedAt);
   });
@@ -137,30 +161,44 @@ describe('plan-package export', () => {
         workTypeId: 'missing-id',
         workTypeTitle: 'Rigging',
         workUnit: 'm',
-        buildPhase: 'build-up',
-        productivityRate: 5.5,
+        buildUpRate: 5.5,
+        tearDownRate: 0,
       }),
       makeLineItem({
         id: 'line-2',
         workTypeId: 'missing-id',
         workTypeTitle: 'Rigging Tear-down',
         workUnit: 'm',
-        buildPhase: 'tear-down',
-        productivityRate: 4.25,
+        buildUpRate: 0,
+        buildUpCrew: 0,
+        buildUpTimeHours: 0,
+        tearDownRate: 4.25,
+        tearDownCrew: 1,
+        tearDownTimeHours: 1,
       }),
     ]);
 
     const payload = await buildPlanPackagePayload(plan);
 
-    expect(payload.plan.lineItems[0].workTypeId).toBe('plan-export-plan-1-line-1');
-    expect(payload.plan.lineItems[1].workTypeId).toBe('plan-export-plan-1-line-2');
+    expect(payload.plan.lineItems[0]).toMatchObject({
+      id: 'line-1::phase::build-up',
+      sourceWorkPackageId: 'line-1',
+      workTypeId: 'plan-export-plan-1-line-1',
+      buildPhase: 'build-up',
+    });
+    expect(payload.plan.lineItems[1]).toMatchObject({
+      id: 'line-2::phase::tear-down',
+      sourceWorkPackageId: 'line-2',
+      workTypeId: 'plan-export-plan-1-line-2',
+      buildPhase: 'tear-down',
+    });
     expect(payload.workTypes).toEqual([
       {
         id: 'plan-export-plan-1-line-1',
         title: 'Rigging',
         workUnit: 'm',
-        buildPhase: 'build-up',
-        expectedProductivity: 5.5,
+        buildUpRate: 5.5,
+        tearDownRate: 0,
         createdAt: '2026-02-28T10:00:00.000Z',
         updatedAt: '2026-02-28T10:00:00.000Z',
       },
@@ -168,12 +206,48 @@ describe('plan-package export', () => {
         id: 'plan-export-plan-1-line-2',
         title: 'Rigging Tear-down',
         workUnit: 'm',
-        buildPhase: 'tear-down',
-        expectedProductivity: 4.25,
+        buildUpRate: 0,
+        tearDownRate: 4.25,
         createdAt: '2026-02-28T10:00:00.000Z',
         updatedAt: '2026-02-28T10:00:00.000Z',
       },
     ]);
+  });
+
+  it('splits a dual-phase work package into build-up and tear-down legacy records', async () => {
+    mockGetAllWorkTypes.mockResolvedValue([]);
+    const plan = makePlan([
+      makeLineItem({
+        id: 'line-1',
+        workTypeId: null,
+        buildUpRate: 8,
+        buildUpCrew: 3,
+        buildUpTimeHours: 5,
+        tearDownRate: 6,
+        tearDownCrew: 2,
+        tearDownTimeHours: 4,
+      }),
+    ]);
+
+    const payload = await buildPlanPackagePayload(plan);
+
+    expect(payload.plan.lineItems).toHaveLength(2);
+    expect(payload.plan.lineItems[0]).toMatchObject({
+      id: 'line-1::phase::build-up',
+      sourceWorkPackageId: 'line-1',
+      buildPhase: 'build-up',
+      productivityRate: 8,
+      crew: 3,
+      timeHours: 5,
+    });
+    expect(payload.plan.lineItems[1]).toMatchObject({
+      id: 'line-1::phase::tear-down',
+      sourceWorkPackageId: 'line-1',
+      buildPhase: 'tear-down',
+      productivityRate: 6,
+      crew: 2,
+      timeHours: 4,
+    });
   });
 
   it('exports a JSON envelope with sanitized filename', async () => {
@@ -181,8 +255,8 @@ describe('plan-package export', () => {
       id: 'wt-1',
       title: 'Carpet Tiles',
       workUnit: 'm2',
-      buildPhase: 'build-up',
-      expectedProductivity: 10,
+      buildUpRate: 10,
+      tearDownRate: 0,
       createdAt: '2026-02-01T00:00:00.000Z',
       updatedAt: '2026-02-01T00:00:00.000Z',
     };

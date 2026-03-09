@@ -36,25 +36,25 @@ describe('createPlan', () => {
 
 describe('createLineItem', () => {
   it('creates a line item with computed time', () => {
-    const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0);
     expect(item.title).toBe('Install carpet');
     expect(item.workQuantity).toBe(100);
-    expect(item.productivityRate).toBe(10);
-    expect(item.timeHours).toBe(10); // 100 / 10
-    expect(item.crew).toBe(1);
-    expect(item.rateSource).toBe('manual');
+    expect(item.buildUpRate).toBe(10);
+    expect(item.buildUpTimeHours).toBe(10); // 100 / 10
+    expect(item.buildUpCrew).toBe(1);
+    expect(item.buildUpRateSource).toBe('manual');
     expect(item.reviewNote).toBeNull();
-    expect(item.scheduledStart).toBeNull();
-    expect(item.scheduledEnd).toBeNull();
-    expect(item.originalScheduledStart).toBeNull();
-    expect(item.originalScheduledEnd).toBeNull();
+    expect(item.buildUpScheduledStart).toBeNull();
+    expect(item.buildUpScheduledEnd).toBeNull();
+    expect(item.buildUpOriginalScheduledStart).toBeNull();
+    expect(item.buildUpOriginalScheduledEnd).toBeNull();
     expect(item.amendmentNote).toBeNull();
     expect(item.amendedAt).toBeNull();
   });
 
   it('handles zero productivity rate', () => {
-    const item = createLineItem('Task', 'Furniture', 'pcs', 'build-up', 50, 0);
-    expect(item.timeHours).toBe(0);
+    const item = createLineItem('Task', 'Furniture', 'pcs', 50, 0, 0);
+    expect(item.buildUpTimeHours).toBe(0);
   });
 });
 
@@ -77,14 +77,14 @@ describe('activatePlan / revertToDraft', () => {
 describe('plan line item operations', () => {
   it('adds a line item', () => {
     const plan = createPlan('Test');
-    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 100, 10, 0);
     const updated = addLineItemToPlan(plan, item);
     expect(updated.lineItems).toHaveLength(1);
   });
 
   it('removes a line item', () => {
     const plan = createPlan('Test');
-    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 100, 10, 0);
     const withItem = addLineItemToPlan(plan, item);
     const removed = removeLineItemFromPlan(withItem, item.id);
     expect(removed.lineItems).toHaveLength(0);
@@ -92,18 +92,18 @@ describe('plan line item operations', () => {
 
   it('updates a line item', () => {
     const plan = createPlan('Test');
-    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 100, 10, 0);
     const withItem = addLineItemToPlan(plan, item);
-    const updated = updatePlanLineItem(withItem, item.id, { crew: 3 });
-    expect(updated.lineItems[0].crew).toBe(3);
+    const updated = updatePlanLineItem(withItem, item.id, { buildUpCrew: 3 });
+    expect(updated.lineItems[0].buildUpCrew).toBe(3);
   });
 });
 
 describe('planTotalPersonHours', () => {
   it('sums time × crew across all items', () => {
     let plan = createPlan('Test');
-    plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 'build-up', 100, 10)); // 10h × 1 crew = 10
-    const item2 = { ...createLineItem('B', 'Furniture', 'pcs', 'build-up', 50, 5), crew: 2 }; // 10h × 2 crew = 20
+    plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 100, 10, 0)); // 10h × 1 crew = 10
+    const item2 = { ...createLineItem('B', 'Furniture', 'pcs', 50, 5, 0), buildUpCrew: 2 }; // 10h × 2 crew = 20
     plan = addLineItemToPlan(plan, item2);
     expect(planTotalPersonHours(plan)).toBe(30);
   });
@@ -112,9 +112,9 @@ describe('planTotalPersonHours', () => {
 describe('planTotalsByUnit', () => {
   it('groups quantity by work unit', () => {
     let plan = createPlan('Test');
-    plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 'build-up', 100, 10));
-    plan = addLineItemToPlan(plan, createLineItem('B', 'Carpet Tiles', 'm2', 'build-up', 200, 10));
-    plan = addLineItemToPlan(plan, createLineItem('C', 'Furniture', 'pcs', 'build-up', 50, 5));
+    plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 100, 10, 0));
+    plan = addLineItemToPlan(plan, createLineItem('B', 'Carpet Tiles', 'm2', 200, 10, 0));
+    plan = addLineItemToPlan(plan, createLineItem('C', 'Furniture', 'pcs', 50, 5, 0));
 
     const totals = planTotalsByUnit(plan);
     expect(totals.get('m2')).toBe(300);
@@ -124,19 +124,18 @@ describe('planTotalsByUnit', () => {
 
 describe('lineItemWorkTypeKey', () => {
   it('extracts work type key from line item', () => {
-    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 100, 10, 0);
     const key = lineItemWorkTypeKey(item);
     expect(key.workTypeTitle).toBe('Carpet Tiles');
     expect(key.workUnit).toBe('m2');
-    expect(key.buildPhase).toBe('build-up');
   });
 });
 
 describe('duplicateLineItem', () => {
   it('copies work-type and assumption fields with a normalized copy title', () => {
-    const original = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10, 'historical', 'wt-1');
-    original.crew = 3;
-    original.timeHours = 12.5;
+    const original = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0, 'historical', 'wt-1');
+    original.buildUpCrew = 3;
+    original.buildUpTimeHours = 12.5;
     original.rationale = 'Keep a note';
 
     const duplicate = duplicateLineItem(original);
@@ -145,25 +144,24 @@ describe('duplicateLineItem', () => {
     expect(duplicate.title).toBe('Install carpet (copy)');
     expect(duplicate.workTypeTitle).toBe(original.workTypeTitle);
     expect(duplicate.workUnit).toBe(original.workUnit);
-    expect(duplicate.buildPhase).toBe(original.buildPhase);
     expect(duplicate.workTypeId).toBe(original.workTypeId);
     expect(duplicate.workQuantity).toBe(original.workQuantity);
-    expect(duplicate.crew).toBe(original.crew);
-    expect(duplicate.timeHours).toBe(original.timeHours);
-    expect(duplicate.productivityRate).toBe(original.productivityRate);
-    expect(duplicate.rateSource).toBe(original.rateSource);
+    expect(duplicate.buildUpCrew).toBe(original.buildUpCrew);
+    expect(duplicate.buildUpTimeHours).toBe(original.buildUpTimeHours);
+    expect(duplicate.buildUpRate).toBe(original.buildUpRate);
+    expect(duplicate.buildUpRateSource).toBe(original.buildUpRateSource);
     expect(duplicate.rationale).toBeNull();
     expect(duplicate.reviewNote).toBeNull();
-    expect(duplicate.scheduledStart).toBe(original.scheduledStart);
-    expect(duplicate.scheduledEnd).toBe(original.scheduledEnd);
-    expect(duplicate.originalScheduledStart).toBe(original.originalScheduledStart);
-    expect(duplicate.originalScheduledEnd).toBe(original.originalScheduledEnd);
+    expect(duplicate.buildUpScheduledStart).toBe(original.buildUpScheduledStart);
+    expect(duplicate.buildUpScheduledEnd).toBe(original.buildUpScheduledEnd);
+    expect(duplicate.buildUpOriginalScheduledStart).toBe(original.buildUpOriginalScheduledStart);
+    expect(duplicate.buildUpOriginalScheduledEnd).toBe(original.buildUpOriginalScheduledEnd);
     expect(duplicate.amendmentNote).toBe(original.amendmentNote);
     expect(duplicate.amendedAt).toBe(original.amendedAt);
   });
 
   it('does not accumulate repeated copy suffixes', () => {
-    const original = createLineItem('Install carpet (copy)', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
+    const original = createLineItem('Install carpet (copy)', 'Carpet Tiles', 'm2', 100, 10, 0);
     const duplicate = duplicateLineItem(original);
     expect(duplicate.title).toBe('Install carpet (copy)');
   });

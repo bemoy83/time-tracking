@@ -5,7 +5,7 @@
  */
 
 import type { WorkType } from '../lib/types';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../lib/types';
+import { WORK_UNIT_LABELS } from '../lib/types';
 
 interface WorkTypePickerProps {
   workTypes: WorkType[];
@@ -45,14 +45,14 @@ export function WorkTypePicker({
           <option value="">{placeholder}</option>
           {workTypes.map((wt) => (
             <option key={wt.id} value={wt.id}>
-              {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
+              {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
             </option>
           ))}
         </select>
       )}
       {showRate && selectedWorkType && (
         <div className="task-work-quantity__hint">
-          Expected: {selectedWorkType.expectedProductivity} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+          Build-up: {selectedWorkType.buildUpRate} · Tear-down: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
         </div>
       )}
     </div>

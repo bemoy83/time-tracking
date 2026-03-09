@@ -19,7 +19,6 @@ import {
   nowUtc,
 } from '../types';
 import type {
-  BuildPhase,
   Task,
   TaskNote,
   WorkType,
@@ -51,8 +50,8 @@ export interface ClassifyTaskToWorkTypeResult {
 export interface CreateAndClassifyInput {
   title?: string;
   workUnit?: WorkUnit;
-  buildPhase?: BuildPhase;
-  expectedProductivity?: number;
+  buildUpRate?: number;
+  tearDownRate?: number;
 }
 
 export interface CreateAndClassifyResult extends ClassifyEntryToWorkTypeResult {
@@ -76,7 +75,7 @@ export class WorkTypeConflictError extends Error {
 
   constructor(existingWorkType: WorkType) {
     super(
-      `WorkType "${existingWorkType.title}" (${existingWorkType.workUnit}, ${existingWorkType.buildPhase}) already exists.`,
+      `WorkType "${existingWorkType.title}" (${existingWorkType.workUnit}) already exists.`,
     );
     this.name = 'WorkTypeConflictError';
     this.existingWorkTypeId = existingWorkType.id;
@@ -101,7 +100,7 @@ function getMissingQuantityWarning(task: Task): 'missing_quantity' | null {
 
 async function persistTaskClassification(
   task: Task,
-  updates: Pick<Task, 'workTypeId' | 'workUnit' | 'buildPhase' | 'targetProductivity'>,
+  updates: Pick<Task, 'workTypeId' | 'workUnit' | 'targetProductivity'>,
 ): Promise<void> {
   const taskInStore = getTaskById(task.id);
   if (taskInStore) {
@@ -115,23 +114,19 @@ async function persistTaskClassification(
   });
 }
 
-function resolveTaskUpdates(task: Task, workType: WorkType): Pick<Task, 'workTypeId' | 'workUnit' | 'buildPhase' | 'targetProductivity'> {
+function resolveTaskUpdates(task: Task, workType: WorkType): Pick<Task, 'workTypeId' | 'workUnit' | 'targetProductivity'> {
   if (task.workUnit != null && task.workUnit !== workType.workUnit) {
     throw new Error(
       `Unit mismatch: task uses ${task.workUnit}, selected WorkType uses ${workType.workUnit}.`,
     );
   }
-  if (task.buildPhase != null && task.buildPhase !== workType.buildPhase) {
-    throw new Error(
-      `Build phase mismatch: task uses ${task.buildPhase}, selected WorkType uses ${workType.buildPhase}.`,
-    );
-  }
+
+  const rate = task.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
 
   return {
     workTypeId: workType.id,
     workUnit: task.workUnit ?? workType.workUnit,
-    buildPhase: task.buildPhase ?? workType.buildPhase,
-    targetProductivity: workType.expectedProductivity,
+    targetProductivity: rate || workType.buildUpRate || workType.tearDownRate,
   };
 }
 
@@ -146,7 +141,7 @@ async function addClassificationAuditNote(
     taskId,
     text: createAuditNote(
       'Remediation WorkType assigned',
-      `${details} classified as "${workType.title}" (${workType.workUnit}, ${workType.buildPhase}). Reason: ${reason}`,
+      `${details} classified as "${workType.title}" (${workType.workUnit}). Reason: ${reason}`,
     ),
     createdAt: nowUtc(),
   };
@@ -249,15 +244,15 @@ export async function createAndClassifyFromEntry(
     throw new Error('WorkType title is required.');
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
-  const buildPhase = input.buildPhase ?? task.buildPhase ?? 'build-up';
-  const expectedProductivity = input.expectedProductivity
-    ?? (task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10);
-  if (!Number.isFinite(expectedProductivity) || expectedProductivity <= 0) {
-    throw new Error('Expected productivity must be greater than 0.');
+  const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
+  const buildUpRate = input.buildUpRate ?? (task.buildPhase !== 'tear-down' ? defaultRate : 0);
+  const tearDownRate = input.tearDownRate ?? (task.buildPhase === 'tear-down' ? defaultRate : 0);
+  if (buildUpRate <= 0 && tearDownRate <= 0) {
+    throw new Error('At least one rate must be greater than 0.');
   }
 
-  const existing = findWorkTypeByCompositeKey(title, workUnit, buildPhase)
-    ?? await dbFindWorkTypeByKey(title, workUnit, buildPhase);
+  const existing = findWorkTypeByCompositeKey(title, workUnit)
+    ?? await dbFindWorkTypeByKey(title, workUnit);
   if (existing) {
     throw new WorkTypeConflictError(existing);
   }
@@ -265,8 +260,8 @@ export async function createAndClassifyFromEntry(
   const created = await createWorkType({
     title,
     workUnit,
-    buildPhase,
-    expectedProductivity,
+    buildUpRate,
+    tearDownRate,
   });
 
   const classified = await classifyEntryToWorkType(entryId, created.id, normalizedReason);
@@ -292,15 +287,15 @@ export async function createAndClassifyFromTask(
     throw new Error('WorkType title is required.');
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
-  const buildPhase = input.buildPhase ?? task.buildPhase ?? 'build-up';
-  const expectedProductivity = input.expectedProductivity
-    ?? (task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10);
-  if (!Number.isFinite(expectedProductivity) || expectedProductivity <= 0) {
-    throw new Error('Expected productivity must be greater than 0.');
+  const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
+  const buildUpRate = input.buildUpRate ?? (task.buildPhase !== 'tear-down' ? defaultRate : 0);
+  const tearDownRate = input.tearDownRate ?? (task.buildPhase === 'tear-down' ? defaultRate : 0);
+  if (buildUpRate <= 0 && tearDownRate <= 0) {
+    throw new Error('At least one rate must be greater than 0.');
   }
 
-  const existing = findWorkTypeByCompositeKey(title, workUnit, buildPhase)
-    ?? await dbFindWorkTypeByKey(title, workUnit, buildPhase);
+  const existing = findWorkTypeByCompositeKey(title, workUnit)
+    ?? await dbFindWorkTypeByKey(title, workUnit);
   if (existing) {
     throw new WorkTypeConflictError(existing);
   }
@@ -308,8 +303,8 @@ export async function createAndClassifyFromTask(
   const created = await createWorkType({
     title,
     workUnit,
-    buildPhase,
-    expectedProductivity,
+    buildUpRate,
+    tearDownRate,
   });
 
   const classified = await classifyTaskToWorkType(taskId, created.id, normalizedReason);

@@ -8,17 +8,17 @@ describe('lineItemToCreateTaskInput', () => {
       'Install carpet',
       'Carpet Tiles',
       'm2',
-      'build-up',
       100,
       10,
+      0,
       'template',
       'wt-123',
     );
-    item.crew = 3;
+    item.buildUpCrew = 3;
 
-    const input = lineItemToCreateTaskInput(item, { planId: 'plan-1' });
+    const input = lineItemToCreateTaskInput(item, 'build-up', { planId: 'plan-1' });
 
-    expect(input.title).toBe('Install carpet');
+    expect(input.title).toBe('Install carpet — Build-up');
     expect(input.sourcePlanId).toBe('plan-1');
     expect(input.sourceLineItemId).toBe(item.id);
     expect(input.workTypeId).toBe('wt-123');
@@ -31,44 +31,55 @@ describe('lineItemToCreateTaskInput', () => {
   });
 
   it('returns undefined estimatedMinutes when timeHours is 0', () => {
-    const item = createLineItem('Task', 'Furniture', 'pcs', 'build-up', 50, 0);
-    const input = lineItemToCreateTaskInput(item);
+    const item = createLineItem('Task', 'Furniture', 'pcs', 50, 0, 0);
+    const input = lineItemToCreateTaskInput(item, 'build-up');
 
     expect(input.estimatedMinutes).toBeUndefined();
   });
 
   it('rounds fractional estimatedMinutes', () => {
-    const item = createLineItem('Task', 'Drywall', 'm2', 'tear-down', 10, 3);
-    // timeHours = 10 / 3 ≈ 3.333... → 200 minutes
-    const input = lineItemToCreateTaskInput(item);
+    const item = createLineItem('Task', 'Drywall', 'm2', 10, 3, 0);
+    // buildUpTimeHours = 10 / 3 ≈ 3.333... → 200 minutes
+    const input = lineItemToCreateTaskInput(item, 'build-up');
 
     expect(input.estimatedMinutes).toBe(200);
   });
 
   it('maps null workTypeId to undefined', () => {
-    const item = createLineItem('Legacy item', 'Old Type', 'm2', 'build-up', 20, 5);
+    const item = createLineItem('Legacy item', 'Old Type', 'm2', 20, 5, 0);
     // workTypeId defaults to null
-    const input = lineItemToCreateTaskInput(item);
+    const input = lineItemToCreateTaskInput(item, 'build-up');
 
     expect(input.workTypeId).toBeUndefined();
   });
 
   it('applies projectId override when provided', () => {
-    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
-    const input = lineItemToCreateTaskInput(item, { projectId: 'proj-1' });
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 100, 10, 0);
+    const input = lineItemToCreateTaskInput(item, 'build-up', { projectId: 'proj-1' });
     expect(input.projectId).toBe('proj-1');
   });
 
   it('maps null projectId override to undefined', () => {
-    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
-    const input = lineItemToCreateTaskInput(item, { projectId: null });
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 100, 10, 0);
+    const input = lineItemToCreateTaskInput(item, 'build-up', { projectId: null });
     expect(input.projectId).toBeUndefined();
   });
 
   it('maps missing planId override to undefined sourcePlanId while retaining sourceLineItemId', () => {
-    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
-    const input = lineItemToCreateTaskInput(item);
+    const item = createLineItem('Task', 'Carpet Tiles', 'm2', 100, 10, 0);
+    const input = lineItemToCreateTaskInput(item, 'build-up');
     expect(input.sourcePlanId).toBeUndefined();
     expect(input.sourceLineItemId).toBe(item.id);
+  });
+
+  it('maps tear-down phase quantity override and title', () => {
+    const item = createLineItem('Strike carpet', 'Carpet Tiles', 'm2', 100, 10, 5);
+    item.tearDownQuantity = 90;
+    const input = lineItemToCreateTaskInput(item, 'tear-down');
+
+    expect(input.title).toBe('Strike carpet — Tear-down');
+    expect(input.buildPhase).toBe('tear-down');
+    expect(input.workQuantity).toBe(90);
+    expect(input.targetProductivity).toBe(5);
   });
 });

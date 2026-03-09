@@ -1,5 +1,6 @@
 import type { BuildPhase, Task, WorkType, WorkUnit } from './types';
 import type { PlanLineItem } from './planning/plan-model';
+import { getPhaseFields } from './planning/plan-model';
 import type { CreateTaskInput } from './stores/task-store';
 import type { WorkTypeKey } from './kpi';
 
@@ -25,7 +26,6 @@ export type WorkPackageWorkTypeKey = {
   workTypeTitle?: string;
   title?: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase | null;
 };
 
 /** Build a KPI-compatible work-type key from shared work-package fields. */
@@ -37,35 +37,44 @@ export function workPackageWorkTypeKey(input: WorkPackageWorkTypeKey): WorkTypeK
     workTypeId: input.workTypeId,
     workTypeTitle: resolvedTitle,
     workUnit: input.workUnit,
-    buildPhase: input.buildPhase,
   };
 }
 
 /** Shared line-item keying helper used by planning suggestions and tests. */
 export function lineItemWorkTypeKey(
-  item: Pick<PlanLineItem, 'workTypeId' | 'workTypeTitle' | 'title' | 'workUnit' | 'buildPhase'>,
+  item: Pick<PlanLineItem, 'workTypeId' | 'workTypeTitle' | 'title' | 'workUnit'>,
 ): WorkTypeKey {
   return workPackageWorkTypeKey({
     workTypeId: item.workTypeId,
     workTypeTitle: item.workTypeTitle,
     title: item.title,
     workUnit: item.workUnit,
-    buildPhase: item.buildPhase,
   });
 }
 
-export function lineItemToWorkPackageCore(item: PlanLineItem): WorkPackageCore {
+/**
+ * Convert a PlanLineItem phase into a WorkPackageCore.
+ * Used for task creation from a unified work package.
+ */
+export function lineItemPhaseToWorkPackageCore(
+  item: PlanLineItem,
+  phase: BuildPhase,
+): WorkPackageCore {
+  const pf = getPhaseFields(item, phase);
+  const quantity = phase === 'tear-down' && item.tearDownQuantity != null
+    ? item.tearDownQuantity
+    : item.workQuantity;
   return {
     title: item.title,
     workTypeId: item.workTypeId,
     workTypeTitle: item.workTypeTitle,
     workUnit: item.workUnit,
-    buildPhase: item.buildPhase,
-    workQuantity: item.workQuantity,
-    crew: item.crew,
-    productivityRate: item.productivityRate,
-    estimatedMinutes: Math.round(item.timeHours * 60),
-    blockReason: item.blockReason,
+    buildPhase: phase,
+    workQuantity: quantity,
+    crew: pf.crew,
+    productivityRate: pf.rate,
+    estimatedMinutes: Math.round(pf.timeHours * 60),
+    blockReason: pf.blockReason,
   };
 }
 
@@ -75,7 +84,7 @@ export function taskToWorkPackageCore(task: Task, workType?: WorkType | null): W
     workTypeId: task.workTypeId,
     workTypeTitle: workType?.title,
     workUnit: task.workUnit ?? workType?.workUnit ?? 'm2',
-    buildPhase: task.buildPhase ?? workType?.buildPhase ?? 'build-up',
+    buildPhase: task.buildPhase ?? 'build-up',
     workQuantity: task.workQuantity ?? 0,
     crew: task.crew ?? 1,
     productivityRate: task.targetProductivity ?? 0,

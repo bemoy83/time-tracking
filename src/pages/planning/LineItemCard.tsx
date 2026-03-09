@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import {
   WORK_UNIT_LABELS,
-  BUILD_PHASE_LABELS,
   type WorkUnit,
 } from '../../lib/types';
 import { getWorkTypeById, useWorkTypeStore } from '../../lib/stores/work-type-store';
 import {
   type PlanLineItem,
+  getPhaseFields,
+  phaseFieldUpdates,
   resolveLineItemWorkTypeTitle,
 } from '../../lib/planning/plan-model';
 import type { LineItemSuggestion } from '../../lib/planning/plan-suggestions';
@@ -18,6 +19,7 @@ import {
   TrashIcon,
 } from '../../components/icons';
 import { StatusBadge } from '../../components/StatusBadge';
+import type { BuildPhase } from '../../lib/types';
 
 /** Select all text on focus so typing replaces the value. */
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
@@ -26,6 +28,8 @@ interface LineItemCardProps {
   item: PlanLineItem;
   suggestion: LineItemSuggestion | null;
   isLocked: boolean;
+  /** Which phase to display in this card. Defaults to build-up. */
+  displayPhase?: BuildPhase;
   onUpdate: (updates: Partial<PlanLineItem>) => void;
   onDuplicate?: (item: PlanLineItem) => void;
   onRemove: () => void;
@@ -35,6 +39,7 @@ export function LineItemCard({
   item,
   suggestion,
   isLocked,
+  displayPhase = 'build-up',
   onUpdate,
   onDuplicate,
   onRemove,
@@ -43,44 +48,52 @@ export function LineItemCard({
   const [unitChangeWarning, setUnitChangeWarning] = useState<{ from: WorkUnit; to: WorkUnit } | null>(null);
   const { workTypes } = useWorkTypeStore();
   const riskClass = suggestion ? `planning-view__risk--${suggestion.risk}` : '';
-  const suggestedCrew = suggestion?.suggestedCrew ?? null;
 
-  const canRecomputeTime = item.workQuantity > 0 && item.crew > 0 && item.productivityRate > 0;
+  // Read phase fields for the display phase
+  const pf = getPhaseFields(item, displayPhase);
+  const phaseSuggestion = suggestion
+    ? (displayPhase === 'build-up' ? suggestion.buildUp : suggestion.tearDown)
+    : null;
+  const suggestedCrew = phaseSuggestion?.suggestedCrew ?? null;
+
+  const canRecomputeTime = item.workQuantity > 0 && pf.crew > 0 && pf.rate > 0;
   const handleRecomputeTime = () => {
-    const result = computeProductivityResult('time', item.workQuantity, item.productivityRate, 0, item.crew);
+    const result = computeProductivityResult('time', item.workQuantity, pf.rate, 0, pf.crew);
     if (result?.timeHours != null) {
-      onUpdate({ timeHours: Math.round(result.timeHours * 100) / 100 });
+      onUpdate(phaseFieldUpdates(displayPhase, { timeHours: Math.round(result.timeHours * 100) / 100 }));
     }
   };
 
-  const canRecomputeCrew = item.workQuantity > 0 && item.timeHours > 0 && item.productivityRate > 0;
+  const canRecomputeCrew = item.workQuantity > 0 && pf.timeHours > 0 && pf.rate > 0;
   const handleRecomputeCrew = () => {
-    const result = computeProductivityResult('crew', item.workQuantity, item.productivityRate, item.timeHours, 0);
+    const result = computeProductivityResult('crew', item.workQuantity, pf.rate, pf.timeHours, 0);
     if (result?.crew != null) {
-      onUpdate({ crew: result.crew });
+      onUpdate(phaseFieldUpdates(displayPhase, { crew: result.crew }));
     }
   };
 
-  const effectiveRate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 0);
+  const effectiveRate = pf.rate > 0 ? pf.rate : (phaseSuggestion?.suggestedRate ?? 0);
   /** Magic button shows when all are met: editable, has quantity, has rate, and at least one suggestion (crew/rate/time). Phase-agnostic. */
   const hasActionableSuggestion =
-    suggestedCrew != null || suggestion?.suggestedRate != null || suggestion?.suggestedTimeHours != null;
+    suggestedCrew != null || phaseSuggestion?.suggestedRate != null || phaseSuggestion?.suggestedTimeHours != null;
   const canMagicApply =
     !isLocked &&
     item.workQuantity > 0 &&
     effectiveRate > 0 &&
     hasActionableSuggestion;
   const handleMagicApply = () => {
-    const crew = suggestedCrew ?? item.crew;
-    const rate = item.productivityRate > 0 ? item.productivityRate : (suggestion?.suggestedRate ?? 1);
+    const crew = suggestedCrew ?? pf.crew;
+    const rate = pf.rate > 0 ? pf.rate : (phaseSuggestion?.suggestedRate ?? 1);
     const timeHours = item.workQuantity / (rate * crew);
-    const updates: Partial<PlanLineItem> = {
+    const updates: Partial<PlanLineItem> = phaseFieldUpdates(displayPhase, {
       crew,
       timeHours: Math.round(timeHours * 100) / 100,
-    };
-    if (suggestion?.suggestedRate != null && item.productivityRate !== suggestion.suggestedRate) {
-      updates.productivityRate = suggestion.suggestedRate;
-      updates.rateSource = 'historical';
+    });
+    if (phaseSuggestion?.suggestedRate != null && pf.rate !== phaseSuggestion.suggestedRate) {
+      Object.assign(updates, phaseFieldUpdates(displayPhase, {
+        rate: phaseSuggestion.suggestedRate,
+        rateSource: 'historical',
+      }));
     }
     onUpdate(updates);
   };
@@ -88,8 +101,8 @@ export function LineItemCard({
   const workTypeLabel = (() => {
     const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
     return wt
-      ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-      : `${resolveLineItemWorkTypeTitle(item)} · ${BUILD_PHASE_LABELS[item.buildPhase]} · ${WORK_UNIT_LABELS[item.workUnit]}`;
+      ? `${wt.title} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+      : `${resolveLineItemWorkTypeTitle(item)} · ${WORK_UNIT_LABELS[item.workUnit]}`;
   })();
 
   const handleWorkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -98,16 +111,21 @@ export function LineItemCard({
     setUnitChangeWarning(
       wt.workUnit !== item.workUnit ? { from: item.workUnit, to: wt.workUnit } : null,
     );
+    const effectiveWtRate = displayPhase === 'tear-down' ? wt.tearDownRate : wt.buildUpRate;
+    const chosenRate = effectiveWtRate || wt.buildUpRate || wt.tearDownRate;
     const updates: Partial<PlanLineItem> = {
       workTypeId: wt.id,
       workTypeTitle: wt.title,
       workUnit: wt.workUnit,
-      buildPhase: wt.buildPhase,
-      productivityRate: wt.expectedProductivity,
-      rateSource: 'template',
+      ...phaseFieldUpdates(displayPhase, {
+        rate: chosenRate,
+        rateSource: 'template',
+      }),
     };
-    if (wt.expectedProductivity > 0 && item.crew > 0 && item.workQuantity > 0) {
-      updates.timeHours = Math.round((item.workQuantity / (wt.expectedProductivity * item.crew)) * 100) / 100;
+    if (chosenRate > 0 && pf.crew > 0 && item.workQuantity > 0) {
+      Object.assign(updates, phaseFieldUpdates(displayPhase, {
+        timeHours: Math.round((item.workQuantity / (chosenRate * pf.crew)) * 100) / 100,
+      }));
     }
     onUpdate(updates);
   };
@@ -129,7 +147,7 @@ export function LineItemCard({
                 <option value="" disabled>Select work type…</option>
                 {workTypes.map((wt) => (
                   <option key={wt.id} value={wt.id}>
-                    {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
+                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
                   </option>
                 ))}
               </select>
@@ -195,18 +213,18 @@ export function LineItemCard({
             <div className="planning-view__field">
               <span className="planning-view__field-label">Rate</span>
               <span className="planning-view__field-value">
-                {item.productivityRate} {WORK_UNIT_LABELS[item.workUnit]}/ph
+                {pf.rate} {WORK_UNIT_LABELS[item.workUnit]}/ph
               </span>
             </div>
           </div>
           <div className="planning-view__field-group">
             <div className="planning-view__field">
               <span className="planning-view__field-label">Crew</span>
-              <span className="planning-view__field-value">{item.crew}</span>
+              <span className="planning-view__field-value">{pf.crew}</span>
             </div>
             <div className="planning-view__field">
               <span className="planning-view__field-label">Time (hrs)</span>
-              <span className="planning-view__field-value">{item.timeHours}</span>
+              <span className="planning-view__field-value">{pf.timeHours}</span>
             </div>
           </div>
         </div>
@@ -231,9 +249,9 @@ export function LineItemCard({
               <input
                 type="number"
                 className="input"
-                value={item.productivityRate}
+                value={pf.rate}
                 step={0.1}
-                onChange={(e) => onUpdate({ productivityRate: Number(e.target.value) })}
+                onChange={(e) => onUpdate(phaseFieldUpdates(displayPhase, { rate: Number(e.target.value) }))}
                 onFocus={selectOnFocus}
               />
               <span className="planning-view__field-help">Productivity per person-hour</span>
@@ -256,10 +274,10 @@ export function LineItemCard({
               <input
                 type="number"
                 className="input"
-                value={item.crew}
+                value={pf.crew}
                 min={1}
                 max={20}
-                onChange={(e) => onUpdate({ crew: Number(e.target.value) })}
+                onChange={(e) => onUpdate(phaseFieldUpdates(displayPhase, { crew: Number(e.target.value) }))}
                 onFocus={selectOnFocus}
               />
               <span className="planning-view__field-help">
@@ -282,9 +300,9 @@ export function LineItemCard({
               <input
                 type="number"
                 className="input"
-                value={item.timeHours}
+                value={pf.timeHours}
                 step={0.5}
-                onChange={(e) => onUpdate({ timeHours: Number(e.target.value) })}
+                onChange={(e) => onUpdate(phaseFieldUpdates(displayPhase, { timeHours: Number(e.target.value) }))}
                 onFocus={selectOnFocus}
               />
               <span className="planning-view__field-help">Estimated duration in hours</span>
@@ -294,25 +312,27 @@ export function LineItemCard({
       )}
 
       {/* KPI Suggestion */}
-      {suggestion && suggestion.suggestedRate != null && (
+      {phaseSuggestion && phaseSuggestion.suggestedRate != null && (
         <div className="planning-view__suggestion">
           <SparklesIcon className="planning-view__suggestion-icon" />
           <span className="planning-view__suggestion-text">
             KPI suggests{' '}
             <span className="planning-view__suggestion-rate">
-              {suggestion.suggestedRate.toFixed(1)} {WORK_UNIT_LABELS[item.workUnit]}/ph
+              {phaseSuggestion.suggestedRate.toFixed(1)} {WORK_UNIT_LABELS[item.workUnit]}/ph
             </span>
           </span>
-          {suggestion.confidence && suggestion.confidence !== 'insufficient' && (
+          {suggestion?.confidence && suggestion.confidence !== 'insufficient' && (
             <StatusBadge variant={suggestion.confidence} />
           )}
           {!isLocked && (
             <button
               className="btn btn--primary btn--sm"
               onClick={() => onUpdate({
-                productivityRate: suggestion.suggestedRate!,
-                rateSource: 'historical',
-                timeHours: suggestion.suggestedTimeHours ?? item.timeHours,
+                ...phaseFieldUpdates(displayPhase, {
+                  rate: phaseSuggestion.suggestedRate!,
+                  rateSource: 'historical',
+                  timeHours: phaseSuggestion.suggestedTimeHours ?? pf.timeHours,
+                }),
               })}
             >
               Apply

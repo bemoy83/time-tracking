@@ -1,12 +1,12 @@
 /**
  * KPI computation for completed tasks.
- * Groups by Work Type (title + workUnit + buildPhase)
- * and calculates average achieved productivity.
+ * Groups by Work Type (title + workUnit) and calculates average achieved
+ * productivity.
  *
  * Phase 2: Adds confidence classification and stability indicator.
  */
 
-import type { Task, WorkUnit, BuildPhase, AttributedEntry, WorkType } from './types';
+import type { Task, WorkUnit, AttributedEntry, WorkType } from './types';
 import { normalizeWorkTypeTitle } from './types';
 
 // --- Sample thresholds ---
@@ -21,7 +21,6 @@ export interface WorkTypeKey {
   workTypeId: string | null;
   workTypeTitle: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase | null;
 }
 
 export interface WorkTypeKpi {
@@ -80,7 +79,7 @@ export function computeCV(rates: number[]): number | null {
 
 export function workTypeKeyString(key: WorkTypeKey): string {
   const resolvedTitle = key.workTypeTitle;
-  return `${normalizeWorkTypeTitle(resolvedTitle)}:${key.workUnit}:${key.buildPhase ?? '_'}`;
+  return `${normalizeWorkTypeTitle(resolvedTitle)}:${key.workUnit}`;
 }
 
 export function findKpiByKey(kpis: WorkTypeKpi[], key: WorkTypeKey): WorkTypeKpi | undefined {
@@ -158,7 +157,6 @@ export function computeWorkTypeKpis(
       workTypeId: task.workTypeId,
       workTypeTitle,
       workUnit: task.workUnit!,
-      buildPhase: task.buildPhase,
     };
     const keyStr = workTypeKeyString(key);
     const taskRate = task.workQuantity! / personHours;
@@ -214,13 +212,11 @@ export function computeWorkTypeKpis(
     });
   }
 
-  // Sort by category, then unit, then phase
+  // Sort by category, then unit
   results.sort((a, b) => {
     const cmp = a.key.workTypeTitle.localeCompare(b.key.workTypeTitle);
     if (cmp !== 0) return cmp;
-    const cmp2 = a.key.workUnit.localeCompare(b.key.workUnit);
-    if (cmp2 !== 0) return cmp2;
-    return (a.key.buildPhase ?? '').localeCompare(b.key.buildPhase ?? '');
+    return a.key.workUnit.localeCompare(b.key.workUnit);
   });
 
   return results;

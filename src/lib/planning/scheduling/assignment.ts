@@ -1,4 +1,4 @@
-import type { PlanLineItem } from '../plan-model';
+import type { PhaseFields } from '../plan-model';
 import { addDays, compareDateStrings } from './work-calendar';
 
 export interface ScheduleSpan {
@@ -6,13 +6,13 @@ export interface ScheduleSpan {
   scheduledEnd: string | null;
 }
 
-export function getAssignedDates(item: Pick<PlanLineItem, 'scheduledStart' | 'scheduledEnd'>): string[] {
-  if (!item.scheduledStart || !item.scheduledEnd) return [];
-  if (compareDateStrings(item.scheduledStart, item.scheduledEnd) > 0) return [];
+export function getAssignedDates(pf: Pick<PhaseFields, 'scheduledStart' | 'scheduledEnd'>): string[] {
+  if (!pf.scheduledStart || !pf.scheduledEnd) return [];
+  if (compareDateStrings(pf.scheduledStart, pf.scheduledEnd) > 0) return [];
 
   const dates: string[] = [];
-  let cursor = item.scheduledStart;
-  while (compareDateStrings(cursor, item.scheduledEnd) <= 0) {
+  let cursor = pf.scheduledStart;
+  while (compareDateStrings(cursor, pf.scheduledEnd) <= 0) {
     dates.push(cursor);
     cursor = addDays(cursor, 1);
   }
@@ -24,11 +24,11 @@ export function getAssignedDates(item: Pick<PlanLineItem, 'scheduledStart' | 'sc
  * If a middle day is removed, the item becomes unscheduled to avoid split ranges.
  */
 export function toggleAssignmentDate(
-  item: Pick<PlanLineItem, 'scheduledStart' | 'scheduledEnd'>,
+  pf: Pick<PhaseFields, 'scheduledStart' | 'scheduledEnd'>,
   date: string,
 ): ScheduleSpan {
-  const start = item.scheduledStart;
-  const end = item.scheduledEnd;
+  const start = pf.scheduledStart;
+  const end = pf.scheduledEnd;
 
   if (!start || !end) {
     return { scheduledStart: date, scheduledEnd: date };

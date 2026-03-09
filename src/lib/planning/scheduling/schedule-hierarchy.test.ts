@@ -14,9 +14,9 @@ describe('buildSharedRows', () => {
     const planA = makePlan('plan-a', 'Alpha');
     const planB = makePlan('plan-b', 'Beta');
 
-    const aBuild = createLineItem('A Build', 'A Build', 'pcs', 'build-up', 1, 1);
-    const aTear = createLineItem('A Tear', 'A Tear', 'pcs', 'tear-down', 1, 1);
-    const bBuild = createLineItem('B Build', 'B Build', 'pcs', 'build-up', 1, 1);
+    const aBuild = createLineItem('A Build', 'A Build', 'pcs', 1, 1, 0);
+    const aTear = createLineItem('A Tear', 'A Tear', 'pcs', 1, 0, 1);
+    const bBuild = createLineItem('B Build', 'B Build', 'pcs', 1, 1, 0);
 
     planA.lineItems = [aBuild, aTear];
     planB.lineItems = [bBuild];
@@ -26,19 +26,19 @@ describe('buildSharedRows', () => {
     expect(rows.map((row) => row.id)).toEqual([
       'project:plan-a',
       'phase:plan-a:build-up',
-      `item:plan-a:${aBuild.id}`,
+      `item:plan-a:build-up:${aBuild.id}`,
       'phase:plan-a:tear-down',
-      `item:plan-a:${aTear.id}`,
+      `item:plan-a:tear-down:${aTear.id}`,
       'project:plan-b',
       'phase:plan-b:build-up',
-      `item:plan-b:${bBuild.id}`,
+      `item:plan-b:build-up:${bBuild.id}`,
     ]);
   });
 
   it('marks rows read-only when plan is reviewed', () => {
     const plan = makePlan('plan-ro', 'Read Only');
     plan.status = 'reviewed';
-    plan.lineItems = [createLineItem('Reviewed Item', 'Reviewed Item', 'pcs', 'build-up', 1, 1)];
+    plan.lineItems = [createLineItem('Reviewed Item', 'Reviewed Item', 'pcs', 1, 1, 0)];
 
     const rows = buildSharedRows([plan]);
 

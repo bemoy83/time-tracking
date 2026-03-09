@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createLineItem, createPlan, type Plan } from '../plan-model';
+import { createLineItem, createPlan, getPhaseFields, type Plan, type PlanLineItem } from '../plan-model';
 import { autoSchedule } from './auto-schedule';
+import type { BuildPhase } from '../../types';
 
 function makePhasePlan(overrides?: Partial<Plan>): Plan {
   return {
@@ -33,14 +34,24 @@ function makePhasePlan(overrides?: Partial<Plan>): Plan {
 
 function makeItem(
   title: string,
-  phase: 'build-up' | 'tear-down',
+  phase: BuildPhase,
   quantity: number,
   rate: number,
   crew: number,
-) {
-  const item = createLineItem(title, title, 'm2', phase, quantity, rate);
-  item.crew = crew;
-  item.timeHours = crew > 0 && rate > 0 ? quantity / (rate * crew) : 0;
+): PlanLineItem {
+  const isBuildUp = phase === 'build-up';
+  const item = createLineItem(
+    title, title, 'm2', quantity,
+    isBuildUp ? rate : 0,
+    isBuildUp ? 0 : rate,
+  );
+  if (isBuildUp) {
+    item.buildUpCrew = crew;
+    item.buildUpTimeHours = crew > 0 && rate > 0 ? quantity / (rate * crew) : 0;
+  } else {
+    item.tearDownCrew = crew;
+    item.tearDownTimeHours = crew > 0 && rate > 0 ? quantity / (rate * crew) : 0;
+  }
   return item;
 }
 
@@ -70,8 +81,8 @@ describe('autoSchedule', () => {
   it('returns unchanged plan when all items are already scheduled', () => {
     const plan = makePhasePlan();
     const item = makeItem('Already done', 'build-up', 100, 10, 2);
-    item.scheduledStart = '2026-03-02';
-    item.scheduledEnd = '2026-03-03';
+    item.buildUpScheduledStart = '2026-03-02';
+    item.buildUpScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
     expect(autoSchedule(plan)).toBe(plan);
   });
@@ -81,11 +92,12 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Build item', 'build-up', 80, 10, 2)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    expect(scheduled.scheduledStart).toBeTruthy();
-    expect(scheduled.scheduledEnd).toBeTruthy();
-    expect(scheduled.scheduledStart! >= '2026-03-02').toBe(true);
-    expect(scheduled.scheduledEnd! <= '2026-03-06').toBe(true);
+    expect(pf.scheduledStart).toBeTruthy();
+    expect(pf.scheduledEnd).toBeTruthy();
+    expect(pf.scheduledStart! >= '2026-03-02').toBe(true);
+    expect(pf.scheduledEnd! <= '2026-03-06').toBe(true);
   });
 
   it('schedules tear-down items only within tear-down phase dates', () => {
@@ -93,11 +105,12 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Tear item', 'tear-down', 48, 8, 2)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'tear-down');
 
-    expect(scheduled.scheduledStart).toBeTruthy();
-    expect(scheduled.scheduledEnd).toBeTruthy();
-    expect(scheduled.scheduledStart! >= '2026-03-09').toBe(true);
-    expect(scheduled.scheduledEnd! <= '2026-03-11').toBe(true);
+    expect(pf.scheduledStart).toBeTruthy();
+    expect(pf.scheduledEnd).toBeTruthy();
+    expect(pf.scheduledStart! >= '2026-03-09').toBe(true);
+    expect(pf.scheduledEnd! <= '2026-03-11').toBe(true);
   });
 
   it('produces tight spans — a small task should not spread across all days', () => {
@@ -106,8 +119,9 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Quick job', 'build-up', 16, 1, 2)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    expect(scheduled.scheduledStart).toBe(scheduled.scheduledEnd);
+    expect(pf.scheduledStart).toBe(pf.scheduledEnd);
   });
 
   it('extends span when work requires multiple days', () => {
@@ -116,24 +130,26 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Big job', 'build-up', 64, 1, 2)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    const assignedDays = Object.keys(scheduled.crewByDate ?? {}).length;
+    const assignedDays = Object.keys(pf.crewByDate ?? {}).length;
     expect(assignedDays).toBe(4);
   });
 
   it('derives crew = 1 when item has no crew set', () => {
     const plan = makePhasePlan();
     const item = makeItem('No crew', 'build-up', 8, 1, 0);
-    item.crew = 0;
-    item.timeHours = 0;
+    item.buildUpCrew = 0;
+    item.buildUpTimeHours = 0;
     plan.lineItems = [item];
 
     const result = autoSchedule(plan);
     const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    expect(scheduled.crew).toBe(1);
-    expect(scheduled.timeHours).toBe(8);
-    expect(scheduled.scheduledStart).toBeTruthy();
+    expect(pf.crew).toBe(1);
+    expect(pf.timeHours).toBe(8);
+    expect(pf.scheduledStart).toBeTruthy();
   });
 
   it('respects crew pool — concurrent items share available crew', () => {
@@ -147,17 +163,19 @@ describe('autoSchedule', () => {
     const result = autoSchedule(plan);
     const a = getItem(result, itemA.id);
     const b = getItem(result, itemB.id);
+    const pfA = getPhaseFields(a, 'build-up');
+    const pfB = getPhaseFields(b, 'build-up');
 
     // Both should be scheduled
-    expect(a.scheduledStart).toBeTruthy();
-    expect(b.scheduledStart).toBeTruthy();
+    expect(pfA.scheduledStart).toBeTruthy();
+    expect(pfB.scheduledStart).toBeTruthy();
 
     // They should not fully overlap — at most 4 crew on any day
     const crewPerDay = new Map<string, number>();
-    for (const [date, crew] of Object.entries(a.crewByDate ?? {})) {
+    for (const [date, crew] of Object.entries(pfA.crewByDate ?? {})) {
       crewPerDay.set(date, (crewPerDay.get(date) ?? 0) + crew);
     }
-    for (const [date, crew] of Object.entries(b.crewByDate ?? {})) {
+    for (const [date, crew] of Object.entries(pfB.crewByDate ?? {})) {
       crewPerDay.set(date, (crewPerDay.get(date) ?? 0) + crew);
     }
 
@@ -175,9 +193,10 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Big crew', 'build-up', 32, 1, 4)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    expect(scheduled.scheduledStart).toBeTruthy();
-    const crewValues = Object.values(scheduled.crewByDate ?? {});
+    expect(pf.scheduledStart).toBeTruthy();
+    const crewValues = Object.values(pf.crewByDate ?? {});
     expect(crewValues.length).toBeGreaterThanOrEqual(2);
     for (const c of crewValues) {
       expect(c).toBeLessThanOrEqual(2);
@@ -189,9 +208,9 @@ describe('autoSchedule', () => {
 
     // Pre-scheduled item takes 3 crew on Mar 02
     const existing = makeItem('Existing', 'build-up', 24, 1, 3);
-    existing.scheduledStart = '2026-03-02';
-    existing.scheduledEnd = '2026-03-02';
-    existing.crewByDate = { '2026-03-02': 3 };
+    existing.buildUpScheduledStart = '2026-03-02';
+    existing.buildUpScheduledEnd = '2026-03-02';
+    existing.buildUpCrewByDate = { '2026-03-02': 3 };
 
     // New item wants 3 crew for 1 day — should avoid Mar 02
     const newItem = makeItem('New', 'build-up', 24, 1, 3);
@@ -199,9 +218,10 @@ describe('autoSchedule', () => {
 
     const result = autoSchedule(plan);
     const scheduled = getItem(result, newItem.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    expect(scheduled.scheduledStart).toBeTruthy();
-    expect(scheduled.scheduledStart).not.toBe('2026-03-02');
+    expect(pf.scheduledStart).toBeTruthy();
+    expect(pf.scheduledStart).not.toBe('2026-03-02');
   });
 
   it('handles varying access hours across days', () => {
@@ -218,7 +238,8 @@ describe('autoSchedule', () => {
 
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
-    expect(scheduled.scheduledStart).toBeTruthy();
+    const pf = getPhaseFields(scheduled, 'build-up');
+    expect(pf.scheduledStart).toBeTruthy();
   });
 
   it('falls back gracefully when crew is fully exhausted (over-allocation)', () => {
@@ -233,9 +254,9 @@ describe('autoSchedule', () => {
 
     // Pre-scheduled takes all 2 crew
     const existing = makeItem('Full', 'build-up', 16, 1, 2);
-    existing.scheduledStart = '2026-03-02';
-    existing.scheduledEnd = '2026-03-02';
-    existing.crewByDate = { '2026-03-02': 2 };
+    existing.buildUpScheduledStart = '2026-03-02';
+    existing.buildUpScheduledEnd = '2026-03-02';
+    existing.buildUpCrewByDate = { '2026-03-02': 2 };
 
     // New item also needs crew — only 1 day available, must over-allocate
     const newItem = makeItem('Extra', 'build-up', 8, 1, 1);
@@ -243,9 +264,10 @@ describe('autoSchedule', () => {
 
     const result = autoSchedule(plan);
     const scheduled = getItem(result, newItem.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
     // Should still be scheduled (over-allocation is allowed, capacity view flags it)
-    expect(scheduled.scheduledStart).toBe('2026-03-02');
+    expect(pf.scheduledStart).toBe('2026-03-02');
   });
 
   it('schedules mixed build-up and tear-down items into correct phases', () => {
@@ -257,9 +279,11 @@ describe('autoSchedule', () => {
     const result = autoSchedule(plan);
     const b = getItem(result, buildItem.id);
     const t = getItem(result, tearItem.id);
+    const pfB = getPhaseFields(b, 'build-up');
+    const pfT = getPhaseFields(t, 'tear-down');
 
-    expect(b.scheduledEnd! <= '2026-03-06').toBe(true);
-    expect(t.scheduledStart! >= '2026-03-09').toBe(true);
+    expect(pfB.scheduledEnd! <= '2026-03-06').toBe(true);
+    expect(pfT.scheduledStart! >= '2026-03-09').toBe(true);
   });
 
   it('leaves items with zero workQuantity unscheduled', () => {
@@ -276,16 +300,17 @@ describe('autoSchedule', () => {
     plan.lineItems = [makeItem('Crew tracking', 'build-up', 32, 1, 2)];
     const result = autoSchedule(plan);
     const scheduled = getItem(result, plan.lineItems[0].id);
+    const pf = getPhaseFields(scheduled, 'build-up');
 
-    const dates = Object.keys(scheduled.crewByDate ?? {});
+    const dates = Object.keys(pf.crewByDate ?? {});
     expect(dates.length).toBeGreaterThan(0);
-    for (const crew of Object.values(scheduled.crewByDate ?? {})) {
+    for (const crew of Object.values(pf.crewByDate ?? {})) {
       expect(crew).toBe(2);
     }
     // crewByDate dates should be within scheduled span
     for (const date of dates) {
-      expect(date >= scheduled.scheduledStart!).toBe(true);
-      expect(date <= scheduled.scheduledEnd!).toBe(true);
+      expect(date >= pf.scheduledStart!).toBe(true);
+      expect(date <= pf.scheduledEnd!).toBe(true);
     }
   });
 });

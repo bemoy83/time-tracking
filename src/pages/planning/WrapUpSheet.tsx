@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { ActionSheet } from '../../components/ActionSheet';
 import type { Plan } from '../../lib/planning/plan-model';
+import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
+import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS, BUILD_PHASES } from '../../lib/types';
 import { useWrapUpSheetModel } from './hooks/useWrapUpSheetModel';
 import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
 import { getFeatureFlag } from '../../lib/flags/feature-flags';
@@ -163,25 +164,32 @@ export function WrapUpSheet({
                 if (!decision) return null;
 
                 const hasError = modelV2.lineItemIdsWithErrors.has(item.lineItem.id);
+                const activePhases = BUILD_PHASES.filter((p) => isPhaseActive(item.lineItem, p));
+                const phaseLabels = activePhases.map((p) => BUILD_PHASE_LABELS[p]).join(', ');
+
                 return (
                   <article key={item.lineItem.id} className={`wrap-up-sheet__card-v2${hasError ? ' wrap-up-sheet__card-v2--error' : ''}`}>
                     <div className="wrap-up-sheet__card-header">
                       <div>
                         <h4 className="wrap-up-sheet__row-title">{item.lineItem.title}</h4>
                         <p className="wrap-up-sheet__row-meta">
-                          Work type: {item.lineItem.workTypeTitle} · {WORK_UNIT_LABELS[item.lineItem.workUnit] ?? item.lineItem.workUnit} · {BUILD_PHASE_LABELS[item.lineItem.buildPhase] ?? item.lineItem.buildPhase}
+                          Work type: {item.lineItem.workTypeTitle} · {WORK_UNIT_LABELS[item.lineItem.workUnit] ?? item.lineItem.workUnit} · {phaseLabels}
                         </p>
                         <p className="wrap-up-sheet__row-meta">
                           Status: {decision.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
                         </p>
-                        {(item.lineItem.scheduledStart || item.lineItem.scheduledEnd) && (
-                          <p className="wrap-up-sheet__row-meta">
-                            Scheduled: {item.lineItem.scheduledStart ?? '—'} → {item.lineItem.scheduledEnd ?? item.lineItem.scheduledStart ?? '—'}
-                            {item.lineItem.originalScheduledStart || item.lineItem.originalScheduledEnd
-                              ? ` (original ${item.lineItem.originalScheduledStart ?? '—'} → ${item.lineItem.originalScheduledEnd ?? item.lineItem.originalScheduledStart ?? '—'})`
-                              : ''}
-                          </p>
-                        )}
+                        {activePhases.map((phase) => {
+                          const pf = getPhaseFields(item.lineItem, phase);
+                          if (!pf.scheduledStart && !pf.scheduledEnd) return null;
+                          return (
+                            <p key={phase} className="wrap-up-sheet__row-meta">
+                              {BUILD_PHASE_LABELS[phase]} scheduled: {pf.scheduledStart ?? '\u2014'} → {pf.scheduledEnd ?? pf.scheduledStart ?? '\u2014'}
+                              {pf.originalScheduledStart || pf.originalScheduledEnd
+                                ? ` (original ${pf.originalScheduledStart ?? '\u2014'} → ${pf.originalScheduledEnd ?? pf.originalScheduledStart ?? '\u2014'})`
+                                : ''}
+                            </p>
+                          );
+                        })}
                         {item.lineItem.amendmentNote && (
                           <p className="wrap-up-sheet__row-meta">
                             Amendment: {item.lineItem.amendmentNote}
@@ -309,7 +317,7 @@ export function WrapUpSheet({
                           .filter((workType) => workType.readOnly !== true)
                           .map((workType) => (
                             <option key={workType.id} value={workType.id}>
-                              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]} · {workType.buildPhase}
+                              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]}
                             </option>
                           ))}
                       </select>

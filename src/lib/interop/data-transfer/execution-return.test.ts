@@ -14,10 +14,10 @@ const mockGetAllWorkTypes = vi.mocked(getAllWorkTypes);
 function makePlan(): Plan {
   const base = createPlan('Execution Plan');
   const lineItem = {
-    ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10),
+    ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0),
     id: 'line-1',
-    executionStatus: 'pending' as const,
-    blockReason: null,
+    buildUpExecutionStatus: 'pending' as const,
+    buildUpBlockReason: null,
   };
   return {
     ...base,
@@ -63,13 +63,14 @@ describe('buildExecutionReturnEnvelope', () => {
   it('derives blocked line-item status and block reason from linked blocked tasks', async () => {
     const envelope = await buildExecutionReturnEnvelope(
       makePlan(),
-      [makeTask({ status: 'blocked', blockReason: 'Access restricted' })],
+      [makeTask({ status: 'blocked', blockReason: 'Access restricted', buildPhase: 'build-up' })],
       [],
     );
 
     expect(envelope.payload.summary.blocked).toBe(1);
     expect(envelope.payload.lineItems[0]).toMatchObject({
       lineItemId: 'line-1',
+      phase: 'build-up',
       executionStatus: 'blocked',
       blockReason: 'Access restricted',
     });
@@ -77,11 +78,11 @@ describe('buildExecutionReturnEnvelope', () => {
 
   it('preserves line-item block reason when explicitly set on plan item', async () => {
     const plan = makePlan();
-    plan.lineItems[0].blockReason = 'From plan item';
+    plan.lineItems[0].buildUpBlockReason = 'From plan item';
 
     const envelope = await buildExecutionReturnEnvelope(
       plan,
-      [makeTask({ status: 'blocked', blockReason: 'From task' })],
+      [makeTask({ status: 'blocked', blockReason: 'From task', buildPhase: 'build-up' })],
       [],
     );
 

@@ -19,8 +19,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-carpet',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
-    expectedProductivity: 55,
+    buildUpRate: 55,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -28,8 +28,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-furniture',
     title: 'Furniture',
     workUnit: 'pcs',
-    buildPhase: 'build-up',
-    expectedProductivity: 20,
+    buildUpRate: 20,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -219,7 +219,7 @@ describe('computeWorkTypeKpis', () => {
   });
 
   it('computes CV for multi-task groups', () => {
-    // Two tasks with identical rates → CV = 0
+    // Two tasks with identical rates -> CV = 0
     const t1 = makeTask({ id: 't1', workQuantity: 100 });
     const t2 = makeTask({ id: 't2', workQuantity: 100 });
 
@@ -229,7 +229,7 @@ describe('computeWorkTypeKpis', () => {
     ]);
 
     const kpis = computeWorkTypeKpis([t1, t2], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
-    expect(kpis[0].cv).toBe(0); // identical rates → no variation
+    expect(kpis[0].cv).toBe(0); // identical rates -> no variation
   });
 
   it('CV is null for single-task groups', () => {
@@ -333,7 +333,7 @@ describe('computeCV', () => {
   });
 
   it('computes correct CV for known values', () => {
-    // rates: [10, 20] → mean=15, stddev=5, cv=5/15=0.333...
+    // rates: [10, 20] -> mean=15, stddev=5, cv=5/15=0.333...
     const cv = computeCV([10, 20])!;
     expect(cv).toBeCloseTo(0.3333, 3);
   });
@@ -352,12 +352,12 @@ describe('detectOutliers', () => {
   });
 
   it('returns empty when no outliers exist', () => {
-    // Uniform distribution — no outliers
+    // Uniform distribution -- no outliers
     expect(detectOutliers([10, 11, 12, 13])).toEqual([]);
   });
 
   it('detects extreme outliers', () => {
-    // 10, 10, 10, 10, 100 — 100 is clearly an outlier
+    // 10, 10, 10, 10, 100 -- 100 is clearly an outlier
     const result = detectOutliers([10, 10, 10, 10, 100]);
     expect(result.length).toBeGreaterThan(0);
     expect(result).toContain(4); // index of 100
@@ -393,7 +393,7 @@ describe('splitByPeriod', () => {
 
     const result = splitByPeriod([atCutoff], RECENT_PERIOD_DAYS, now);
 
-    // ISO comparison: cutoff === cutoff → >= → goes to recent
+    // ISO comparison: cutoff === cutoff -> >= -> goes to recent
     expect(result.recent.map((t) => t.id)).toEqual(['c1']);
   });
 
@@ -407,7 +407,7 @@ describe('splitByPeriod', () => {
 describe('computeTrendDirection', () => {
   function makeKpi(overrides: Partial<WorkTypeKpi>): WorkTypeKpi {
     return {
-      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2' },
       sampleCount: 5,
       avgProductivity: 10,
       totalQuantity: 100,
@@ -436,7 +436,7 @@ describe('computeTrendDirection', () => {
     expect(direction).toBe('declining');
   });
 
-  it('returns stable when change is within ±5%', () => {
+  it('returns stable when change is within +/-5%', () => {
     const recent = makeKpi({ avgProductivity: 10.3 }); // +3%
     const baseline = makeKpi({ avgProductivity: 10 });
     const { direction } = computeTrendDirection(recent, baseline);

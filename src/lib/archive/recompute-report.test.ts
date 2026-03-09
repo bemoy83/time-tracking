@@ -9,7 +9,6 @@ function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
       workTypeId: 'wt-1',
       workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
-      buildPhase: 'build-up',
     },
     sampleCount: 5,
     avgProductivity: 10,
@@ -35,13 +34,13 @@ describe('createRecomputeChangeReport', () => {
     const before = [
       makeGroup('v1', [makeKpi()]),
       makeGroup('v2', [makeKpi({
-        key: { workTypeId: 'wt-2', workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: 'build-up' },
+        key: { workTypeId: 'wt-2', workTypeTitle: 'Furniture', workUnit: 'pcs' },
       })]),
     ];
     const after = [
       makeGroup('v1', [makeKpi({ avgProductivity: 12 })]), // changed
       makeGroup('v3', [makeKpi({
-        key: { workTypeId: 'wt-3', workTypeTitle: 'Walls', workUnit: 'm2', buildPhase: 'build-up' },
+        key: { workTypeId: 'wt-3', workTypeTitle: 'Walls', workUnit: 'm2' },
       })]), // added
     ];
 

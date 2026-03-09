@@ -1,4 +1,5 @@
 import { PeopleIcon, WarningIcon } from '../../../../components/icons';
+import { getPhaseFields } from '../../../../lib/planning/plan-model';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../../lib/types';
 import {
   getLastDayBreakdown,
@@ -13,6 +14,7 @@ import { isDateWithinSpan } from '../schedule-date-ui';
 export function ScheduleGridItemRow({
   rowIndex,
   item,
+  phase,
   assignedDates,
   calendar,
   dayByDate,
@@ -26,11 +28,12 @@ export function ScheduleGridItemRow({
   outOfPhaseAriaUsesLabel,
   readOnlyTitle,
 }: ItemRowRenderInput) {
+  const pf = getPhaseFields(item, phase);
   const assigned = new Set(assignedDates);
 
   const hasAssignments = assigned.size > 0;
-  const estimateHours = item.timeHours * item.crew;
-  const scheduledHours = hasAssignments ? getScheduledHours(item, assignedDates, dayByDate) : 0;
+  const estimateHours = pf.timeHours * pf.crew;
+  const scheduledHours = hasAssignments ? getScheduledHours(item, phase, assignedDates, dayByDate) : 0;
   const isOnTarget = hasAssignments && scheduledHours >= estimateHours - 0.01;
   const isUnderTarget = hasAssignments && scheduledHours < estimateHours - 0.01;
   const isOverTarget = hasAssignments && scheduledHours > estimateHours + 0.01;
@@ -86,16 +89,16 @@ export function ScheduleGridItemRow({
           const cap = dayByDate.get(day.date);
           const isOver = cap?.isOverAllocated ?? false;
           const isOverCrew = cap?.isOverAssignedCrew ?? false;
-          const isOverWorker = isAssigned && isOverWorkerForDay(item, day.date, dayByDate, assignedDates);
-          const crewValue = isAssigned && day.isWorkDay ? (item.crewByDate?.[day.date] ?? item.crew) : 0;
-          const lastDayBd = isAssigned ? getLastDayBreakdown(item, day.date, dayByDate, assignedDates) : null;
+          const isOverWorker = isAssigned && isOverWorkerForDay(item, phase, day.date, dayByDate, assignedDates);
+          const crewValue = isAssigned && day.isWorkDay ? (pf.crewByDate?.[day.date] ?? pf.crew) : 0;
+          const lastDayBd = isAssigned ? getLastDayBreakdown(item, phase, day.date, dayByDate, assignedDates) : null;
           const isOverTargetCell = isOverTargetCellBreakdown(lastDayBd);
           const isTargetMet =
             isAssigned && isOnTarget && !isOver && !isOverCrew && !isOverWorker && !isOverTargetCell;
 
           return (
             <button
-              key={`${item.id}:${day.date}`}
+              key={`${item.id}:${phase}:${day.date}`}
               type="button"
               role="gridcell"
               aria-colindex={colIdx + 2}
@@ -109,7 +112,7 @@ export function ScheduleGridItemRow({
                 readOnly && readOnlyTitle
                   ? readOnlyTitle
                   : isOutOfPhase
-                    ? `Outside ${BUILD_PHASE_LABELS[item.buildPhase]} window`
+                    ? `Outside ${BUILD_PHASE_LABELS[phase]} window`
                     : isOverWorker
                       ? 'Exceeds worker capacity (add crew or days)'
                       : isAssigned
@@ -118,16 +121,16 @@ export function ScheduleGridItemRow({
               }
               aria-label={
                 isOutOfPhase && outOfPhaseAriaUsesLabel
-                  ? `${item.title} on ${day.date} is outside ${BUILD_PHASE_LABELS[item.buildPhase]} window`
+                  ? `${item.title} on ${day.date} is outside ${BUILD_PHASE_LABELS[phase]} window`
                   : `Toggle ${item.title} on ${day.date}`
               }
             >
               {isAssigned ? (
                 <>
                   {(() => {
-                    const hours = getWorkHoursForDay(item, day.date, dayByDate, assignedDates);
+                    const hours = getWorkHoursForDay(item, phase, day.date, dayByDate, assignedDates);
                     if (hours <= 0) return null;
-                    const lastDayBreakdown = getLastDayBreakdown(item, day.date, dayByDate, assignedDates);
+                    const lastDayBreakdown = getLastDayBreakdown(item, phase, day.date, dayByDate, assignedDates);
                     if (lastDayBreakdown == null) {
                       return <span className="schedule-grid__cell-badge">{hours.toFixed(1)}h</span>;
                     }

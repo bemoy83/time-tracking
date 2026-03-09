@@ -164,7 +164,7 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
   const templateRate = useMemo((): RateInfo | null => {
     if (!selectedWorkType) return null;
     return {
-      rate: selectedWorkType.expectedProductivity,
+      rate: selectedWorkType.buildUpRate || selectedWorkType.tearDownRate,
       source: 'template',
       confidence: null,
       sampleCount: null,
@@ -179,12 +179,8 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
       workTypeId: selectedWorkType.id,
       workTypeTitle: selectedWorkType.title,
       workUnit: selectedWorkType.workUnit,
-      buildPhase: selectedWorkType.buildPhase,
     };
-    let kpi = findKpiByKey(kpis, key);
-    if (!kpi) {
-      kpi = findKpiByKey(kpis, { ...key, buildPhase: null });
-    }
+    const kpi = findKpiByKey(kpis, key);
     if (!kpi) return null;
     return {
       rate: kpi.avgProductivity,

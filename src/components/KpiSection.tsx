@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react';
 import {
   Task,
   WORK_UNIT_LABELS,
-  BUILD_PHASE_LABELS,
   formatProductivity,
 } from '../lib/types';
 import {
@@ -117,7 +116,6 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
         const label = [
           key.workTypeTitle,
           WORK_UNIT_LABELS[key.workUnit],
-          key.buildPhase != null ? BUILD_PHASE_LABELS[key.buildPhase] : null,
         ]
           .filter(Boolean)
           .join(' · ');

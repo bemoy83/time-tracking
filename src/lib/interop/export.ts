@@ -4,9 +4,9 @@
  * Export profiles:
  * 1. ops_summary — all KPIs with key metrics
  * 2. estimator_summary — includes confidence, CV, outliers
- * 3. phase_summary — grouped by buildPhase
+ * 3. phase_summary — grouped by work type (legacy name, no longer phase-specific)
  *
- * Stable mapping key: workTypeTitle:workUnit:buildPhase
+ * Stable mapping key: workTypeTitle:workUnit
  * Used for round-trip import/export reliability.
  */
 
@@ -19,12 +19,12 @@ export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary
 
 /**
  * Export KPIs using the ops_summary profile.
- * Columns: mappingKey, workTypeTitle, workUnit, buildPhase, sampleCount,
+ * Columns: mappingKey, workTypeTitle, workUnit, workTypeId, sampleCount,
  *          avgProductivity, totalQuantity, totalPersonHours
  */
 export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workTypeTitle', 'workUnit', 'buildPhase', 'workTypeId',
+    'mappingKey', 'workTypeTitle', 'workUnit', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
   const rows = kpis.map((kpi) =>
@@ -32,7 +32,6 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
-      kpi.key.buildPhase ?? '',
       kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
@@ -49,7 +48,7 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
  */
 export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'mappingKey', 'workTypeTitle', 'workUnit', 'buildPhase', 'workTypeId',
+    'mappingKey', 'workTypeTitle', 'workUnit', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
     'confidence', 'cv', 'outlierCount',
   ];
@@ -58,7 +57,6 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
-      kpi.key.buildPhase ?? '',
       kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
@@ -74,25 +72,20 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
 
 /**
  * Export KPIs using the phase_summary profile.
- * Groups by buildPhase, then lists work types within each phase.
+ * Lists all work types sorted by title.
  */
 export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
   const headers = [
-    'buildPhase', 'mappingKey', 'workTypeTitle', 'workUnit', 'workTypeId',
+    'mappingKey', 'workTypeTitle', 'workUnit', 'workTypeId',
     'sampleCount', 'avgProductivity', 'totalQuantity', 'totalPersonHours',
   ];
 
-  // Sort by phase first
-  const sorted = [...kpis].sort((a, b) => {
-    const pa = a.key.buildPhase ?? '';
-    const pb = b.key.buildPhase ?? '';
-    if (pa !== pb) return pa.localeCompare(pb);
-    return a.key.workTypeTitle.localeCompare(b.key.workTypeTitle);
-  });
+  const sorted = [...kpis].sort((a, b) =>
+    a.key.workTypeTitle.localeCompare(b.key.workTypeTitle),
+  );
 
   const rows = sorted.map((kpi) =>
     csvRow([
-      kpi.key.buildPhase ?? '',
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
       WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,

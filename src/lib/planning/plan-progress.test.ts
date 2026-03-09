@@ -4,8 +4,8 @@ import { createLineItem, createPlan, type Plan } from './plan-model';
 import { computePlanProgress } from './plan-progress';
 
 function makePlan(): Plan {
-  const lineItemA = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 20);
-  const lineItemB = createLineItem('Install lights', 'Lighting', 'pcs', 'build-up', 20, 5);
+  const lineItemA = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 20, 0);
+  const lineItemB = createLineItem('Install lights', 'Lighting', 'pcs', 20, 5, 0);
   return {
     ...createPlan('Launch plan'),
     status: 'active',
@@ -194,5 +194,47 @@ describe('computePlanProgress', () => {
     expect(itemB.status).toBe('blocked');
     expect(itemB.blockReason).toBe('Materials not delivered');
     expect(itemB.blockCategory).toBe('materials');
+  });
+
+  it('treats legacy linked tasks with null buildPhase as build-up', () => {
+    const plan = makePlan();
+    const [lineItemA, lineItemB] = plan.lineItems;
+    lineItemA.tearDownRate = 5;
+    lineItemA.tearDownCrew = 1;
+    lineItemA.tearDownTimeHours = 2;
+    lineItemA.tearDownRateSource = 'manual';
+
+    const legacyTask = makeTask({
+      id: 'task-legacy',
+      sourcePlanId: plan.id,
+      sourceLineItemId: lineItemA.id,
+      buildPhase: null,
+      status: 'completed',
+    });
+
+    const entries = [
+      makeEntry({
+        id: 'entry-legacy',
+        taskId: legacyTask.id,
+        endUtc: '2024-01-01T02:00:00.000Z',
+      }),
+    ];
+
+    const progress = computePlanProgress(plan, [legacyTask], entries);
+    const buildUp = progress.lineItems.find((item) =>
+      item.lineItemId === lineItemA.id && item.phase === 'build-up',
+    )!;
+    const tearDown = progress.lineItems.find((item) =>
+      item.lineItemId === lineItemA.id && item.phase === 'tear-down',
+    )!;
+    const untouched = progress.lineItems.find((item) =>
+      item.lineItemId === lineItemB.id && item.phase === 'build-up',
+    )!;
+
+    expect(buildUp.actualHours).toBe(2);
+    expect(buildUp.status).toBe('completed');
+    expect(tearDown.actualHours).toBe(0);
+    expect(tearDown.status).toBe('unreleased');
+    expect(untouched.status).toBe('unreleased');
   });
 });

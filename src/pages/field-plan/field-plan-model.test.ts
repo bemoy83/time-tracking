@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Task } from '../../lib/types';
-import { createLineItem } from '../../lib/planning/plan-model';
+import { createLineItem, getPhaseFields } from '../../lib/planning/plan-model';
 import { deriveLineItemStatus } from './field-plan-model';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
@@ -31,8 +31,9 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 
 describe('deriveLineItemStatus', () => {
   it('returns blocked when any linked task is blocked and item is not explicitly deferred/blocked', () => {
-    const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10);
-    const status = deriveLineItemStatus(item, [
+    const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0);
+    const pf = getPhaseFields(item, 'build-up');
+    const status = deriveLineItemStatus(pf, [
       makeTask({ id: 'task-1', status: 'active' }),
       makeTask({ id: 'task-2', status: 'blocked', blockReason: 'No materials' }),
     ]);
@@ -42,10 +43,11 @@ describe('deriveLineItemStatus', () => {
 
   it('preserves explicit deferred status over task-derived statuses', () => {
     const item = {
-      ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 'build-up', 100, 10),
-      executionStatus: 'deferred' as const,
+      ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0),
+      buildUpExecutionStatus: 'deferred' as const,
     };
-    const status = deriveLineItemStatus(item, [
+    const pf = getPhaseFields(item, 'build-up');
+    const status = deriveLineItemStatus(pf, [
       makeTask({ status: 'blocked', blockReason: 'No materials' }),
     ]);
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BuildPhase, Task, TaskTemplate, WorkType } from '../types';
+import type { Task, TaskTemplate, WorkType } from '../types';
 import { normalizeWorkTypeTitle } from '../types';
 
 const mockState = vi.hoisted(() => ({
@@ -34,12 +34,11 @@ vi.mock('../stores/work-type-store', () => ({
     workTypes: mockState.workTypes,
     isLoading: false,
   }),
-  findWorkTypeByKey: (title: string, workUnit: string, buildPhase: BuildPhase) =>
+  findWorkTypeByKey: (title: string, workUnit: string) =>
     mockState.workTypes.find(
       (wt) =>
         normalizeWorkTypeTitle(wt.title) === normalizeWorkTypeTitle(title) &&
-        wt.workUnit === workUnit &&
-        wt.buildPhase === buildPhase,
+        wt.workUnit === workUnit,
     ),
 }));
 
@@ -48,8 +47,8 @@ function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
     id: 'wt-1',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
-    expectedProductivity: 55,
+    buildUpRate: 55,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -106,7 +105,7 @@ describe('runWorkTypeLinkBackfill', () => {
     mockState.workTypes = [];
   });
 
-  it('fills missing workTypeId using exact title + unit + phase match', async () => {
+  it('fills missing workTypeId using exact title + unit match', async () => {
     mockState.workTypes = [makeWorkType()];
     mockState.tasks = [makeTask()];
     mockState.templates = [makeTemplate()];
@@ -122,22 +121,7 @@ describe('runWorkTypeLinkBackfill', () => {
     expect(mockUpdateTemplate).toHaveBeenCalledWith('tpl-1', expect.objectContaining({ workTypeId: 'wt-1' }));
   });
 
-  it('marks unresolved link as ambiguous when title+unit maps to multiple phases', async () => {
-    mockState.workTypes = [
-      makeWorkType({ id: 'wt-up', buildPhase: 'build-up' }),
-      makeWorkType({ id: 'wt-down', buildPhase: 'tear-down' }),
-    ];
-    mockState.tasks = [makeTask({ buildPhase: null })];
-
-    const { runWorkTypeLinkBackfill } = await import('./backfill-worktype-link');
-    const report = await runWorkTypeLinkBackfill();
-
-    expect(report.updated).toBe(0);
-    expect(report.ambiguous).toBe(1);
-    expect(mockUpdateTaskFields).not.toHaveBeenCalled();
-  });
-
-  it('skips unresolved rows when title + unit + phase does not deterministically match', async () => {
+  it('skips unresolved rows when title + unit does not deterministically match', async () => {
     mockState.workTypes = [makeWorkType()];
     mockState.tasks = [
       makeTask({

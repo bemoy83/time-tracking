@@ -2,12 +2,14 @@ import type { PlanLineItem, WorkCalendarDay } from '../../../../lib/planning/pla
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
 import type { DateSpan } from '../../../../lib/planning/scheduling/schedule-span';
 import type { SharedScheduleRow } from '../../../../lib/planning/scheduling/shared-schedule-types';
+import type { BuildPhase } from '../../../../lib/types';
 
 export type GridDayContext = Map<string, DailyCapacity>;
 
 export interface ItemRowRenderInput {
   rowIndex: number;
   item: PlanLineItem;
+  phase: BuildPhase;
   assignedDates: string[];
   calendar: WorkCalendarDay[];
   dayByDate: GridDayContext;

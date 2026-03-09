@@ -1,5 +1,6 @@
 import { isPlanArchived } from '../plan-lifecycle';
 import type { Plan } from '../plan-model';
+import { isPhaseActive } from '../plan-model';
 import { BUILD_PHASE_LABELS, BUILD_PHASES } from '../../types';
 import type { SharedScheduleRow } from './shared-schedule-types';
 
@@ -29,7 +30,7 @@ export function buildSharedRows(plans: Plan[]): SharedScheduleRow[] {
     });
 
     for (const phase of BUILD_PHASES) {
-      const phaseItems = plan.lineItems.filter((item) => item.buildPhase === phase);
+      const phaseItems = plan.lineItems.filter((item) => isPhaseActive(item, phase));
       if (phaseItems.length === 0) continue;
 
       const phaseRowId = `phase:${plan.id}:${phase}`;
@@ -48,7 +49,7 @@ export function buildSharedRows(plans: Plan[]): SharedScheduleRow[] {
 
       for (const item of phaseItems) {
         rows.push({
-          id: `item:${plan.id}:${item.id}`,
+          id: `item:${plan.id}:${phase}:${item.id}`,
           type: 'item',
           planId: plan.id,
           label: item.title,

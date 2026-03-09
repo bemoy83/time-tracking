@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronIcon } from '../../../components/icons';
 import type { Plan, PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import { getPhaseFields, isPhaseActive } from '../../../lib/planning/plan-model';
 import { getPhaseWorkDayCount } from '../../../lib/planning/plan-suggestions';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
@@ -26,15 +27,17 @@ import { getAssignedDatesWithinPhase } from './grid/schedule-grid-metrics';
 interface PhaseGroup {
   phase: BuildPhase;
   label: string;
-  items: PlanLineItem[];
+  rows: Array<{ item: PlanLineItem; phase: BuildPhase }>;
 }
 
 function groupByPhase(lineItems: PlanLineItem[]): PhaseGroup[] {
   const groups: PhaseGroup[] = [];
   for (const phase of BUILD_PHASES) {
-    const items = lineItems.filter((item) => item.buildPhase === phase);
-    if (items.length > 0) {
-      groups.push({ phase, label: BUILD_PHASE_LABELS[phase], items });
+    const rows = lineItems
+      .filter((item) => isPhaseActive(item, phase))
+      .map((item) => ({ item, phase }));
+    if (rows.length > 0) {
+      groups.push({ phase, label: BUILD_PHASE_LABELS[phase], rows });
     }
   }
   return groups;
@@ -49,8 +52,8 @@ interface SingleScheduleGridProps {
   phaseDates: PhaseDateValues;
   readOnly: boolean;
   onAutoSchedule?: () => void;
-  onToggleAssignment: (lineItem: PlanLineItem, date: string, cellElement?: HTMLElement) => void;
-  onCrewForDateChange?: (lineItemId: string, date: string, crew: number) => void;
+  onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
+  onCrewForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, crew: number) => void;
 }
 
 interface SharedScheduleGridProps {
@@ -65,12 +68,14 @@ interface SharedScheduleGridProps {
   onToggleAssignment: (
     planId: string,
     lineItemId: string,
+    phase: BuildPhase,
     date: string,
     cellElement?: HTMLElement,
   ) => void;
   onCrewForDateChange?: (
     planId: string,
     lineItemId: string,
+    phase: BuildPhase,
     date: string,
     crew: number,
   ) => void;
@@ -99,17 +104,35 @@ function SingleScheduleGrid({
   );
   const hasPhaseWindows = hasCompletePhaseDates(phaseDates);
   const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
-  const unscheduled = lineItems.filter((item) => item.scheduledStart == null || item.scheduledEnd == null);
+  const unscheduled = lineItems.filter((item) => {
+    // An item is unscheduled if no active phase has scheduling
+    return BUILD_PHASES.every((phase) => {
+      if (!isPhaseActive(item, phase)) return true;
+      const pf = getPhaseFields(item, phase);
+      return pf.scheduledStart == null || pf.scheduledEnd == null;
+    });
+  });
   const schedulableUnscheduled = useMemo(() => {
     return lineItems
-      .filter((item) => item.scheduledStart == null || item.scheduledEnd == null)
       .filter((item) => {
-        const requiredPH = item.productivityRate > 0 ? item.workQuantity / item.productivityRate : 0;
-        if (requiredPH <= 0) return false;
-        if (hasPhaseWindows) {
-          return getPhaseWorkDayCount(plan, item.buildPhase) > 0;
-        }
-        return workDays.length > 0;
+        return BUILD_PHASES.every((phase) => {
+          if (!isPhaseActive(item, phase)) return true;
+          const pf = getPhaseFields(item, phase);
+          return pf.scheduledStart == null || pf.scheduledEnd == null;
+        });
+      })
+      .filter((item) => {
+        // At least one active phase must be schedulable
+        return BUILD_PHASES.some((phase) => {
+          if (!isPhaseActive(item, phase)) return false;
+          const pf = getPhaseFields(item, phase);
+          const requiredPH = pf.rate > 0 ? item.workQuantity / pf.rate : 0;
+          if (requiredPH <= 0) return false;
+          if (hasPhaseWindows) {
+            return getPhaseWorkDayCount(plan, phase) > 0;
+          }
+          return workDays.length > 0;
+        });
       });
   }, [lineItems, hasPhaseWindows, plan, workDays.length]);
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
@@ -168,15 +191,17 @@ function SingleScheduleGrid({
     });
   };
 
-  const renderRow = (item: PlanLineItem, rowIndex: number) => {
-    const assignedDates = getAssignedDates(item);
-    const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, item.buildPhase) : null;
+  const renderRow = (item: PlanLineItem, phase: BuildPhase, rowIndex: number) => {
+    const pf = getPhaseFields(item, phase);
+    const assignedDates = getAssignedDates(pf);
+    const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, phase) : null;
 
     return (
       <ScheduleGridItemRow
-        key={item.id}
+        key={`${item.id}:${phase}`}
         rowIndex={rowIndex}
         item={item}
+        phase={phase}
         assignedDates={assignedDates}
         calendar={calendar}
         dayByDate={dayByDate}
@@ -184,8 +209,8 @@ function SingleScheduleGrid({
         phaseRange={phaseRange}
         hasPhaseWindows={hasPhaseWindows}
         readOnly={readOnly}
-        onToggleAssignment={(date, cellElement) => onToggleAssignment(item, date, cellElement)}
-        onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(item.id, date, crew) : undefined}
+        onToggleAssignment={(date, cellElement) => onToggleAssignment(item, phase, date, cellElement)}
+        onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(item.id, phase, date, crew) : undefined}
         outOfPhaseAriaUsesLabel
       />
     );
@@ -233,7 +258,7 @@ function SingleScheduleGrid({
                   return phaseGroups.map((group) => {
                     const isCollapsed = collapsedPhases.has(group.phase);
                     const startIdx = globalRowIdx;
-                    globalRowIdx += group.items.length;
+                    globalRowIdx += group.rows.length;
                     return (
                       <div key={group.phase} className="schedule-grid__phase-group">
                         <button
@@ -245,18 +270,24 @@ function SingleScheduleGrid({
                         >
                           <span className="schedule-grid__phase-label">
                             <ChevronIcon className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`} />
-                            {group.label} ({group.items.length})
+                            {group.label} ({group.rows.length})
                           </span>
                           {calendar.map((day) => (
                             <span key={day.date} className="schedule-grid__phase-spacer" aria-hidden="true" />
                           ))}
                         </button>
-                        {!isCollapsed && group.items.map((item, i) => renderRow(item, startIdx + i))}
+                        {!isCollapsed && group.rows.map(({ item, phase }, i) => renderRow(item, phase, startIdx + i))}
                       </div>
                     );
                   });
                 })()
-              : lineItems.map((item, i) => renderRow(item, i))
+              : phaseGroups.length === 1
+                ? phaseGroups[0].rows.map(({ item, phase }, i) => renderRow(item, phase, i))
+                : lineItems.map((item, i) => {
+                    // Fallback: render for each active phase
+                    const activePhase = BUILD_PHASES.find((p) => isPhaseActive(item, p)) ?? 'build-up';
+                    return renderRow(item, activePhase, i);
+                  })
             }
           </div>
         </div>
@@ -312,7 +343,9 @@ function SharedScheduleGrid({
     for (const row of rows) {
       if (row.type !== 'item') continue;
       const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
-      if (!item?.scheduledStart || !item?.scheduledEnd) count += 1;
+      if (!item) { count += 1; continue; }
+      const pf = getPhaseFields(item, row.phase);
+      if (!pf.scheduledStart || !pf.scheduledEnd) count += 1;
     }
     return count;
   }, [rows, itemByCompositeId]);
@@ -434,10 +467,10 @@ function SharedScheduleGrid({
               if (row.type === 'item') {
                 const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
                 if (!item) return null;
-                const phaseDates = phaseDatesByPlanId.get(row.planId);
-                const hasPhaseWindows = phaseDates ? hasCompletePhaseDates(phaseDates) : false;
-                const assignedDates = getAssignedDatesWithinPhase(item, phaseDates);
-                const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, item.buildPhase) : null;
+                const rowPhaseDates = phaseDatesByPlanId.get(row.planId);
+                const hasPhaseWindows = rowPhaseDates ? hasCompletePhaseDates(rowPhaseDates) : false;
+                const assignedDates = getAssignedDatesWithinPhase(item, row.phase, rowPhaseDates);
+                const phaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
                 const projectName = projectNameByPlanId.get(row.planId);
                 const planTitle = planTitleByPlanId.get(row.planId) ?? row.planId;
                 const metaPrefix = `${planTitle}${projectName ? ` (${projectName})` : ''}`;
@@ -447,6 +480,7 @@ function SharedScheduleGrid({
                     key={row.id}
                     rowIndex={idx}
                     item={item}
+                    phase={row.phase}
                     assignedDates={assignedDates}
                     calendar={calendar}
                     dayByDate={dayByDate}
@@ -455,8 +489,8 @@ function SharedScheduleGrid({
                     hasPhaseWindows={hasPhaseWindows}
                     readOnly={row.readOnly}
                     metaPrefix={metaPrefix}
-                    onToggleAssignment={(date, cellElement) => onToggleAssignment(row.planId, row.lineItemId, date, cellElement)}
-                    onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(row.planId, row.lineItemId, date, crew) : undefined}
+                    onToggleAssignment={(date, cellElement) => onToggleAssignment(row.planId, row.lineItemId, row.phase, date, cellElement)}
+                    onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(row.planId, row.lineItemId, row.phase, date, crew) : undefined}
                     outOfPhaseAriaUsesLabel={false}
                     readOnlyTitle="Read-only (reviewed plan)"
                   />

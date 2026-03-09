@@ -5,14 +5,18 @@ import {
   addTask,
   addTimeEntry,
   getAllTimeEntries,
+  getPlan,
   getTask,
+  updatePlan,
   updateTask,
 } from '../../db';
-import { durationMs, generateId, nowUtc, type Task } from '../../types';
+import { durationMs, generateId, nowUtc, type BuildPhase, type Task } from '../../types';
 import { refreshTasks } from '../../stores/task-store';
 import { notifyExecutionReturnImported } from '../../planning/execution-return-import-events';
+import { phaseFieldUpdates } from '../../planning/plan-model';
 import {
   type DataTransferEnvelope,
+  type ExecutionReturnLineItem,
   type ExecutionReturnImportPreview,
   type ExecutionReturnImportResult,
   type ExecutionReturnPayload,
@@ -64,6 +68,75 @@ function buildDateRange(entries: ExecutionReturnPayload['timeEntries']): {
   }
 
   return { start, end };
+}
+
+const PHASE_LINE_ITEM_ID_SEPARATOR = '::phase::';
+
+interface NormalizedExecutionReturnLineItem extends ExecutionReturnLineItem {
+  originalLineItemId: string;
+  phase: BuildPhase;
+  lineItemId: string;
+}
+
+function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string; phase: BuildPhase } | null {
+  const idx = lineItemId.lastIndexOf(PHASE_LINE_ITEM_ID_SEPARATOR);
+  if (idx <= 0) return null;
+  const sourceWorkPackageId = lineItemId.slice(0, idx);
+  const phaseRaw = lineItemId.slice(idx + PHASE_LINE_ITEM_ID_SEPARATOR.length);
+  if (phaseRaw !== 'build-up' && phaseRaw !== 'tear-down') return null;
+  return {
+    sourceWorkPackageId,
+    phase: phaseRaw,
+  };
+}
+
+function normalizeTaskBuildPhase(phase: Task['buildPhase']): BuildPhase {
+  return phase === 'tear-down' ? 'tear-down' : 'build-up';
+}
+
+function normalizeExecutionReturnLineItems(
+  lineItems: ExecutionReturnPayload['lineItems'],
+): NormalizedExecutionReturnLineItem[] {
+  return lineItems.map((lineItem) => {
+    const parsed = parsePhaseLineItemId(lineItem.lineItemId);
+    const phase = lineItem.phase ?? parsed?.phase ?? 'build-up';
+    const sourceWorkPackageId =
+      lineItem.sourceWorkPackageId ?? parsed?.sourceWorkPackageId ?? lineItem.lineItemId;
+    return {
+      ...lineItem,
+      originalLineItemId: lineItem.lineItemId,
+      lineItemId: sourceWorkPackageId,
+      phase,
+      sourceWorkPackageId,
+    };
+  });
+}
+
+function remapTaskSourceLineItemId(
+  task: Task,
+  normalizedLineItems: NormalizedExecutionReturnLineItem[],
+): Task {
+  if (task.sourceLineItemId == null) return task;
+  const phase = normalizeTaskBuildPhase(task.buildPhase);
+  const byPhase = normalizedLineItems.find(
+    (lineItem) =>
+      lineItem.originalLineItemId === task.sourceLineItemId
+      && lineItem.phase === phase,
+  );
+  const byId = normalizedLineItems.find(
+    (lineItem) => lineItem.originalLineItemId === task.sourceLineItemId,
+  );
+  const parsed = parsePhaseLineItemId(task.sourceLineItemId);
+  const remappedSourceLineItemId =
+    byPhase?.lineItemId
+    ?? byId?.lineItemId
+    ?? parsed?.sourceWorkPackageId
+    ?? task.sourceLineItemId;
+  return {
+    ...task,
+    buildPhase: task.buildPhase ?? phase,
+    sourceLineItemId: remappedSourceLineItemId,
+  };
 }
 
 export function parseExecutionReturnJson(
@@ -138,13 +211,16 @@ function buildImportedLineItems(
   envelope: DataTransferEnvelope<ExecutionReturnPayload>,
   executionReturnId: string,
   importedAt: string,
+  normalizedLineItems: NormalizedExecutionReturnLineItem[],
 ): ImportedExecutionReturnLineItemRecord[] {
-  return envelope.payload.lineItems.map((lineItem) => ({
-    id: `${executionReturnId}:${lineItem.lineItemId}`,
+  return normalizedLineItems.map((lineItem) => ({
+    id: `${executionReturnId}:${lineItem.lineItemId}:${lineItem.phase}`,
     executionReturnId,
     planId: envelope.payload.planId,
     importedAt,
     lineItemId: lineItem.lineItemId,
+    phase: lineItem.phase,
+    sourceWorkPackageId: lineItem.sourceWorkPackageId ?? null,
     title: lineItem.title,
     executionStatus: lineItem.executionStatus,
     blockReason: lineItem.blockReason,
@@ -217,18 +293,77 @@ function normalizeTaskFromPayload(task: Task): Task {
 /** Sync task status from payload line items (authoritative executor-reported status). */
 function applyImportedLineItemStatusToTasks(
   planTasks: Task[],
-  payloadLineItems: { lineItemId: string; executionStatus: string }[],
+  payloadLineItems: NormalizedExecutionReturnLineItem[],
 ): Task[] {
-  const statusByLineItemId = new Map(
-    payloadLineItems.map((li) => [li.lineItemId, li.executionStatus]),
+  const statusByLineItemPhase = new Map(
+    payloadLineItems.map((li) => [`${li.lineItemId}:${li.phase}`, li.executionStatus]),
   );
   return planTasks.map((task) => {
     const lineItemId = task.sourceLineItemId;
     if (lineItemId == null) return task;
-    const importedStatus = statusByLineItemId.get(lineItemId);
+    const phase = normalizeTaskBuildPhase(task.buildPhase);
+    const importedStatus = statusByLineItemPhase.get(`${lineItemId}:${phase}`);
     if (importedStatus !== 'completed') return task;
     if (task.status === 'completed') return task;
     return { ...task, status: 'completed' as const, updatedAt: task.updatedAt };
+  });
+}
+
+async function applyImportedLineItemsToPlan(
+  planId: string,
+  lineItems: NormalizedExecutionReturnLineItem[],
+): Promise<void> {
+  if (lineItems.length === 0) return;
+  const plan = await getPlan(planId);
+  if (!plan) return;
+
+  const lineItemByPhase = new Map<string, NormalizedExecutionReturnLineItem>();
+  const removedFromSourceByLineItem = new Map<string, boolean>();
+
+  for (const lineItem of lineItems) {
+    lineItemByPhase.set(`${lineItem.lineItemId}:${lineItem.phase}`, lineItem);
+    if (lineItem.removedFromSource) {
+      removedFromSourceByLineItem.set(lineItem.lineItemId, true);
+    }
+  }
+
+  let changed = false;
+  const nextLineItems = plan.lineItems.map((lineItem) => {
+    let next = lineItem;
+
+    for (const phase of ['build-up', 'tear-down'] as const) {
+      const imported = lineItemByPhase.get(`${lineItem.id}:${phase}`);
+      if (!imported) continue;
+      next = {
+        ...next,
+        ...phaseFieldUpdates(phase, {
+          executionStatus: imported.executionStatus,
+          blockReason: imported.blockReason,
+          blockCategory: imported.blockCategory,
+          executorNote: imported.executorNote,
+          deferredNote: imported.deferredNote,
+        }),
+      };
+      changed = true;
+    }
+
+    if (removedFromSourceByLineItem.get(lineItem.id) === true && !next.removedFromSource) {
+      next = {
+        ...next,
+        removedFromSource: true,
+      };
+      changed = true;
+    }
+
+    return next;
+  });
+
+  if (!changed) return;
+
+  await updatePlan({
+    ...plan,
+    lineItems: nextLineItems,
+    updatedAt: nowUtc(),
   });
 }
 
@@ -260,7 +395,13 @@ export async function applyExecutionReturnImport(
   const importedAt = nowUtc();
   const executionReturnId = generateId();
   const record = buildImportedExecutionReturnRecord(preview.envelope, importedAt, executionReturnId);
-  const lineItems = buildImportedLineItems(preview.envelope, executionReturnId, importedAt);
+  const normalizedPayloadLineItems = normalizeExecutionReturnLineItems(preview.envelope.payload.lineItems);
+  const lineItems = buildImportedLineItems(
+    preview.envelope,
+    executionReturnId,
+    importedAt,
+    normalizedPayloadLineItems,
+  );
   const unplannedTasks = buildImportedUnplannedTasks(preview.envelope, executionReturnId, importedAt);
 
   await addExecutionReturnRecord(record);
@@ -269,11 +410,16 @@ export async function applyExecutionReturnImport(
 
   // Add or update tasks so the Planning Progress view shows execution state.
   // Sync task status from payload line items (authoritative executor-reported status).
-  const { tasks: planTasks, unplannedTasks: unplannedTaskPayload, lineItems: payloadLineItems, workTypes: payloadWorkTypes } =
+  const { tasks: planTasks, unplannedTasks: unplannedTaskPayload, workTypes: payloadWorkTypes } =
     preview.envelope.payload;
-  const normalizedPlanTasks = planTasks.map(normalizeTaskFromPayload);
+  const normalizedPlanTasks = planTasks
+    .map(normalizeTaskFromPayload)
+    .map((task) => remapTaskSourceLineItemId(task, normalizedPayloadLineItems));
   const normalizedUnplannedTasks = unplannedTaskPayload.map(normalizeTaskFromPayload);
-  const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(normalizedPlanTasks, payloadLineItems);
+  const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(
+    normalizedPlanTasks,
+    normalizedPayloadLineItems,
+  );
 
   const workTypeIdMap =
     Array.isArray(payloadWorkTypes) && payloadWorkTypes.length > 0
@@ -290,6 +436,7 @@ export async function applyExecutionReturnImport(
   const unplannedTasksToUpsert = normalizedUnplannedTasks.map(remapWorkTypeId);
   await upsertTasksFromPayload(planTasksToUpsert);
   await upsertTasksFromPayload(unplannedTasksToUpsert);
+  await applyImportedLineItemsToPlan(preview.envelope.payload.planId, normalizedPayloadLineItems);
   await refreshTasks();
   notifyExecutionReturnImported();
 

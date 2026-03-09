@@ -6,9 +6,6 @@ import { useState, useEffect } from 'react';
 import {
   WorkUnit,
   WORK_UNIT_LABELS,
-  BuildPhase,
-  BUILD_PHASE_LABELS,
-  BUILD_PHASES,
   WorkType,
 } from '../lib/types';
 import { createWorkType, updateWorkTypeFields } from '../lib/stores/work-type-store';
@@ -33,8 +30,8 @@ export function WorkTypeFormSheet({
 
   const [title, setTitle] = useState('');
   const [workUnit, setWorkUnit] = useState<WorkUnit>('m2');
-  const [buildPhase, setBuildPhase] = useState<BuildPhase>('build-up');
-  const [expectedProductivity, setExpectedProductivity] = useState('');
+  const [buildUpRate, setBuildUpRate] = useState('');
+  const [tearDownRate, setTearDownRate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,19 +41,21 @@ export function WorkTypeFormSheet({
       if (workType) {
         setTitle(workType.title);
         setWorkUnit(workType.workUnit);
-        setBuildPhase(workType.buildPhase);
-        setExpectedProductivity(String(workType.expectedProductivity));
+        setBuildUpRate(String(workType.buildUpRate));
+        setTearDownRate(String(workType.tearDownRate));
       } else {
         setTitle('');
         setWorkUnit('m2');
-        setBuildPhase('build-up');
-        setExpectedProductivity('');
+        setBuildUpRate('');
+        setTearDownRate('');
       }
     }
   }, [isOpen, workType]);
 
-  const parsedRate = parseFloat(expectedProductivity);
-  const canSave = title.trim().length > 0 && !isNaN(parsedRate) && parsedRate > 0 && !isSaving;
+  const parsedBuildUpRate = parseFloat(buildUpRate) || 0;
+  const parsedTearDownRate = parseFloat(tearDownRate) || 0;
+  const hasAtLeastOneRate = parsedBuildUpRate > 0 || parsedTearDownRate > 0;
+  const canSave = title.trim().length > 0 && hasAtLeastOneRate && !isSaving;
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -67,15 +66,15 @@ export function WorkTypeFormSheet({
         await updateWorkTypeFields(workType.id, {
           title: title.trim(),
           workUnit,
-          buildPhase,
-          expectedProductivity: parsedRate,
+          buildUpRate: parsedBuildUpRate,
+          tearDownRate: parsedTearDownRate,
         });
       } else {
         await createWorkType({
           title: title.trim(),
           workUnit,
-          buildPhase,
-          expectedProductivity: parsedRate,
+          buildUpRate: parsedBuildUpRate,
+          tearDownRate: parsedTearDownRate,
         });
       }
       onClose();
@@ -126,36 +125,35 @@ export function WorkTypeFormSheet({
           </div>
         </div>
 
-        {/* Build Phase */}
+        {/* Build-up Rate */}
         <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Build Phase</label>
-          <div className="task-work-quantity__unit-pills" role="group" aria-label="Build phase">
-            {BUILD_PHASES.map((p) => (
-              <button
-                key={p}
-                type="button"
-                role="radio"
-                aria-checked={buildPhase === p}
-                className={`task-work-quantity__unit-pill${buildPhase === p ? ' task-work-quantity__unit-pill--active' : ''}`}
-                onClick={() => setBuildPhase(p)}
-              >
-                {BUILD_PHASE_LABELS[p]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Expected Productivity */}
-        <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Expected Productivity</label>
+          <label className="entry-modal__label">Build-up rate</label>
           <div className="task-work-quantity__input-wrap">
             <input
               inputMode="decimal"
               className="task-work-quantity__number-input"
-              value={expectedProductivity}
-              onChange={(e) => setExpectedProductivity(e.target.value)}
+              value={buildUpRate}
+              onChange={(e) => setBuildUpRate(e.target.value)}
               placeholder="0"
-              style={{ width: `${Math.max(String(expectedProductivity || '0').length, 1)}ch` }}
+              style={{ width: `${Math.max(String(buildUpRate || '0').length, 1)}ch` }}
+            />
+            <span className="task-work-quantity__input-unit" aria-hidden="true">
+              {WORK_UNIT_LABELS[workUnit]}/person-hr
+            </span>
+          </div>
+        </div>
+
+        {/* Tear-down Rate */}
+        <div className="create-task-sheet__section">
+          <label className="entry-modal__label">Tear-down rate</label>
+          <div className="task-work-quantity__input-wrap">
+            <input
+              inputMode="decimal"
+              className="task-work-quantity__number-input"
+              value={tearDownRate}
+              onChange={(e) => setTearDownRate(e.target.value)}
+              placeholder="0"
+              style={{ width: `${Math.max(String(tearDownRate || '0').length, 1)}ch` }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
               {WORK_UNIT_LABELS[workUnit]}/person-hr

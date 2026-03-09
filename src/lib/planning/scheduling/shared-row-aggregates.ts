@@ -1,5 +1,6 @@
+import type { BuildPhase } from '../../types';
 import { getAssignedDates } from './assignment';
-import { getEffectiveCrewForDate, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
+import { getEffectiveCrewForDate, getPhaseFields, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
 import type { PhaseDateValues } from './schedule-span';
 import { getPhaseRange, hasCompletePhaseDates, isDateWithinSpan } from './schedule-span';
 import type { SharedScheduleRow } from './shared-schedule-types';
@@ -7,7 +8,7 @@ import type { SharedScheduleRow } from './shared-schedule-types';
 export interface RowAggregate {
   requiredHours: number;
   assignedCrew: number;
-  /** Assigned crew capacity in person-hours (assignedCrew × accessHours). */
+  /** Assigned crew capacity in person-hours (assignedCrew x accessHours). */
   assignedCapacityHours: number;
   /** Work hours that could not be placed on the last day of an item's span within this group. */
   shortfallHours: number;
@@ -27,11 +28,13 @@ function mapKey(planId: string, lineItemId: string): string {
 
 function getAssignedDatesWithinPhase(
   item: PlanLineItem,
+  phase: BuildPhase,
   phaseDates: PhaseDateValues | undefined,
 ): string[] {
-  const all = getAssignedDates(item);
+  const pf = getPhaseFields(item, phase);
+  const all = getAssignedDates(pf);
   if (!phaseDates || !hasCompletePhaseDates(phaseDates)) return all;
-  const span = getPhaseRange(phaseDates, item.buildPhase);
+  const span = getPhaseRange(phaseDates, phase);
   if (!span) return all;
   return all.filter((date) => isDateWithinSpan(date, span));
 }
@@ -47,9 +50,9 @@ export function computeSharedRowAggregates(
     dayByDate,
   } = input;
 
-  const byRow = new Map<string, Array<{ planId: string; item: PlanLineItem }>>();
+  const byRow = new Map<string, Array<{ planId: string; item: PlanLineItem; phase: BuildPhase }>>();
 
-  const add = (rowId: string, ref: { planId: string; item: PlanLineItem }) => {
+  const add = (rowId: string, ref: { planId: string; item: PlanLineItem; phase: BuildPhase }) => {
     const existing = byRow.get(rowId) ?? [];
     existing.push(ref);
     byRow.set(rowId, existing);
@@ -59,7 +62,7 @@ export function computeSharedRowAggregates(
     if (row.type !== 'item') continue;
     const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
     if (!item) continue;
-    const ref = { planId: row.planId, item };
+    const ref = { planId: row.planId, item, phase: row.phase };
     add(row.id, ref);
     add(row.phaseRowId, ref);
     add(row.projectRowId, ref);
@@ -73,19 +76,20 @@ export function computeSharedRowAggregates(
       byDate.set(day.date, { requiredHours: 0, assignedCrew: 0, assignedCapacityHours: 0, shortfallHours: 0 });
     }
 
-    for (const { planId, item } of itemRefs) {
+    for (const { planId, item, phase } of itemRefs) {
+      const pf = getPhaseFields(item, phase);
       const phaseDates = phaseDatesByPlanId.get(planId);
-      const assignedDates = getAssignedDatesWithinPhase(item, phaseDates);
+      const assignedDates = getAssignedDatesWithinPhase(item, phase, phaseDates);
       if (assignedDates.length === 0) continue;
 
-      let remaining = item.timeHours * item.crew;
+      let remaining = pf.timeHours * pf.crew;
       const lastDate = assignedDates[assignedDates.length - 1];
       for (const date of assignedDates) {
         const day = dayByDate.get(date);
         if (!day) continue;
         const aggregate = byDate.get(date);
         if (!aggregate) continue;
-        const crew = getEffectiveCrewForDate(item, date);
+        const crew = getEffectiveCrewForDate(item, phase, date);
         const accessHours = day.accessHours || 8;
 
         // Always count assigned crew for days in span (user may assign more crew than work needs)

@@ -11,7 +11,7 @@ import {
 import { LoadingBlock } from '../../components/LoadingBlock';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../lib/types';
-import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../lib/types';
+import { WORK_UNIT_LABELS } from '../../lib/types';
 
 export type InsightsWindow = 'this-month' | 'last-3-months' | 'last-6-months' | 'all-time';
 
@@ -63,8 +63,7 @@ function byTitle(a: InsightsRow, b: InsightsRow): number {
   const titleCmp = a.kpi.key.workTypeTitle.localeCompare(b.kpi.key.workTypeTitle);
   if (titleCmp !== 0) return titleCmp;
   const unitCmp = a.kpi.key.workUnit.localeCompare(b.kpi.key.workUnit);
-  if (unitCmp !== 0) return unitCmp;
-  return (a.kpi.key.buildPhase ?? '').localeCompare(b.kpi.key.buildPhase ?? '');
+  return unitCmp;
 }
 
 export function buildInsightsRows(
@@ -253,9 +252,7 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
             {rows.stable.map((row) => {
               const insufficient = row.kpi.sampleCount < MIN_SAMPLE_COUNT;
               const caution = needsCautionLabel(row.kpi);
-              const phaseLabel = row.kpi.key.buildPhase
-                ? BUILD_PHASE_LABELS[row.kpi.key.buildPhase]
-                : 'N/A';
+
               return (
                 <article
                   key={workTypeKeyString(row.kpi.key)}
@@ -269,7 +266,7 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
                       )}
                     </h3>
                     <p className="insights-view__meta">
-                      {WORK_UNIT_LABELS[row.kpi.key.workUnit]} · {phaseLabel}
+                      {WORK_UNIT_LABELS[row.kpi.key.workUnit]}
                     </p>
                   </div>
                   <div className="insights-view__stats">
@@ -299,9 +296,6 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
               <div className="insights-view__table">
                 {rows.highVariance.map((row) => {
                   const caution = needsCautionLabel(row.kpi);
-                  const phaseLabel = row.kpi.key.buildPhase
-                    ? BUILD_PHASE_LABELS[row.kpi.key.buildPhase]
-                    : 'N/A';
                   return (
                     <article key={workTypeKeyString(row.kpi.key)} className="insights-view__row insights-view__row--variance">
                       <div>
@@ -312,7 +306,7 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
                           )}
                         </h3>
                         <p className="insights-view__meta">
-                          {WORK_UNIT_LABELS[row.kpi.key.workUnit]} · {phaseLabel}
+                          {WORK_UNIT_LABELS[row.kpi.key.workUnit]}
                         </p>
                       </div>
                       <div className="insights-view__stats">

@@ -1,10 +1,12 @@
+import type { BuildPhase } from '../../types';
 import type { Plan, PlanLineItem } from '../plan-model';
+import { getPhaseFields, phaseFieldUpdates } from '../plan-model';
 import { nowUtc } from '../../types';
 import { listDateRange } from './work-calendar';
 
 function didScheduleChange(
-  previous: Pick<PlanLineItem, 'scheduledStart' | 'scheduledEnd'>,
-  next: Pick<PlanLineItem, 'scheduledStart' | 'scheduledEnd'>,
+  previous: { scheduledStart: string | null; scheduledEnd: string | null },
+  next: { scheduledStart: string | null; scheduledEnd: string | null },
 ): boolean {
   return previous.scheduledStart !== next.scheduledStart || previous.scheduledEnd !== next.scheduledEnd;
 }
@@ -12,20 +14,23 @@ function didScheduleChange(
 export function applyScheduleAmendment(
   plan: Plan,
   lineItem: PlanLineItem,
+  phase: BuildPhase,
   nextScheduledStart: string | null,
   nextScheduledEnd: string | null,
   amendmentNote: string | null,
 ): Plan {
+  const pf = getPhaseFields(lineItem, phase);
+
   if (
-    lineItem.scheduledStart === nextScheduledStart &&
-    lineItem.scheduledEnd === nextScheduledEnd &&
+    pf.scheduledStart === nextScheduledStart &&
+    pf.scheduledEnd === nextScheduledEnd &&
     (amendmentNote ?? null) === (lineItem.amendmentNote ?? null)
   ) {
     return plan;
   }
 
   const changed = didScheduleChange(
-    { scheduledStart: lineItem.scheduledStart, scheduledEnd: lineItem.scheduledEnd },
+    { scheduledStart: pf.scheduledStart, scheduledEnd: pf.scheduledEnd },
     { scheduledStart: nextScheduledStart, scheduledEnd: nextScheduledEnd },
   );
 
@@ -44,7 +49,7 @@ export function applyScheduleAmendment(
       }
 
       // Update crewByDate when span changes — only store work days to avoid orphaned non-work entries
-      let nextCrewByDate = item.crewByDate;
+      let nextCrewByDate = pf.crewByDate;
       if (nextScheduledStart && nextScheduledEnd) {
         const allDates = listDateRange(nextScheduledStart, nextScheduledEnd);
         const workDaySet =
@@ -54,23 +59,27 @@ export function applyScheduleAmendment(
         const newDates = workDaySet
           ? allDates.filter((d) => workDaySet.has(d))
           : allDates;
-        const existing = item.crewByDate ?? {};
+        const existing = pf.crewByDate ?? {};
         const updated: Record<string, number> = {};
         for (const date of newDates) {
-          updated[date] = existing[date] ?? item.crew;
+          updated[date] = existing[date] ?? pf.crew;
         }
         nextCrewByDate = updated;
       } else {
         nextCrewByDate = undefined;
       }
 
-      return {
-        ...item,
-        originalScheduledStart: item.originalScheduledStart ?? item.scheduledStart,
-        originalScheduledEnd: item.originalScheduledEnd ?? item.scheduledEnd,
+      const phaseUpdates = phaseFieldUpdates(phase, {
+        originalScheduledStart: pf.originalScheduledStart ?? pf.scheduledStart,
+        originalScheduledEnd: pf.originalScheduledEnd ?? pf.scheduledEnd,
         scheduledStart: nextScheduledStart,
         scheduledEnd: nextScheduledEnd,
         crewByDate: nextCrewByDate,
+      });
+
+      return {
+        ...item,
+        ...phaseUpdates,
         amendmentNote: amendmentNote?.trim() || null,
         amendedAt: updatedAt,
       };

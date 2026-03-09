@@ -69,6 +69,35 @@ select.planning-view__work-type-select {
   background: none;
 }
 
+.planning-view__work-package-table-wrap {
+  background: var(--surface-contained-bg);
+  border-color: var(--surface-contained-border);
+}
+
+.planning-view__work-package-table thead th,
+.planning-view__work-package-table .planning-view__wp-cell {
+  background: var(--surface-contained-bg);
+  border-color: var(--surface-contained-border);
+}
+
+.planning-view__wp-cell-input {
+  background: var(--surface-contained-hover);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+.planning-view__wp-cell-input:hover {
+  border-color: var(--surface-border-hover);
+}
+
+.planning-view__wp-phase-cell--inactive {
+  background: color-mix(in srgb, var(--surface-contained-hover) 88%, black);
+}
+
+.planning-view__wp-add-row .planning-view__wp-cell {
+  background: var(--surface-contained-hover);
+}
+
 .planning-view__suggestion {
   background: var(--surface-brand-subtle);
 }

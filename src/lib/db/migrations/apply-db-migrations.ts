@@ -211,7 +211,7 @@ export const applyDbMigrations: DbUpgradeCallback = (
         // Version 16: Add workTypes store and workTypeId field.
         if (oldVersion < 16) {
           const workTypeStore = db.createObjectStore('workTypes', { keyPath: 'id' });
-          workTypeStore.createIndex('by-title-unit-phase', ['title', 'workUnit', 'buildPhase']);
+          workTypeStore.createIndex('by-title-unit-phase' as never, ['title', 'workUnit', 'buildPhase'] as never);
 
           // Backfill workTypeId on existing templates
           if (db.objectStoreNames.contains('taskTemplates')) {
@@ -484,6 +484,67 @@ export const applyDbMigrations: DbUpgradeCallback = (
             t.blockReason = t.blockedReason ?? null;
             delete t.blockedReason;
             return true;
+          });
+        }
+
+        // Version 28: Migrate WorkType from phase-specific to phase-agnostic with dual rates
+        if (oldVersion < 28 && db.objectStoreNames.contains('workTypes')) {
+          const wtStore = transaction.objectStore('workTypes');
+
+          // Drop old 3-part index and create new 2-part index
+          if (wtStore.indexNames.contains('by-title-unit-phase' as never)) {
+            wtStore.deleteIndex('by-title-unit-phase' as never);
+          }
+          if (!wtStore.indexNames.contains('by-title-unit')) {
+            wtStore.createIndex('by-title-unit', ['title', 'workUnit']);
+          }
+
+          // Merge paired work types (same title+unit, different phase) into single records
+          wtStore.getAll().then((workTypes) => {
+            // Group by normalized title + unit
+            const groups = new Map<string, Array<Record<string, unknown>>>();
+            for (const wt of workTypes) {
+              const r = wt as unknown as Record<string, unknown>;
+              const key = `${String(r.title ?? '').trim().toLowerCase()}:${String(r.workUnit ?? '')}`;
+              const arr = groups.get(key) ?? [];
+              arr.push(r);
+              groups.set(key, arr);
+            }
+
+            for (const records of groups.values()) {
+              if (records.length === 1) {
+                // Single record — convert in place
+                const r = records[0];
+                const phase = r.buildPhase as string;
+                const rate = (r.expectedProductivity as number) ?? 0;
+                r.buildUpRate = phase === 'build-up' ? rate : 0;
+                r.tearDownRate = phase === 'tear-down' ? rate : 0;
+                delete r.buildPhase;
+                delete r.expectedProductivity;
+                wtStore.put(r as never);
+              } else {
+                // Multiple records — merge into first, delete rest
+                let buildUpRate = 0;
+                let tearDownRate = 0;
+                const primary = records[0];
+                for (const r of records) {
+                  const phase = r.buildPhase as string;
+                  const rate = (r.expectedProductivity as number) ?? 0;
+                  if (phase === 'build-up') buildUpRate = rate;
+                  if (phase === 'tear-down') tearDownRate = rate;
+                }
+                primary.buildUpRate = buildUpRate;
+                primary.tearDownRate = tearDownRate;
+                delete primary.buildPhase;
+                delete primary.expectedProductivity;
+                wtStore.put(primary as never);
+
+                // Delete merged duplicates
+                for (let i = 1; i < records.length; i++) {
+                  wtStore.delete(records[i].id as string);
+                }
+              }
+            }
           });
         }
 };

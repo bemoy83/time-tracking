@@ -8,7 +8,7 @@ import {
   TaskListIcon,
   WarningIcon,
 } from '../../../components/icons';
-import type { Plan, PlanLineItem } from '../../../lib/planning/plan-model';
+import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
@@ -38,7 +38,7 @@ interface FieldPlanPlanDetailProps {
   unplannedTasks: Task[];
   onToggleCompletedExpanded: () => void;
   onToggleDeferredExpanded: () => void;
-  onReleaseToToday: (lineItem: PlanLineItem) => void;
+  onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
   onExportExecutionReturn: () => void;
 }
@@ -110,7 +110,7 @@ export function FieldPlanPlanDetail({
           <div className="field-plan__task-list field-plan__task-list--active">
             {statusGroups.inProgress.map((li) => (
               <FieldPlanLineItemRow
-                key={li.item.id}
+                key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
                 canExecute={canExecute}
@@ -132,7 +132,7 @@ export function FieldPlanPlanDetail({
           <div className="field-plan__task-list field-plan__task-list--blocked">
             {statusGroups.blocked.map((li) => (
               <FieldPlanLineItemRow
-                key={li.item.id}
+                key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
                 canExecute={canExecute}
@@ -154,7 +154,7 @@ export function FieldPlanPlanDetail({
           <div className="field-plan__task-list">
             {statusGroups.pending.map((li) => (
               <FieldPlanLineItemRow
-                key={li.item.id}
+                key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
                 canExecute={canExecute}
@@ -185,7 +185,7 @@ export function FieldPlanPlanDetail({
             <div className="field-plan__task-list field-plan__task-list--completed">
               {statusGroups.completed.map((li) => (
                 <FieldPlanLineItemRow
-                  key={li.item.id}
+                  key={`${li.item.id}:${li.phase}`}
                   lineItem={li}
                   projectColor={projectColor}
                   canExecute={canExecute}
@@ -216,7 +216,7 @@ export function FieldPlanPlanDetail({
             <div className="field-plan__task-list field-plan__task-list--deferred">
               {statusGroups.deferred.map((li) => (
                 <FieldPlanLineItemRow
-                  key={li.item.id}
+                  key={`${li.item.id}:${li.phase}`}
                   lineItem={li}
                   projectColor={projectColor}
                   canExecute={canExecute}

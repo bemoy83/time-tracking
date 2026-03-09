@@ -1,5 +1,6 @@
+import type { BuildPhase } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { getPlanEffectiveSpan, updatePlanLineItem } from '../plan-model';
+import { getPhaseFields, getPlanEffectiveSpan, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
 import type { ScheduleSpan } from './assignment';
 import { reconcileWorkCalendar, listDateRange } from './work-calendar';
 import type { PhaseDateField } from './schedule-span';
@@ -81,7 +82,7 @@ export function updatePlanCalendarDay(
 
 /**
  * Sync a calendar day change from the shared crew pool into a plan's workCalendar.
- * Used when the user toggles work/off in the shared schedule — the change must
+ * Used when the user toggles work/off in the shared schedule -- the change must
  * propagate to each plan so mutations (assignment, crew) persist correctly.
  * Only updates plans whose effective span includes the date.
  */
@@ -120,7 +121,7 @@ export function syncPlanWorkCalendarFromCrewPool(
 
 /**
  * Sync the full crew pool calendar to a plan's workCalendar.
- * Used when the global default crew changes — all work days get the crew pool's
+ * Used when the global default crew changes -- all work days get the crew pool's
  * effective crew (day.crewSize ?? crewPoolDefaultCrewSize) so the global default
  * overrides any locally set crew on the plan.
  */
@@ -147,25 +148,29 @@ export function syncCrewPoolCalendarToPlan(
 }
 
 /**
- * Apply a schedule span change to a line item, managing crewByDate lifecycle:
- * - When span extends: initialize crewByDate for new dates with item.crew.
+ * Apply a schedule span change to a line item for a specific phase,
+ * managing crewByDate lifecycle:
+ * - When span extends: initialize crewByDate for new dates with phase crew.
  * - When span shrinks: prune crewByDate entries outside new span.
  * - When unscheduled (null span): clear crewByDate entirely.
  */
 export function updateLineItemAssignment(
   plan: Plan,
   lineItemId: string,
+  phase: BuildPhase,
   nextSpan: ScheduleSpan,
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
 
+  const pf = getPhaseFields(item, phase);
+
   if (!nextSpan.scheduledStart || !nextSpan.scheduledEnd) {
-    return updatePlanLineItem(plan, lineItemId, {
+    return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
       scheduledStart: null,
       scheduledEnd: null,
       crewByDate: undefined,
-    });
+    }));
   }
 
   const allDates = listDateRange(nextSpan.scheduledStart, nextSpan.scheduledEnd);
@@ -176,43 +181,46 @@ export function updateLineItemAssignment(
   const newDates = new Set(
     workDaySet ? allDates.filter((d) => workDaySet.has(d)) : allDates,
   );
-  const existingCrewByDate = item.crewByDate ?? {};
+  const existingCrewByDate = pf.crewByDate ?? {};
 
   const nextCrewByDate: Record<string, number> = {};
   for (const date of newDates) {
-    nextCrewByDate[date] = existingCrewByDate[date] ?? item.crew;
+    nextCrewByDate[date] = existingCrewByDate[date] ?? pf.crew;
   }
 
-  return updatePlanLineItem(plan, lineItemId, {
+  return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
     scheduledStart: nextSpan.scheduledStart,
     scheduledEnd: nextSpan.scheduledEnd,
     crewByDate: nextCrewByDate,
-  });
+  }));
 }
 
 /**
- * Update crew count for a specific line item on a specific date.
+ * Update crew count for a specific line item on a specific date for a specific phase.
  * Non-work days are never stored; if date is non-work, its entry is removed from crewByDate.
  */
 export function updateLineItemCrewForDate(
   plan: Plan,
   lineItemId: string,
+  phase: BuildPhase,
   date: string,
   crew: number,
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
 
+  const pf = getPhaseFields(item, phase);
+
   const isWorkDay =
     plan.workCalendar.length > 0
       ? plan.workCalendar.some((d) => d.date === date && d.isWorkDay)
       : true;
-  const existing = { ...(item.crewByDate ?? {}) };
+  const existing = { ...(pf.crewByDate ?? {}) };
   if (isWorkDay) {
     existing[date] = Math.max(0, Math.floor(crew));
   } else {
     delete existing[date];
   }
   const crewByDate = Object.keys(existing).length > 0 ? existing : undefined;
-  return updatePlanLineItem(plan, lineItemId, { crewByDate });
+  return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, { crewByDate }));
 }

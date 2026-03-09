@@ -9,24 +9,39 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
     workTypeId: null,
     workQuantity: 100,
-    crew: 2,
-    timeHours: 5,
-    productivityRate: 10,
-    rateSource: 'manual',
+    tearDownQuantity: null,
+    buildUpRate: 10,
+    buildUpCrew: 2,
+    buildUpTimeHours: 5,
+    buildUpRateSource: 'manual' as const,
+    tearDownRate: 0,
+    tearDownCrew: 0,
+    tearDownTimeHours: 0,
+    tearDownRateSource: 'manual' as const,
+    buildUpScheduledStart: null,
+    buildUpScheduledEnd: null,
+    buildUpOriginalScheduledStart: null,
+    buildUpOriginalScheduledEnd: null,
+    buildUpCrewByDate: undefined,
+    tearDownScheduledStart: null,
+    tearDownScheduledEnd: null,
+    tearDownOriginalScheduledStart: null,
+    tearDownOriginalScheduledEnd: null,
+    tearDownCrewByDate: undefined,
+    buildUpExecutionStatus: 'pending' as const,
+    buildUpBlockReason: null,
+    buildUpBlockCategory: null,
+    buildUpExecutorNote: null,
+    buildUpDeferredNote: null,
+    tearDownExecutionStatus: 'pending' as const,
+    tearDownBlockReason: null,
+    tearDownBlockCategory: null,
+    tearDownExecutorNote: null,
+    tearDownDeferredNote: null,
     rationale: null,
-    executionStatus: 'pending',
-    blockReason: null,
-    blockCategory: null,
-    executorNote: null,
-    deferredNote: null,
     removedFromSource: false,
-    scheduledStart: null,
-    scheduledEnd: null,
-    originalScheduledStart: null,
-    originalScheduledEnd: null,
     amendmentNote: null,
     amendedAt: null,
   };
@@ -34,18 +49,12 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
   return {
     ...base,
     ...overrides,
-    executionStatus: overrides.executionStatus ?? base.executionStatus,
-    blockReason: overrides.blockReason ?? base.blockReason,
-    blockCategory: overrides.blockCategory ?? base.blockCategory,
-    executorNote: overrides.executorNote ?? base.executorNote,
-    deferredNote: overrides.deferredNote ?? base.deferredNote,
-    removedFromSource: overrides.removedFromSource ?? base.removedFromSource,
   };
 }
 
 function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
   return {
-    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
+    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2' },
     sampleCount: 10,
     avgProductivity: 12,
     totalQuantity: 1200,
@@ -87,18 +96,18 @@ describe('generatePlanSuggestions', () => {
     const result = generatePlanSuggestions([makeLineItem()], [makeKpi()]);
 
     expect(result.items).toHaveLength(1);
-    expect(result.items[0].suggestedRate).toBe(12);
+    expect(result.items[0].buildUp.suggestedRate).toBe(12);
     expect(result.items[0].confidence).toBe('high');
     expect(result.items[0].risk).toBe('none');
     // 100 / (12 * 2) = 4.166...
-    expect(result.items[0].suggestedTimeHours).toBeCloseTo(4.167, 2);
+    expect(result.items[0].buildUp.suggestedTimeHours).toBeCloseTo(4.167, 2);
   });
 
   it('flags high risk when no KPI data', () => {
     const result = generatePlanSuggestions([makeLineItem()], []);
 
     expect(result.items[0].kpi).toBeNull();
-    expect(result.items[0].suggestedRate).toBeNull();
+    expect(result.items[0].buildUp.suggestedRate).toBeNull();
     expect(result.items[0].risk).toBe('high');
     expect(result.items[0].riskReasons).toContain('No historical data available');
     expect(result.noDataCount).toBe(1);
@@ -108,7 +117,7 @@ describe('generatePlanSuggestions', () => {
     const kpi = makeKpi({ sampleCount: 1, confidence: 'insufficient' });
     const result = generatePlanSuggestions([makeLineItem()], [kpi]);
 
-    expect(result.items[0].suggestedRate).toBeNull(); // insufficient → no suggestion
+    expect(result.items[0].buildUp.suggestedRate).toBeNull(); // insufficient → no suggestion
     expect(result.items[0].risk).toBe('high');
   });
 
@@ -162,13 +171,12 @@ describe('generatePlanSuggestions', () => {
     });
     const item = makeLineItem({
       workQuantity: 500,
-      productivityRate: 10,
-      buildPhase: 'build-up',
+      buildUpRate: 10,
     });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].suggestedCrew).toBe(2);
-    expect(result.items[0].phaseWorkDayCount).toBeGreaterThan(0);
+    expect(result.items[0].buildUp.suggestedCrew).toBe(2);
+    expect(result.items[0].buildUp.phaseWorkDayCount).toBeGreaterThan(0);
   });
 
   it('sets phaseWorkDayCount to 0 when phase has no work days', () => {
@@ -178,10 +186,10 @@ describe('generatePlanSuggestions', () => {
       tearDownStartDate: '2026-03-09',
       tearDownEndDate: '2026-03-10',
     });
-    const item = makeLineItem({ buildPhase: 'build-up' });
+    const item = makeLineItem();
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].phaseWorkDayCount).toBe(0);
+    expect(result.items[0].buildUp.phaseWorkDayCount).toBe(0);
   });
 
   it('uses KPI rate for suggested crew when line-item rate is invalid', () => {
@@ -193,13 +201,12 @@ describe('generatePlanSuggestions', () => {
     });
     const item = makeLineItem({
       workQuantity: 100,
-      productivityRate: 0,
-      buildPhase: 'build-up',
+      buildUpRate: 0,
     });
     const kpi = makeKpi({ avgProductivity: 5, confidence: 'high' });
 
     const result = generatePlanSuggestions([item], [kpi], plan);
-    expect(result.items[0].suggestedCrew).toBe(1);
+    expect(result.items[0].buildUp.suggestedCrew).toBe(1);
   });
 
   it('computes phaseWorkDayCount and suggestedCrew for build-up when only build-up dates are set (tear-down optional)', () => {
@@ -211,13 +218,12 @@ describe('generatePlanSuggestions', () => {
     });
     const item = makeLineItem({
       workQuantity: 500,
-      productivityRate: 10,
-      buildPhase: 'build-up',
+      buildUpRate: 10,
     });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].phaseWorkDayCount).toBeGreaterThan(0);
-    expect(result.items[0].suggestedCrew).toBe(2);
+    expect(result.items[0].buildUp.phaseWorkDayCount).toBeGreaterThan(0);
+    expect(result.items[0].buildUp.suggestedCrew).toBe(2);
   });
 
   it('returns null suggested crew when phase dates are missing', () => {
@@ -227,10 +233,10 @@ describe('generatePlanSuggestions', () => {
       tearDownStartDate: '2026-03-09',
       tearDownEndDate: '2026-03-10',
     });
-    const item = makeLineItem({ workQuantity: 100, productivityRate: 10 });
+    const item = makeLineItem({ workQuantity: 100, buildUpRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].suggestedCrew).toBeNull();
+    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
   });
 
   it('returns null suggested crew when phase has no work days', () => {
@@ -240,10 +246,10 @@ describe('generatePlanSuggestions', () => {
       tearDownStartDate: '2026-03-09',
       tearDownEndDate: '2026-03-10',
     });
-    const item = makeLineItem({ workQuantity: 100, productivityRate: 10 });
+    const item = makeLineItem({ workQuantity: 100, buildUpRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].suggestedCrew).toBeNull();
+    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
   });
 
   it('returns null suggested crew when quantity or effective rate is invalid', () => {
@@ -253,12 +259,12 @@ describe('generatePlanSuggestions', () => {
       tearDownStartDate: '2026-03-09',
       tearDownEndDate: '2026-03-10',
     });
-    const zeroQuantity = makeLineItem({ id: 'li-zero-qty', workQuantity: 0, productivityRate: 10 });
-    const zeroRate = makeLineItem({ id: 'li-zero-rate', workQuantity: 100, productivityRate: 0 });
+    const zeroQuantity = makeLineItem({ id: 'li-zero-qty', workQuantity: 0, buildUpRate: 10 });
+    const zeroRate = makeLineItem({ id: 'li-zero-rate', workQuantity: 100, buildUpRate: 0 });
 
     const result = generatePlanSuggestions([zeroQuantity, zeroRate], [], plan);
-    expect(result.items[0].suggestedCrew).toBeNull();
-    expect(result.items[1].suggestedCrew).toBeNull();
+    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
+    expect(result.items[1].buildUp.suggestedCrew).toBeNull();
   });
 
   it('uses access hours from calendar day when custom calendar exists', () => {
@@ -272,9 +278,9 @@ describe('generatePlanSuggestions', () => {
         { date: '2026-03-03', isWorkDay: true, accessStart: '06:00', accessEnd: '12:00', crewSize: null },
       ],
     });
-    const item = makeLineItem({ workQuantity: 120, productivityRate: 10, buildPhase: 'build-up' });
+    const item = makeLineItem({ workQuantity: 120, buildUpRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].suggestedCrew).toBe(1);
+    expect(result.items[0].buildUp.suggestedCrew).toBe(1);
   });
 });

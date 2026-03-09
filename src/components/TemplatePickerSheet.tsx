@@ -117,7 +117,7 @@ export function TemplatePickerSheet({
             templates.map((t) => {
               const wt = t.workTypeId ? getWorkTypeById(t.workTypeId) : null;
               const detail = wt
-                ? `${wt.title} · ${BUILD_PHASE_LABELS[wt.buildPhase]} · ${WORK_UNIT_LABELS[wt.workUnit]}`
+                ? `${wt.title} · ${WORK_UNIT_LABELS[wt.workUnit]}`
                 : `${BUILD_PHASE_LABELS[t.buildPhase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
               return (
                 <button

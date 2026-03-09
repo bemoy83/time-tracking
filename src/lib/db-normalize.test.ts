@@ -113,7 +113,9 @@ describe('normalizePlan', () => {
     expect(plan.tearDownEndDate).toBeNull();
     expect(plan.defaultCrewSize).toBeNull();
     expect(Array.isArray(plan.workCalendar)).toBe(true);
-    expect(plan.lineItems[0].originalScheduledStart).toBeNull();
-    expect(plan.lineItems[0].amendmentNote).toBeNull();
+    // normalizePlan sets legacy fields on raw line item objects
+    const li = plan.lineItems[0] as unknown as Record<string, unknown>;
+    expect(li.originalScheduledStart).toBeNull();
+    expect(li.amendmentNote).toBeNull();
   });
 });

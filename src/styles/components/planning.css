@@ -5,6 +5,7 @@
 @import './planning/summary.css';
 @import './planning/phase-pills.css';
 @import './planning/line-items-list.css';
+@import './planning/work-package-table.css';
 @import './planning/line-item-card.css';
 @import './planning/line-item-fields.css';
 @import './planning/feedback.css';

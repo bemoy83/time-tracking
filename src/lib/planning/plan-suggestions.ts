@@ -1,7 +1,7 @@
 /**
  * KPI-backed suggestions for plan line items.
  *
- * Looks up matching WorkTypeKpi data and attaches recommendations:
+ * Looks up matching WorkTypeKpi data and attaches per-phase recommendations:
  * - Suggested productivity rate (from historical data)
  * - Recommended crew and time estimates
  * - Confidence level and risk flags
@@ -10,7 +10,13 @@
 import type { WorkTypeKpi } from '../kpi';
 import { findKpiByKey, type ConfidenceLevel } from '../kpi';
 import type { BuildPhase } from '../types';
-import { getPhaseSpan, type Plan, type PlanLineItem } from './plan-model';
+import {
+  getPhaseSpan,
+  getPhaseFields,
+  getPhaseQuantity,
+  type Plan,
+  type PlanLineItem,
+} from './plan-model';
 import { lineItemWorkTypeKey } from '../work-package-core';
 import { dayAccessHours, generateDefaultWorkCalendar } from './scheduling/work-calendar';
 
@@ -19,18 +25,24 @@ const HIGH_CV_THRESHOLD = 0.4;
 
 export type RiskLevel = 'high' | 'medium' | 'low' | 'none';
 
-export interface LineItemSuggestion {
-  lineItemId: string;
-  /** Matching KPI data, if found. */
-  kpi: WorkTypeKpi | null;
+export interface PhaseSuggestion {
   /** Suggested productivity rate from historical data. */
   suggestedRate: number | null;
   /** Recommended time (hours) based on suggested rate and item's quantity/crew. */
   suggestedTimeHours: number | null;
-  /** Suggested minimum crew size for the scheduled phase window, when available. */
+  /** Suggested minimum crew size for the scheduled phase window. */
   suggestedCrew: number | null;
-  /** Number of work days in this line item's phase span. Used to gate magic apply. */
+  /** Number of work days in this phase span. */
   phaseWorkDayCount: number;
+}
+
+export interface LineItemSuggestion {
+  lineItemId: string;
+  /** Matching KPI data, if found. */
+  kpi: WorkTypeKpi | null;
+  /** Per-phase suggestions. */
+  buildUp: PhaseSuggestion;
+  tearDown: PhaseSuggestion;
   /** Confidence of the suggestion. */
   confidence: ConfidenceLevel | null;
   /** Risk assessment for this line item. */
@@ -82,31 +94,24 @@ function classifyRisk(
 }
 
 function resolveSuggestedRate(
-  item: PlanLineItem,
   kpi: WorkTypeKpi | null,
 ): { suggestedRate: number | null; confidence: ConfidenceLevel | null } {
   if (!kpi || kpi.confidence === 'insufficient' || kpi.avgProductivity <= 0) {
     return { suggestedRate: null, confidence: null };
   }
-
-  const suggestedRate = kpi.avgProductivity;
-  const confidence = kpi.confidence;
-
-  if (suggestedRate > 0 && item.crew > 0) {
-    return { suggestedRate, confidence };
-  }
-
-  return { suggestedRate, confidence };
+  return { suggestedRate: kpi.avgProductivity, confidence: kpi.confidence };
 }
 
 function resolvePhaseSuggestedCrew(
   item: PlanLineItem,
+  phase: BuildPhase,
   plan: Plan | null | undefined,
   suggestedRate: number | null,
 ): number | null {
-  if (!plan || item.workQuantity <= 0) return null;
+  const quantity = getPhaseQuantity(item, phase);
+  if (!plan || quantity <= 0) return null;
 
-  const phaseSpan = getPhaseSpan(plan, item.buildPhase);
+  const phaseSpan = getPhaseSpan(plan, phase);
   if (!phaseSpan) return null;
 
   const workDaysInPhase = (
@@ -122,13 +127,14 @@ function resolvePhaseSuggestedCrew(
   const totalAvailableHours = workDaysInPhase.length * accessHoursPerDay;
   if (totalAvailableHours <= 0) return null;
 
+  const pf = getPhaseFields(item, phase);
   const effectiveRate =
-    item.productivityRate > 0
-      ? item.productivityRate
+    pf.rate > 0
+      ? pf.rate
       : (suggestedRate != null && suggestedRate > 0 ? suggestedRate : null);
   if (effectiveRate == null) return null;
 
-  const personHours = item.workQuantity / effectiveRate;
+  const personHours = quantity / effectiveRate;
   if (!Number.isFinite(personHours) || personHours <= 0) return null;
 
   return Math.max(1, Math.ceil(personHours / totalAvailableHours));
@@ -147,6 +153,28 @@ export function getPhaseWorkDayCount(plan: Plan | null | undefined, phase: Build
   return workDays.length;
 }
 
+function buildPhaseSuggestion(
+  item: PlanLineItem,
+  phase: BuildPhase,
+  plan: Plan | null | undefined,
+  suggestedRate: number | null,
+): PhaseSuggestion {
+  const pf = getPhaseFields(item, phase);
+  const quantity = getPhaseQuantity(item, phase);
+
+  let suggestedTimeHours: number | null = null;
+  if (suggestedRate != null && pf.crew > 0 && quantity > 0) {
+    suggestedTimeHours = quantity / (suggestedRate * pf.crew);
+  }
+
+  return {
+    suggestedRate,
+    suggestedTimeHours,
+    suggestedCrew: resolvePhaseSuggestedCrew(item, phase, plan, suggestedRate),
+    phaseWorkDayCount: getPhaseWorkDayCount(plan, phase),
+  };
+}
+
 /**
  * Generate KPI-backed suggestions for all line items in a plan.
  */
@@ -160,20 +188,13 @@ export function generatePlanSuggestions(
     const kpi = findKpiByKey(kpis, key) ?? null;
 
     const { risk, reasons } = classifyRisk(kpi);
-
-    const { suggestedRate, confidence } = resolveSuggestedRate(item, kpi);
-    let suggestedTimeHours: number | null = null;
-    if (suggestedRate != null && item.crew > 0) {
-      suggestedTimeHours = item.workQuantity / (suggestedRate * item.crew);
-    }
+    const { suggestedRate, confidence } = resolveSuggestedRate(kpi);
 
     return {
       lineItemId: item.id,
       kpi,
-      suggestedRate,
-      suggestedTimeHours,
-      suggestedCrew: resolvePhaseSuggestedCrew(item, plan, suggestedRate),
-      phaseWorkDayCount: getPhaseWorkDayCount(plan, item.buildPhase),
+      buildUp: buildPhaseSuggestion(item, 'build-up', plan, suggestedRate),
+      tearDown: buildPhaseSuggestion(item, 'tear-down', plan, suggestedRate),
       confidence,
       risk,
       riskReasons: reasons,

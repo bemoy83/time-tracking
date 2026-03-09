@@ -1,6 +1,8 @@
 import { durationMs } from '../types';
 import type { Plan } from './plan-model';
+import { getPhaseFields, isPhaseActive, getPhaseQuantity } from './plan-model';
 import type { Task, TimeEntry, BuildPhase, WorkUnit } from '../types';
+import { BUILD_PHASES } from '../types';
 import {
   computePlanDeadlineSummary,
   evaluateLineItemDeadline,
@@ -13,6 +15,8 @@ export type LineItemProgressStatus = 'completed' | 'in-progress' | 'not-started'
 
 export interface LineItemProgress {
   lineItemId: string;
+  /** Phase this progress entry represents. */
+  phase: BuildPhase;
   title: string;
   workTypeTitle: string;
   workUnit: WorkUnit;
@@ -59,10 +63,12 @@ export interface ImportedLineItemExecutionState {
   blockReason: string | null;
   blockCategory: string | null;
   deferredNote: string | null;
+  /** Phase this imported state applies to. */
+  phase?: BuildPhase;
 }
 
 export interface ImportedExecutionStatusByLineItem {
-  get(lineItemId: string): ImportedLineItemExecutionState | undefined;
+  get(lineItemId: string, phase?: BuildPhase): ImportedLineItemExecutionState | undefined;
 }
 
 interface TimeTotals {
@@ -91,6 +97,11 @@ function resolveLineItemStatus(tasks: Task[], actualPersonHours: number): LineIt
   if (tasks.every((task) => task.status === 'completed')) return 'completed';
   if (actualPersonHours > 0 || tasks.some((task) => task.status === 'completed')) return 'in-progress';
   return 'not-started';
+}
+
+function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
+  const taskPhase = task.buildPhase ?? 'build-up';
+  return taskPhase === phase;
 }
 
 export function computePlanProgress(
@@ -122,103 +133,114 @@ export function computePlanProgress(
 
   const deadlineEvaluations: DeadlineEvaluation[] = [];
 
-  const lineItems: LineItemProgress[] = plan.lineItems.map((item) => {
-    const tasksForItem = linkedTasksByLineItemId.get(item.id) ?? [];
-    let actualHours = 0;
-    let actualPersonHours = 0;
-    let totalTaskQuantity = 0;
+  const lineItems: LineItemProgress[] = plan.lineItems.flatMap((item) => {
+    const allTasksForItem = linkedTasksByLineItemId.get(item.id) ?? [];
 
-    for (const task of tasksForItem) {
-      const totals = entryTotalsByTask.get(task.id);
-      if (totals) {
-        actualHours += totals.hours;
-        actualPersonHours += totals.personHours;
-      }
-      if (task.workQuantity != null && task.workQuantity > 0) {
-        totalTaskQuantity += task.workQuantity;
-      }
-    }
+    return BUILD_PHASES
+      .filter((phase) => isPhaseActive(item, phase))
+      .map((phase) => {
+        const pf = getPhaseFields(item, phase);
+        const quantity = getPhaseQuantity(item, phase);
 
-    const plannedPersonHours = item.timeHours * item.crew;
-    const quantityForRate = totalTaskQuantity > 0 ? totalTaskQuantity : item.workQuantity;
-    const actualProductivity =
-      actualPersonHours > 0 && quantityForRate > 0 ? quantityForRate / actualPersonHours : null;
-    const variancePercent =
-      plannedPersonHours > 0 ? ((actualPersonHours - plannedPersonHours) / plannedPersonHours) * 100 : null;
-    const itemTaskIds = new Set(tasksForItem.map((task) => task.id));
-    const entriesForItem = timeEntries.filter((entry) => itemTaskIds.has(entry.taskId));
-    const imported = importedExecutionStatus?.get(item.id);
-    const importedStatus = imported?.status;
+        // Filter tasks for this specific phase
+        const tasksForPhase = allTasksForItem.filter((task) => taskMatchesPhase(task, phase));
+        let actualHours = 0;
+        let actualPersonHours = 0;
+        let totalTaskQuantity = 0;
 
-    // After wrap-up, planner-resolved status on the plan overrides imported. Otherwise prefer imported (executor-reported).
-    const usePlanStatus = plan.reviewedAt != null && item.executionStatus != null;
-    const planStatus = usePlanStatus ? (item.executionStatus as LineItemProgressStatus) : null;
+        for (const task of tasksForPhase) {
+          const totals = entryTotalsByTask.get(task.id);
+          if (totals) {
+            actualHours += totals.hours;
+            actualPersonHours += totals.personHours;
+          }
+          if (task.workQuantity != null && task.workQuantity > 0) {
+            totalTaskQuantity += task.workQuantity;
+          }
+        }
 
-    const resolvedStatus: LineItemProgressStatus =
-      planStatus != null
-        ? (planStatus === 'completed' || planStatus === 'in-progress' || planStatus === 'blocked' || planStatus === 'deferred'
-            ? planStatus
-            : resolveLineItemStatus(tasksForItem, actualPersonHours))
-        : importedStatus === 'completed'
-          ? 'completed'
-          : importedStatus === 'in-progress'
-            ? 'in-progress'
-            : importedStatus === 'blocked'
-              ? 'blocked'
-              : importedStatus === 'deferred'
-                ? 'deferred'
-                : resolveLineItemStatus(tasksForItem, actualPersonHours);
+        const plannedPersonHours = pf.timeHours * pf.crew;
+        const quantityForRate = totalTaskQuantity > 0 ? totalTaskQuantity : quantity;
+        const actualProductivity =
+          actualPersonHours > 0 && quantityForRate > 0 ? quantityForRate / actualPersonHours : null;
+        const variancePercent =
+          plannedPersonHours > 0 ? ((actualPersonHours - plannedPersonHours) / plannedPersonHours) * 100 : null;
+        const itemTaskIds = new Set(tasksForPhase.map((task) => task.id));
+        const entriesForItem = timeEntries.filter((entry) => itemTaskIds.has(entry.taskId));
+        const imported = importedExecutionStatus?.get(item.id, phase);
+        const importedStatus = imported?.status;
 
-    const blockReason = usePlanStatus ? (item.blockReason ?? null) : (imported?.blockReason ?? item.blockReason ?? null);
-    const blockCategory = usePlanStatus ? (item.blockCategory ?? null) : (imported?.blockCategory ?? item.blockCategory ?? null);
-    const deferredNote = usePlanStatus ? (item.deferredNote ?? null) : (imported?.deferredNote ?? item.deferredNote ?? null);
+        // After wrap-up, planner-resolved status on the plan overrides imported. Otherwise prefer imported (executor-reported).
+        const usePlanStatus = plan.reviewedAt != null && pf.executionStatus != null;
+        const planStatus = usePlanStatus ? (pf.executionStatus as LineItemProgressStatus) : null;
 
-    let deadline = evaluateLineItemDeadline(item, tasksForItem, entriesForItem, todayDate);
-    if (importedStatus === 'completed') {
-      const dueDate = item.scheduledEnd ?? item.scheduledStart ?? null;
-      const actualEndDate =
-        entriesForItem.length > 0
-          ? entriesForItem.reduce((best, e) => (e.endUtc > best ? e.endUtc : best), entriesForItem[0].endUtc).slice(0, 10)
-          : todayDate;
-      deadline = {
-        status: dueDate && actualEndDate <= dueDate ? 'done-on-time' : 'done-late',
-        dueDate,
-        actualStartDate:
-          entriesForItem.length > 0
-            ? entriesForItem.reduce((best, e) => (e.startUtc < best ? e.startUtc : best), entriesForItem[0].startUtc).slice(0, 10)
-            : null,
-        actualEndDate: actualEndDate ?? null,
-      };
-    }
-    deadlineEvaluations.push(deadline);
+        const resolvedStatus: LineItemProgressStatus =
+          planStatus != null
+            ? (planStatus === 'completed' || planStatus === 'in-progress' || planStatus === 'blocked' || planStatus === 'deferred'
+                ? planStatus
+                : resolveLineItemStatus(tasksForPhase, actualPersonHours))
+            : importedStatus === 'completed'
+              ? 'completed'
+              : importedStatus === 'in-progress'
+                ? 'in-progress'
+                : importedStatus === 'blocked'
+                  ? 'blocked'
+                  : importedStatus === 'deferred'
+                    ? 'deferred'
+                    : resolveLineItemStatus(tasksForPhase, actualPersonHours);
 
-    return {
-      lineItemId: item.id,
-      title: item.title,
-      workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
-      workUnit: item.workUnit,
-      buildPhase: item.buildPhase,
-      plannedQuantity: item.workQuantity,
-      actualQuantity: totalTaskQuantity,
-      blockReason,
-      blockCategory,
-      deferredNote,
-      plannedHours: item.timeHours,
-      plannedPersonHours,
-      plannedProductivity: item.productivityRate,
-      actualHours,
-      actualPersonHours,
-      actualProductivity,
-      variancePercent,
-      status: resolvedStatus,
-      deadlineStatus: deadline.status,
-      dueDate: deadline.dueDate,
-      scheduledStart: item.scheduledStart,
-      scheduledEnd: item.scheduledEnd,
-      actualStartDate: deadline.actualStartDate,
-      actualEndDate: deadline.actualEndDate,
-      taskCount: tasksForItem.length,
-    };
+        const blockReason = usePlanStatus ? (pf.blockReason ?? null) : (imported?.blockReason ?? pf.blockReason ?? null);
+        const blockCategory = usePlanStatus ? (pf.blockCategory ?? null) : (imported?.blockCategory ?? pf.blockCategory ?? null);
+        const deferredNote = usePlanStatus ? (pf.deferredNote ?? null) : (imported?.deferredNote ?? pf.deferredNote ?? null);
+
+        let deadline = evaluateLineItemDeadline(item, phase, tasksForPhase, entriesForItem, todayDate);
+        if (importedStatus === 'completed') {
+          const dueDate = pf.scheduledEnd ?? pf.scheduledStart ?? null;
+          const actualEndDate =
+            entriesForItem.length > 0
+              ? entriesForItem.reduce((best, e) => (e.endUtc > best ? e.endUtc : best), entriesForItem[0].endUtc).slice(0, 10)
+              : todayDate;
+          deadline = {
+            status: dueDate && actualEndDate <= dueDate ? 'done-on-time' : 'done-late',
+            dueDate,
+            actualStartDate:
+              entriesForItem.length > 0
+                ? entriesForItem.reduce((best, e) => (e.startUtc < best ? e.startUtc : best), entriesForItem[0].startUtc).slice(0, 10)
+                : null,
+            actualEndDate: actualEndDate ?? null,
+          };
+        }
+        deadlineEvaluations.push(deadline);
+
+        return {
+          lineItemId: item.id,
+          phase,
+          title: item.title,
+          workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
+          workUnit: item.workUnit,
+          buildPhase: phase,
+          plannedQuantity: quantity,
+          actualQuantity: totalTaskQuantity,
+          blockReason,
+          blockCategory,
+          deferredNote,
+          plannedHours: pf.timeHours,
+          plannedPersonHours,
+          plannedProductivity: pf.rate,
+          actualHours,
+          actualPersonHours,
+          actualProductivity,
+          variancePercent,
+          status: resolvedStatus,
+          deadlineStatus: deadline.status,
+          dueDate: deadline.dueDate,
+          scheduledStart: pf.scheduledStart,
+          scheduledEnd: pf.scheduledEnd,
+          actualStartDate: deadline.actualStartDate,
+          actualEndDate: deadline.actualEndDate,
+          taskCount: tasksForPhase.length,
+        };
+      });
   });
 
   const unplannedTasks = tasks.filter(
@@ -235,9 +257,9 @@ export function computePlanProgress(
 
   const linkedCompletedCount = linkedTasks.filter((task) => task.status === 'completed').length;
   let completionRatio = linkedTasks.length > 0 ? linkedCompletedCount / linkedTasks.length : 0;
-  if (importedExecutionStatus && plan.lineItems.length > 0) {
+  if (importedExecutionStatus && lineItems.length > 0) {
     const completedLineItemCount = lineItems.filter((li) => li.status === 'completed').length;
-    completionRatio = completedLineItemCount / plan.lineItems.length;
+    completionRatio = completedLineItemCount / lineItems.length;
   }
   const deadline = computePlanDeadlineSummary(plan, deadlineEvaluations, todayDate);
 

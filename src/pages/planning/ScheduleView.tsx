@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
-import { type Plan, type PlanLineItem, activatePlan, revertToDraft } from '../../lib/planning/plan-model';
+import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
 import { applyScheduleAmendment } from '../../lib/planning/scheduling/amendments';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import type { BuildPhase } from '../../lib/types';
 import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
@@ -41,6 +42,7 @@ interface ScheduleViewProps {
 
 interface AmendmentState {
   lineItem: PlanLineItem;
+  phase: BuildPhase;
   date: string;
   isAssigning: boolean;
   anchor: HTMLElement;
@@ -129,38 +131,41 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
-  const handleToggleAssignment = (lineItem: PlanLineItem, date: string, cellElement?: HTMLElement) => {
+  const handleToggleAssignment = (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => {
     if (currentPlan.status === 'active' && cellElement) {
-      const assignedDates = getAssignedDates(lineItem);
+      const pf = getPhaseFields(lineItem, phase);
+      const assignedDates = getAssignedDates(pf);
       const isAssigning = !assignedDates.includes(date);
-      setAmendment({ lineItem, date, isAssigning, anchor: cellElement });
+      setAmendment({ lineItem, phase, date, isAssigning, anchor: cellElement });
       return;
     }
-    applyToggle(lineItem, date, null);
+    applyToggle(lineItem, phase, date, null);
   };
 
-  const applyToggle = (lineItem: PlanLineItem, date: string, amendmentNote: string | null) => {
+  const applyToggle = (lineItem: PlanLineItem, phase: BuildPhase, date: string, amendmentNote: string | null) => {
     mutatePlan((prev) => {
       const currentLineItem = prev.lineItems.find((item) => item.id === lineItem.id);
       if (!currentLineItem) return prev;
-      const nextSpan = toggleAssignmentDate(currentLineItem, date);
+      const pf = getPhaseFields(currentLineItem, phase);
+      const nextSpan = toggleAssignmentDate(pf, date);
       if (prev.status === 'active') {
         return applyScheduleAmendment(
           prev,
           currentLineItem,
+          phase,
           nextSpan.scheduledStart,
           nextSpan.scheduledEnd,
           amendmentNote,
         );
       }
-      return updateLineItemAssignment(prev, currentLineItem.id, nextSpan);
+      return updateLineItemAssignment(prev, currentLineItem.id, phase, nextSpan);
     });
     trackTelemetryEvent('schedule_assignment_edit');
   };
 
   const handleAmendmentConfirm = (note: string | null) => {
     if (amendment) {
-      applyToggle(amendment.lineItem, amendment.date, note);
+      applyToggle(amendment.lineItem, amendment.phase, amendment.date, note);
       setAmendment(null);
     }
   };
@@ -174,8 +179,8 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_assignment_edit');
   };
 
-  const handleCrewForDateChange = (lineItemId: string, date: string, crew: number) => {
-    mutatePlan((prev) => updateLineItemCrewForDate(prev, lineItemId, date, crew));
+  const handleCrewForDateChange = (lineItemId: string, phase: BuildPhase, date: string, crew: number) => {
+    mutatePlan((prev) => updateLineItemCrewForDate(prev, lineItemId, phase, date, crew));
     trackTelemetryEvent('schedule_assignment_edit');
   };
 

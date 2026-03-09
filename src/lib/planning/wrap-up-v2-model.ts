@@ -3,6 +3,7 @@ import type { BuildPhase, Task, TimeEntry, WorkUnit } from '../types';
 
 export interface WrapUpLineItemProjection {
   lineItem: PlanLineItem;
+  phase: BuildPhase;
   linkedTaskIds: string[];
   plannedPersonHours: number;
   actualPersonHours: number;

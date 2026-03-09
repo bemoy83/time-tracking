@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import type { WorkType } from '../../lib/types';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
+import { WORK_UNIT_LABELS } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { ExportIcon, RulerIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
@@ -136,7 +136,7 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
                 <div className="settings-view__template-info">
                   <span className="settings-view__row-label">{wt.title}</span>
                   <span className="settings-view__row-detail">
-                    {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]} · {wt.expectedProductivity} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
+                    {WORK_UNIT_LABELS[wt.workUnit]} · BU {wt.buildUpRate} · TD {wt.tearDownRate} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
                   </span>
                 </div>
               </button>

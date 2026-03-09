@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Project } from '../../lib/types';
+import type { BuildPhase, Project } from '../../lib/types';
 import type { Plan, PlanLineItem, WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
@@ -208,9 +208,10 @@ export function SharedScheduleView({
   const handleToggleAssignment = useCallback((
     planId: string,
     lineItemId: string,
+    phase: BuildPhase,
     date: string,
   ) => {
-    if (applyPlanMutation(planId, (plan) => toggleSharedAssignment(plan, lineItemId, date))) {
+    if (applyPlanMutation(planId, (plan) => toggleSharedAssignment(plan, lineItemId, phase, date))) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
   }, [applyPlanMutation]);
@@ -218,10 +219,11 @@ export function SharedScheduleView({
   const handleCrewForDateChange = useCallback((
     planId: string,
     lineItemId: string,
+    phase: BuildPhase,
     date: string,
     crew: number,
   ) => {
-    if (applyPlanMutation(planId, (plan) => setSharedCrewForDate(plan, lineItemId, date, crew))) {
+    if (applyPlanMutation(planId, (plan) => setSharedCrewForDate(plan, lineItemId, phase, date, crew))) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
   }, [applyPlanMutation]);

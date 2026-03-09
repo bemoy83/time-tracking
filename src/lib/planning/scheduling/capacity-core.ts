@@ -1,4 +1,5 @@
-import { getEffectiveCrewForDate, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
+import type { BuildPhase } from '../../types';
+import { getEffectiveCrewForDate, getPhaseFields, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
 import type { CapacitySummary, DailyCapacity } from './capacity';
 import {
   dayAccessHours,
@@ -8,6 +9,7 @@ import {
 
 export interface NormalizedScheduledEntry {
   item: PlanLineItem;
+  phase: BuildPhase;
   dates: string[];
 }
 
@@ -58,16 +60,18 @@ function buildDayMapFromCalendar(
 function applyScheduledItem(
   dayMap: Map<string, DailyCapacity>,
   item: PlanLineItem,
+  phase: BuildPhase,
   dates: string[],
 ): void {
-  const totalPersonHours = item.timeHours * item.crew;
+  const pf = getPhaseFields(item, phase);
+  const totalPersonHours = pf.timeHours * pf.crew;
   let remaining = totalPersonHours;
   const lastDate = dates[dates.length - 1];
 
   for (const date of dates) {
     const day = dayMap.get(date);
     if (!day) continue;
-    const effectiveCrew = getEffectiveCrewForDate(item, date);
+    const effectiveCrew = getEffectiveCrewForDate(item, phase, date);
     const capacity = day.isWorkDay ? effectiveCrew * (day.accessHours || 8) : 0;
 
     // Always count assigned crew for days in span (user may assign more crew than work needs)
@@ -160,7 +164,7 @@ export function computeCapacityFromNormalizedInput(
   const dayMap = buildDayMapFromCalendar(input.calendar, input.defaultCrewSize);
 
   for (const entry of input.scheduledEntries) {
-    applyScheduledItem(dayMap, entry.item, entry.dates);
+    applyScheduledItem(dayMap, entry.item, entry.phase, entry.dates);
   }
 
   return finalizeCapacitySummary(

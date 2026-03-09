@@ -1,4 +1,7 @@
+import type { BuildPhase } from '../../types';
+import { BUILD_PHASES } from '../../types';
 import type { Plan, PlanLineItem } from '../plan-model';
+import { getPhaseFields, isPhaseActive } from '../plan-model';
 import type { Task, TimeEntry } from '../../types';
 
 export type DeadlineStatus =
@@ -51,12 +54,13 @@ function computeHoursSpent(entries: TimeEntry[]): number {
   }, 0);
 }
 
-function computeCompletionRatio(item: PlanLineItem, tasks: Task[]): number {
+function computeCompletionRatio(item: PlanLineItem, _phase: BuildPhase, tasks: Task[]): number {
   if (tasks.length === 0) return 0;
   const completedTasks = tasks.filter((task) => task.status === 'completed');
+  const quantity = item.workQuantity;
   const completedQty = completedTasks.reduce((sum, task) => sum + Math.max(0, task.workQuantity ?? 0), 0);
-  const denominator = item.workQuantity > 0
-    ? item.workQuantity
+  const denominator = quantity > 0
+    ? quantity
     : tasks.reduce((sum, task) => sum + Math.max(0, task.workQuantity ?? 0), 0);
 
   if (denominator > 0) {
@@ -73,22 +77,25 @@ function isInProgress(tasks: Task[]): boolean {
   return tasks.some((task) => task.status === 'active' || task.status === 'completed');
 }
 
-function paceAtRisk(item: PlanLineItem, tasks: Task[], entries: TimeEntry[]): boolean {
-  const plannedPersonHours = item.timeHours * item.crew;
+function paceAtRisk(item: PlanLineItem, phase: BuildPhase, tasks: Task[], entries: TimeEntry[]): boolean {
+  const pf = getPhaseFields(item, phase);
+  const plannedPersonHours = pf.timeHours * pf.crew;
   if (plannedPersonHours <= 0) return false;
   const actualPersonHours = computeHoursSpent(entries);
   if (actualPersonHours <= 0) return false;
-  const completionRatio = computeCompletionRatio(item, tasks);
+  const completionRatio = computeCompletionRatio(item, phase, tasks);
   return (actualPersonHours / plannedPersonHours) > completionRatio;
 }
 
 export function evaluateLineItemDeadline(
   item: PlanLineItem,
+  phase: BuildPhase,
   tasks: Task[],
   entries: TimeEntry[],
   todayDate: string,
 ): DeadlineEvaluation {
-  const dueDate = item.scheduledEnd ?? item.scheduledStart;
+  const pf = getPhaseFields(item, phase);
+  const dueDate = pf.scheduledEnd ?? pf.scheduledStart;
   const actualStartDate = dateFromEntry(entries, 'start');
   const actualEndDate = dateFromEntry(entries, 'end');
 
@@ -96,7 +103,7 @@ export function evaluateLineItemDeadline(
     return { status: 'unscheduled', dueDate: null, actualStartDate, actualEndDate };
   }
 
-  if (item.executionStatus === 'blocked' || item.executionStatus === 'deferred') {
+  if (pf.executionStatus === 'blocked' || pf.executionStatus === 'deferred') {
     return { status: 'needs-replanning', dueDate, actualStartDate, actualEndDate };
   }
 
@@ -117,7 +124,7 @@ export function evaluateLineItemDeadline(
 
   if (isInProgress(tasks)) {
     return {
-      status: paceAtRisk(item, tasks, entries) ? 'at-risk' : 'on-track',
+      status: paceAtRisk(item, phase, tasks, entries) ? 'at-risk' : 'on-track',
       dueDate,
       actualStartDate,
       actualEndDate,
@@ -132,7 +139,16 @@ export function computePlanDeadlineSummary(
   statuses: DeadlineEvaluation[],
   todayDate: string,
 ): PlanDeadlineSummary {
-  const scheduledCount = plan.lineItems.filter((item) => item.scheduledStart || item.scheduledEnd).length;
+  // Count scheduled phase entries (each item can have up to 2 phases scheduled)
+  let scheduledCount = 0;
+  for (const item of plan.lineItems) {
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
+      if (pf.scheduledStart || pf.scheduledEnd) scheduledCount++;
+    }
+  }
+
   if (scheduledCount === 0) {
     return { enabled: false, label: null, status: null };
   }

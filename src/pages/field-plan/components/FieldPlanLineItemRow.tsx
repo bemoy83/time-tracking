@@ -8,15 +8,15 @@ import { CountBadge } from '../../../components/CountBadge';
 import { SwipeableRow } from '../../../components/SwipeableRow';
 import { TaskProjectDot } from '../../../components/TaskItemMeta';
 import { formatDeadlineStatusLabel } from '../../../lib/planning/scheduling/deadline-label';
-import type { PlanLineItem } from '../../../lib/planning/plan-model';
-import { WORK_UNIT_LABELS } from '../../../lib/types';
+import { getPhaseQuantity } from '../../../lib/planning/plan-model';
+import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 
 interface FieldPlanLineItemRowProps {
   lineItem: FieldPlanLineItemSummary;
   projectColor?: string;
   canExecute: boolean;
-  onRelease: (item: PlanLineItem) => void;
+  onRelease: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
 }
 
@@ -27,7 +27,8 @@ export function FieldPlanLineItemRow({
   onRelease,
   onOpenActions,
 }: FieldPlanLineItemRowProps) {
-  const { item, status, tasks: linkedTasks } = lineItem;
+  const { item, phase, phaseFields: pf, status, tasks: linkedTasks } = lineItem;
+  const quantity = getPhaseQuantity(item, phase);
   const canRelease = canExecute && !item.removedFromSource && status === 'pending' && linkedTasks.length === 0;
   const canAct = canExecute && !item.removedFromSource;
 
@@ -36,7 +37,7 @@ export function FieldPlanLineItemRow({
         label: 'Release',
         icon: <PlayIcon className="swipeable-row__action-icon" />,
         color: 'var(--color-primary)',
-        onAction: () => onRelease(item),
+        onAction: () => onRelease(lineItem),
       }
     : undefined;
 
@@ -71,22 +72,22 @@ export function FieldPlanLineItemRow({
         <div className="field-plan-row__content">
           <span className="field-plan-row__title">{item.title}</span>
           <span className="field-plan-row__meta">
-            {item.workTypeTitle} · {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]} · {item.crew} crew · {item.timeHours.toFixed(1)}h
+            {item.workTypeTitle} · {quantity} {WORK_UNIT_LABELS[item.workUnit]} · {BUILD_PHASE_LABELS[phase]} · {pf.crew} crew · {pf.timeHours.toFixed(1)}h
           </span>
-          {item.blockReason && (
+          {pf.blockReason && (
             <span className="field-plan-row__chip field-plan-row__chip--blocked">
               <BlockedIcon className="field-plan-row__chip-icon" />
-              {item.blockReason}
+              {pf.blockReason}
             </span>
           )}
-          {item.deferredNote && (
+          {pf.deferredNote && (
             <span className="field-plan-row__chip field-plan-row__chip--deferred">
-              Deferred: {item.deferredNote}
+              Deferred: {pf.deferredNote}
             </span>
           )}
-          {item.executorNote && (
+          {pf.executorNote && (
             <span className="field-plan-row__note">
-              Note: {item.executorNote}
+              Note: {pf.executorNote}
             </span>
           )}
           {item.removedFromSource && (

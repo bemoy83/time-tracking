@@ -1,7 +1,8 @@
 import { getLatestExecutionReturnBundleByPlanId } from '../db';
 import type { Plan, LineItemExecutionStatus } from './plan-model';
-import type { Task, TimeEntry } from '../types';
-import { durationMs } from '../types';
+import { getPhaseFields, getPhaseQuantity, isPhaseActive } from './plan-model';
+import type { BuildPhase, Task, TimeEntry } from '../types';
+import { BUILD_PHASES, durationMs } from '../types';
 import type {
   TimeEntriesByTask,
   WrapUpLineItemProjection,
@@ -57,6 +58,11 @@ function computeTasksPersonHours(taskIds: string[], timeEntriesByTask: TimeEntri
   return Number(total.toFixed(2));
 }
 
+function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
+  const taskPhase = task.buildPhase ?? 'build-up';
+  return taskPhase === phase;
+}
+
 export async function loadWrapUpV2Projection(
   plan: Plan,
   tasks: Task[],
@@ -75,46 +81,59 @@ export async function loadWrapUpV2Projection(
   }
 
   const importedLineItemById = new Map(
-    (latestBundle?.lineItems ?? []).map((lineItem) => [lineItem.lineItemId, lineItem]),
+    (latestBundle?.lineItems ?? []).map((lineItem) => {
+      const phase = lineItem.phase === 'tear-down' ? 'tear-down' : 'build-up';
+      return [`${lineItem.lineItemId}:${phase}`, lineItem] as const;
+    }),
   );
 
-  const lineItems: WrapUpLineItemProjection[] = plan.lineItems.map((lineItem) => {
-    const linkedTasks = tasksByLineItemId.get(lineItem.id) ?? [];
-    const linkedTaskIds = linkedTasks.map((task) => task.id);
-    const imported = importedLineItemById.get(lineItem.id);
+  const lineItems: WrapUpLineItemProjection[] = plan.lineItems.flatMap((lineItem) => {
+    const allLinkedTasks = tasksByLineItemId.get(lineItem.id) ?? [];
+    return BUILD_PHASES
+      .filter((phase) => isPhaseActive(lineItem, phase))
+      .map((phase) => {
+        const pf = getPhaseFields(lineItem, phase);
+        const imported = importedLineItemById.get(`${lineItem.id}:${phase}`);
 
-    const executionStatus = mergeExecutorStatus(
-      lineItem.executionStatus,
-      imported?.executionStatus ?? null,
-      linkedTasks,
-    );
+        // Filter tasks to this specific phase
+        const linkedTasks = allLinkedTasks.filter((task) => taskMatchesPhase(task, phase));
+        const linkedTaskIds = linkedTasks.map((task) => task.id);
 
-    const executorNote = resolveExecutorText(lineItem.executorNote, imported?.executorNote ?? null);
-    const blockReason = resolveExecutorText(lineItem.blockReason, imported?.blockReason ?? null);
-    const deferredNote = resolveExecutorText(lineItem.deferredNote, imported?.deferredNote ?? null);
+        const executionStatus = mergeExecutorStatus(
+          pf.executionStatus,
+          imported?.executionStatus ?? null,
+          linkedTasks,
+        );
 
-    const plannedPersonHours = Number((lineItem.timeHours * lineItem.crew).toFixed(2));
-    const actualPersonHours = computeTasksPersonHours(linkedTaskIds, timeEntriesByTask);
-    const variancePersonHours = Number((actualPersonHours - plannedPersonHours).toFixed(2));
-    const actualProductivity =
-      actualPersonHours > 0 && lineItem.workQuantity > 0
-        ? Number((lineItem.workQuantity / actualPersonHours).toFixed(2))
-        : null;
+        const executorNote = resolveExecutorText(pf.executorNote, imported?.executorNote ?? null);
+        const blockReason = resolveExecutorText(pf.blockReason, imported?.blockReason ?? null);
+        const deferredNote = resolveExecutorText(pf.deferredNote, imported?.deferredNote ?? null);
 
-    return {
-      lineItem,
-      linkedTaskIds,
-      plannedPersonHours,
-      actualPersonHours,
-      variancePersonHours,
-      actualProductivity,
-      executionStatus,
-      executorNote,
-      blockReason,
-      blockCategory: lineItem.blockCategory ?? imported?.blockCategory ?? null,
-      deferredNote,
-      defaultIncludeInKpi: executionStatus !== 'blocked' && executionStatus !== 'deferred',
-    };
+        const plannedPersonHours = Number((pf.timeHours * pf.crew).toFixed(2));
+        const actualPersonHours = computeTasksPersonHours(linkedTaskIds, timeEntriesByTask);
+        const variancePersonHours = Number((actualPersonHours - plannedPersonHours).toFixed(2));
+        const quantity = getPhaseQuantity(lineItem, phase);
+        const actualProductivity =
+          actualPersonHours > 0 && quantity > 0
+            ? Number((quantity / actualPersonHours).toFixed(2))
+            : null;
+
+        return {
+          lineItem,
+          phase,
+          linkedTaskIds,
+          plannedPersonHours,
+          actualPersonHours,
+          variancePersonHours,
+          actualProductivity,
+          executionStatus,
+          executorNote,
+          blockReason,
+          blockCategory: pf.blockCategory ?? imported?.blockCategory ?? null,
+          deferredNote,
+          defaultIncludeInKpi: executionStatus !== 'blocked' && executionStatus !== 'deferred',
+        };
+      });
   });
 
   const localUnplanned = tasks.filter(

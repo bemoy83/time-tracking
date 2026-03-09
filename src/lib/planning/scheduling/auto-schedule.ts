@@ -6,10 +6,21 @@
  * a crew pool (day.crewSize ?? plan.defaultCrewSize). The algorithm
  * places items by deducting crew from that pool, so later items see
  * what's actually left.
+ *
+ * Scheduling operates per-phase: each line item can appear in both
+ * build-up and tear-down. This function schedules one phase at a time.
  */
 
+import type { BuildPhase } from '../../types';
 import type { Plan } from '../plan-model';
-import { getPhaseSpan, updatePlanLineItem } from '../plan-model';
+import {
+  getPhaseFields,
+  getPhaseQuantity,
+  getPhaseSpan,
+  isPhaseActive,
+  phaseFieldUpdates,
+  updatePlanLineItem,
+} from '../plan-model';
 import { dayAccessHours, dayCrewSize } from './work-calendar';
 
 interface DayState {
@@ -20,18 +31,18 @@ interface DayState {
 }
 
 /**
- * Auto-schedule unscheduled line items into the plan's work calendar.
+ * Auto-schedule unscheduled line items for a single phase into the plan's work calendar.
  *
  * Math: requiredPH = workQuantity / productivityRate.
- * Each work day can deliver min(requestedCrew, remainingCrew) × accessHours
+ * Each work day can deliver min(requestedCrew, remainingCrew) x accessHours
  * person-hours toward that requirement.
  *
  * Algorithm:
  * 1. Build per-day state tracking crew headcount.
- * 2. Reserve crew for already-scheduled items.
+ * 2. Reserve crew for already-scheduled items in this phase.
  * 3. For each unscheduled item (largest required PH first):
  *    a. Walk candidate days from each start position, accumulating
- *       deliverable PH per day until requiredPH is met — this gives
+ *       deliverable PH per day until requiredPH is met -- this gives
  *       the minimum span length for that start.
  *    b. Pick the start position that needs the fewest days (tightest fit),
  *       breaking ties by most remaining crew (least-loaded).
@@ -39,7 +50,7 @@ interface DayState {
  *    d. If no window can fully cover requiredPH, use all candidate days
  *       (capacity view will flag the shortfall).
  */
-export function autoSchedule(plan: Plan): Plan {
+export function autoSchedulePhase(plan: Plan, phase: BuildPhase): Plan {
   const { defaultCrewSize, workCalendar } = plan;
   if (workCalendar.length === 0) return plan;
 
@@ -58,23 +69,31 @@ export function autoSchedule(plan: Plan): Plan {
     });
   }
 
-  // 2. Reserve crew for already-scheduled items
+  // 2. Reserve crew for already-scheduled items in this phase
   for (const item of plan.lineItems) {
-    if (!item.scheduledStart || !item.scheduledEnd) continue;
+    if (!isPhaseActive(item, phase)) continue;
+    const pf = getPhaseFields(item, phase);
+    if (!pf.scheduledStart || !pf.scheduledEnd) continue;
     for (const [date, state] of dayStateMap) {
-      if (date < item.scheduledStart || date > item.scheduledEnd) continue;
-      const crew = item.crewByDate?.[date] ?? item.crew;
+      if (date < pf.scheduledStart || date > pf.scheduledEnd) continue;
+      const crew = pf.crewByDate?.[date] ?? pf.crew;
       state.remainingCrew -= crew;
     }
   }
 
-  // 3. Collect unscheduled items
+  // 3. Collect unscheduled items for this phase
   const unscheduled = plan.lineItems
-    .filter((item) => !item.scheduledStart || !item.scheduledEnd)
+    .filter((item) => {
+      if (!isPhaseActive(item, phase)) return false;
+      const pf = getPhaseFields(item, phase);
+      return !pf.scheduledStart || !pf.scheduledEnd;
+    })
     .map((item) => {
-      const effectiveRate = item.productivityRate > 0 ? item.productivityRate : 1;
-      const requiredPH = item.workQuantity / effectiveRate;
-      return { item, requiredPH };
+      const pf = getPhaseFields(item, phase);
+      const quantity = getPhaseQuantity(item, phase);
+      const effectiveRate = pf.rate > 0 ? pf.rate : 1;
+      const requiredPH = quantity / effectiveRate;
+      return { item, pf, requiredPH };
     })
     .filter((x) => x.requiredPH > 0)
     .sort((a, b) => b.requiredPH - a.requiredPH);
@@ -83,9 +102,9 @@ export function autoSchedule(plan: Plan): Plan {
 
   let result = plan;
 
-  for (const { item, requiredPH } of unscheduled) {
-    // Get candidate work days: constrain to item's phase span when that phase has dates, else use all days
-    const span = getPhaseSpan(plan, item.buildPhase);
+  for (const { item, pf, requiredPH } of unscheduled) {
+    // Get candidate work days: constrain to phase span when dates exist, else use all days
+    const span = getPhaseSpan(plan, phase);
     const candidates = span
       ? workDays
           .filter((d) => d.date >= span.start && d.date <= span.end)
@@ -95,7 +114,7 @@ export function autoSchedule(plan: Plan): Plan {
 
     if (candidates.length === 0) continue;
 
-    const requestedCrew = item.crew > 0 ? item.crew : 1;
+    const requestedCrew = pf.crew > 0 ? pf.crew : 1;
 
     // For each possible start position, walk forward accumulating
     // deliverable PH until requiredPH is met. Track the span length needed.
@@ -165,20 +184,29 @@ export function autoSchedule(plan: Plan): Plan {
     const maxCrewUsed = Math.max(...Object.values(crewByDate));
     const timeHours = requiredPH / maxCrewUsed;
 
-    const updates: Parameters<typeof updatePlanLineItem>[2] = {
+    const updates: Partial<import('../plan-model').PhaseFields> = {
       scheduledStart: startDate,
       scheduledEnd: endDate,
       crewByDate,
     };
-    if (item.crew <= 0) {
+    if (pf.crew <= 0) {
       updates.crew = maxCrewUsed;
     }
-    if (item.timeHours <= 0 || Math.abs(item.timeHours - timeHours) > 0.01) {
+    if (pf.timeHours <= 0 || Math.abs(pf.timeHours - timeHours) > 0.01) {
       updates.timeHours = Math.round(timeHours * 100) / 100;
     }
 
-    result = updatePlanLineItem(result, item.id, updates);
+    result = updatePlanLineItem(result, item.id, phaseFieldUpdates(phase, updates));
   }
 
+  return result;
+}
+
+/**
+ * Auto-schedule both phases sequentially: build-up first, then tear-down.
+ */
+export function autoSchedule(plan: Plan): Plan {
+  let result = autoSchedulePhase(plan, 'build-up');
+  result = autoSchedulePhase(result, 'tear-down');
   return result;
 }

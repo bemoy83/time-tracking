@@ -1,8 +1,6 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
 import {
   WORK_UNIT_LABELS,
-  BUILD_PHASE_LABELS,
-  type BuildPhase,
 } from '../../lib/types';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import {
@@ -14,16 +12,15 @@ import {
 const selectOnFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
 
 interface AddLineItemFormProps {
-  phaseFilter: BuildPhase;
   onAdd: (item: PlanLineItem) => void;
   onCancel?: () => void;
 }
 
-export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFormProps) {
+export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
   const { workTypes } = useWorkTypeStore();
   const filteredWorkTypes = useMemo(
-    () => workTypes.filter((wt) => wt.buildPhase === phaseFilter),
-    [workTypes, phaseFilter],
+    () => workTypes.filter((wt) => wt.readOnly !== true),
+    [workTypes],
   );
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
@@ -41,7 +38,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
     const isCurrentSelectionValid = filteredWorkTypes.some((wt) => wt.id === selectedWorkTypeId);
     if (!isCurrentSelectionValid) {
       setSelectedWorkTypeId(filteredWorkTypes[0].id);
-      setRate(filteredWorkTypes[0].expectedProductivity);
+      setRate(filteredWorkTypes[0].buildUpRate || filteredWorkTypes[0].tearDownRate);
     }
   }, [filteredWorkTypes, selectedWorkTypeId]);
 
@@ -53,7 +50,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
     setSelectedWorkTypeId(wtId);
     const wt = filteredWorkTypes.find((candidate) => candidate.id === wtId);
     if (wt) {
-      setRate(wt.expectedProductivity);
+      setRate(wt.buildUpRate || wt.tearDownRate);
     }
   };
 
@@ -63,9 +60,9 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
       title.trim(),
       selectedWorkType.title,
       selectedWorkType.workUnit,
-      selectedWorkType.buildPhase,
       workQuantity,
       rate,
+      selectedWorkType.tearDownRate || rate,
       'template',
       selectedWorkType.id,
     );
@@ -75,7 +72,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
     titleRef.current?.focus();
   };
 
-  const noWorkTypesMessage = `No work types for ${BUILD_PHASE_LABELS[phaseFilter]}. Add work types in Settings.`;
+  const noWorkTypesMessage = 'No work types. Add work types in Settings.';
 
   return (
     <div className="planning-view__line-item planning-view__line-item--add">
@@ -101,7 +98,7 @@ export function AddLineItemForm({ phaseFilter, onAdd, onCancel }: AddLineItemFor
             {filteredWorkTypes.length === 0 && <option value="">{noWorkTypesMessage}</option>}
             {filteredWorkTypes.map((wt) => (
               <option key={wt.id} value={wt.id}>
-                {wt.title} · {BUILD_PHASE_LABELS[wt.buildPhase]} · {WORK_UNIT_LABELS[wt.workUnit]}
+                {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
               </option>
             ))}
           </select>

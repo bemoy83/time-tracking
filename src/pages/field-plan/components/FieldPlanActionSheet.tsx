@@ -7,6 +7,7 @@ import {
   PlayIcon,
 } from '../../../components/icons';
 import type { BlockCategory, PlanLineItem } from '../../../lib/planning/plan-model';
+import type { BuildPhase } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FormMode } from '../field-plan-overlay-types';
 
@@ -22,12 +23,12 @@ interface FieldPlanActionSheetProps {
   formMode: FormMode | null;
   onClose: () => void;
   onSetFormMode: (formMode: FormMode | null) => void;
-  onReleaseToToday: (lineItem: PlanLineItem) => void;
-  onBlockSubmit: (lineItemId: string, reason: string, category: BlockCategory | null) => Promise<void>;
-  onDeferSubmit: (lineItemId: string, note: string | null) => Promise<void>;
-  onNoteSubmit: (lineItemId: string, note: string | null) => Promise<void>;
-  onClearBlock: (lineItem: PlanLineItem) => Promise<void>;
-  onReactivateDeferred: (lineItem: PlanLineItem) => Promise<void>;
+  onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
+  onBlockSubmit: (lineItemId: string, phase: BuildPhase, reason: string, category: BlockCategory | null) => Promise<void>;
+  onDeferSubmit: (lineItemId: string, phase: BuildPhase, note: string | null) => Promise<void>;
+  onNoteSubmit: (lineItemId: string, phase: BuildPhase, note: string | null) => Promise<void>;
+  onClearBlock: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
+  onReactivateDeferred: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
 }
 
 export function FieldPlanActionSheet({
@@ -67,9 +68,9 @@ export function FieldPlanActionSheet({
 
       {formMode?.kind === 'block' && (
         <BlockForm
-          lineItem={formMode.lineItem.item}
+          lineItem={formMode.lineItem}
           onSubmit={(reason, category) => {
-            void onBlockSubmit(formMode.lineItem.item.id, reason, category);
+            void onBlockSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, reason, category);
             onClose();
           }}
           onCancel={onClose}
@@ -78,9 +79,9 @@ export function FieldPlanActionSheet({
 
       {formMode?.kind === 'defer' && (
         <DeferForm
-          lineItem={formMode.lineItem.item}
+          lineItem={formMode.lineItem}
           onSubmit={(note) => {
-            void onDeferSubmit(formMode.lineItem.item.id, note);
+            void onDeferSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, note);
             onClose();
           }}
           onCancel={onClose}
@@ -89,9 +90,9 @@ export function FieldPlanActionSheet({
 
       {formMode?.kind === 'note' && (
         <NoteForm
-          lineItem={formMode.lineItem.item}
+          lineItem={formMode.lineItem}
           onSubmit={(note) => {
-            void onNoteSubmit(formMode.lineItem.item.id, note);
+            void onNoteSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, note);
             onClose();
           }}
           onCancel={onClose}
@@ -112,9 +113,9 @@ function FieldPlanActionList({
   lineItem: FieldPlanLineItemSummary;
   onClose: () => void;
   onSetFormMode: (formMode: FormMode | null) => void;
-  onReleaseToToday: (lineItem: PlanLineItem) => void;
-  onClearBlock: (lineItem: PlanLineItem) => Promise<void>;
-  onReactivateDeferred: (lineItem: PlanLineItem) => Promise<void>;
+  onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
+  onClearBlock: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
+  onReactivateDeferred: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
 }) {
   return (
     <div className="field-plan__action-list">
@@ -123,7 +124,7 @@ function FieldPlanActionList({
           type="button"
           className="field-plan__action-btn"
           onClick={() => {
-            onReleaseToToday(lineItem.item);
+            onReleaseToToday(lineItem);
             onClose();
           }}
         >
@@ -159,7 +160,7 @@ function FieldPlanActionList({
           type="button"
           className="field-plan__action-btn"
           onClick={() => {
-            void onClearBlock(lineItem.item);
+            void onClearBlock(lineItem.item, lineItem.phase);
             onClose();
           }}
         >
@@ -173,7 +174,7 @@ function FieldPlanActionList({
           type="button"
           className="field-plan__action-btn"
           onClick={() => {
-            void onReactivateDeferred(lineItem.item);
+            void onReactivateDeferred(lineItem.item, lineItem.phase);
             onClose();
           }}
         >
@@ -199,12 +200,13 @@ function BlockForm({
   onSubmit,
   onCancel,
 }: {
-  lineItem: PlanLineItem;
+  lineItem: FieldPlanLineItemSummary;
   onSubmit: (reason: string, category: BlockCategory | null) => void;
   onCancel: () => void;
 }) {
-  const [reason, setReason] = useState(lineItem.blockReason ?? '');
-  const [category, setCategory] = useState<BlockCategory | null>(lineItem.blockCategory ?? null);
+  const pf = lineItem.phaseFields;
+  const [reason, setReason] = useState(pf.blockReason ?? '');
+  const [category, setCategory] = useState<BlockCategory | null>(pf.blockCategory ?? null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -268,11 +270,12 @@ function DeferForm({
   onSubmit,
   onCancel,
 }: {
-  lineItem: PlanLineItem;
+  lineItem: FieldPlanLineItemSummary;
   onSubmit: (note: string | null) => void;
   onCancel: () => void;
 }) {
-  const [note, setNote] = useState(lineItem.deferredNote ?? '');
+  const pf = lineItem.phaseFields;
+  const [note, setNote] = useState(pf.deferredNote ?? '');
 
   return (
     <>
@@ -311,11 +314,12 @@ function NoteForm({
   onSubmit,
   onCancel,
 }: {
-  lineItem: PlanLineItem;
+  lineItem: FieldPlanLineItemSummary;
   onSubmit: (note: string | null) => void;
   onCancel: () => void;
 }) {
-  const [note, setNote] = useState(lineItem.executorNote ?? '');
+  const pf = lineItem.phaseFields;
+  const [note, setNote] = useState(pf.executorNote ?? '');
 
   return (
     <>

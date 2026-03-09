@@ -35,7 +35,6 @@ function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
       workTypeId: 'wt-1',
       workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
-      buildPhase: 'build-up',
     },
     sampleCount: 6,
     avgProductivity: 12,

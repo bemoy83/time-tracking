@@ -14,8 +14,8 @@ export interface WorkPackageImportApplyDeps {
   ensureWorkTypeExistsOrCreateFn?: (
     title: string,
     workUnit: ImportedWorkPackage['workUnit'],
-    buildPhase: ImportedWorkPackage['buildPhase'],
-    defaultExpectedProductivity: number,
+    defaultBuildUpRate?: number,
+    defaultTearDownRate?: number,
   ) => Promise<string>;
   updateTemplateFn?: typeof updateTemplate;
   updateTaskFieldsFn?: typeof updateTaskFields;
@@ -46,8 +46,6 @@ export async function applyWorkPackageImportItems(
     const resolvedWorkTypeId = payload.workTypeId ?? await ensureWorkTypeExistsOrCreateFn(
       payload.workTypeTitle,
       payload.workUnit,
-      payload.buildPhase,
-      0,
     );
 
     if (item.action === 'update' && item.existingId && item.existingType === 'template') {

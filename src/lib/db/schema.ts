@@ -93,7 +93,7 @@ export interface TimeTrackingDBSchema extends DBSchema {
     key: string;
     value: WorkType;
     indexes: {
-      'by-title-unit-phase': [string, string, string];
+      'by-title-unit': [string, string];
     };
   };
   // Imported execution-return envelopes (planner-side)

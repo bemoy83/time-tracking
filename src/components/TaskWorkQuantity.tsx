@@ -59,7 +59,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
     const parsed = parseFloat(quantity);
     if (isNaN(parsed) || parsed <= 0) return;
 
-    const patch: Partial<Pick<Task, 'workQuantity' | 'workUnit' | 'workTypeId' | 'buildPhase' | 'targetProductivity'>> = {
+    const patch: Partial<Pick<Task, 'workQuantity' | 'workUnit' | 'workTypeId' | 'targetProductivity'>> = {
       workQuantity: parsed,
       workUnit: unit,
     };
@@ -68,12 +68,10 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       const wt = getWorkTypeById(selectedWorkTypeId);
       if (!wt) return;
       patch.workTypeId = wt.id;
-      patch.buildPhase = wt.buildPhase;
-      patch.targetProductivity = wt.expectedProductivity;
+      patch.targetProductivity = wt.buildUpRate || wt.tearDownRate;
       patch.workUnit = wt.workUnit;
     } else {
       patch.workTypeId = null;
-      patch.buildPhase = null;
       patch.targetProductivity = null;
     }
 
@@ -86,7 +84,6 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       workQuantity: null,
       workUnit: null,
       workTypeId: null,
-      buildPhase: null,
       targetProductivity: null,
     });
     setShowSheet(false);

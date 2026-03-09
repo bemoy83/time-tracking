@@ -3,7 +3,7 @@ import { getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
 import { buildExecutionReturnEnvelope } from '../../lib/interop/data-transfer/execution-return';
 import { downloadJson } from '../../lib/interop/download-json';
 import type { BlockCategory, Plan, PlanLineItem } from '../../lib/planning/plan-model';
-import { updatePlanLineItem } from '../../lib/planning/plan-model';
+import { updatePlanLineItem, phaseFieldUpdates } from '../../lib/planning/plan-model';
 import { lineItemToCreateTaskInput } from '../../lib/planning/release-plan';
 import {
   syncLineItemBlockToTasks,
@@ -11,7 +11,7 @@ import {
 } from '../../lib/planning/task-plan-block-sync';
 import { createTask, useTaskStore } from '../../lib/stores/task-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
-import { nowUtc, type TimeEntry } from '../../lib/types';
+import { nowUtc, type TimeEntry, type BuildPhase } from '../../lib/types';
 import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
 import {
   buildFieldPlanLineItemSummaries,
@@ -171,77 +171,84 @@ export function useFieldPlanModel() {
   );
 
   const handleReleaseToToday = useCallback(
-    (lineItem: PlanLineItem) => {
-      if (!selectedPlan || !canExecute || lineItem.removedFromSource) return;
+    (lineItem: FieldPlanLineItemSummary) => {
+      if (!selectedPlan || !canExecute || lineItem.item.removedFromSource) return;
       const alreadyReleased = tasks.some(
-        (task) => task.sourcePlanId === selectedPlan.id && task.sourceLineItemId === lineItem.id,
+        (task) =>
+          task.sourcePlanId === selectedPlan.id
+          && task.sourceLineItemId === lineItem.item.id
+          && (task.buildPhase ?? 'build-up') === lineItem.phase,
       );
       if (alreadyReleased) return;
 
-      void createTask(lineItemToCreateTaskInput(lineItem, {
-        planId: selectedPlan.id,
-        projectId: selectedPlan.projectId,
-      }));
+      void createTask(lineItemToCreateTaskInput(
+        lineItem.item,
+        lineItem.phase,
+        {
+          planId: selectedPlan.id,
+          projectId: selectedPlan.projectId,
+        },
+      ));
     },
     [canExecute, selectedPlan, tasks],
   );
 
   const handleBlockSubmit = useCallback(
-    async (lineItemId: string, reason: string, category: BlockCategory | null) => {
+    async (lineItemId: string, phase: BuildPhase, reason: string, category: BlockCategory | null) => {
       if (!canExecute || !selectedPlan) return;
-      await patchLineItem(lineItemId, {
+      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
         executionStatus: 'blocked',
         blockReason: reason,
         blockCategory: category,
-      });
+      }));
       await syncLineItemBlockToTasks(selectedPlan.id, lineItemId, reason, category);
     },
     [canExecute, patchLineItem, selectedPlan],
   );
 
   const handleDeferSubmit = useCallback(
-    async (lineItemId: string, note: string | null) => {
+    async (lineItemId: string, phase: BuildPhase, note: string | null) => {
       if (!canExecute) return;
-      await patchLineItem(lineItemId, {
+      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
         executionStatus: 'deferred',
         deferredNote: note,
         blockReason: null,
         blockCategory: null,
-      });
+      }));
     },
     [canExecute, patchLineItem],
   );
 
   const handleNoteSubmit = useCallback(
-    async (lineItemId: string, note: string | null) => {
+    async (lineItemId: string, phase: BuildPhase, note: string | null) => {
       if (!canExecute) return;
-      await patchLineItem(lineItemId, {
+      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
         executorNote: note,
-      });
+      }));
     },
     [canExecute, patchLineItem],
   );
 
   const handleClearBlock = useCallback(
-    async (lineItem: PlanLineItem) => {
+    async (lineItem: PlanLineItem, phase: BuildPhase) => {
       if (!canExecute || !selectedPlan) return;
-      await patchLineItem(lineItem.id, {
+      await patchLineItem(lineItem.id, phaseFieldUpdates(phase, {
         executionStatus: 'pending',
         blockReason: null,
         blockCategory: null,
-      });
+      }));
       await syncLineItemUnblockToTasks(selectedPlan.id, lineItem.id);
     },
     [canExecute, patchLineItem, selectedPlan],
   );
 
   const handleReactivateDeferred = useCallback(
-    async (lineItem: PlanLineItem) => {
+    async (lineItem: PlanLineItem, phase: BuildPhase) => {
       if (!canExecute) return;
-      await patchLineItem(lineItem.id, {
+      await patchLineItem(lineItem.id, phaseFieldUpdates(phase, {
         executionStatus: 'pending',
         deferredNote: null,
-      });
+      }));
     },
     [canExecute, patchLineItem],
   );

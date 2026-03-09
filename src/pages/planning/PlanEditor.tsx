@@ -1,13 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import {
-  BUILD_PHASE_LABELS,
-  BUILD_PHASES,
-  type BuildPhase,
   type Project,
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
-import type { LineItemSuggestion } from '../../lib/planning/plan-suggestions';
 import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
@@ -17,6 +13,7 @@ import {
   updatePlanLineItem,
   duplicateLineItem,
   planTotalPersonHours,
+  planPhasePersonHours,
 } from '../../lib/planning/plan-model';
 import {
   setPlanDefaultCrewSize,
@@ -31,8 +28,7 @@ import { getContrastColor } from '../../lib/utils/contrast';
 import { ChevronLeftIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
-import { AddLineItemForm } from './AddLineItemForm';
-import { LineItemCard } from './LineItemCard';
+import { WorkPackageTable } from './WorkPackageTable';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
@@ -75,7 +71,6 @@ export function PlanEditor({
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
-  const [phaseFilter, setPhaseFilter] = useState<BuildPhase>('build-up');
   const [showProjectPicker, setShowProjectPicker] = useState(false);
 
   useEffect(() => {
@@ -84,7 +79,6 @@ export function PlanEditor({
 
   useEffect(() => {
     setShowProjectPicker(false);
-    setPhaseFilter('build-up');
   }, [plan.id]);
 
   const phaseDates = readPhaseDateValues(currentPlan);
@@ -105,7 +99,13 @@ export function PlanEditor({
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
+  const suggestionsByLineItemId = useMemo(
+    () => new Map(suggestions.items.map((item) => [item.lineItemId, item])),
+    [suggestions.items],
+  );
   const totalPersonHours = planTotalPersonHours(currentPlan);
+  const buildUpPersonHours = planPhasePersonHours(currentPlan, 'build-up');
+  const tearDownPersonHours = planPhasePersonHours(currentPlan, 'tear-down');
 
   const availableScope = (() => {
     const { defaultCrewSize, workCalendar } = currentPlan;
@@ -124,7 +124,6 @@ export function PlanEditor({
   })();
 
   const isLocked = currentPlan.status === 'active';
-  const isEditable = !readOnly && !isLocked;
   const selectedProject = currentPlan.projectId
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
@@ -266,61 +265,27 @@ export function PlanEditor({
         </ScheduleInputsBlock>
 
 
-        {isEditable && (
-          <div className="planning-view__phase-pills" role="group" aria-label="Build phase filter">
-            {BUILD_PHASES.map((phase) => (
-              <button
-                key={phase}
-                type="button"
-                className={`planning-view__phase-pill${phaseFilter === phase ? ' planning-view__phase-pill--active' : ''}`}
-                onClick={() => setPhaseFilter(phase)}
-                aria-pressed={phaseFilter === phase}
-              >
-                {BUILD_PHASE_LABELS[phase]}
-              </button>
-            ))}
-          </div>
-        )}
-
       </div>
 
-      {/* Add form — always visible when editable */}
-      {isEditable && (
-        <AddLineItemForm
-          phaseFilter={phaseFilter}
-          onAdd={handleAddLineItem}
-        />
-      )}
-
-      {/* Line items */}
-      {currentPlan.lineItems.length > 0 ? (
-        <div>
-          <div className="planning-view__items-header">
-            <h2 className="planning-view__items-title">Work Packages</h2>
-          </div>
-          <div className="planning-view__items">
-            {currentPlan.lineItems.map((item) => {
-              const suggestion: LineItemSuggestion | null =
-                suggestions.items.find((s) => s.lineItemId === item.id) ?? null;
-              return (
-                <LineItemCard
-                  key={item.id}
-                  item={item}
-                  suggestion={suggestion}
-                  isLocked={readOnly || isLocked}
-                  onUpdate={(updates) => handleUpdateItem(item.id, updates)}
-                  onDuplicate={handleDuplicateItem}
-                  onRemove={() => handleRemoveItem(item.id)}
-                />
-              );
-            })}
+      <div>
+        <div className="planning-view__items-header">
+          <h2 className="planning-view__items-title">Work Packages</h2>
+          <div className="planning-view__items-summary">
+            <span>{currentPlan.lineItems.length} packages</span>
+            <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
+            <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
           </div>
         </div>
-      ) : (
-        <p className="planning-view__empty-items">
-          No work packages yet. Use the form above to add one.
-        </p>
-      )}
+        <WorkPackageTable
+          lineItems={currentPlan.lineItems}
+          suggestionsByLineItemId={suggestionsByLineItemId}
+          isLocked={readOnly || isLocked}
+          onAdd={handleAddLineItem}
+          onUpdate={handleUpdateItem}
+          onDuplicate={handleDuplicateItem}
+          onRemove={handleRemoveItem}
+        />
+      </div>
 
       <ProjectPicker
         isOpen={showProjectPicker}

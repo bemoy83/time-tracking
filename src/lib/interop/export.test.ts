@@ -4,7 +4,7 @@ import { exportOpsSummary, exportEstimatorSummary, exportPhaseSummary, exportKpi
 
 function makeKpi(overrides: Partial<WorkTypeKpi> = {}): WorkTypeKpi {
   return {
-    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'build-up' },
+    key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2' },
     sampleCount: 5,
     avgProductivity: 12.345,
     totalQuantity: 500,
@@ -21,7 +21,7 @@ describe('exportOpsSummary', () => {
     const csv = exportOpsSummary([]);
     const headers = csv.split('\n')[0];
     expect(headers).toBe(
-      'mappingKey,workTypeTitle,workUnit,buildPhase,workTypeId,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
+      'mappingKey,workTypeTitle,workUnit,workTypeId,sampleCount,avgProductivity,totalQuantity,totalPersonHours',
     );
   });
 
@@ -32,24 +32,16 @@ describe('exportOpsSummary', () => {
 
     expect(lines).toHaveLength(2);
     const row = lines[1];
-    expect(row).toContain('carpet tiles:m2:build-up');
+    expect(row).toContain('carpet tiles:m2');
     expect(row).toContain('Carpet Tiles');
     expect(row).toContain('12.35'); // rounded to 2 decimals
     expect(row).toContain('40.5');
   });
 
-  it('handles null buildPhase', () => {
-    const kpi = makeKpi({
-      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: null },
-    });
-    const csv = exportOpsSummary([kpi]);
-    expect(csv).toContain('furniture:pcs:_');
-  });
-
   it('handles multiple KPIs', () => {
     const k1 = makeKpi();
     const k2 = makeKpi({
-      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs' },
       sampleCount: 3,
     });
     const csv = exportOpsSummary([k1, k2]);
@@ -81,24 +73,24 @@ describe('exportEstimatorSummary', () => {
 });
 
 describe('exportPhaseSummary', () => {
-  it('sorts by buildPhase first', () => {
+  it('sorts by workTypeTitle', () => {
     const k1 = makeKpi({
-      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2', buildPhase: 'tear-down' },
+      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs' },
     });
     const k2 = makeKpi({
-      key: { workTypeId: null, workTypeTitle: 'Furniture', workUnit: 'pcs', buildPhase: 'build-up' },
+      key: { workTypeId: null, workTypeTitle: 'Carpet Tiles', workUnit: 'm2' },
     });
     const csv = exportPhaseSummary([k1, k2]);
     const lines = csv.split('\n');
 
-    // build-up should come before tear-down
-    expect(lines[1]).toMatch(/^build-up/);
-    expect(lines[2]).toMatch(/^tear-down/);
+    // Carpet Tiles should come before Furniture (alphabetical)
+    expect(lines[1]).toContain('carpet tiles');
+    expect(lines[2]).toContain('furniture');
   });
 
-  it('has buildPhase as first column', () => {
+  it('has mappingKey as first column', () => {
     const headers = exportPhaseSummary([]).split('\n')[0];
-    expect(headers.startsWith('buildPhase,')).toBe(true);
+    expect(headers.startsWith('mappingKey,')).toBe(true);
   });
 });
 
@@ -112,7 +104,7 @@ describe('exportKpis', () => {
     // ops doesn't have confidence column, estimator does
     expect(ops.split('\n')[0]).not.toContain('confidence');
     expect(est.split('\n')[0]).toContain('confidence');
-    expect(phase.split('\n')[0]).toMatch(/^buildPhase/);
+    expect(phase.split('\n')[0]).toMatch(/^mappingKey/);
   });
 });
 
@@ -124,6 +116,6 @@ describe('CSV escaping', () => {
     // Should be valid CSV (no unescaped commas in field values)
     const row = csv.split('\n')[1];
     const fields = row.split(',');
-    expect(fields.length).toBe(9); // exact column count
+    expect(fields.length).toBe(8); // exact column count (no buildPhase column)
   });
 });

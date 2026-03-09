@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createLineItem, createPlan, getPhaseSpan, type Plan } from '../plan-model';
+import { createLineItem, createPlan, getPhaseFields, getPhaseSpan, type Plan } from '../plan-model';
 import { computeCapacityFromNormalizedInput } from './capacity-core';
 import { computeCapacitySummary, computeSharedCapacitySummary } from './capacity';
 import { listDateRange } from './work-calendar';
@@ -17,13 +17,13 @@ describe('capacity-core parity', () => {
       ],
     };
 
-    const scheduled = createLineItem('Scheduled', 'Scheduled', 'pcs', 'build-up', 1, 1);
-    scheduled.crew = 2;
-    scheduled.timeHours = 10;
-    scheduled.scheduledStart = '2026-03-02';
-    scheduled.scheduledEnd = '2026-03-03';
+    const scheduled = createLineItem('Scheduled', 'Scheduled', 'pcs', 1, 1, 0);
+    scheduled.buildUpCrew = 2;
+    scheduled.buildUpTimeHours = 10;
+    scheduled.buildUpScheduledStart = '2026-03-02';
+    scheduled.buildUpScheduledEnd = '2026-03-03';
 
-    const unscheduled = createLineItem('Unscheduled', 'Unscheduled', 'pcs', 'build-up', 1, 1);
+    const unscheduled = createLineItem('Unscheduled', 'Unscheduled', 'pcs', 1, 1, 0);
 
     plan.lineItems = [scheduled, unscheduled];
 
@@ -34,6 +34,7 @@ describe('capacity-core parity', () => {
       scheduledEntries: [
         {
           item: scheduled,
+          phase: 'build-up',
           dates: ['2026-03-02', '2026-03-03'],
         },
       ],
@@ -53,11 +54,11 @@ describe('capacity-core parity', () => {
       tearDownEndDate: '2026-03-03',
     };
 
-    const itemA = createLineItem('A', 'A', 'pcs', 'build-up', 1, 1);
-    itemA.crew = 1;
-    itemA.timeHours = 12;
-    itemA.scheduledStart = '2026-03-02';
-    itemA.scheduledEnd = '2026-03-03';
+    const itemA = createLineItem('A', 'A', 'pcs', 1, 1, 0);
+    itemA.buildUpCrew = 1;
+    itemA.buildUpTimeHours = 12;
+    itemA.buildUpScheduledStart = '2026-03-02';
+    itemA.buildUpScheduledEnd = '2026-03-03';
     planA.lineItems = [itemA];
 
     const planB = {
@@ -68,11 +69,11 @@ describe('capacity-core parity', () => {
       tearDownEndDate: '2026-03-03',
     };
 
-    const itemB = createLineItem('B', 'B', 'pcs', 'build-up', 1, 1);
-    itemB.crew = 1;
-    itemB.timeHours = 8;
-    itemB.scheduledStart = '2026-03-02';
-    itemB.scheduledEnd = '2026-03-02';
+    const itemB = createLineItem('B', 'B', 'pcs', 1, 1, 0);
+    itemB.buildUpCrew = 1;
+    itemB.buildUpTimeHours = 8;
+    itemB.buildUpScheduledStart = '2026-03-02';
+    itemB.buildUpScheduledEnd = '2026-03-02';
     planB.lineItems = [itemB];
 
     const calendar = [
@@ -90,21 +91,27 @@ describe('capacity-core parity', () => {
     };
 
     const wrapperSummary = computeSharedCapacitySummary(input);
+
+    const itemAPf = getPhaseFields(itemA, 'build-up');
+    const itemBPf = getPhaseFields(itemB, 'build-up');
+
     const coreSummary = computeCapacityFromNormalizedInput({
       calendar,
       defaultCrewSize: 2,
       scheduledEntries: [
         {
           item: itemA,
-          dates: listDateRange(itemA.scheduledStart!, itemA.scheduledEnd!).filter((date) => {
-            const span = getPhaseSpan(planA, itemA.buildPhase);
+          phase: 'build-up',
+          dates: listDateRange(itemAPf.scheduledStart!, itemAPf.scheduledEnd!).filter((date) => {
+            const span = getPhaseSpan(planA, 'build-up');
             return span ? date >= span.start && date <= span.end : true;
           }),
         },
         {
           item: itemB,
-          dates: listDateRange(itemB.scheduledStart!, itemB.scheduledEnd!).filter((date) => {
-            const span = getPhaseSpan(planB, itemB.buildPhase);
+          phase: 'build-up',
+          dates: listDateRange(itemBPf.scheduledStart!, itemBPf.scheduledEnd!).filter((date) => {
+            const span = getPhaseSpan(planB, 'build-up');
             return span ? date >= span.start && date <= span.end : true;
           }),
         },

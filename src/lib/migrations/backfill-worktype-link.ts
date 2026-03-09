@@ -40,45 +40,42 @@ function findByTitleUnit(
 function resolveWorkType(
   title: string,
   workUnit: WorkType['workUnit'] | null,
-  buildPhase: BuildPhase | null,
+  _buildPhase: BuildPhase | null,
   workTypes: WorkType[],
 ): ResolveResult {
   if (!workUnit) return { status: 'missing' };
 
-  if (buildPhase) {
-    const exact = findWorkTypeByKey(title, workUnit, buildPhase);
-    if (exact) {
-      return { status: 'resolved', workType: exact };
-    }
-  } else {
-    const candidates = findByTitleUnit(title, workUnit, workTypes);
-    if (candidates.length === 1) return { status: 'resolved', workType: candidates[0] };
-    if (candidates.length > 1) return { status: 'ambiguous' };
+  const exact = findWorkTypeByKey(title, workUnit);
+  if (exact) {
+    return { status: 'resolved', workType: exact };
   }
+  const candidates = findByTitleUnit(title, workUnit, workTypes);
+  if (candidates.length === 1) return { status: 'resolved', workType: candidates[0] };
+  if (candidates.length > 1) return { status: 'ambiguous' };
   return { status: 'missing' };
 }
 
 async function applyTaskBackfill(task: Task, workType: WorkType): Promise<void> {
+  const rate = task.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
   await updateTaskFields(task.id, {
     workTypeId: workType.id,
     workUnit: task.workUnit ?? workType.workUnit,
-    buildPhase: task.buildPhase ?? workType.buildPhase,
     targetProductivity:
       task.targetProductivity != null && task.targetProductivity > 0
         ? task.targetProductivity
-        : workType.expectedProductivity,
+        : (rate || workType.buildUpRate || workType.tearDownRate),
   });
 }
 
 async function applyTemplateBackfill(template: TaskTemplate, workType: WorkType): Promise<void> {
+  const rate = template.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
   await updateTemplate(template.id, {
     workTypeId: workType.id,
     workUnit: template.workUnit ?? workType.workUnit,
-    buildPhase: template.buildPhase ?? workType.buildPhase,
     targetProductivity:
       template.targetProductivity != null && template.targetProductivity > 0
         ? template.targetProductivity
-        : workType.expectedProductivity,
+        : (rate || workType.buildUpRate || workType.tearDownRate),
   });
 }
 

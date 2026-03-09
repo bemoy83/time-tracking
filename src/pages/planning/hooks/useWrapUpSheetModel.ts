@@ -6,8 +6,9 @@ import {
   isPlanReviewReady,
 } from '../../../lib/planning/plan-lifecycle';
 import type { Plan } from '../../../lib/planning/plan-model';
+import { isPhaseActive } from '../../../lib/planning/plan-model';
 import { executePlanWrapUp } from '../../../lib/planning/wrap-up';
-import { durationMs, type Task, type TimeEntry } from '../../../lib/types';
+import { BUILD_PHASES, durationMs, type BuildPhase, type Task, type TimeEntry } from '../../../lib/types';
 
 type WrapUpMode = 'archive-and-complete' | 'save-review-only';
 
@@ -46,7 +47,7 @@ function resolveTaskGroups(plan: Plan, projectTasks: Task[]): WrapUpTaskGroup[] 
           item.workTypeId != null &&
           item.workTypeId === task.workTypeId &&
           item.workUnit === task.workUnit &&
-          item.buildPhase === task.buildPhase,
+          (task.buildPhase == null || BUILD_PHASES.filter((p: BuildPhase) => isPhaseActive(item, p)).includes(task.buildPhase)),
       );
       if (matchedByType) {
         groupId = matchedByType.id;

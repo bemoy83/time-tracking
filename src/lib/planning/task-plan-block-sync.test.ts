@@ -67,7 +67,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 function makePlan(planId = 'plan-1', lineItemId = 'line-1'): Plan {
   const plan = createPlan('Plan');
   const lineItem = {
-    ...createLineItem('Line 1', 'Carpet Tiles', 'm2', 'build-up', 100, 10),
+    ...createLineItem('Line 1', 'Carpet Tiles', 'm2', 100, 10, 0),
     id: lineItemId,
   };
   return {
@@ -120,9 +120,9 @@ describe('task-plan-block-sync', () => {
         lineItems: [
           expect.objectContaining({
             id: 'line-1',
-            executionStatus: 'blocked',
-            blockReason: 'Waiting for materials',
-            blockCategory: null,
+            buildUpExecutionStatus: 'blocked',
+            buildUpBlockReason: 'Waiting for materials',
+            buildUpBlockCategory: null,
           }),
         ],
       }),
@@ -175,9 +175,9 @@ describe('task-plan-block-sync', () => {
         lineItems: [
           expect.objectContaining({
             id: 'line-1',
-            executionStatus: 'pending',
-            blockReason: null,
-            blockCategory: null,
+            buildUpExecutionStatus: 'pending',
+            buildUpBlockReason: null,
+            buildUpBlockCategory: null,
           }),
         ],
       }),

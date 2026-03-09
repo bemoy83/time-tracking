@@ -12,7 +12,6 @@ import {
   WORK_UNITS,
   WORK_UNIT_LABELS,
   TaskTemplate,
-  BUILD_PHASE_LABELS,
   formatProductivity,
 } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
@@ -103,8 +102,8 @@ export function CreateTaskSheet({
         workQuantity: showWork && !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : undefined,
         workUnit: showWork && !isNaN(parsedQty) && parsedQty > 0 ? unit : undefined,
         crew: showWorkers && workers > 1 ? workers : undefined,
-        targetProductivity: workType?.expectedProductivity ?? (template?.targetProductivity ?? undefined),
-        buildPhase: workType?.buildPhase ?? (template?.buildPhase ?? undefined),
+        targetProductivity: workType ? (workType.buildUpRate || workType.tearDownRate) : (template?.targetProductivity ?? undefined),
+        buildPhase: template?.buildPhase ?? undefined,
         workTypeId: workType?.id ?? (template?.workTypeId ?? undefined),
       });
       onClose();
@@ -120,7 +119,7 @@ export function CreateTaskSheet({
   const decrementMinutes = () => setEstMinutes((m) => (m <= 0 ? 55 : m - 5));
 
   // Calculator suggest logic
-  const rate = workType?.expectedProductivity ?? 0;
+  const rate = workType ? (workType.buildUpRate || workType.tearDownRate) : 0;
   const parsedQty = parseFloat(quantity);
   const qtyValid = !isNaN(parsedQty) && parsedQty > 0;
   const totalEstMinutes = estHours * 60 + estMinutes;
@@ -167,10 +166,10 @@ export function CreateTaskSheet({
           <div className="create-task-sheet__section">
             <label className="entry-modal__label">Work Type</label>
             <div className="settings-view__row-detail">
-              {workType.title} · {BUILD_PHASE_LABELS[workType.buildPhase]} · {WORK_UNIT_LABELS[workType.workUnit]}
+              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]}
             </div>
             <div className="settings-view__row-detail">
-              Expected: {workType.expectedProductivity} {WORK_UNIT_LABELS[workType.workUnit]}/person-hr
+              Build-up: {workType.buildUpRate} · Tear-down: {workType.tearDownRate} {WORK_UNIT_LABELS[workType.workUnit]}/person-hr
             </div>
           </div>
         )}

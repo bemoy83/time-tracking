@@ -4,17 +4,17 @@ import { csvRow } from './csv-utils';
 
 /**
  * Export WorkType definitions to CSV.
- * Columns: mappingKey, title, workUnit, buildPhase, expectedProductivity
+ * Columns: mappingKey, title, workUnit, buildUpRate, tearDownRate
  */
 export function exportWorkTypesCsv(workTypes: WorkType[]): string {
-  const headers = ['mappingKey', 'title', 'workUnit', 'buildPhase', 'expectedProductivity'];
+  const headers = ['mappingKey', 'title', 'workUnit', 'buildUpRate', 'tearDownRate'];
   const rows = workTypes.map((workType) =>
     csvRow([
-      workTypeKeyString(workType.title, workType.workUnit, workType.buildPhase),
+      workTypeKeyString(workType.title, workType.workUnit),
       workType.title,
       workType.workUnit,
-      workType.buildPhase,
-      workType.expectedProductivity,
+      workType.buildUpRate,
+      workType.tearDownRate,
     ]),
   );
 

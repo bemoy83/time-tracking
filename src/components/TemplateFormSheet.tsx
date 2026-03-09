@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import {
   WORK_UNIT_LABELS,
-  BUILD_PHASE_LABELS,
   TaskTemplate,
 } from '../lib/types';
 import { createTemplate, updateTemplate } from '../lib/stores/template-store';
@@ -82,11 +81,11 @@ export function TemplateFormSheet({
         title: title.trim(),
         workTypeId,
         workUnit: selectedWorkType.workUnit,
-        buildPhase: selectedWorkType.buildPhase,
+        buildPhase: 'build-up' as const,
         workQuantity: !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : null,
         estimatedMinutes: totalMinutes > 0 ? totalMinutes : null,
         crew: workers > 1 ? workers : null,
-        targetProductivity: selectedWorkType.expectedProductivity,
+        targetProductivity: selectedWorkType.buildUpRate || selectedWorkType.tearDownRate,
       };
 
       if (isEdit && template) {
@@ -141,7 +140,7 @@ export function TemplateFormSheet({
             >
               {workTypes.map((wt) => (
                 <option key={wt.id} value={wt.id}>
-                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]} · {BUILD_PHASE_LABELS[wt.buildPhase]}
+                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
                 </option>
               ))}
             </select>
@@ -152,7 +151,7 @@ export function TemplateFormSheet({
         {selectedWorkType && (
           <div className="create-task-sheet__section">
             <div className="settings-view__row-detail">
-              Expected: {selectedWorkType.expectedProductivity} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+              BU: {selectedWorkType.buildUpRate} · TD: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
             </div>
           </div>
         )}

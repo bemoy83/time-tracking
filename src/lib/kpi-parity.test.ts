@@ -1,9 +1,9 @@
 /**
- * KPI ↔ Calculator parity test — verifies that both paths consume
+ * KPI <-> Calculator parity test -- verifies that both paths consume
  * the same attributed dataset and produce consistent productivity rates.
  *
  * This test exercises the same data flow used by KpiSection and CalculatorSheet:
- *   buildAttributedRollup → computeWorkTypeKpis → findKpiByKey
+ *   buildAttributedRollup -> computeWorkTypeKpis -> findKpiByKey
  *
  * The Calculator uses KPI results directly for its productivity input,
  * so parity means: for any given Work Type, the KPI avgProductivity
@@ -20,8 +20,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-carpet',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
-    expectedProductivity: 55,
+    buildUpRate: 55,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -29,8 +29,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-furniture',
     title: 'Furniture',
     workUnit: 'pcs',
-    buildPhase: 'build-up',
-    expectedProductivity: 20,
+    buildUpRate: 20,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -75,7 +75,7 @@ function makeEntry(overrides: Partial<TimeEntry> = {}): TimeEntry {
   };
 }
 
-describe('KPI ↔ Calculator parity', () => {
+describe('KPI <-> Calculator parity', () => {
   it('KPI avgProductivity matches what Calculator would consume', () => {
     // Setup: two completed tasks, same work type
     const t1 = makeTask({
@@ -122,7 +122,6 @@ describe('KPI ↔ Calculator parity', () => {
       workTypeId: 'wt-carpet',
       workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
-      buildPhase: 'build-up',
     };
     const kpi = findKpiByKey(kpis, key);
 
@@ -147,8 +146,8 @@ describe('KPI ↔ Calculator parity', () => {
     const unmeasurable = makeTask({ id: 'u1' });
 
     const entries: TimeEntry[] = [
-      makeEntry({ id: 'e1', taskId: 'm1', workers: 2 }),  // 2 person-hrs → attributed
-      makeEntry({ id: 'e2', taskId: 'u1', workers: 5 }),  // 5 person-hrs → unattributed
+      makeEntry({ id: 'e1', taskId: 'm1', workers: 2 }),  // 2 person-hrs -> attributed
+      makeEntry({ id: 'e2', taskId: 'u1', workers: 5 }),  // 5 person-hrs -> unattributed
     ];
 
     const taskMap = new Map([['m1', measurable], ['u1', unmeasurable]]);
@@ -205,7 +204,6 @@ describe('KPI ↔ Calculator parity', () => {
       workTypeId: 'wt-furniture',
       workTypeTitle: 'Furniture',
       workUnit: 'pcs',
-      buildPhase: null,
     };
     const kpi = findKpiByKey(kpis, fallbackKey);
 

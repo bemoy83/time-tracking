@@ -11,10 +11,9 @@ import {
 } from '../lib/remediation/worktype-classify';
 import {
   BUILD_PHASE_LABELS,
-  BUILD_PHASES,
   WORK_UNIT_LABELS,
 } from '../lib/types';
-import type { BuildPhase, WorkUnit } from '../lib/types';
+import type { WorkUnit } from '../lib/types';
 
 type AssignMode = 'existing' | 'create';
 
@@ -48,14 +47,15 @@ export function RemediationWorkTypeAssignSheet({
   const [reason, setReason] = useState('');
   const [createTitle, setCreateTitle] = useState('');
   const [createWorkUnit, setCreateWorkUnit] = useState<WorkUnit>('m2');
-  const [createBuildPhase, setCreateBuildPhase] = useState<BuildPhase>('build-up');
-  const [createExpectedProductivity, setCreateExpectedProductivity] = useState('10');
+  const [createBuildUpRate, setCreateBuildUpRate] = useState('10');
+  const [createTearDownRate, setCreateTearDownRate] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflictWorkTypeId, setConflictWorkTypeId] = useState<string | null>(null);
 
   const selectedWorkType = workTypes.find((wt) => wt.id === selectedWorkTypeId) ?? null;
-  const parsedExpected = parseFloat(createExpectedProductivity);
+  const parsedBuildUpRate = parseFloat(createBuildUpRate) || 0;
+  const parsedTearDownRate = parseFloat(createTearDownRate) || 0;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,8 +68,8 @@ export function RemediationWorkTypeAssignSheet({
     setReason('');
     setCreateTitle(task?.title ?? '');
     setCreateWorkUnit(task?.workUnit ?? 'm2');
-    setCreateBuildPhase(task?.buildPhase ?? 'build-up');
-    setCreateExpectedProductivity(String(defaultRate));
+    setCreateBuildUpRate(String(task?.buildPhase !== 'tear-down' ? defaultRate : 0));
+    setCreateTearDownRate(String(task?.buildPhase === 'tear-down' ? defaultRate : 0));
     setError(null);
     setConflictWorkTypeId(null);
     setIsSubmitting(false);
@@ -92,8 +92,7 @@ export function RemediationWorkTypeAssignSheet({
 
   const canSubmitCreate = mode === 'create'
     && createTitle.trim().length > 0
-    && Number.isFinite(parsedExpected)
-    && parsedExpected > 0
+    && (parsedBuildUpRate > 0 || parsedTearDownRate > 0)
     && reason.trim().length > 0
     && !isSubmitting;
 
@@ -134,8 +133,8 @@ export function RemediationWorkTypeAssignSheet({
         {
           title: createTitle.trim(),
           workUnit: createWorkUnit,
-          buildPhase: createBuildPhase,
-          expectedProductivity: parsedExpected,
+          buildUpRate: parsedBuildUpRate,
+          tearDownRate: parsedTearDownRate,
         },
         reason.trim(),
       );
@@ -206,13 +205,13 @@ export function RemediationWorkTypeAssignSheet({
               <option value="">Select WorkType...</option>
               {workTypes.map((wt) => (
                 <option key={wt.id} value={wt.id}>
-                  {wt.title} ({WORK_UNIT_LABELS[wt.workUnit]}, {BUILD_PHASE_LABELS[wt.buildPhase]})
+                  {wt.title} ({WORK_UNIT_LABELS[wt.workUnit]})
                 </option>
               ))}
             </select>
             {selectedWorkType && (
               <p className="settings-view__helper">
-                Expected: {selectedWorkType.expectedProductivity} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+                BU: {selectedWorkType.buildUpRate} · TD: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
               </p>
             )}
           </div>
@@ -248,31 +247,32 @@ export function RemediationWorkTypeAssignSheet({
             </div>
 
             <div className="create-task-sheet__section">
-              <label className="entry-modal__label">Build Phase</label>
-              <div className="task-work-quantity__unit-pills" role="group" aria-label="Build phase">
-                {BUILD_PHASES.map((phase) => (
-                  <button
-                    key={phase}
-                    type="button"
-                    className={`task-work-quantity__unit-pill${createBuildPhase === phase ? ' task-work-quantity__unit-pill--active' : ''}`}
-                    onClick={() => setCreateBuildPhase(phase)}
-                  >
-                    {BUILD_PHASE_LABELS[phase]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="create-task-sheet__section">
-              <label className="entry-modal__label">Expected Productivity</label>
+              <label className="entry-modal__label">Build-up Rate</label>
               <div className="task-work-quantity__input-wrap">
                 <input
                   inputMode="decimal"
                   className="task-work-quantity__number-input"
-                  value={createExpectedProductivity}
-                  onChange={(event) => setCreateExpectedProductivity(event.target.value)}
-                  placeholder="10"
-                  style={{ width: `${Math.max(String(createExpectedProductivity || '10').length, 1)}ch` }}
+                  value={createBuildUpRate}
+                  onChange={(event) => setCreateBuildUpRate(event.target.value)}
+                  placeholder="0"
+                  style={{ width: `${Math.max(String(createBuildUpRate || '0').length, 1)}ch` }}
+                />
+                <span className="task-work-quantity__input-unit" aria-hidden="true">
+                  {WORK_UNIT_LABELS[createWorkUnit]}/person-hr
+                </span>
+              </div>
+            </div>
+
+            <div className="create-task-sheet__section">
+              <label className="entry-modal__label">Tear-down Rate</label>
+              <div className="task-work-quantity__input-wrap">
+                <input
+                  inputMode="decimal"
+                  className="task-work-quantity__number-input"
+                  value={createTearDownRate}
+                  onChange={(event) => setCreateTearDownRate(event.target.value)}
+                  placeholder="0"
+                  style={{ width: `${Math.max(String(createTearDownRate || '0').length, 1)}ch` }}
                 />
                 <span className="task-work-quantity__input-unit" aria-hidden="true">
                   {WORK_UNIT_LABELS[createWorkUnit]}/person-hr

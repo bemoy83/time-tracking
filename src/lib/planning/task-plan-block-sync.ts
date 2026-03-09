@@ -1,6 +1,6 @@
 import { getAllTasks, getPlan, updatePlan, updateTask } from '../db';
-import { updatePlanLineItem, type BlockCategory } from './plan-model';
-import { nowUtc, type Task } from '../types';
+import { updatePlanLineItem, phaseFieldUpdates, type BlockCategory } from './plan-model';
+import { nowUtc, type BuildPhase, type Task } from '../types';
 import { refreshTasks } from '../stores/task-store';
 
 function hasPlanLink(task: Task): task is Task & { sourcePlanId: string; sourceLineItemId: string } {
@@ -9,6 +9,10 @@ function hasPlanLink(task: Task): task is Task & { sourcePlanId: string; sourceL
 
 function isSameLineItem(task: Task, planId: string, lineItemId: string): boolean {
   return task.sourcePlanId === planId && task.sourceLineItemId === lineItemId;
+}
+
+function resolvePhase(task: Task): BuildPhase {
+  return task.buildPhase === 'tear-down' ? 'tear-down' : 'build-up';
 }
 
 export async function syncTaskBlockToPlan(task: Task): Promise<void> {
@@ -20,12 +24,13 @@ export async function syncTaskBlockToPlan(task: Task): Promise<void> {
   const lineItem = plan.lineItems.find((item) => item.id === task.sourceLineItemId);
   if (!lineItem) return;
 
+  const phase = resolvePhase(task);
   const reason = task.blockReason;
-  const nextPlan = updatePlanLineItem(plan, lineItem.id, {
+  const nextPlan = updatePlanLineItem(plan, lineItem.id, phaseFieldUpdates(phase, {
     executionStatus: 'blocked',
     blockReason: reason,
     blockCategory: null,
-  });
+  }));
   await updatePlan(nextPlan);
 
   const allTasks = await getAllTasks();
@@ -58,11 +63,12 @@ export async function syncTaskUnblockToPlan(task: Task): Promise<void> {
   const lineItem = plan.lineItems.find((item) => item.id === task.sourceLineItemId);
   if (!lineItem) return;
 
-  const nextPlan = updatePlanLineItem(plan, lineItem.id, {
+  const phase = resolvePhase(task);
+  const nextPlan = updatePlanLineItem(plan, lineItem.id, phaseFieldUpdates(phase, {
     executionStatus: 'pending',
     blockReason: null,
     blockCategory: null,
-  });
+  }));
   await updatePlan(nextPlan);
 
   const allTasks = await getAllTasks();

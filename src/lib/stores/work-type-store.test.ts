@@ -20,8 +20,8 @@ function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
     id: 'wt-1',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
-    expectedProductivity: 10,
+    buildUpRate: 10,
+    tearDownRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -48,7 +48,7 @@ describe('ensureWorkTypeExistsOrCreate', () => {
     const store = await loadStore();
     await store.initializeWorkTypeStore();
 
-    const id = await store.ensureWorkTypeExistsOrCreate('Carpet Tiles', 'm2', 'build-up');
+    const id = await store.ensureWorkTypeExistsOrCreate('Carpet Tiles', 'm2', 10, 0);
 
     expect(id).toBe(existing.id);
     expect(dbMocks.addWorkType).not.toHaveBeenCalled();
@@ -60,14 +60,14 @@ describe('ensureWorkTypeExistsOrCreate', () => {
     const store = await loadStore();
     await store.initializeWorkTypeStore();
 
-    const id = await store.ensureWorkTypeExistsOrCreate('Furniture', 'pcs', 'tear-down');
+    const id = await store.ensureWorkTypeExistsOrCreate('Furniture', 'pcs', 0, 5);
 
     expect(dbMocks.addWorkType).toHaveBeenCalledTimes(1);
     const created = dbMocks.addWorkType.mock.calls[0][0] as WorkType;
     expect(created.title).toBe('Furniture');
     expect(created.workUnit).toBe('pcs');
-    expect(created.buildPhase).toBe('tear-down');
-    expect(created.expectedProductivity).toBe(0);
+    expect(created.buildUpRate).toBe(0);
+    expect(created.tearDownRate).toBe(5);
     expect(id).toBe(created.id);
   });
 });

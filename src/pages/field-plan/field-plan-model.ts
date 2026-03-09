@@ -1,5 +1,7 @@
-import type { Plan, PlanLineItem, LineItemExecutionStatus } from '../../lib/planning/plan-model';
-import type { Task, TimeEntry } from '../../lib/types';
+import type { Plan, PlanLineItem, LineItemExecutionStatus, PhaseFields } from '../../lib/planning/plan-model';
+import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
+import type { Task, TimeEntry, BuildPhase } from '../../lib/types';
+import { BUILD_PHASES } from '../../lib/types';
 import {
   evaluateLineItemDeadline,
   type DeadlineStatus,
@@ -7,6 +9,8 @@ import {
 
 export interface FieldPlanLineItemSummary {
   item: PlanLineItem;
+  phase: BuildPhase;
+  phaseFields: PhaseFields;
   tasks: Task[];
   status: LineItemExecutionStatus;
   deadlineStatus: DeadlineStatus;
@@ -21,9 +25,9 @@ const STATUS_PRIORITY: Record<LineItemExecutionStatus, number> = {
   deferred: 4,
 };
 
-export function deriveLineItemStatus(item: PlanLineItem, tasks: Task[]): LineItemExecutionStatus {
-  if (item.executionStatus === 'blocked' || item.executionStatus === 'deferred') {
-    return item.executionStatus;
+export function deriveLineItemStatus(pf: PhaseFields, tasks: Task[]): LineItemExecutionStatus {
+  if (pf.executionStatus === 'blocked' || pf.executionStatus === 'deferred') {
+    return pf.executionStatus;
   }
 
   if (tasks.some((task) => task.status === 'blocked')) {
@@ -72,24 +76,39 @@ export function buildFieldPlanLineItemSummaries(
     linkedByLineItem.get(lineItemId)?.push(task);
   }
 
-  return plan.lineItems
-    .map((item) => {
-      const linkedTasks = linkedByLineItem.get(item.id) ?? [];
-      const linkedEntries = linkedTasks.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
-      const deadline = evaluateLineItemDeadline(item, linkedTasks, linkedEntries, todayDate);
-      return {
+  const summaries: FieldPlanLineItemSummary[] = [];
+
+  for (const item of plan.lineItems) {
+    const linkedTasks = linkedByLineItem.get(item.id) ?? [];
+
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
+      const phaseTasks = linkedTasks.filter((task) => {
+        if (task.buildPhase == null) {
+          return phase === 'build-up';
+        }
+        return task.buildPhase === phase;
+      });
+      const phaseEntries = phaseTasks.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
+      const deadline = evaluateLineItemDeadline(item, phase, phaseTasks, phaseEntries, todayDate);
+      summaries.push({
         item,
-        tasks: linkedTasks,
-        status: deriveLineItemStatus(item, linkedTasks),
+        phase,
+        phaseFields: pf,
+        tasks: phaseTasks,
+        status: deriveLineItemStatus(pf, phaseTasks),
         deadlineStatus: deadline.status,
         dueDate: deadline.dueDate,
-      };
-    })
-    .sort((a, b) => {
-      const byPriority = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
-      if (byPriority !== 0) return byPriority;
-      return a.item.title.localeCompare(b.item.title);
-    });
+      });
+    }
+  }
+
+  return summaries.sort((a, b) => {
+    const byPriority = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
+    if (byPriority !== 0) return byPriority;
+    return a.item.title.localeCompare(b.item.title);
+  });
 }
 
 export function summarizeLineItemStatuses(lineItems: FieldPlanLineItemSummary[]): {

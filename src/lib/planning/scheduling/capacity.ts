@@ -1,5 +1,6 @@
+import { BUILD_PHASES } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { getPhaseSpan } from '../plan-model';
+import { getPhaseFields, getPhaseSpan, isPhaseActive } from '../plan-model';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import {
   getEffectiveScheduleSpan,
@@ -16,7 +17,7 @@ export interface DailyCapacity {
   isWorkDay: boolean;
   requiredPersonHours: number;
   availablePersonHours: number;
-  /** Access hours per worker for this day (e.g. 8 for 08:00–16:00). */
+  /** Access hours per worker for this day (e.g. 8 for 08:00-16:00). */
   accessHours: number;
   /** Available crew from work calendar for this day. */
   availableCrew: number;
@@ -29,7 +30,7 @@ export interface DailyCapacity {
   isOverAssignedCrew: boolean;
   /** True when assignedCrewTotal > availableCrew (derived from crew display: assigned/available). */
   isOverWorkerCapacity: boolean;
-  /** Assigned crew × access hours — the person-hours the assigned crew can provide. */
+  /** Assigned crew x access hours -- the person-hours the assigned crew can provide. */
   assignedCapacityPersonHours: number;
   /** True if at least one line item has this date as its last assigned day. */
   isCompletionDay: boolean;
@@ -89,18 +90,23 @@ function buildSinglePlanEntries(plan: Plan): {
   let unscheduledLineItemCount = 0;
 
   for (const item of plan.lineItems) {
-    if (!item.scheduledStart || !item.scheduledEnd) {
-      unscheduledLineItemCount += 1;
-      continue;
-    }
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
 
-    const dates = listScheduledDates(item.scheduledStart, item.scheduledEnd);
-    if (dates.length === 0) {
-      unscheduledLineItemCount += 1;
-      continue;
-    }
+      if (!pf.scheduledStart || !pf.scheduledEnd) {
+        unscheduledLineItemCount += 1;
+        continue;
+      }
 
-    scheduledEntries.push({ item, dates });
+      const dates = listScheduledDates(pf.scheduledStart, pf.scheduledEnd);
+      if (dates.length === 0) {
+        unscheduledLineItemCount += 1;
+        continue;
+      }
+
+      scheduledEntries.push({ item, phase, dates });
+    }
   }
 
   return {
@@ -120,23 +126,28 @@ function buildSharedEntries(input: SharedScheduleInput): {
 
   for (const entry of input.lineItems) {
     const { item, plan } = entry;
-    if (!item.scheduledStart || !item.scheduledEnd) {
-      unscheduledLineItemCount += 1;
-      continue;
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
+
+      if (!pf.scheduledStart || !pf.scheduledEnd) {
+        unscheduledLineItemCount += 1;
+        continue;
+      }
+
+      const dates = listScheduledDates(pf.scheduledStart, pf.scheduledEnd);
+      const phaseSpan = getPhaseSpan(plan, phase);
+      const validDates = phaseSpan
+        ? dates.filter((date) => date >= phaseSpan.start && date <= phaseSpan.end)
+        : dates;
+
+      if (validDates.length === 0) {
+        unscheduledLineItemCount += 1;
+        continue;
+      }
+
+      scheduledEntries.push({ item, phase, dates: validDates });
     }
-
-    const dates = listScheduledDates(item.scheduledStart, item.scheduledEnd);
-    const phaseSpan = getPhaseSpan(plan, item.buildPhase);
-    const validDates = phaseSpan
-      ? dates.filter((date) => date >= phaseSpan.start && date <= phaseSpan.end)
-      : dates;
-
-    if (validDates.length === 0) {
-      unscheduledLineItemCount += 1;
-      continue;
-    }
-
-    scheduledEntries.push({ item, dates: validDates });
   }
 
   return {

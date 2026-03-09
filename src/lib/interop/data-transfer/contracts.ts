@@ -1,5 +1,5 @@
-import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
-import type { Project, Task, TimeEntry, WorkType } from '../../types';
+import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus, RateSource } from '../../planning/plan-model';
+import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnit } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
 export const DATA_TRANSFER_SCHEMA_VERSION = '1.1';
@@ -19,15 +19,62 @@ export interface DataTransferEnvelope<TPayload> {
 }
 
 export interface PlanPackagePayload {
-  plan: Plan;
+  plan: PlanPackageSerializedPlan;
   workTypes: WorkType[];
   /** Projects referenced by the plan; optional for backward compatibility. */
   projects?: Project[];
   lastModifiedAt: string;
 }
 
+/**
+ * Legacy single-phase line-item wire format used for plan-package exports.
+ * A unified work package can emit up to two records (build-up + tear-down).
+ */
+export interface LegacyPlanPackageLineItem {
+  id: string;
+  title: string;
+  workTypeTitle: string;
+  workUnit: WorkUnit;
+  workTypeId: string | null;
+  workQuantity: number;
+  buildPhase: BuildPhase;
+  productivityRate: number;
+  crew: number;
+  timeHours: number;
+  rateSource: RateSource;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  originalScheduledStart: string | null;
+  originalScheduledEnd: string | null;
+  crewByDate?: Record<string, number>;
+  executionStatus: LineItemExecutionStatus;
+  blockReason: string | null;
+  blockCategory: BlockCategory | null;
+  executorNote: string | null;
+  deferredNote: string | null;
+  rationale: string | null;
+  reviewNote?: string | null;
+  removedFromSource: boolean;
+  amendmentNote: string | null;
+  amendedAt: string | null;
+  /** Lineage back to unified planner-side work package id. */
+  sourceWorkPackageId?: string;
+}
+
+export type PlanPackageSerializedLineItem =
+  | PlanLineItem
+  | LegacyPlanPackageLineItem;
+
+export type PlanPackageSerializedPlan = Omit<Plan, 'lineItems'> & {
+  lineItems: PlanPackageSerializedLineItem[];
+};
+
 export interface ExecutionReturnLineItem {
   lineItemId: string;
+  /** Phase represented by this execution snapshot row. */
+  phase?: BuildPhase;
+  /** Planner-side unified work package id when available. */
+  sourceWorkPackageId?: string | null;
   title: string;
   executionStatus: LineItemExecutionStatus;
   blockReason: string | null;

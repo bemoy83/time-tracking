@@ -83,8 +83,8 @@ const baseWorkType = {
   id: 'wt-1',
   title: 'Carpet Tiles',
   workUnit: 'm2' as const,
-  buildPhase: 'build-up' as const,
-  expectedProductivity: 55,
+  buildUpRate: 55,
+  tearDownRate: 0,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -111,7 +111,6 @@ describe('classifyEntryToWorkType', () => {
     expect(mockUpdateTaskFields).toHaveBeenCalledWith('task-1', {
       workTypeId: 'wt-1',
       workUnit: 'm2',
-      buildPhase: 'build-up',
       targetProductivity: 55,
     });
     expect(mockUpdateTask).not.toHaveBeenCalled();
@@ -126,16 +125,6 @@ describe('classifyEntryToWorkType', () => {
     await expect(
       classifyEntryToWorkType('entry-1', 'wt-1', 'test'),
     ).rejects.toThrow('Unit mismatch');
-    expect(mockUpdateTaskFields).not.toHaveBeenCalled();
-    expect(mockAddTaskNote).not.toHaveBeenCalled();
-  });
-
-  it('blocks assignment when task phase conflicts with WorkType phase', async () => {
-    mockGetTask.mockResolvedValue({ ...baseTask, buildPhase: 'tear-down' });
-
-    await expect(
-      classifyEntryToWorkType('entry-1', 'wt-1', 'test'),
-    ).rejects.toThrow('Build phase mismatch');
     expect(mockUpdateTaskFields).not.toHaveBeenCalled();
     expect(mockAddTaskNote).not.toHaveBeenCalled();
   });
@@ -156,7 +145,6 @@ describe('classifyEntryToWorkType', () => {
     const updated = mockUpdateTask.mock.calls[0][0];
     expect(updated.workTypeId).toBe('wt-1');
     expect(updated.workUnit).toBe('m2');
-    expect(updated.buildPhase).toBe('build-up');
   });
 
   it('classifies parent scope when source entry task lacks quantity context', async () => {
@@ -194,7 +182,6 @@ describe('classifyEntryToWorkType', () => {
     expect(mockUpdateTaskFields).toHaveBeenCalledWith('task-parent', {
       workTypeId: 'wt-1',
       workUnit: 'm2',
-      buildPhase: 'build-up',
       targetProductivity: 55,
     });
     expect(result.sourceTaskId).toBe('task-child');
@@ -222,7 +209,8 @@ describe('createAndClassifyFromEntry', () => {
       ...baseWorkType,
       id: 'wt-new',
       title: 'Install carpet',
-      expectedProductivity: 10,
+      buildUpRate: 10,
+      tearDownRate: 0,
     };
     mockCreateWorkType.mockResolvedValue(created);
     mockGetWorkType.mockResolvedValue(created);
@@ -233,8 +221,8 @@ describe('createAndClassifyFromEntry', () => {
     expect(mockCreateWorkType).toHaveBeenCalledWith({
       title: 'Install carpet',
       workUnit: 'm2',
-      buildPhase: 'build-up',
-      expectedProductivity: 10,
+      buildUpRate: 10,
+      tearDownRate: 0,
     });
     expect(result.createdWorkTypeId).toBe('wt-new');
     expect(mockUpdateTaskFields).toHaveBeenCalled();

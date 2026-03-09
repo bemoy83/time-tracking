@@ -6,6 +6,7 @@ import {
 } from './execution-return-import';
 import type { DataTransferEnvelope, ExecutionReturnPayload } from './contracts';
 import type { Task } from '../../types';
+import { createLineItem, createPlan } from '../../planning/plan-model';
 import {
   addExecutionReturnLineItems,
   addExecutionReturnRecord,
@@ -13,7 +14,9 @@ import {
   addTask,
   addTimeEntry,
   getAllTimeEntries,
+  getPlan,
   getTask,
+  updatePlan,
 } from '../../db';
 
 vi.mock('../../db', () => ({
@@ -23,7 +26,9 @@ vi.mock('../../db', () => ({
   addTask: vi.fn(),
   addTimeEntry: vi.fn(),
   getAllTimeEntries: vi.fn(),
+  getPlan: vi.fn(),
   getTask: vi.fn(),
+  updatePlan: vi.fn(),
   updateTask: vi.fn(),
 }));
 
@@ -34,7 +39,9 @@ vi.mock('../../stores/task-store', () => ({
 const mockGetAllTimeEntries = vi.mocked(getAllTimeEntries);
 const mockAddTimeEntry = vi.mocked(addTimeEntry);
 const mockAddTask = vi.mocked(addTask);
+const mockGetPlan = vi.mocked(getPlan);
 const mockGetTask = vi.mocked(getTask);
+const mockUpdatePlan = vi.mocked(updatePlan);
 const mockAddExecutionReturnRecord = vi.mocked(addExecutionReturnRecord);
 const mockAddExecutionReturnLineItems = vi.mocked(addExecutionReturnLineItems);
 const mockAddExecutionReturnUnplannedTasks = vi.mocked(addExecutionReturnUnplannedTasks);
@@ -162,7 +169,9 @@ describe('execution-return import', () => {
     mockGetAllTimeEntries.mockReset();
     mockAddTimeEntry.mockReset();
     mockAddTask.mockReset();
+    mockGetPlan.mockResolvedValue(null);
     mockGetTask.mockResolvedValue(null); // tasks don't exist yet
+    mockUpdatePlan.mockReset();
     mockAddExecutionReturnRecord.mockReset();
     mockAddExecutionReturnLineItems.mockReset();
     mockAddExecutionReturnUnplannedTasks.mockReset();
@@ -255,6 +264,76 @@ describe('execution-return import', () => {
         id: 'task-legacy',
         crew: 4,
         blockReason: 'Legacy blocker',
+      }),
+    );
+  });
+
+  it('remaps split phase line-item lineage and applies phase execution state to plan', async () => {
+    const envelope = makeEnvelope();
+    envelope.payload.lineItems = [
+      {
+        lineItemId: 'wp-1::phase::tear-down',
+        sourceWorkPackageId: 'wp-1',
+        phase: 'tear-down',
+        title: 'Install carpet',
+        executionStatus: 'completed',
+        blockReason: null,
+        blockCategory: null,
+        executorNote: null,
+        deferredNote: null,
+        removedFromSource: false,
+        scheduledStart: '2026-02-27',
+        scheduledEnd: '2026-02-27',
+        actualStartDate: '2026-02-27',
+        actualEndDate: '2026-02-27',
+        deadlineStatusAtClose: 'done-on-time',
+      },
+    ];
+    envelope.payload.tasks = [
+      makePlanTask({
+        id: 'task-td-1',
+        status: 'active',
+        sourceLineItemId: 'wp-1::phase::tear-down',
+      }),
+    ].map((task) => ({ ...task, buildPhase: 'tear-down' as const }));
+    envelope.payload.unplannedTasks = [];
+    envelope.payload.timeEntries = [];
+
+    const plan = {
+      ...createPlan('Planner Plan'),
+      id: 'plan-1',
+      lineItems: [
+        {
+          ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 5),
+          id: 'wp-1',
+        },
+      ],
+      status: 'active' as const,
+    };
+    mockGetPlan.mockResolvedValue(plan);
+    mockGetAllTimeEntries.mockResolvedValue([]);
+
+    const preview = await previewExecutionReturnImport(envelope);
+    await applyExecutionReturnImport(preview);
+
+    expect(mockAddTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'task-td-1',
+        sourceLineItemId: 'wp-1',
+        buildPhase: 'tear-down',
+        status: 'completed',
+      }),
+    );
+    expect(mockUpdatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'plan-1',
+        lineItems: [
+          expect.objectContaining({
+            id: 'wp-1',
+            buildUpExecutionStatus: 'pending',
+            tearDownExecutionStatus: 'completed',
+          }),
+        ],
       }),
     );
   });

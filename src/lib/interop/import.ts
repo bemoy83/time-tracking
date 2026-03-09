@@ -139,11 +139,10 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       continue;
     }
 
-    // Resolve WorkType by key (title + unit + phase)
+    // Resolve WorkType by key (title + unit)
     const resolvedWorkType = findWorkTypeByKey(
       workTypeTitle,
       workUnit as WorkUnit,
-      buildPhase as BuildPhase,
     );
 
     items.push({
