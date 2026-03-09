@@ -199,9 +199,19 @@ export function WorkPackageTable({
       <table className="planning-view__work-package-table">
         <thead>
           <tr className="planning-view__wp-header-group">
-            <th colSpan={4}>Work Package</th>
-            <th colSpan={3} className="planning-view__wp-phase-group-start">Build-up</th>
-            <th colSpan={3} className="planning-view__wp-phase-group-start">Tear-down</th>
+            <th colSpan={4} className="planning-view__wp-group-heading">Work Package</th>
+            <th
+              colSpan={3}
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-phase-group-start"
+            >
+              Build-up
+            </th>
+            <th
+              colSpan={3}
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-phase-group-start"
+            >
+              Tear-down
+            </th>
             <th rowSpan={2} className="planning-view__wp-actions-col">Actions</th>
           </tr>
           <tr className="planning-view__wp-header-columns">
@@ -209,12 +219,16 @@ export function WorkPackageTable({
             <th className="planning-view__wp-type-col">Type</th>
             <th className="planning-view__wp-qty-col">Qty</th>
             <th className="planning-view__wp-unit-col">Unit</th>
-            <th className="planning-view__wp-rate-col planning-view__wp-phase-group-start">Rate</th>
-            <th className="planning-view__wp-crew-col">Crew</th>
-            <th className="planning-view__wp-hours-col">Hrs</th>
-            <th className="planning-view__wp-rate-col planning-view__wp-phase-group-start">Rate</th>
-            <th className="planning-view__wp-crew-col">Crew</th>
-            <th className="planning-view__wp-hours-col">Hrs</th>
+            <th className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-group-start">
+              Rate
+            </th>
+            <th className="planning-view__wp-crew-col planning-view__wp-phase-col">Crew</th>
+            <th className="planning-view__wp-hours-col planning-view__wp-phase-col">Hrs</th>
+            <th className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-group-start">
+              Rate
+            </th>
+            <th className="planning-view__wp-crew-col planning-view__wp-phase-col">Crew</th>
+            <th className="planning-view__wp-hours-col planning-view__wp-phase-col">Hrs</th>
           </tr>
         </thead>
         <tbody>
@@ -296,7 +310,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'build-up')}
                   title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
                 >
@@ -321,7 +335,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'build-up')}
                   title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
                 >
@@ -347,7 +361,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'build-up')}
                   title={!isLocked && buildUpInactive ? 'Click to activate build-up phase' : undefined}
                 >
@@ -372,7 +386,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'tear-down')}
                   title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
                 >
@@ -397,7 +411,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'tear-down')}
                   title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
                 >
@@ -423,7 +437,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
                   onClick={() => handleActivatePhase(item, 'tear-down')}
                   title={!isLocked && tearDownInactive ? 'Click to activate tear-down phase' : undefined}
                 >
@@ -544,22 +558,22 @@ export function WorkPackageTable({
                   {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
                 </span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
                 <span className="planning-view__wp-static">—</span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
                 <span className="planning-view__wp-static">—</span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
                 <span className="planning-view__wp-static">—</span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell planning-view__wp-phase-group-start">
                 <span className="planning-view__wp-static">—</span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
                 <span className="planning-view__wp-static">—</span>
               </td>
-              <td className="planning-view__wp-cell planning-view__wp-number-cell">
+              <td className="planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-number-cell">
                 <span className="planning-view__wp-static">—</span>
               </td>
               <td className="planning-view__wp-cell planning-view__wp-actions-cell">

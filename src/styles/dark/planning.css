@@ -71,13 +71,6 @@ select.planning-view__work-type-select {
 
 .planning-view__work-package-table-wrap {
   background: var(--surface-contained-bg);
-  border-color: var(--surface-contained-border);
-}
-
-.planning-view__work-package-table thead th,
-.planning-view__work-package-table .planning-view__wp-cell {
-  background: var(--surface-contained-bg);
-  border-color: var(--surface-contained-border);
 }
 
 .planning-view__wp-cell-input {
@@ -96,6 +89,10 @@ select.planning-view__work-type-select {
 
 .planning-view__wp-add-row .planning-view__wp-cell {
   background: var(--surface-contained-hover);
+}
+
+.planning-view__wp-add-row .planning-view__wp-phase-cell {
+  background: color-mix(in srgb, var(--surface-contained-hover) 78%, black);
 }
 
 .planning-view__suggestion {
