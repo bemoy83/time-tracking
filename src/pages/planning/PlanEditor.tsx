@@ -35,6 +35,7 @@ import { WorkPackageTable } from './WorkPackageTable';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
+import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -112,6 +113,8 @@ export function PlanEditor({
   const summaryRange = workCalendarRange ?? primaryRange;
   const isEmpty = summaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
+  const isDesktopControlBand = useMediaQuery('(min-width: 1200px)') && !showBackButton;
+  const scheduleInputsExpanded = isDesktopControlBand ? true : inputsExpanded;
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
   const suggestionsByLineItemId = useMemo(
@@ -282,7 +285,6 @@ export function PlanEditor({
   if (canOpenEventReportAction && primaryAction?.id !== 'report') {
     secondaryActions.push({ id: 'report', label: 'Event Report', onClick: onOpenReport! });
   }
-  const showMissingDatesHint = summaryRange == null;
   const titleInputId = `plan-title-${currentPlan.id}`;
   const reviewedDateLabel = currentPlan.reviewedAt
     ? new Date(currentPlan.reviewedAt).toLocaleDateString()
@@ -294,6 +296,42 @@ export function PlanEditor({
     : isLocked
       ? 'Track progress and keep assignments aligned with live execution.'
       : 'Set project and schedule inputs to prepare this plan for scheduling.';
+  const statusHelperText = (() => {
+    switch (currentPlan.status) {
+      case 'draft':
+        return 'Draft plans are editable and not yet ready for live execution.';
+      case 'active':
+        return 'Active plans are live for execution and should stay aligned with actual progress.';
+      case 'reviewed':
+        return 'Reviewed plans are archived and locked for historical reporting.';
+      case 'received':
+        return 'Received plans come from execution and are read-only in planning mode.';
+      case 'session-closed':
+        return 'Session-closed plans are finalized from execution and kept for reference.';
+      default:
+        return 'This status controls what parts of the plan can still be edited.';
+    }
+  })();
+  const readinessItems = [
+    {
+      id: 'project',
+      label: 'Project linked',
+      complete: selectedProject != null,
+      pendingLabel: 'Select project',
+    },
+    {
+      id: 'dates',
+      label: 'Dates configured',
+      complete: summaryRange != null,
+      pendingLabel: 'Set dates',
+    },
+    {
+      id: 'packages',
+      label: 'Work packages added',
+      complete: currentPlan.lineItems.length > 0,
+      pendingLabel: 'Add packages',
+    },
+  ] as const;
 
   return (
     <div className="planning-view">
@@ -308,95 +346,114 @@ export function PlanEditor({
 
       <div className="planning-view__sticky-summary">
         <section className="planning-view__overview-block" aria-label="Plan overview">
-          <div className="planning-view__overview-header">
-            <div className="planning-view__overview-heading">
-              <h2 className="planning-view__overview-title">Plan Overview</h2>
-              <p className="planning-view__overview-helper">{overviewHelperText}</p>
+          <div className="planning-view__overview-identity">
+            <div className="planning-view__overview-title-row">
+              <label className="planning-view__overview-field planning-view__overview-field--title" htmlFor={titleInputId}>
+                <span className="planning-view__overview-label">Plan Title</span>
+                <input
+                  id={titleInputId}
+                  className="planning-view__title-input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={handleSave}
+                  disabled={readOnly || isLocked}
+                />
+              </label>
             </div>
-
-            {(primaryAction != null || secondaryActions.length > 0) && (
-              <div className="planning-view__header-actions" aria-label="Plan actions">
-                {secondaryActions.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    className="btn btn--secondary btn--sm"
-                    onClick={() => {
-                      void action.onClick();
-                    }}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-                {primaryAction && (
-                  <button
-                    type="button"
-                    className="btn btn--primary btn--sm"
-                    onClick={() => {
-                      void primaryAction.onClick();
-                    }}
-                  >
-                    {primaryAction.label}
-                  </button>
-                )}
-              </div>
-            )}
           </div>
 
-          <div className="planning-view__overview-body">
-            <label className="planning-view__overview-field planning-view__overview-field--title" htmlFor={titleInputId}>
-              <span className="planning-view__overview-title-row">
-                <span className="planning-view__overview-label">Plan Title</span>
-                <span className="planning-view__overview-status-inline">
+          <div className="planning-view__overview-content">
+            <div className="planning-view__overview-context">
+              <p className="planning-view__overview-helper">{overviewHelperText}</p>
+
+              <div className="planning-view__overview-field planning-view__overview-field--project">
+                <span className="planning-view__overview-label">Project</span>
+                <div className="planning-view__project-row">
+                  <button
+                    type="button"
+                    className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
+                    onClick={() => setShowProjectPicker(true)}
+                    disabled={readOnly || isLocked}
+                    style={
+                      selectedProject
+                        ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
+                        : undefined
+                    }
+                  >
+                    {selectedProject ? (
+                      <span className="planning-view__project-selected">
+                        <span>{selectedProject.name}</span>
+                      </span>
+                    ) : (
+                      <span className="planning-view__project-none">+ Add to project</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="planning-view__overview-signals">
+              <div className="planning-view__overview-status-card" aria-label="Plan status">
+                <div className="planning-view__overview-status-card-head">
                   <span className="planning-view__overview-status-label">Status</span>
                   <StatusBadge variant={currentPlan.status} />
-                </span>
-              </span>
-              <input
-                id={titleInputId}
-                className="planning-view__title-input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleSave}
-                disabled={readOnly || isLocked}
-              />
-            </label>
+                </div>
+                <p className="planning-view__overview-status-helper">{statusHelperText}</p>
+              </div>
 
-            <div className="planning-view__overview-field planning-view__overview-field--project">
-              <span className="planning-view__overview-label">Project</span>
-              <div className="planning-view__project-row">
-                <button
-                  type="button"
-                  className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
-                  onClick={() => setShowProjectPicker(true)}
-                  disabled={readOnly || isLocked}
-                  style={
-                    selectedProject
-                      ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
-                      : undefined
-                  }
-                >
-                  {selectedProject ? (
-                    <span className="planning-view__project-selected">
-                      <span>{selectedProject.name}</span>
-                    </span>
-                  ) : (
-                    <span className="planning-view__project-none">+ Add to project</span>
-                  )}
-                </button>
+              <div className="planning-view__overview-readiness" aria-label="Plan readiness">
+                <h3 className="planning-view__overview-readiness-title">Readiness</h3>
+                <ul className="planning-view__overview-readiness-list">
+                  {readinessItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className={`planning-view__overview-readiness-item${item.complete ? ' planning-view__overview-readiness-item--complete' : ' planning-view__overview-readiness-item--pending'}`}
+                    >
+                      <span className="planning-view__overview-readiness-label">{item.label}</span>
+                      <span className="planning-view__overview-readiness-state">
+                        {item.complete ? 'Ready' : item.pendingLabel}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-
-            {showMissingDatesHint && (
-              <p className="planning-view__context-hint">Schedule dates are not set yet.</p>
-            )}
           </div>
+
+          {(primaryAction != null || secondaryActions.length > 0) && (
+            <div className="planning-view__header-actions planning-view__header-actions--bottom" aria-label="Plan actions">
+              {secondaryActions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => {
+                    void action.onClick();
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+              {primaryAction && (
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm"
+                  onClick={() => {
+                    void primaryAction.onClick();
+                  }}
+                >
+                  {primaryAction.label}
+                </button>
+              )}
+            </div>
+          )}
         </section>
 
         <div className="planning-view__schedule-inputs-wrap">
           <ScheduleInputsBlock
-            expanded={inputsExpanded}
+            expanded={scheduleInputsExpanded}
             onToggle={() => setInputsExpanded((p) => !p)}
+            collapsible={!isDesktopControlBand}
             primaryRange={summaryRange}
             dayCount={availableScope?.workDayCount ?? 0}
             crewSize={currentPlan.defaultCrewSize ?? null}

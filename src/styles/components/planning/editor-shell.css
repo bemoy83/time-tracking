@@ -70,62 +70,38 @@
 }
 
 .planning-view__overview-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--space-md);
   padding: var(--space-md);
   border-radius: var(--radius-xl);
   background: var(--surface-contained-bg);
 }
 
-.planning-view__overview-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-
-.planning-view__overview-heading {
+.planning-view__overview-identity {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 220px;
-}
-
-.planning-view__overview-title {
-  margin: 0;
-  font-size: var(--font-small);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  gap: 0;
 }
 
 .planning-view__overview-helper {
   margin: 0;
   font-size: var(--font-small);
   color: var(--color-text-muted);
-}
-
-.planning-view__overview-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+  line-height: 1.4;
 }
 
 .planning-view__overview-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .planning-view__overview-title-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .planning-view__overview-label {
@@ -136,10 +112,27 @@
   color: var(--color-text-muted);
 }
 
-.planning-view__overview-status-inline {
-  display: inline-flex;
-  align-items: center;
+.planning-view__overview-signals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.planning-view__overview-status-card {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--surface-contained-inset);
+}
+
+.planning-view__overview-status-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
 }
 
 .planning-view__overview-status-label {
@@ -150,8 +143,85 @@
   letter-spacing: 0.03em;
 }
 
+.planning-view__overview-status-helper {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .planning-view__overview-field--title .planning-view__title-input {
   width: 100%;
+}
+
+.planning-view__overview-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.95fr);
+  gap: var(--space-sm);
+  align-items: start;
+  min-height: 0;
+}
+
+.planning-view__overview-context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.planning-view__overview-readiness {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--surface-contained-inset);
+  min-width: 0;
+}
+
+.planning-view__overview-readiness-title {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.planning-view__overview-readiness-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.planning-view__overview-readiness-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-small);
+}
+
+.planning-view__overview-readiness-label {
+  color: var(--color-text);
+}
+
+.planning-view__overview-readiness-state {
+  font-size: var(--font-caption);
+  letter-spacing: 0.02em;
+}
+
+.planning-view__overview-readiness-item--complete .planning-view__overview-readiness-state {
+  color: var(--color-ready);
+  font-weight: 700;
+}
+
+.planning-view__overview-readiness-item--pending .planning-view__overview-readiness-state {
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
 .planning-view__project-row {
@@ -223,17 +293,6 @@
   color: var(--color-text-muted);
 }
 
-.planning-view__context-hint {
-  margin: 0;
-  grid-column: 1 / -1;
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-md);
-  background: var(--state-info-bg);
-  font-size: var(--font-small);
-  font-weight: 500;
-  color: var(--state-info-fg-strong);
-}
-
 .planning-view__header-actions {
   display: flex;
   align-items: center;
@@ -242,14 +301,84 @@
   flex-wrap: wrap;
 }
 
+.planning-view__header-actions--bottom {
+  justify-content: flex-end;
+  align-self: end;
+}
+
 .planning-view__schedule-inputs-wrap {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
+@media (min-width: 1200px) {
+  .planning-workspace__editor-canvas .planning-view__sticky-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: var(--space-md);
+    padding-bottom: var(--space-md);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-block {
+    height: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      'identity signals'
+      'context signals'
+      'actions actions';
+    column-gap: var(--space-sm);
+    row-gap: var(--space-md);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-identity {
+    grid-area: identity;
+    min-width: 0;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-content {
+    display: contents;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-context {
+    grid-area: context;
+    min-width: 0;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-signals {
+    grid-area: signals;
+    align-self: start;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__header-actions--bottom {
+    grid-area: actions;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap {
+    height: 100%;
+    min-width: 0;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap .schedule-view__block {
+    height: 100%;
+  }
+}
+
 @media (max-width: 920px) {
   .planning-view__header-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1080px) {
+  .planning-view__overview-content {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-view__header-actions--bottom {
+    justify-content: flex-start;
+    align-self: stretch;
   }
 }

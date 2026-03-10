@@ -539,6 +539,19 @@
   color: var(--color-text-muted);
 }
 
+@media (min-width: 1200px) {
+  .planning-workspace__editor-canvas .planning-view__work-packages-section {
+    gap: var(--space-sm);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__wp-add-bar {
+    padding: var(--space-sm) var(--space-md);
+    gap: 6px;
+    border: 1px solid var(--surface-contained-border);
+    background: var(--surface-contained-inset);
+  }
+}
+
 @media (max-width: 760px) {
   .planning-view__wp-add-bar {
     padding: var(--space-sm);

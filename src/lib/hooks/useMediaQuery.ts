@@ -22,5 +22,5 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-/** Breakpoint at which the planning workspace uses two-pane layout. */
-export const WORKSPACE_MIN_WIDTH = '(min-width: 768px)';
+/** Breakpoint at which the planning workspace uses two-pane desktop layout. */
+export const WORKSPACE_MIN_WIDTH = '(min-width: 1024px)';

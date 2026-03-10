@@ -534,6 +534,12 @@
   overflow-y: auto;
 }
 
+.planning-workspace__editor-canvas {
+  width: 100%;
+  max-width: 1520px;
+  margin-inline: auto;
+}
+
 /* --- Review tab prompt --- */
 
 .planning-workspace__review-prompt {

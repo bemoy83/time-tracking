@@ -375,22 +375,24 @@ function WorkspaceMainPane({
           </div>
         )}
         {effectiveActiveTab === 'edit' && (
-          <PlanEditor
-            plan={plan}
-            kpis={kpis}
-            projects={projects}
-            canOpenProgress={hasLinkedTasks}
-            showBackButton={false}
-            readOnly={isReviewed}
-            onSave={onSavePlan}
-            onBack={() => onSetActiveTab('edit')}
-            onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
-            onOpenProgress={onOpenProgress}
-            onOpenReport={() => onSetActiveTab('report')}
-            onRegisterBeforeScheduleSwitch={(fn) => {
-              beforeScheduleTabRef.current = fn ?? null;
-            }}
-          />
+          <div className="planning-workspace__editor-canvas">
+            <PlanEditor
+              plan={plan}
+              kpis={kpis}
+              projects={projects}
+              canOpenProgress={hasLinkedTasks}
+              showBackButton={false}
+              readOnly={isReviewed}
+              onSave={onSavePlan}
+              onBack={() => onSetActiveTab('edit')}
+              onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
+              onOpenProgress={onOpenProgress}
+              onOpenReport={() => onSetActiveTab('report')}
+              onRegisterBeforeScheduleSwitch={(fn) => {
+                beforeScheduleTabRef.current = fn ?? null;
+              }}
+            />
+          </div>
         )}
         {effectiveActiveTab === 'progress' && (
           <ProgressView
