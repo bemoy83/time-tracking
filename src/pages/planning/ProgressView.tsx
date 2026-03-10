@@ -13,6 +13,7 @@ interface ProgressViewProps {
   tasks: Task[];
   timeEntries: TimeEntry[];
   onBack: () => void;
+  showBackButton?: boolean;
   onWrapUp?: () => void;
 }
 
@@ -32,7 +33,14 @@ function varianceClassName(variancePercent: number | null): string {
   return 'progress-view__variance--over';
 }
 
-export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: ProgressViewProps) {
+export function ProgressView({
+  plan,
+  tasks,
+  timeEntries,
+  onBack,
+  showBackButton = true,
+  onWrapUp,
+}: ProgressViewProps) {
   const importedExecutionStatus = useExecutionReturnForProgress(plan.id);
   const progress = useMemo(
     () => computePlanProgress(plan, tasks, timeEntries, importedExecutionStatus),
@@ -51,10 +59,12 @@ export function ProgressView({ plan, tasks, timeEntries, onBack, onWrapUp }: Pro
   return (
     <div className="planning-view progress-view">
       <header className="planning-view__editor-header">
-        <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-          <ChevronLeftIcon className="planning-view__back-icon" />
-          Back
-        </button>
+        {showBackButton && (
+          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+            <ChevronLeftIcon className="planning-view__back-icon" />
+            Back
+          </button>
+        )}
         <h2 className="planning-view__title" style={{ flex: 1 }}>
           Progress
         </h2>

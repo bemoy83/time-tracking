@@ -534,11 +534,6 @@
   overflow-y: auto;
 }
 
-/* Override back buttons inside workspace main pane — navigation is via tabs */
-.planning-workspace__tab-content .planning-view__back {
-  display: none;
-}
-
 /* --- Review tab prompt --- */
 
 .planning-workspace__review-prompt {

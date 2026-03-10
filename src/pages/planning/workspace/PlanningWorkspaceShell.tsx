@@ -380,9 +380,10 @@ function WorkspaceMainPane({
             kpis={kpis}
             projects={projects}
             canOpenProgress={hasLinkedTasks}
+            showBackButton={false}
             readOnly={isReviewed}
             onSave={onSavePlan}
-            onBack={() => {}} // no-op in workspace mode
+            onBack={() => onSetActiveTab('edit')}
             onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
             onOpenProgress={onOpenProgress}
             onOpenReport={() => onSetActiveTab('report')}
@@ -396,6 +397,7 @@ function WorkspaceMainPane({
             plan={plan}
             tasks={tasks}
             timeEntries={timeEntries}
+            showBackButton={false}
             onBack={() => onSetActiveTab('edit')}
             onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
           />
@@ -412,6 +414,7 @@ function WorkspaceMainPane({
           <ScheduleView
             plan={plan}
             onSave={onSavePlan}
+            showBackButton={false}
             onBack={() => onSetActiveTab('edit')}
             readOnly={isReviewed}
           />
@@ -433,6 +436,7 @@ function WorkspaceMainPane({
             plan={plan}
             tasks={tasks}
             timeEntriesByTask={timeEntriesByTask}
+            showBackButton={false}
             onBack={() => onSetActiveTab('edit')}
           />
         )}

@@ -49,6 +49,7 @@ interface PlanEditorProps {
   kpis: WorkTypeKpi[];
   projects: Project[];
   canOpenProgress: boolean;
+  showBackButton?: boolean;
   /** When true, all editing controls are disabled (reviewed/archived plans). */
   readOnly?: boolean;
   onSave: (plan: Plan) => void;
@@ -65,6 +66,7 @@ export function PlanEditor({
   kpis,
   projects,
   canOpenProgress,
+  showBackButton = true,
   readOnly = false,
   onSave,
   onBack,
@@ -245,97 +247,177 @@ export function PlanEditor({
     return () => onRegisterBeforeScheduleSwitch?.();
   }, [onRegisterBeforeScheduleSwitch, flushAndWait]);
 
+  const canOpenScheduleAction = !readOnly && onOpenSchedule != null;
+  const canOpenProgressAction = !readOnly && isLocked && canOpenProgress;
+  const canOpenEventReportAction = readOnly && currentPlan.reviewedAt != null && onOpenReport != null;
+
+  const handleOpenSchedule = async () => {
+    if (!onOpenSchedule) return;
+    await flushAndWait();
+    onOpenSchedule();
+  };
+
+  type HeaderAction = {
+    id: 'schedule' | 'progress' | 'report';
+    label: string;
+    onClick: () => void | Promise<void>;
+  };
+
+  let primaryAction: HeaderAction | null = null;
+  if (canOpenEventReportAction) {
+    primaryAction = { id: 'report', label: 'View Event Report', onClick: onOpenReport! };
+  } else if (canOpenProgressAction) {
+    primaryAction = { id: 'progress', label: 'Open Progress', onClick: onOpenProgress };
+  } else if (canOpenScheduleAction) {
+    primaryAction = { id: 'schedule', label: 'Build Schedule', onClick: handleOpenSchedule };
+  }
+
+  const secondaryActions: HeaderAction[] = [];
+  if (canOpenScheduleAction && primaryAction?.id !== 'schedule') {
+    secondaryActions.push({ id: 'schedule', label: 'Schedule', onClick: handleOpenSchedule });
+  }
+  if (canOpenProgressAction && primaryAction?.id !== 'progress') {
+    secondaryActions.push({ id: 'progress', label: 'Progress', onClick: onOpenProgress });
+  }
+  if (canOpenEventReportAction && primaryAction?.id !== 'report') {
+    secondaryActions.push({ id: 'report', label: 'Event Report', onClick: onOpenReport! });
+  }
+  const showMissingDatesHint = summaryRange == null;
+  const titleInputId = `plan-title-${currentPlan.id}`;
+  const reviewedDateLabel = currentPlan.reviewedAt
+    ? new Date(currentPlan.reviewedAt).toLocaleDateString()
+    : null;
+  const overviewHelperText = readOnly
+    ? reviewedDateLabel
+      ? `This plan is archived (reviewed ${reviewedDateLabel}).`
+      : 'This plan is archived.'
+    : isLocked
+      ? 'Track progress and keep assignments aligned with live execution.'
+      : 'Set project and schedule inputs to prepare this plan for scheduling.';
+
   return (
     <div className="planning-view">
-      <header className="planning-view__editor-header">
-        <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
-          <ChevronLeftIcon className="planning-view__back-icon" />
-          Plans
-        </button>
-      </header>
+      {showBackButton && (
+        <header className="planning-view__editor-header">
+          <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
+            <ChevronLeftIcon className="planning-view__back-icon" />
+            Plans
+          </button>
+        </header>
+      )}
 
       <div className="planning-view__sticky-summary">
-        <div className="planning-view__editor-header">
-          <input
-            className="planning-view__title-input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleSave}
-            disabled={readOnly || isLocked}
-            aria-label="Plan title"
-          />
-          <StatusBadge variant={currentPlan.status} />
-          {!readOnly && onOpenSchedule && (
-            <button
-              className="btn btn--secondary btn--sm"
-              onClick={async () => {
-                await flushAndWait();
-                onOpenSchedule();
-              }}
-            >
-              Schedule
-            </button>
-          )}
-          {!readOnly && isLocked && canOpenProgress && (
-            <button className="btn btn--secondary btn--sm" onClick={onOpenProgress}>
-              Progress
-            </button>
-          )}
-          {readOnly && currentPlan.reviewedAt != null && onOpenReport && (
-            <button className="btn btn--secondary btn--sm" onClick={onOpenReport}>
-              Event Report
-            </button>
-          )}
-        </div>
+        <section className="planning-view__overview-block" aria-label="Plan overview">
+          <div className="planning-view__overview-header">
+            <div className="planning-view__overview-heading">
+              <h2 className="planning-view__overview-title">Plan Overview</h2>
+              <p className="planning-view__overview-helper">{overviewHelperText}</p>
+            </div>
 
-        <div className="planning-view__project-row">
-          <span className="planning-view__project-label">Event</span>
-          <button
-            type="button"
-            className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
-            onClick={() => setShowProjectPicker(true)}
-            disabled={readOnly || isLocked}
-            style={
-              selectedProject
-                ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
-                : undefined
-            }
-          >
-            {selectedProject ? (
-              <span className="planning-view__project-selected">
-                <span>{selectedProject.name}</span>
-              </span>
-            ) : (
-              <span className="planning-view__project-none">+ Add to project</span>
+            {(primaryAction != null || secondaryActions.length > 0) && (
+              <div className="planning-view__header-actions" aria-label="Plan actions">
+                {secondaryActions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => {
+                      void action.onClick();
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+                {primaryAction && (
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--sm"
+                    onClick={() => {
+                      void primaryAction.onClick();
+                    }}
+                  >
+                    {primaryAction.label}
+                  </button>
+                )}
+              </div>
             )}
-          </button>
+          </div>
+
+          <div className="planning-view__overview-body">
+            <label className="planning-view__overview-field planning-view__overview-field--title" htmlFor={titleInputId}>
+              <span className="planning-view__overview-title-row">
+                <span className="planning-view__overview-label">Plan Title</span>
+                <span className="planning-view__overview-status-inline">
+                  <span className="planning-view__overview-status-label">Status</span>
+                  <StatusBadge variant={currentPlan.status} />
+                </span>
+              </span>
+              <input
+                id={titleInputId}
+                className="planning-view__title-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleSave}
+                disabled={readOnly || isLocked}
+              />
+            </label>
+
+            <div className="planning-view__overview-field planning-view__overview-field--project">
+              <span className="planning-view__overview-label">Project</span>
+              <div className="planning-view__project-row">
+                <button
+                  type="button"
+                  className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
+                  onClick={() => setShowProjectPicker(true)}
+                  disabled={readOnly || isLocked}
+                  style={
+                    selectedProject
+                      ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
+                      : undefined
+                  }
+                >
+                  {selectedProject ? (
+                    <span className="planning-view__project-selected">
+                      <span>{selectedProject.name}</span>
+                    </span>
+                  ) : (
+                    <span className="planning-view__project-none">+ Add to project</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {showMissingDatesHint && (
+              <p className="planning-view__context-hint">Schedule dates are not set yet.</p>
+            )}
+          </div>
+        </section>
+
+        <div className="planning-view__schedule-inputs-wrap">
+          <ScheduleInputsBlock
+            expanded={inputsExpanded}
+            onToggle={() => setInputsExpanded((p) => !p)}
+            primaryRange={summaryRange}
+            dayCount={availableScope?.workDayCount ?? 0}
+            crewSize={currentPlan.defaultCrewSize ?? null}
+            totalAvailable={availableScope?.totalAvailable ?? 0}
+            phaseHint={showPhaseHint}
+          >
+            <PlanScheduleInputs
+              buildUpStartDate={phaseDates.buildUpStartDate}
+              buildUpEndDate={phaseDates.buildUpEndDate}
+              tearDownStartDate={phaseDates.tearDownStartDate}
+              tearDownEndDate={phaseDates.tearDownEndDate}
+              eventStartDate={currentPlan.eventStartDate}
+              eventEndDate={currentPlan.eventEndDate}
+              defaultCrewSize={currentPlan.defaultCrewSize}
+              readOnly={readOnly || isLocked}
+              onPhaseDateChange={handleSetPhaseDate}
+              onEventDateChange={handleSetEventDate}
+              onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+            />
+          </ScheduleInputsBlock>
         </div>
-
-        <ScheduleInputsBlock
-          expanded={inputsExpanded}
-          onToggle={() => setInputsExpanded((p) => !p)}
-          primaryRange={summaryRange}
-          dayCount={availableScope?.workDayCount ?? 0}
-          crewSize={currentPlan.defaultCrewSize ?? null}
-          totalAvailable={availableScope?.totalAvailable ?? 0}
-          phaseHint={showPhaseHint}
-        >
-          <PlanScheduleInputs
-            buildUpStartDate={phaseDates.buildUpStartDate}
-            buildUpEndDate={phaseDates.buildUpEndDate}
-            tearDownStartDate={phaseDates.tearDownStartDate}
-            tearDownEndDate={phaseDates.tearDownEndDate}
-            eventStartDate={currentPlan.eventStartDate}
-            eventEndDate={currentPlan.eventEndDate}
-            defaultCrewSize={currentPlan.defaultCrewSize}
-            readOnly={readOnly || isLocked}
-            onPhaseDateChange={handleSetPhaseDate}
-            onEventDateChange={handleSetEventDate}
-            onDefaultCrewSizeChange={handleSetDefaultCrewSize}
-          />
-        </ScheduleInputsBlock>
-
-
       </div>
 
       <section className="planning-view__work-packages-section" aria-labelledby="work-packages-heading">

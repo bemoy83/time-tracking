@@ -13,6 +13,7 @@ interface EventReportViewProps {
   tasks: Task[];
   timeEntriesByTask: Map<string, TimeEntry[]>;
   onBack: () => void;
+  showBackButton?: boolean;
 }
 
 export function EventReportView({
@@ -20,6 +21,7 @@ export function EventReportView({
   tasks,
   timeEntriesByTask,
   onBack,
+  showBackButton = true,
 }: EventReportViewProps) {
   const [projection, setProjection] = useState<WrapUpV2Projection | null>(null);
 
@@ -45,10 +47,12 @@ export function EventReportView({
     return (
       <div className="planning-view">
         <header className="planning-view__editor-header">
-          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-            <ChevronLeftIcon className="planning-view__back-icon" />
-            Back
-          </button>
+          {showBackButton && (
+            <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+              <ChevronLeftIcon className="planning-view__back-icon" />
+              Back
+            </button>
+          )}
           <h2 className="planning-view__title" style={{ flex: 1 }}>
             Event Report
           </h2>
@@ -63,10 +67,12 @@ export function EventReportView({
   return (
     <div className="planning-view event-report" data-print-root>
       <header className="planning-view__editor-header event-report__header-print-hidden">
-        <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-          <ChevronLeftIcon className="planning-view__back-icon" />
-          Back
-        </button>
+        {showBackButton && (
+          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+            <ChevronLeftIcon className="planning-view__back-icon" />
+            Back
+          </button>
+        )}
         <h2 className="planning-view__title" style={{ flex: 1 }}>
           Event Report
         </h2>

@@ -38,6 +38,7 @@ interface ScheduleViewProps {
   plan: Plan;
   onSave: (plan: Plan) => void;
   onBack: () => void;
+  showBackButton?: boolean;
   readOnly: boolean;
 }
 
@@ -53,6 +54,7 @@ export function ScheduleView({
   plan,
   onSave,
   onBack,
+  showBackButton = true,
   readOnly,
 }: ScheduleViewProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
@@ -213,10 +215,12 @@ export function ScheduleView({
   return (
     <div className="planning-view schedule-view">
       <header className="planning-view__editor-header">
-        <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-          <ChevronLeftIcon className="planning-view__back-icon" />
-          Back
-        </button>
+        {showBackButton && (
+          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+            <ChevronLeftIcon className="planning-view__back-icon" />
+            Back
+          </button>
+        )}
         <h2 className="planning-view__title" style={{ flex: 1 }}>
           Schedule
         </h2>
