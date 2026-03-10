@@ -293,17 +293,117 @@
   color: var(--color-text-muted);
 }
 
-.planning-view__header-actions {
+.planning-view__workflow-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-xs);
+  justify-content: space-between;
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
-.planning-view__header-actions--bottom {
+.planning-view__workflow-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.planning-view__workflow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-full);
+  background: var(--surface-contained-inset);
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+.planning-view__workflow-chip--warning {
+  background: var(--state-danger-bg);
+  color: var(--state-danger-fg-strong);
+}
+
+.planning-view__workflow-chip-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.planning-view__workflow-actions {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  align-self: end;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.planning-view__workflow-menu {
+  position: relative;
+}
+
+.planning-view__workflow-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planning-view__workflow-more-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+
+.planning-view__workflow-more-chevron--open {
+  transform: rotate(90deg);
+}
+
+.planning-view__workflow-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 184px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planning-view__workflow-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 var(--space-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  font-size: var(--font-small);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.planning-view__workflow-menu-item:hover:not(:disabled) {
+  background: var(--surface-contained-hover);
+}
+
+.planning-view__workflow-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.planning-view__workflow-menu-item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 .planning-view__schedule-inputs-wrap {
@@ -352,8 +452,9 @@
     align-self: start;
   }
 
-  .planning-workspace__editor-canvas .planning-view__header-actions--bottom {
+  .planning-workspace__editor-canvas .planning-view__workflow-footer {
     grid-area: actions;
+    align-self: end;
   }
 
   .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap {
@@ -367,8 +468,9 @@
 }
 
 @media (max-width: 920px) {
-  .planning-view__header-actions {
+  .planning-view__workflow-actions {
     justify-content: flex-start;
+    margin-left: 0;
   }
 }
 
@@ -377,8 +479,9 @@
     grid-template-columns: 1fr;
   }
 
-  .planning-view__header-actions--bottom {
+  .planning-view__workflow-actions {
     justify-content: flex-start;
-    align-self: stretch;
+    margin-left: 0;
+    width: 100%;
   }
 }

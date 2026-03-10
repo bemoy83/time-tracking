@@ -28,7 +28,7 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
-import { ChevronLeftIcon, PlusIcon } from '../../components/icons';
+import { ChevronIcon, ChevronLeftIcon, PlusIcon, WarningIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -62,6 +62,13 @@ interface PlanEditorProps {
   onRegisterBeforeScheduleSwitch?: (fn?: () => Promise<void>) => void;
 }
 
+function formatAutosaveLabel(updatedAt: string | null | undefined): string {
+  if (!updatedAt) return 'Autosave on';
+  const parsed = new Date(updatedAt);
+  if (Number.isNaN(parsed.getTime())) return 'Autosave on';
+  return `Autosaved ${parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+}
+
 export function PlanEditor({
   plan,
   kpis,
@@ -79,6 +86,7 @@ export function PlanEditor({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   useEffect(() => {
     setTitle(plan.title);
@@ -152,6 +160,7 @@ export function PlanEditor({
     [workTypes],
   );
   const addTitleRef = useRef<HTMLInputElement>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newWorkTypeId, setNewWorkTypeId] = useState('');
   const [newQuantity, setNewQuantity] = useState('');
@@ -166,6 +175,33 @@ export function PlanEditor({
       setNewWorkTypeId(selectableWorkTypes[0].id);
     }
   }, [newWorkTypeId, selectableWorkTypes]);
+
+  useEffect(() => {
+    setShowActionMenu(false);
+  }, [plan.id]);
+
+  useEffect(() => {
+    if (!showActionMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        actionMenuRef.current &&
+        !actionMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowActionMenu(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowActionMenu(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showActionMenu]);
 
   const newWorkType = newWorkTypeId
     ? selectableWorkTypes.find((wt) => wt.id === newWorkTypeId) ?? null
@@ -332,6 +368,29 @@ export function PlanEditor({
       pendingLabel: 'Add packages',
     },
   ] as const;
+  const readinessCompleteCount = readinessItems.filter((item) => item.complete).length;
+  const readinessMissingItems = readinessItems.filter((item) => !item.complete);
+  const readinessSummaryLabel = `${readinessCompleteCount}/${readinessItems.length} checks ready`;
+  const readinessWarningLabel = readinessMissingItems.length > 0
+    ? `${readinessMissingItems.length} need attention`
+    : null;
+  const readinessWarningDetail = readinessMissingItems
+    .map((item) => item.pendingLabel)
+    .join(' · ');
+  const autosaveLabel = formatAutosaveLabel(currentPlan.updatedAt);
+  const scheduleActionBlockedReason =
+    summaryRange == null
+      ? 'Set schedule dates before building schedule.'
+      : currentPlan.lineItems.length === 0
+        ? 'Add at least one work package before building schedule.'
+        : null;
+  const getActionDisabledReason = (action: HeaderAction): string | null => {
+    if (action.id === 'schedule') return scheduleActionBlockedReason;
+    return null;
+  };
+  const primaryActionDisabledReason = primaryAction
+    ? getActionDisabledReason(primaryAction)
+    : null;
 
   return (
     <div className="planning-view">
@@ -420,33 +479,81 @@ export function PlanEditor({
             </div>
           </div>
 
-          {(primaryAction != null || secondaryActions.length > 0) && (
-            <div className="planning-view__header-actions planning-view__header-actions--bottom" aria-label="Plan actions">
-              {secondaryActions.map((action) => (
-                <button
-                  key={action.id}
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={() => {
-                    void action.onClick();
-                  }}
+          <div className="planning-view__workflow-footer" aria-label="Plan actions">
+            <div className="planning-view__workflow-meta" role="status" aria-live="polite">
+              <span className="planning-view__workflow-chip">{autosaveLabel}</span>
+              <span className="planning-view__workflow-chip">{readinessSummaryLabel}</span>
+              {readinessWarningLabel && (
+                <span
+                  className="planning-view__workflow-chip planning-view__workflow-chip--warning"
+                  title={readinessWarningDetail}
                 >
-                  {action.label}
-                </button>
-              ))}
-              {primaryAction && (
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm"
-                  onClick={() => {
-                    void primaryAction.onClick();
-                  }}
-                >
-                  {primaryAction.label}
-                </button>
+                  <WarningIcon className="planning-view__workflow-chip-icon" />
+                  <span>{readinessWarningLabel}</span>
+                </span>
               )}
             </div>
-          )}
+
+            {(primaryAction != null || secondaryActions.length > 0) && (
+              <div className="planning-view__workflow-actions">
+                {secondaryActions.length > 0 && (
+                  <div className="planning-view__workflow-menu" ref={actionMenuRef}>
+                    <button
+                      type="button"
+                      className="btn btn--secondary btn--sm planning-view__workflow-more"
+                      aria-haspopup="menu"
+                      aria-expanded={showActionMenu}
+                      onClick={() => setShowActionMenu((prev) => !prev)}
+                    >
+                      More
+                      <ChevronIcon
+                        className={`planning-view__workflow-more-chevron${showActionMenu ? ' planning-view__workflow-more-chevron--open' : ''}`}
+                      />
+                    </button>
+                    {showActionMenu && (
+                      <div className="planning-view__workflow-menu-popover" role="menu" aria-label="More actions">
+                        {secondaryActions.map((action) => {
+                          const disabledReason = getActionDisabledReason(action);
+                          return (
+                            <button
+                              key={action.id}
+                              type="button"
+                              role="menuitem"
+                              className="planning-view__workflow-menu-item"
+                              disabled={disabledReason != null}
+                              title={disabledReason ?? action.label}
+                              onClick={() => {
+                                if (disabledReason != null) return;
+                                setShowActionMenu(false);
+                                void action.onClick();
+                              }}
+                            >
+                              {action.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {primaryAction && (
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--sm"
+                    disabled={primaryActionDisabledReason != null}
+                    title={primaryActionDisabledReason ?? primaryAction.label}
+                    onClick={() => {
+                      if (primaryActionDisabledReason != null) return;
+                      void primaryAction.onClick();
+                    }}
+                  >
+                    {primaryAction.label}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </section>
 
         <div className="planning-view__schedule-inputs-wrap">
