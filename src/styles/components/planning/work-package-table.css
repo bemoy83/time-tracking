@@ -26,6 +26,36 @@
   gap: var(--space-md);
 }
 
+.planning-view__wp-surface {
+  --wp-card-padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: var(--radius-xl);
+  border: none;
+  background: var(--surface-contained-bg);
+  overflow: hidden;
+}
+
+.planning-view__wp-surface > .planning-view__items-header {
+  padding: var(--wp-card-padding) var(--wp-card-padding) var(--space-sm);
+}
+
+.planning-view__wp-table-zone {
+  min-width: 0;
+}
+
+.planning-view__wp-add-zone + .planning-view__wp-table-zone {
+  border-top: 1px solid var(--surface-contained-border);
+  padding-top: var(--wp-card-padding);
+}
+
+.planning-view__wp-add-zone {
+  padding: var(--wp-card-padding);
+  background: var(--surface-contained-bg);
+  border-bottom: none;
+}
+
 .planning-view__work-package-table-wrap {
   background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
@@ -34,6 +64,12 @@
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scrollbar-color: var(--surface-border-hover) transparent;
+}
+
+.planning-view__wp-surface .planning-view__work-package-table-wrap {
+  background: transparent;
+  border-radius: 0;
+  padding-block: 0 var(--wp-card-padding);
 }
 
 .planning-view__work-package-table {
@@ -54,12 +90,12 @@
 
 .planning-view__work-package-table th:first-child,
 .planning-view__work-package-table td:first-child {
-  padding-left: var(--space-md);
+  padding-left: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__work-package-table th:last-child,
 .planning-view__work-package-table td:last-child {
-  padding-right: var(--space-md);
+  padding-right: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__work-package-table thead th {
@@ -88,11 +124,11 @@
 }
 
 .planning-view__wp-header-columns th:first-child::after {
-  left: var(--space-md);
+  left: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__wp-actions-col::after {
-  right: var(--space-md);
+  right: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__wp-header-group th {
@@ -173,11 +209,11 @@
 }
 
 .planning-view__work-package-table tbody tr:not(:last-child) td:first-child::after {
-  left: var(--space-md);
+  left: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__work-package-table tbody tr:not(:last-child) td:last-child::after {
-  right: var(--space-md);
+  right: var(--wp-card-padding, var(--space-md));
 }
 
 .planning-view__work-package-table tbody tr:last-child td:first-child {
@@ -291,6 +327,13 @@
   font-size: var(--font-small);
   background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
+}
+
+.planning-view__wp-add-zone .planning-view__wp-add-bar {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
 }
 
 .planning-view__wp-add-bar-header {
@@ -544,15 +587,40 @@
     gap: var(--space-sm);
   }
 
-  .planning-workspace__editor-canvas .planning-view__wp-add-bar {
-    padding: var(--space-sm) var(--space-md);
+  .planning-workspace__editor-canvas .planning-view__wp-surface {
+    --wp-card-padding: var(--space-md);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__wp-surface > .planning-view__items-header {
+    padding: var(--wp-card-padding) var(--wp-card-padding) var(--space-sm);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__wp-add-zone {
+    padding: var(--wp-card-padding);
+  }
+
+  .planning-workspace__editor-canvas .planning-view__wp-add-zone .planning-view__wp-add-bar {
     gap: 6px;
-    border: 1px solid var(--surface-contained-border);
-    background: var(--surface-contained-inset);
   }
 }
 
 @media (max-width: 760px) {
+  .planning-view__wp-surface {
+    --wp-card-padding: var(--space-sm);
+  }
+
+  .planning-view__wp-surface > .planning-view__items-header {
+    padding: var(--wp-card-padding);
+  }
+
+  .planning-view__wp-add-zone {
+    padding: var(--wp-card-padding);
+  }
+
+  .planning-view__wp-add-zone + .planning-view__wp-table-zone {
+    padding-top: var(--wp-card-padding);
+  }
+
   .planning-view__wp-add-bar {
     padding: var(--space-sm);
     gap: var(--space-xs);

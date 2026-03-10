@@ -2,6 +2,14 @@
    Plan Editor — edit/detail view
    ============================================================ */
 
+.planning-view--editor {
+  gap: var(--space-md);
+}
+
+.planning-view--editor .planning-view__sticky-summary {
+  padding-bottom: var(--space-xs);
+}
+
 .planning-view__sticky-summary {
   position: sticky;
   top: 0;
@@ -413,6 +421,14 @@
 }
 
 @media (min-width: 1200px) {
+  .planning-workspace__editor-canvas .planning-view--editor {
+    gap: var(--space-md);
+  }
+
+  .planning-workspace__editor-canvas .planning-view--editor .planning-view__sticky-summary {
+    padding-bottom: 0;
+  }
+
   .planning-workspace__editor-canvas .planning-view__sticky-summary {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

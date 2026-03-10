@@ -220,6 +220,7 @@ export function PlanEditor({
       : !hasValidNewQuantity
         ? 'Quantity must be greater than 0'
       : null;
+  const canAddWorkPackages = !(readOnly || isLocked);
 
   const handleAddRow = () => {
     if (!newWorkType || !newTitle.trim() || !hasValidNewQuantity) return;
@@ -393,7 +394,7 @@ export function PlanEditor({
     : null;
 
   return (
-    <div className="planning-view">
+    <div className="planning-view planning-view--editor">
       {showBackButton && (
         <header className="planning-view__editor-header">
           <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
@@ -585,116 +586,122 @@ export function PlanEditor({
       </div>
 
       <section className="planning-view__work-packages-section" aria-labelledby="work-packages-heading">
-        <div className="planning-view__items-header">
-          <h2 id="work-packages-heading" className="planning-view__items-title">Work Packages</h2>
-          <div className="planning-view__items-summary">
-            <span>{currentPlan.lineItems.length} packages</span>
-            <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
-            <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
+        <div className={`planning-view__wp-surface${canAddWorkPackages ? ' planning-view__wp-surface--editable' : ''}`}>
+          <div className="planning-view__items-header">
+            <h2 id="work-packages-heading" className="planning-view__items-title">Work Packages</h2>
+            <div className="planning-view__items-summary">
+              <span>{currentPlan.lineItems.length} packages</span>
+              <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
+              <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
+            </div>
+          </div>
+
+          {canAddWorkPackages && (
+            <div className="planning-view__wp-add-zone">
+              <div className="planning-view__wp-add-bar">
+                <div className="planning-view__wp-add-bar-header">
+                  <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
+                  <p className="planning-view__wp-add-bar-heading">Add Work Package</p>
+                </div>
+                <p className="planning-view__wp-add-bar-help">
+                  Rate is derived from selected work type by default. Use the &quot;Magic&quot; row
+                  button to prefill crew and hours from schedule inputs.
+                </p>
+
+                <div className="planning-view__wp-add-bar-fields">
+                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--title">
+                    <span className="planning-view__wp-add-bar-label">Title</span>
+                    <input
+                      ref={addTitleRef}
+                      className="input planning-view__wp-add-bar-title"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddRow();
+                        }
+                      }}
+                      placeholder="Work package title"
+                      aria-label="New work package title"
+                    />
+                  </label>
+
+                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--type">
+                    <span className="planning-view__wp-add-bar-label">Type</span>
+                    <select
+                      className="input planning-view__wp-add-bar-type"
+                      value={newWorkTypeId}
+                      onChange={(e) => setNewWorkTypeId(e.target.value)}
+                      disabled={selectableWorkTypes.length === 0}
+                      aria-label="New work package type"
+                    >
+                      {selectableWorkTypes.length === 0 && (
+                        <option value="">No work types. Add in Settings.</option>
+                      )}
+                      {selectableWorkTypes.map((wt) => (
+                        <option key={wt.id} value={wt.id}>
+                          {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--qty">
+                    <span className="planning-view__wp-add-bar-label">Quantity</span>
+                    <input
+                      className="input planning-view__wp-add-bar-qty"
+                      type="number"
+                      min={0.01}
+                      step="any"
+                      value={newQuantity}
+                      onChange={(e) => setNewQuantity(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddRow();
+                        }
+                      }}
+                      placeholder="0"
+                      aria-label="New work package quantity"
+                    />
+                  </label>
+
+                  <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--unit">
+                    <span className="planning-view__wp-add-bar-label">Unit</span>
+                    <span className="planning-view__wp-add-bar-unit">
+                      {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
+                    </span>
+                  </div>
+
+                  <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--action">
+                    <span className="planning-view__wp-add-bar-label planning-view__wp-add-bar-label--sr-only">Action</span>
+                    <button
+                      type="button"
+                      className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
+                      onClick={handleAddRow}
+                      disabled={addDisabledReason != null}
+                      title={addDisabledReason ?? 'Add work package'}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="planning-view__wp-table-zone">
+            <WorkPackageTable
+              lineItems={currentPlan.lineItems}
+              suggestionsByLineItemId={suggestionsByLineItemId}
+              isLocked={readOnly || isLocked}
+              onUpdate={handleUpdateItem}
+              onDuplicate={handleDuplicateItem}
+              onRemove={handleRemoveItem}
+            />
           </div>
         </div>
-
-        {!(readOnly || isLocked) && (
-          <div className="planning-view__wp-add-bar">
-            <div className="planning-view__wp-add-bar-header">
-              <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
-              <p className="planning-view__wp-add-bar-heading">Add Work Package</p>
-            </div>
-            <p className="planning-view__wp-add-bar-help">
-              Rate is derived from selected work type by default. Use the &quot;Magic&quot; row
-              button to prefill crew and hours from schedule inputs.
-            </p>
-
-            <div className="planning-view__wp-add-bar-fields">
-              <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--title">
-                <span className="planning-view__wp-add-bar-label">Title</span>
-                <input
-                  ref={addTitleRef}
-                  className="input planning-view__wp-add-bar-title"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddRow();
-                    }
-                  }}
-                  placeholder="Work package title"
-                  aria-label="New work package title"
-                />
-              </label>
-
-              <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--type">
-                <span className="planning-view__wp-add-bar-label">Type</span>
-                <select
-                  className="input planning-view__wp-add-bar-type"
-                  value={newWorkTypeId}
-                  onChange={(e) => setNewWorkTypeId(e.target.value)}
-                  disabled={selectableWorkTypes.length === 0}
-                  aria-label="New work package type"
-                >
-                  {selectableWorkTypes.length === 0 && (
-                    <option value="">No work types. Add in Settings.</option>
-                  )}
-                  {selectableWorkTypes.map((wt) => (
-                    <option key={wt.id} value={wt.id}>
-                      {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--qty">
-                <span className="planning-view__wp-add-bar-label">Quantity</span>
-                <input
-                  className="input planning-view__wp-add-bar-qty"
-                  type="number"
-                  min={0.01}
-                  step="any"
-                  value={newQuantity}
-                  onChange={(e) => setNewQuantity(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddRow();
-                    }
-                  }}
-                  placeholder="0"
-                  aria-label="New work package quantity"
-                />
-              </label>
-
-              <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--unit">
-                <span className="planning-view__wp-add-bar-label">Unit</span>
-                <span className="planning-view__wp-add-bar-unit">
-                  {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
-                </span>
-              </div>
-
-              <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--action">
-                <span className="planning-view__wp-add-bar-label planning-view__wp-add-bar-label--sr-only">Action</span>
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
-                  onClick={handleAddRow}
-                  disabled={addDisabledReason != null}
-                  title={addDisabledReason ?? 'Add work package'}
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <WorkPackageTable
-          lineItems={currentPlan.lineItems}
-          suggestionsByLineItemId={suggestionsByLineItemId}
-          isLocked={readOnly || isLocked}
-          onUpdate={handleUpdateItem}
-          onDuplicate={handleDuplicateItem}
-          onRemove={handleRemoveItem}
-        />
       </section>
 
       <ProjectPicker
