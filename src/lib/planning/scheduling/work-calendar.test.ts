@@ -4,9 +4,12 @@ import {
   dayAvailablePersonHours,
   getEffectiveScheduleSpan,
   generateDefaultWorkCalendar,
+  generateDefaultWorkCalendarForSpans,
   hasSchedulingCalendar,
+  listDatesForSpans,
   listDateRange,
   reconcileWorkCalendar,
+  reconcileWorkCalendarForSpans,
 } from './work-calendar';
 
 describe('work-calendar', () => {
@@ -44,6 +47,59 @@ describe('work-calendar', () => {
     const target = reconciled.find((day) => day.date === '2026-03-03');
     expect(target?.accessStart).toBe('10:00');
     expect(target?.crewSize).toBe(5);
+  });
+
+  it('lists unique dates across multiple spans without filling gaps', () => {
+    expect(
+      listDatesForSpans([
+        { start: '2026-03-02', end: '2026-03-03' },
+        { start: '2026-03-06', end: '2026-03-07' },
+      ]),
+    ).toEqual([
+      '2026-03-02',
+      '2026-03-03',
+      '2026-03-06',
+      '2026-03-07',
+    ]);
+  });
+
+  it('reconciles calendar for disjoint spans while preserving overrides', () => {
+    const reconciled = reconcileWorkCalendarForSpans(
+      [
+        {
+          date: '2026-03-03',
+          isWorkDay: true,
+          accessStart: '10:00',
+          accessEnd: '16:00',
+          crewSize: 5,
+        },
+      ],
+      [
+        { start: '2026-03-02', end: '2026-03-03' },
+        { start: '2026-03-06', end: '2026-03-07' },
+      ],
+      8,
+    );
+
+    expect(reconciled.map((day) => day.date)).toEqual([
+      '2026-03-02',
+      '2026-03-03',
+      '2026-03-06',
+      '2026-03-07',
+    ]);
+    expect(reconciled.find((day) => day.date === '2026-03-03')?.accessStart).toBe('10:00');
+    expect(reconciled.find((day) => day.date === '2026-03-03')?.crewSize).toBe(5);
+  });
+
+  it('applies weekend-off defaults when generating from spans', () => {
+    const calendar = generateDefaultWorkCalendarForSpans(
+      [{ start: '2026-03-06', end: '2026-03-08' }],
+      8,
+    );
+    expect(calendar).toHaveLength(3);
+    expect(calendar[0].isWorkDay).toBe(true); // Friday
+    expect(calendar[1].isWorkDay).toBe(false); // Saturday
+    expect(calendar[2].isWorkDay).toBe(false); // Sunday
   });
 
   it('computes available person-hours from access window and crew', () => {

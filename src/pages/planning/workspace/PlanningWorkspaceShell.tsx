@@ -30,11 +30,14 @@ import {
   getGlobalFallbackMetrics,
   resolveSidebarMetrics,
   getPlanEditorMetrics,
+  getPlanScheduleCoverageMetric,
   getScheduleViewMetrics,
   getProgressViewMetrics,
+  getSharedScheduleCoverageMetric,
   getSharedScheduleMetrics,
   getInsightsViewMetrics,
   getEventReportMetrics,
+  type ScheduleCoverageMetric,
   type SidebarMetricDescriptor,
 } from './workspace-metrics';
 import { SidebarMetrics } from './SidebarMetrics';
@@ -147,6 +150,23 @@ export function PlanningWorkspaceShell({
     return resolveSidebarMetrics(viewMetrics, fallbacks);
   }, [activeTab, activePlan, plans, tasks, timeEntries, kpis, selectedPlanIdsForSharedSchedule, sharedScheduleCapacity]);
 
+  const scheduleCoverageMetric = useMemo<ScheduleCoverageMetric | null>(() => {
+    if (activeTab === 'shared-schedule') {
+      const sharedRequiredHours = sharedScheduleCapacity
+        ? { totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours }
+        : undefined;
+      return getSharedScheduleCoverageMetric(
+        plans,
+        selectedPlanIdsForSharedSchedule,
+        sharedRequiredHours,
+      );
+    }
+    if (activeTab === 'schedule' && activePlan) {
+      return getPlanScheduleCoverageMetric(activePlan);
+    }
+    return null;
+  }, [activeTab, activePlan, plans, selectedPlanIdsForSharedSchedule, sharedScheduleCapacity]);
+
   return (
     <div className="planning-workspace">
       {/* Sidebar */}
@@ -161,7 +181,7 @@ export function PlanningWorkspaceShell({
             <span>Exit workspace</span>
           </button>
         </div>
-        <SidebarMetrics metrics={resolvedMetrics} />
+        <SidebarMetrics metrics={resolvedMetrics} scheduleCoverage={scheduleCoverageMetric} />
         <div className="planning-workspace__sidebar-content">
           <PlanList
             plans={plans}

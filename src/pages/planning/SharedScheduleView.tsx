@@ -96,8 +96,6 @@ export function SharedScheduleView({
     () => selectedPlans
       .map((plan) => [
         plan.id,
-        plan.eventStartDate ?? '',
-        plan.eventEndDate ?? '',
         plan.buildUpStartDate ?? '',
         plan.buildUpEndDate ?? '',
         plan.tearDownStartDate ?? '',

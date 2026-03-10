@@ -129,44 +129,55 @@ export function getPhaseRange(values: Partial<PhaseDateValues> | null | undefine
 }
 
 /**
- * Returns a schedule range when at least one phase has dates (or event dates).
- * Used for work calendar so it renders with build-up only, tear-down only, or both.
+ * Returns all phase spans that should drive the work calendar.
+ * Event dates are intentionally excluded; calendar is phase-only.
+ */
+export function getWorkCalendarPhaseSpans(
+  phaseDates: Partial<PhaseDateValues> | null | undefined,
+): DateSpan[] {
+  const normalized = readPhaseDateValues(phaseDates);
+  const spans: DateSpan[] = [];
+
+  if (hasPhaseDatesFor(normalized, 'build-up')) {
+    spans.push({
+      start: normalized.buildUpStartDate!,
+      end: normalized.buildUpEndDate!,
+    });
+  }
+  if (hasPhaseDatesFor(normalized, 'tear-down')) {
+    spans.push({
+      start: normalized.tearDownStartDate!,
+      end: normalized.tearDownEndDate!,
+    });
+  }
+
+  return spans.sort((a, b) => a.start.localeCompare(b.start));
+}
+
+/**
+ * Returns a summary range for the work calendar when phase dates exist.
+ * Event dates are intentionally excluded; calendar is phase-only.
  */
 export function getScheduleRangeForWorkCalendar(
   phaseDates: PhaseDateValues,
-  eventStartDate: string | null,
-  eventEndDate: string | null,
+  _eventStartDate: string | null,
+  _eventEndDate: string | null,
 ): PrimaryScheduleRange | null {
-  if (hasPhaseDates(phaseDates)) {
-    const complete = phaseDates as CompletePhaseDateValues;
-    return {
-      start: complete.buildUpStartDate,
-      end: complete.tearDownEndDate,
-      source: 'phase',
-    };
+  const spans = getWorkCalendarPhaseSpans(phaseDates);
+  if (spans.length === 0) return null;
+
+  return {
+    start: spans[0].start,
+    end: spans[spans.length - 1].end,
+    source: 'phase',
+  };
+}
+
+export function isDateWithinAnySpan(date: string, spans: DateSpan[]): boolean {
+  for (const span of spans) {
+    if (date >= span.start && date <= span.end) return true;
   }
-  if (hasPhaseDatesFor(phaseDates, 'build-up')) {
-    return {
-      start: phaseDates.buildUpStartDate!,
-      end: phaseDates.buildUpEndDate!,
-      source: 'phase',
-    };
-  }
-  if (hasPhaseDatesFor(phaseDates, 'tear-down')) {
-    return {
-      start: phaseDates.tearDownStartDate!,
-      end: phaseDates.tearDownEndDate!,
-      source: 'phase',
-    };
-  }
-  if (isFilledDate(eventStartDate) && isFilledDate(eventEndDate)) {
-    return {
-      start: eventStartDate,
-      end: eventEndDate,
-      source: 'event',
-    };
-  }
-  return null;
+  return false;
 }
 
 export function getPrimaryScheduleRange(
@@ -193,25 +204,6 @@ export function getPrimaryScheduleRange(
 
   return null;
 }
-
-
-/**
- * Returns a schedule range when at least one phase has dates (or event dates).
- * Used for work calendar so it renders with build-up only, tear-down only, or both.
- */
-
-/**
- * Returns a schedule range when at least one phase has dates (or event dates).
- * Used for work calendar so it renders with build-up only, tear-down only, or both.
- */
-
-/** Returns a schedule range when at least one phase has dates. Used for work calendar (does not require all four). */
-
-/** Returns a schedule range when at least one phase has dates. Used for work calendar (does not require all four). */
-
-/** Returns a schedule range when at least one phase has dates. Used for work calendar (does not require all four). */
-
-/** Returns a schedule range when at least one phase has dates. Used for work calendar (does not require all four). */
 
 export function getScheduleDateValidationErrors(
   phaseDates: PhaseDateValues,

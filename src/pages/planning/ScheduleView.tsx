@@ -16,7 +16,7 @@ import {
   updateLineItemAssignment,
   updateLineItemCrewForDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
-import { reconcileWorkCalendar } from '../../lib/planning/scheduling/work-calendar';
+import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import { autoSchedule } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
@@ -29,6 +29,7 @@ import {
   type PhaseDateField,
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
+  getWorkCalendarPhaseSpans,
   hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
@@ -70,8 +71,15 @@ export function ScheduleView({
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
-  const workCalendarStart = workCalendarRange?.start ?? null;
-  const workCalendarEnd = workCalendarRange?.end ?? null;
+  const workCalendarPhaseSpans = useMemo(
+    () => getWorkCalendarPhaseSpans(phaseDates),
+    [
+      phaseDates.buildUpStartDate,
+      phaseDates.buildUpEndDate,
+      phaseDates.tearDownStartDate,
+      phaseDates.tearDownEndDate,
+    ],
+  );
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
 
@@ -79,23 +87,21 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_tab_open');
   }, [plan.id]);
 
-  // Derive work calendar when at least one phase (or event) has dates but workCalendar is empty.
-  // Uses getScheduleRangeForWorkCalendar so build-up only or tear-down only is enough.
+  // Derive work calendar when at least one phase has dates but workCalendar is empty.
+  // Build-up and tear-down are resolved independently (event dates are ignored).
   useEffect(() => {
-    if (workCalendarStart && workCalendarEnd && currentPlan.workCalendar.length === 0) {
+    if (workCalendarPhaseSpans.length > 0 && currentPlan.workCalendar.length === 0) {
       mutatePlan((prev) => ({
         ...prev,
-        workCalendar: reconcileWorkCalendar(
+        workCalendar: reconcileWorkCalendarForSpans(
           prev.workCalendar,
-          workCalendarStart,
-          workCalendarEnd,
+          workCalendarPhaseSpans,
           prev.defaultCrewSize,
         ),
       }));
     }
   }, [
-    workCalendarStart,
-    workCalendarEnd,
+    workCalendarPhaseSpans,
     currentPlan.workCalendar.length,
     mutatePlan,
   ]);

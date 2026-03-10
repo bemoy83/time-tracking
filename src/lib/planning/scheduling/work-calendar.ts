@@ -4,6 +4,7 @@ import {
   type WorkCalendarDay,
   getPlanEffectiveSpan,
 } from '../plan-model';
+import type { DateSpan } from './schedule-span';
 
 const DEFAULT_WORKDAY_START = '08:00';
 const DEFAULT_WORKDAY_END = '16:00';
@@ -48,6 +49,18 @@ export function listDateRange(startDate: string, endDate: string): string[] {
   return dates;
 }
 
+export function listDatesForSpans(spans: DateSpan[]): string[] {
+  if (spans.length === 0) return [];
+  const unique = new Set<string>();
+  for (const span of spans) {
+    const dates = listDateRange(span.start, span.end);
+    for (const date of dates) {
+      unique.add(date);
+    }
+  }
+  return [...unique].sort(compareDateStrings);
+}
+
 function buildDefaultDay(date: string, _defaultCrewSize: number | null): WorkCalendarDay {
   const parsed = parseDatePart(date);
   const isWeekend = parsed ? parsed.getDay() === 0 || parsed.getDay() === 6 : false;
@@ -76,6 +89,14 @@ export function generateDefaultWorkCalendar(
 ): WorkCalendarDay[] {
   if (!startDate || !endDate) return [];
   const dates = listDateRange(startDate, endDate);
+  return dates.map((date) => buildDefaultDay(date, defaultCrewSize));
+}
+
+export function generateDefaultWorkCalendarForSpans(
+  spans: DateSpan[],
+  defaultCrewSize: number | null,
+): WorkCalendarDay[] {
+  const dates = listDatesForSpans(spans);
   return dates.map((date) => buildDefaultDay(date, defaultCrewSize));
 }
 
@@ -110,6 +131,30 @@ export function reconcileWorkCalendar(
   if (!startDate || !endDate) return [];
 
   const defaults = generateDefaultWorkCalendar(startDate, endDate, defaultCrewSize);
+  const existingByDate = new Map(existing.map((day) => [day.date, day]));
+
+  return defaults.map((fallback) => {
+    const preserved = existingByDate.get(fallback.date);
+    if (!preserved) return fallback;
+    return normalizeWorkCalendarDay(
+      {
+        ...fallback,
+        ...preserved,
+        date: fallback.date,
+      },
+      defaultCrewSize,
+    );
+  });
+}
+
+export function reconcileWorkCalendarForSpans(
+  existing: WorkCalendarDay[],
+  spans: DateSpan[],
+  defaultCrewSize: number | null,
+): WorkCalendarDay[] {
+  if (spans.length === 0) return [];
+
+  const defaults = generateDefaultWorkCalendarForSpans(spans, defaultCrewSize);
   const existingByDate = new Map(existing.map((day) => [day.date, day]));
 
   return defaults.map((fallback) => {

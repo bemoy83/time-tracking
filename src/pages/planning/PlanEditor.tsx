@@ -24,7 +24,7 @@ import {
   setPlanPhaseDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
-  generateDefaultWorkCalendar,
+  generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
@@ -39,6 +39,7 @@ import {
   type PhaseDateField,
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
+  getWorkCalendarPhaseSpans,
   hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
@@ -97,6 +98,15 @@ export function PlanEditor({
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
+  const workCalendarPhaseSpans = useMemo(
+    () => getWorkCalendarPhaseSpans(phaseDates),
+    [
+      phaseDates.buildUpStartDate,
+      phaseDates.buildUpEndDate,
+      phaseDates.tearDownStartDate,
+      phaseDates.tearDownEndDate,
+    ],
+  );
   const summaryRange = workCalendarRange ?? primaryRange;
   const isEmpty = summaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
@@ -112,11 +122,11 @@ export function PlanEditor({
 
   const availableScope = (() => {
     const { defaultCrewSize, workCalendar } = currentPlan;
-    if (!summaryRange) return null;
+    if (workCalendar.length === 0 && workCalendarPhaseSpans.length === 0) return null;
     const calendar =
       workCalendar.length > 0
         ? workCalendar
-        : generateDefaultWorkCalendar(summaryRange.start, summaryRange.end, defaultCrewSize);
+        : generateDefaultWorkCalendarForSpans(workCalendarPhaseSpans, defaultCrewSize);
     const workDays = calendar.filter((d) => d.isWorkDay);
     const totalAvailable = calendar.reduce(
       (sum, d) => sum + dayAvailablePersonHours(d, defaultCrewSize),

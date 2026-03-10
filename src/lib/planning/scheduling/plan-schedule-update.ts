@@ -1,9 +1,14 @@
 import type { BuildPhase } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { getPhaseFields, getPlanEffectiveSpan, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
+import { getPhaseFields, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
 import type { ScheduleSpan } from './assignment';
-import { reconcileWorkCalendar, listDateRange } from './work-calendar';
-import type { PhaseDateField } from './schedule-span';
+import { listDateRange, reconcileWorkCalendarForSpans } from './work-calendar';
+import {
+  getWorkCalendarPhaseSpans,
+  isDateWithinAnySpan,
+  readPhaseDateValues,
+  type PhaseDateField,
+} from './schedule-span';
 
 export function normalizeDefaultCrewSize(value: string): number | null {
   if (value.trim() === '') return null;
@@ -13,13 +18,12 @@ export function normalizeDefaultCrewSize(value: string): number | null {
 }
 
 function reconcilePlanCalendar(plan: Plan): Plan {
-  const effectiveSpan = getPlanEffectiveSpan(plan);
+  const spans = getWorkCalendarPhaseSpans(readPhaseDateValues(plan));
   return {
     ...plan,
-    workCalendar: reconcileWorkCalendar(
+    workCalendar: reconcileWorkCalendarForSpans(
       plan.workCalendar,
-      effectiveSpan?.start ?? null,
-      effectiveSpan?.end ?? null,
+      spans,
       plan.defaultCrewSize,
     ),
   };
@@ -30,10 +34,10 @@ export function setPlanEventDate(
   field: 'eventStartDate' | 'eventEndDate',
   value: string,
 ): Plan {
-  return reconcilePlanCalendar({
+  return {
     ...plan,
     [field]: value || null,
-  });
+  };
 }
 
 export function setPlanPhaseDate(
@@ -84,15 +88,15 @@ export function updatePlanCalendarDay(
  * Sync a calendar day change from the shared crew pool into a plan's workCalendar.
  * Used when the user toggles work/off in the shared schedule -- the change must
  * propagate to each plan so mutations (assignment, crew) persist correctly.
- * Only updates plans whose effective span includes the date.
+ * Only updates plans whose phase windows include the date.
  */
 export function syncPlanWorkCalendarFromCrewPool(
   plan: Plan,
   date: string,
   updates: Partial<WorkCalendarDay>,
 ): Plan {
-  const span = getPlanEffectiveSpan(plan);
-  if (!span || date < span.start || date > span.end) return plan;
+  const spans = getWorkCalendarPhaseSpans(readPhaseDateValues(plan));
+  if (!isDateWithinAnySpan(date, spans)) return plan;
 
   const existingDay = plan.workCalendar.find((d) => d.date === date);
   const overrideDay: WorkCalendarDay = existingDay
@@ -109,10 +113,9 @@ export function syncPlanWorkCalendarFromCrewPool(
     ? plan.workCalendar.map((d) => (d.date === date ? overrideDay : d))
     : [...plan.workCalendar, overrideDay];
 
-  const workCalendar = reconcileWorkCalendar(
+  const workCalendar = reconcileWorkCalendarForSpans(
     existingOverride,
-    span.start,
-    span.end,
+    spans,
     plan.defaultCrewSize,
   );
 
@@ -130,12 +133,12 @@ export function syncCrewPoolCalendarToPlan(
   crewPoolCalendar: WorkCalendarDay[],
   crewPoolDefaultCrewSize: number,
 ): Plan {
-  const span = getPlanEffectiveSpan(plan);
-  if (!span) return plan;
+  const spans = getWorkCalendarPhaseSpans(readPhaseDateValues(plan));
+  if (spans.length === 0) return plan;
 
   let result = plan;
   for (const day of crewPoolCalendar) {
-    if (day.date < span.start || day.date > span.end) continue;
+    if (!isDateWithinAnySpan(day.date, spans)) continue;
     const effectiveCrew = day.crewSize ?? crewPoolDefaultCrewSize;
     result = syncPlanWorkCalendarFromCrewPool(result, day.date, {
       isWorkDay: day.isWorkDay,

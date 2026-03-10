@@ -9,10 +9,12 @@ export {
   getPrimaryScheduleRange,
   getScheduleDateValidationErrors,
   getScheduleRangeForWorkCalendar,
+  getWorkCalendarPhaseSpans,
   hasAnyPhaseDates,
   hasCompletePhaseDates,
   hasPhaseDatesFor,
   hasPhaseDates,
+  isDateWithinAnySpan,
   isDateWithinSpan,
   readPhaseDateValues,
 } from '../../../lib/planning/scheduling/schedule-span';

@@ -3,10 +3,11 @@ import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive } from '../plan-model';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import {
-  getEffectiveScheduleSpan,
+  generateDefaultWorkCalendarForSpans,
   hasSchedulingCalendar,
   listDateRange,
 } from './work-calendar';
+import { getWorkCalendarPhaseSpans, readPhaseDateValues } from './schedule-span';
 import {
   computeCapacityFromNormalizedInput,
   type NormalizedScheduledEntry,
@@ -63,22 +64,16 @@ function listScheduledDates(start: string, end: string): string[] {
 }
 
 function createPlanCapacityCalendar(plan: Plan): WorkCalendarDay[] {
-  const effectiveSpan = getEffectiveScheduleSpan(plan);
   if (hasSchedulingCalendar(plan)) {
     return plan.workCalendar;
   }
 
-  if (!effectiveSpan) {
+  const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(plan));
+  if (phaseSpans.length === 0) {
     return [];
   }
 
-  return listDateRange(effectiveSpan.start, effectiveSpan.end).map((date) => ({
-    date,
-    isWorkDay: true,
-    accessStart: '08:00',
-    accessEnd: '16:00',
-    crewSize: plan.defaultCrewSize,
-  }));
+  return generateDefaultWorkCalendarForSpans(phaseSpans, plan.defaultCrewSize);
 }
 
 function buildSinglePlanEntries(plan: Plan): {

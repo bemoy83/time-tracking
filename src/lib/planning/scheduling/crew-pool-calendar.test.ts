@@ -5,43 +5,67 @@ import {
   deriveCrewPoolDefaultCrewSize,
 } from './crew-pool-calendar';
 
-function makePlan(id: string, title: string, start: string, end: string, defaultCrewSize: number): Plan {
+function makePlan(
+  id: string,
+  title: string,
+  defaultCrewSize: number,
+  options: {
+    buildUp?: { start: string; end: string };
+    tearDown?: { start: string; end: string };
+  } = {},
+): Plan {
+  const plan = createPlan(title);
   return {
-    ...createPlan(title),
+    ...plan,
     id,
-    eventStartDate: start,
-    eventEndDate: end,
     defaultCrewSize,
+    buildUpStartDate: options.buildUp?.start ?? plan.buildUpStartDate,
+    buildUpEndDate: options.buildUp?.end ?? plan.buildUpEndDate,
+    tearDownStartDate: options.tearDown?.start ?? plan.tearDownStartDate,
+    tearDownEndDate: options.tearDown?.end ?? plan.tearDownEndDate,
   };
 }
 
 describe('crew-pool-calendar', () => {
   it('derives max default crew size across selected plans', () => {
     const plans = [
-      makePlan('a', 'Plan A', '2026-03-01', '2026-03-02', 3),
-      makePlan('b', 'Plan B', '2026-03-03', '2026-03-05', 8),
+      makePlan('a', 'Plan A', 3),
+      makePlan('b', 'Plan B', 8),
     ];
 
     expect(deriveCrewPoolDefaultCrewSize(plans)).toBe(8);
   });
 
-  it('builds a calendar across the union schedule span using weekday defaults', () => {
+  it('builds a calendar across the union of phase windows using weekday defaults', () => {
     const plans = [
-      makePlan('a', 'Plan A', '2026-03-02', '2026-03-03', 2),
-      makePlan('b', 'Plan B', '2026-03-05', '2026-03-06', 6),
+      makePlan('a', 'Plan A', 2, { buildUp: { start: '2026-03-02', end: '2026-03-03' } }),
+      makePlan('b', 'Plan B', 6, { buildUp: { start: '2026-03-05', end: '2026-03-06' } }),
     ];
 
     const calendar = deriveCrewPoolCalendar(plans);
 
     expect(calendar[0].date).toBe('2026-03-02');
     expect(calendar[calendar.length - 1].date).toBe('2026-03-06');
-    expect(calendar).toHaveLength(5);
+    expect(calendar).toHaveLength(4);
     expect(calendar.every((day) => day.isWorkDay)).toBe(true);
+  });
+
+  it('does not fill the gap between build-up and tear-down for a single plan', () => {
+    const plans = [
+      makePlan('a', 'Plan A', 4, {
+        buildUp: { start: '2026-03-02', end: '2026-03-03' },
+        tearDown: { start: '2026-03-06', end: '2026-03-07' },
+      }),
+    ];
+
+    const calendar = deriveCrewPoolCalendar(plans);
+    const dates = calendar.map((day) => day.date);
+    expect(dates).toEqual(['2026-03-02', '2026-03-03', '2026-03-06', '2026-03-07']);
   });
 
   it('preserves existing day overrides when selection changes and calendar is reconciled', () => {
     const plans = [
-      makePlan('a', 'Plan A', '2026-03-02', '2026-03-04', 4),
+      makePlan('a', 'Plan A', 4, { buildUp: { start: '2026-03-02', end: '2026-03-04' } }),
     ];
 
     const existing = [

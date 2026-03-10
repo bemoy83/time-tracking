@@ -3,7 +3,6 @@ import {
   type Plan,
   type PlanLineItem,
   type LineItemExecutionStatus,
-  getPlanEffectiveSpan,
   getPhaseFields,
   getPhaseQuantity,
   isPhaseActive,
@@ -23,7 +22,8 @@ import {
   type PlanPackageLineItemDiffSummary,
   type PlanPackagePayload,
 } from './contracts';
-import { reconcileWorkCalendar } from '../../planning/scheduling/work-calendar';
+import { getWorkCalendarPhaseSpans, readPhaseDateValues } from '../../planning/scheduling/schedule-span';
+import { reconcileWorkCalendarForSpans } from '../../planning/scheduling/work-calendar';
 import {
   isSupportedSchemaVersion,
   unsupportedSchemaVersionMessage,
@@ -308,11 +308,10 @@ function normalizeIncomingPlan(plan: PlanPackagePayload['plan']): Plan {
     tearDownStartDate: plan.tearDownStartDate ?? null,
     tearDownEndDate: plan.tearDownEndDate ?? null,
   };
-  const effectiveSpan = getPlanEffectiveSpan(normalizedDates);
-  const normalizedCalendar = reconcileWorkCalendar(
+  const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(normalizedDates));
+  const normalizedCalendar = reconcileWorkCalendarForSpans(
     normalizedDates.workCalendar ?? [],
-    effectiveSpan?.start ?? null,
-    effectiveSpan?.end ?? null,
+    phaseSpans,
     normalizedDates.defaultCrewSize ?? null,
   );
   return {
@@ -594,7 +593,7 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     tearDownStartDate: incoming.tearDownStartDate ?? null,
     tearDownEndDate: incoming.tearDownEndDate ?? null,
   };
-  const effectiveSpan = getPlanEffectiveSpan(normalizedIncoming);
+  const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(normalizedIncoming));
 
   return {
     ...normalizedIncoming,
@@ -602,10 +601,9 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     importedAt: nowUtc(),
     status: 'received',
     sessionClosedAt: null,
-    workCalendar: reconcileWorkCalendar(
+    workCalendar: reconcileWorkCalendarForSpans(
       normalizedIncoming.workCalendar,
-      effectiveSpan?.start ?? null,
-      effectiveSpan?.end ?? null,
+      phaseSpans,
       normalizedIncoming.defaultCrewSize ?? null,
     ),
     lineItems: mergedItems,

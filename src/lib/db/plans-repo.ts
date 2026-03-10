@@ -1,8 +1,9 @@
-import { getPlanEffectiveSpan, type Plan } from '../planning/plan-model';
+import type { Plan } from '../planning/plan-model';
 import {
-  generateDefaultWorkCalendar,
-  reconcileWorkCalendar,
+  generateDefaultWorkCalendarForSpans,
+  reconcileWorkCalendarForSpans,
 } from '../planning/scheduling/work-calendar';
+import { getWorkCalendarPhaseSpans, readPhaseDateValues } from '../planning/scheduling/schedule-span';
 import { getDB } from './core';
 
 /**
@@ -66,16 +67,15 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.defaultCrewSize = null;
   }
 
-  const effectiveSpan = getPlanEffectiveSpan(raw as unknown as Plan);
+  const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(raw as unknown as Plan));
 
   if (!Array.isArray(raw.workCalendar)) {
-    raw.workCalendar = generateDefaultWorkCalendar(
-      effectiveSpan?.start ?? null,
-      effectiveSpan?.end ?? null,
+    raw.workCalendar = generateDefaultWorkCalendarForSpans(
+      phaseSpans,
       (raw.defaultCrewSize as number | null) ?? null,
     );
   } else {
-    raw.workCalendar = reconcileWorkCalendar(
+    raw.workCalendar = reconcileWorkCalendarForSpans(
       raw.workCalendar as unknown as Array<{
         date: string;
         isWorkDay: boolean;
@@ -83,8 +83,7 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
         accessEnd: string | null;
         crewSize: number | null;
       }>,
-      effectiveSpan?.start ?? null,
-      effectiveSpan?.end ?? null,
+      phaseSpans,
       (raw.defaultCrewSize as number | null) ?? null,
     );
   }

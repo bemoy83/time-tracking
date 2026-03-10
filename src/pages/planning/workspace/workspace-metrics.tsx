@@ -6,6 +6,7 @@ import {
   computeCapacitySummary,
   computeSharedCapacitySummary,
 } from '../../../lib/planning/scheduling/capacity';
+import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import {
   deriveCrewPoolCalendar,
   deriveCrewPoolDefaultCrewSize,
@@ -13,11 +14,11 @@ import {
 import type { ScheduledLineItemRef } from '../../../lib/planning/scheduling/shared-schedule-types';
 import { computePlanProgress } from '../../../lib/planning/plan-progress';
 import {
-  generateDefaultWorkCalendar,
+  generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../../lib/planning/scheduling/work-calendar';
 import {
-  getPrimaryScheduleRange,
+  getWorkCalendarPhaseSpans,
   readPhaseDateValues,
 } from '../schedule/schedule-date-ui';
 import type { Task, TimeEntry } from '../../../lib/types';
@@ -74,6 +75,15 @@ export interface SidebarMetricDescriptor {
   variant?: 'default' | 'risk';
 }
 
+export interface ScheduleCoverageMetric {
+  label: string;
+  scheduledHours: number;
+  unscheduledHours: number;
+  totalHours: number;
+  completionRatio: number;
+  isComplete: boolean;
+}
+
 export const PLACEHOLDER_METRIC: SidebarMetricDescriptor = { value: '—', label: '' };
 
 export type ResolvedMetrics = [SidebarMetricDescriptor, SidebarMetricDescriptor, SidebarMetricDescriptor, SidebarMetricDescriptor];
@@ -125,15 +135,15 @@ export function getGlobalFallbackMetrics(plans: Plan[], tasks: Task[]): SidebarM
 export function getPlanEditorMetrics(plan: Plan): SidebarMetricDescriptor[] {
   const totalPH = planTotalPersonHours(plan);
   const phaseDates = readPhaseDateValues(plan);
-  const primaryRange = getPrimaryScheduleRange(phaseDates, plan.eventStartDate, plan.eventEndDate);
+  const phaseSpans = getWorkCalendarPhaseSpans(phaseDates);
 
   let workDays: number | null = null;
   let headroom: number | null = null;
-  if (primaryRange) {
+  if (plan.workCalendar.length > 0 || phaseSpans.length > 0) {
     const calendar =
       plan.workCalendar.length > 0
         ? plan.workCalendar
-        : generateDefaultWorkCalendar(primaryRange.start, primaryRange.end, plan.defaultCrewSize);
+        : generateDefaultWorkCalendarForSpans(phaseSpans, plan.defaultCrewSize);
     workDays = calendar.filter((d) => d.isWorkDay).length;
     const totalAvailable = calendar.reduce(
       (sum, d) => sum + dayAvailablePersonHours(d, plan.defaultCrewSize),
@@ -161,12 +171,110 @@ export function getPlanEditorMetrics(plan: Plan): SidebarMetricDescriptor[] {
   return metrics;
 }
 
+function round1(value: number): number {
+  return Number(value.toFixed(1));
+}
+
+function formatHoursMetricValue(hours: number): string {
+  const rounded = round1(hours);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function createScheduleCoverageMetric(
+  totalRequiredPersonHours: number,
+  scheduledRequiredPersonHours: number,
+): ScheduleCoverageMetric {
+  const totalHours = Math.max(0, round1(totalRequiredPersonHours));
+  const boundedScheduledHours = Math.max(
+    0,
+    Math.min(totalHours, round1(scheduledRequiredPersonHours)),
+  );
+  const unscheduledHoursRaw = Math.max(0, round1(totalHours - boundedScheduledHours));
+  const unscheduledHours = unscheduledHoursRaw < 0.1 ? 0 : unscheduledHoursRaw;
+  const scheduledHours = round1(totalHours - unscheduledHours);
+  const completionRatio = totalHours <= 0
+    ? 1
+    : Math.max(0, Math.min(1, scheduledHours / totalHours));
+
+  return {
+    label: 'Schedule coverage',
+    scheduledHours,
+    unscheduledHours,
+    totalHours,
+    completionRatio,
+    isComplete: unscheduledHours === 0,
+  };
+}
+
+export function getPlanScheduleCoverageMetric(plan: Plan): ScheduleCoverageMetric {
+  const totalRequiredPersonHours = planTotalPersonHours(plan);
+  const capacity = computeCapacitySummary(plan);
+  return createScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
+}
+
+export function getSharedScheduleCoverageMetric(
+  plans: Plan[],
+  selectedPlanIds: Set<string>,
+  capacityFromView?: Pick<CapacitySummary, 'totalRequiredPersonHours'> | null,
+): ScheduleCoverageMetric | null {
+  const selectablePlans = plans.filter(isPlanInPlannerState);
+  const selected = selectablePlans.filter((p) => selectedPlanIds.has(p.id));
+  if (selected.length === 0) return null;
+
+  const totalRequiredPersonHours = selected.reduce(
+    (sum, plan) => sum + planTotalPersonHours(plan),
+    0,
+  );
+
+  if (capacityFromView) {
+    return createScheduleCoverageMetric(
+      totalRequiredPersonHours,
+      capacityFromView.totalRequiredPersonHours,
+    );
+  }
+
+  const calendar = deriveCrewPoolCalendar(selected);
+  const defaultCrewSize = deriveCrewPoolDefaultCrewSize(selected);
+  const lineItems: ScheduledLineItemRef[] = selected.flatMap((plan) =>
+    plan.lineItems.map((item) => ({
+      planId: plan.id,
+      lineItemId: item.id,
+      plan,
+      item,
+      readOnly: isPlanArchived(plan),
+    })),
+  );
+  const capacity = computeSharedCapacitySummary({
+    calendar,
+    defaultCrewSize,
+    lineItems,
+  });
+  return createScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
+}
+
 export function getScheduleViewMetrics(plan: Plan): SidebarMetricDescriptor[] {
   const cap = computeCapacitySummary(plan);
+  const coverage = getPlanScheduleCoverageMetric(plan);
   return [
-    { value: cap.scheduledLineItemCount, label: 'Scheduled items', icon: <CheckIcon />, iconVariant: 'tasks' },
-    { value: cap.unscheduledLineItemCount, label: 'Unscheduled', icon: <TaskListIcon />, iconVariant: 'estimate' },
-    { value: Math.round(cap.totalAvailablePersonHours), label: 'Available hrs', icon: <ClockIcon />, iconVariant: 'time' },
+    {
+      value: formatHoursMetricValue(coverage.scheduledHours),
+      label: 'Scheduled hrs',
+      icon: <CheckIcon />,
+      iconVariant: 'done',
+    },
+    {
+      value: formatHoursMetricValue(coverage.unscheduledHours),
+      label: 'Unscheduled hrs',
+      icon: <TaskListIcon />,
+      iconVariant: 'estimate',
+      variant: coverage.unscheduledHours > 0 ? 'risk' : 'default',
+    },
+    {
+      value: formatHoursMetricValue(cap.totalAvailablePersonHours),
+      label: 'Available hrs',
+      icon: <ClockIcon />,
+      iconVariant: 'time',
+    },
     {
       value: cap.overAllocatedDayCount,
       label: 'Over-allocated days',
@@ -209,9 +317,12 @@ export function getSharedScheduleMetrics(
   const totalItems = selected.reduce((sum, p) => sum + p.lineItems.length, 0);
   const totalPH = selected.reduce((sum, p) => sum + planTotalPersonHours(p), 0);
 
+  let scheduledRequiredHours = 0;
+
   // Use capacity from main view when provided (matches FeasibilityBar); otherwise derive
   let utilizationMetric = createUtilizationMetric(null);
   if (capacityFromView && capacityFromView.totalAvailablePersonHours > 0) {
+    scheduledRequiredHours = capacityFromView.totalRequiredPersonHours;
     utilizationMetric = createUtilizationMetric(capacityFromView);
   } else if (selected.length > 0) {
     const calendar = deriveCrewPoolCalendar(selected);
@@ -230,16 +341,30 @@ export function getSharedScheduleMetrics(
       defaultCrewSize,
       lineItems,
     });
+    scheduledRequiredHours = cap.totalRequiredPersonHours;
     utilizationMetric = createUtilizationMetric({
       totalRequiredPersonHours: cap.totalRequiredPersonHours,
       totalAvailablePersonHours: cap.totalAvailablePersonHours,
     });
   }
+  const unscheduledHours = Math.max(0, totalPH - scheduledRequiredHours);
 
   return [
     { value: selectedPlanIds.size, label: 'Selected plans', icon: <CheckIcon />, iconVariant: 'tasks' },
-    { value: totalItems, label: 'Line items', icon: <TaskListIcon />, iconVariant: 'estimate' },
-    { value: Math.round(totalPH), label: 'Person-hrs', icon: <ClockIcon />, iconVariant: 'time' },
+    {
+      value: formatHoursMetricValue(scheduledRequiredHours),
+      label: 'Scheduled hrs',
+      icon: <CheckIcon />,
+      iconVariant: 'done',
+    },
+    {
+      value: formatHoursMetricValue(unscheduledHours),
+      label: 'Unscheduled hrs',
+      icon: <TaskListIcon />,
+      iconVariant: 'estimate',
+      variant: unscheduledHours > 0 ? 'risk' : 'default',
+      meta: `${totalItems} line items`,
+    },
     utilizationMetric,
   ];
 }
