@@ -327,11 +327,11 @@ export function PlanEditor({
     : null;
   const overviewHelperText = readOnly
     ? reviewedDateLabel
-      ? `This plan is archived (reviewed ${reviewedDateLabel}).`
-      : 'This plan is archived.'
+      ? `This plan is archived (reviewed ${reviewedDateLabel}) with its project/event linkage preserved.`
+      : 'This plan is archived with its project/event linkage preserved.'
     : isLocked
-      ? 'Track progress and keep assignments aligned with live execution.'
-      : 'Set project and schedule inputs to prepare this plan for scheduling.';
+      ? 'This plan is tied to a live project/event. Keep work packages aligned with actual execution.'
+      : 'Assign the target project/event first so all work packages roll up to real project delivery.';
   const statusHelperText = (() => {
     switch (currentPlan.status) {
       case 'draft':
