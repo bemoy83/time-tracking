@@ -11,13 +11,13 @@
 /* Schedule inputs makeover (sticky summary + schedule view) */
 .planning-view__sticky-summary .planning-view__schedule-inputs,
 .schedule-view .planning-view__schedule-inputs {
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .planning-view__sticky-summary .planning-view__schedule-inputs {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-group {
@@ -43,12 +43,12 @@
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-group-title {
-  font-size: var(--font-small);
+  font-size: var(--font-caption);
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--color-text);
-  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
   padding: 0;
 }
 
@@ -73,28 +73,33 @@
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-group-grid {
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input {
-  gap: 6px;
+  gap: 4px;
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-label-text {
-  font-size: var(--font-small);
+  font-size: var(--font-caption);
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input .input {
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: var(--font-small);
   background: var(--color-bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input .input:focus-visible {
+  outline: none;
   border-color: var(--color-primary);
 }
 

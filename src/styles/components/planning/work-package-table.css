@@ -336,28 +336,6 @@
   border: none;
 }
 
-.planning-view__wp-add-bar-header {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.planning-view__wp-add-bar-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--color-primary);
-  flex-shrink: 0;
-}
-
-.planning-view__wp-add-bar-heading {
-  margin: 0;
-  font-size: var(--font-caption);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
 .planning-view__wp-add-bar-help {
   margin: 0;
   font-size: var(--font-caption);

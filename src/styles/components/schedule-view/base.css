@@ -101,3 +101,11 @@
   font-weight: 400;
   color: var(--color-text-muted);
 }
+
+.schedule-view__block-helper {
+  margin: 0;
+  max-width: 72ch;
+  font-size: var(--font-caption);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}

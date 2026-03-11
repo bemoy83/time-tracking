@@ -30,7 +30,6 @@ import {
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
   getWorkCalendarPhaseSpans,
-  hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -61,8 +60,6 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const phaseDates = readPhaseDateValues(currentPlan);
-  const showPhaseHint =
-    !hasPhaseDatesFor(phaseDates, 'build-up') && !hasPhaseDatesFor(phaseDates, 'tear-down');
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -267,7 +264,6 @@ export function ScheduleView({
         dayCount={currentPlan.workCalendar.length}
         crewSize={currentPlan.defaultCrewSize ?? null}
         totalAvailable={capacity.totalAvailablePersonHours}
-        phaseHint={showPhaseHint}
       >
         <PlanScheduleInputs
           buildUpStartDate={phaseDates.buildUpStartDate}

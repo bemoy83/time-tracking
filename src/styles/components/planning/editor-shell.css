@@ -420,6 +420,27 @@
   gap: var(--space-xs);
 }
 
+.planning-view--editor .schedule-view__block-header {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--space-xs);
+}
+
+.planning-view--editor .schedule-view__block-title {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.planning-view--editor .schedule-view__block-summary {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
 @media (min-width: 1200px) {
   .planning-workspace__editor-canvas .planning-view--editor {
     gap: var(--space-md);

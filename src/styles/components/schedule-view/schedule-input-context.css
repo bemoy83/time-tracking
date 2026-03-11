@@ -7,7 +7,7 @@
 
 .schedule-view .schedule-view__block--compact,
 .planning-view__sticky-summary .schedule-view__block--compact {
-  background: var(--color-surface-subtle);
+  background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
   padding: var(--space-md);
 }

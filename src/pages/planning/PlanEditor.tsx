@@ -28,7 +28,7 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
-import { ChevronIcon, ChevronLeftIcon, PlusIcon, WarningIcon } from '../../components/icons';
+import { ChevronIcon, ChevronLeftIcon, WarningIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -41,7 +41,6 @@ import {
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
   getWorkCalendarPhaseSpans,
-  hasPhaseDatesFor,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 
@@ -97,8 +96,6 @@ export function PlanEditor({
   }, [plan.id]);
 
   const phaseDates = readPhaseDateValues(currentPlan);
-  const showPhaseHint =
-    !hasPhaseDatesFor(phaseDates, 'build-up') && !hasPhaseDatesFor(phaseDates, 'tear-down');
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
     currentPlan.eventStartDate,
@@ -566,7 +563,6 @@ export function PlanEditor({
             dayCount={availableScope?.workDayCount ?? 0}
             crewSize={currentPlan.defaultCrewSize ?? null}
             totalAvailable={availableScope?.totalAvailable ?? 0}
-            phaseHint={showPhaseHint}
           >
             <PlanScheduleInputs
               buildUpStartDate={phaseDates.buildUpStartDate}
@@ -599,13 +595,9 @@ export function PlanEditor({
           {canAddWorkPackages && (
             <div className="planning-view__wp-add-zone">
               <div className="planning-view__wp-add-bar">
-                <div className="planning-view__wp-add-bar-header">
-                  <PlusIcon className="planning-view__wp-add-bar-icon" aria-hidden="true" />
-                  <p className="planning-view__wp-add-bar-heading">Add Work Package</p>
-                </div>
                 <p className="planning-view__wp-add-bar-help">
-                  Rate is derived from selected work type by default. Use the &quot;Magic&quot; row
-                  button to prefill crew and hours from schedule inputs.
+                  List the work needed for this project/event. Start with title, type, and
+                  quantity, then adjust details in the table below.
                 </p>
 
                 <div className="planning-view__wp-add-bar-fields">

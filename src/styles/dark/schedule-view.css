@@ -15,7 +15,7 @@
 }
 
 :is(.planning-view__sticky-summary .schedule-view__block, .schedule-view) .planning-view__schedule-input .input {
-  background: var(--surface-contained-hover);
+  background: var(--surface-elevated-bg);
   border-color: transparent;
   color: var(--color-text);
 }
