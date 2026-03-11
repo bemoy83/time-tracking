@@ -5,6 +5,7 @@ import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package'
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
+import { lazyMigrateCrewByDate } from '../../lib/planning/scheduling/plan-schedule-update';
 import { applyBulkScheduleAmendment, applyScheduleAmendment, type BulkScheduleAmendmentChange } from '../../lib/planning/scheduling/amendments';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import type { BuildPhase } from '../../lib/types';
@@ -157,18 +158,20 @@ export function ScheduleView({
       const currentLineItem = prev.lineItems.find((item) => item.id === lineItem.id);
       if (!currentLineItem) return prev;
       const pf = getPhaseFields(currentLineItem, phase);
-      const nextSpan = toggleAssignmentDate(pf, date);
+      const migrated = lazyMigrateCrewByDate(pf, prev.workCalendar);
+      const result = toggleAssignmentDate({ ...pf, crewByDate: migrated }, date);
       if (prev.status === 'active') {
         return applyScheduleAmendment(
           prev,
           currentLineItem,
           phase,
-          nextSpan.scheduledStart,
-          nextSpan.scheduledEnd,
+          result.span.scheduledStart,
+          result.span.scheduledEnd,
           amendmentNote,
+          result.crewByDate,
         );
       }
-      return updateLineItemAssignment(prev, currentLineItem.id, phase, nextSpan);
+      return updateLineItemAssignment(prev, currentLineItem.id, phase, result.span, result.crewByDate);
     });
     trackTelemetryEvent('schedule_assignment_edit');
   };

@@ -339,7 +339,8 @@ export function getEffectiveCrewForDate(
   const pf = getPhaseFields(item, phase);
   if (!pf.scheduledStart || !pf.scheduledEnd) return 0;
   if (date < pf.scheduledStart || date > pf.scheduledEnd) return 0;
-  return pf.crewByDate?.[date] ?? pf.crew;
+  if (pf.crewByDate) return pf.crewByDate[date] ?? 0;
+  return pf.crew;
 }
 
 /**

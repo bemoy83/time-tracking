@@ -1,5 +1,5 @@
 import type { BuildPhase } from '../../types';
-import type { Plan, WorkCalendarDay } from '../plan-model';
+import type { PhaseFields, Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
 import type { ScheduleSpan } from './assignment';
 import { listDateRange, reconcileWorkCalendarForSpans } from './work-calendar';
@@ -9,6 +9,31 @@ import {
   readPhaseDateValues,
   type PhaseDateField,
 } from './schedule-span';
+
+/**
+ * Lazy migration: if crewByDate is undefined and a span exists, populate it
+ * from pf.crew for all work days in the span. Returns undefined if no span.
+ */
+export function lazyMigrateCrewByDate(
+  pf: Pick<PhaseFields, 'scheduledStart' | 'scheduledEnd' | 'crewByDate' | 'crew'>,
+  workCalendar: WorkCalendarDay[],
+): Record<string, number> | undefined {
+  if (pf.crewByDate) return pf.crewByDate;
+  if (!pf.scheduledStart || !pf.scheduledEnd) return undefined;
+
+  const allDates = listDateRange(pf.scheduledStart, pf.scheduledEnd);
+  const workDaySet =
+    workCalendar.length > 0
+      ? new Set(workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
+      : null;
+  const migrated: Record<string, number> = {};
+  for (const date of allDates) {
+    if (!workDaySet || workDaySet.has(date)) {
+      migrated[date] = pf.crew;
+    }
+  }
+  return migrated;
+}
 
 export function normalizeDefaultCrewSize(value: string): number | null {
   if (value.trim() === '') return null;
@@ -162,11 +187,10 @@ export function updateLineItemAssignment(
   lineItemId: string,
   phase: BuildPhase,
   nextSpan: ScheduleSpan,
+  toggleCrewByDate?: Record<string, number> | undefined,
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
-
-  const pf = getPhaseFields(item, phase);
 
   if (!nextSpan.scheduledStart || !nextSpan.scheduledEnd) {
     return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
@@ -176,6 +200,17 @@ export function updateLineItemAssignment(
     }));
   }
 
+  // When crewByDate is provided directly from toggle, use it as-is
+  if (toggleCrewByDate !== undefined) {
+    return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
+      scheduledStart: nextSpan.scheduledStart,
+      scheduledEnd: nextSpan.scheduledEnd,
+      crewByDate: toggleCrewByDate,
+    }));
+  }
+
+  // Legacy path: rebuild crewByDate from span (used by non-toggle callers)
+  const pf = getPhaseFields(item, phase);
   const allDates = listDateRange(nextSpan.scheduledStart, nextSpan.scheduledEnd);
   const workDaySet =
     plan.workCalendar.length > 0
@@ -201,6 +236,10 @@ export function updateLineItemAssignment(
 /**
  * Update crew count for a specific line item on a specific date for a specific phase.
  * Non-work days are never stored; if date is non-work, its entry is removed from crewByDate.
+ *
+ * @param workDayCalendarOverride - When provided (e.g. shared schedule crew pool), use this
+ * for the work-day check instead of plan.workCalendar. Allows crew changes on days the
+ * shared calendar marks as work days even when the plan's calendar has not been synced.
  */
 export function updateLineItemCrewForDate(
   plan: Plan,
@@ -208,16 +247,20 @@ export function updateLineItemCrewForDate(
   phase: BuildPhase,
   date: string,
   crew: number,
+  workDayCalendarOverride?: WorkCalendarDay[],
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
 
   const pf = getPhaseFields(item, phase);
 
+  const calendar =
+    workDayCalendarOverride && workDayCalendarOverride.length > 0
+      ? workDayCalendarOverride
+      : plan.workCalendar;
   const isWorkDay =
-    plan.workCalendar.length > 0
-      ? plan.workCalendar.some((d) => d.date === date && d.isWorkDay)
-      : true;
+    calendar.length > 0 ? calendar.some((d) => d.date === date && d.isWorkDay) : true;
+
   const existing = { ...(pf.crewByDate ?? {}) };
   if (isWorkDay) {
     existing[date] = Math.max(0, Math.floor(crew));

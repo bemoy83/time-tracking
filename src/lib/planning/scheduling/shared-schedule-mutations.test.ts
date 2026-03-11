@@ -50,4 +50,33 @@ describe('shared-schedule-mutations', () => {
 
     expect(pf.crewByDate?.['2026-03-02']).toBe(5);
   });
+
+  it('allows crew change on weekend when crew pool calendar overrides plan work calendar', () => {
+    // Plan has Saturday as non-work (plan.workCalendar blocks crew changes)
+    const plan = createPlan('Shared Plan');
+    plan.status = 'draft';
+    plan.defaultCrewSize = 4;
+    plan.buildUpStartDate = '2026-03-02';
+    plan.buildUpEndDate = '2026-03-07'; // includes Sat Mar 7
+    plan.workCalendar = [
+      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      { date: '2026-03-07', isWorkDay: false, accessStart: null, accessEnd: null, crewSize: null }, // Saturday off
+    ];
+    const item = createLineItem('Item', 'Item', 'pcs', 8, 1, 0);
+    item.buildUpScheduledStart = '2026-03-02';
+    item.buildUpScheduledEnd = '2026-03-07';
+    item.buildUpCrewByDate = { '2026-03-02': 1, '2026-03-07': 1 };
+    plan.lineItems = [item];
+
+    // Crew pool has Saturday as work day (user toggled weekends on)
+    const crewPoolCalendar = [
+      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      { date: '2026-03-07', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+    ];
+
+    const updated = setSharedCrewForDate(plan, item.id, 'build-up', '2026-03-07', 3, crewPoolCalendar);
+    const pf = getPhaseFields(updated.lineItems[0]!, 'build-up');
+
+    expect(pf.crewByDate?.['2026-03-07']).toBe(3);
+  });
 });

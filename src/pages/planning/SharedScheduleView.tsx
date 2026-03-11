@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BuildPhase, Project } from '../../lib/types';
 import type { Plan, PlanLineItem, WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
@@ -20,6 +20,14 @@ import {
   syncPlanWorkCalendarFromCrewPool,
   syncCrewPoolCalendarToPlan,
 } from '../../lib/planning/scheduling/plan-schedule-update';
+import {
+  applyBulkScheduleAmendment,
+  type BulkScheduleAmendmentChange,
+} from '../../lib/planning/scheduling/amendments';
+import {
+  runSharedAutoSchedule,
+  type SharedAutoScheduleReport,
+} from '../../lib/planning/scheduling/shared-auto-schedule';
 import type { ScheduledLineItemRef } from '../../lib/planning/scheduling/shared-schedule-types';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
@@ -47,6 +55,10 @@ function mapKey(planId: string, lineItemId: string): string {
   return `${planId}:${lineItemId}`;
 }
 
+function toPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 function normalizeCrew(value: string): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -62,6 +74,7 @@ export function SharedScheduleView({
 }: SharedScheduleViewProps) {
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
+  const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
 
   const selectablePlans = useMemo(
     () => plans.filter(isPlanInPlannerState),
@@ -106,6 +119,8 @@ export function SharedScheduleView({
     [selectedPlans],
   );
 
+  const lastSyncedCrewPoolKeyRef = useRef<string | null>(null);
+
   const derivedDefaultCrewSize = useMemo(
     () => deriveCrewPoolDefaultCrewSize(selectedPlans),
     [selectedPlans],
@@ -122,15 +137,28 @@ export function SharedScheduleView({
     if (stored) {
       setCrewPoolDefaultCrewSize(stored.defaultCrewSize);
       setCrewPoolCalendar(stored.calendar);
+      // Sync stored overrides (e.g. weekend toggles) to plans so plan.workCalendar
+      // matches the crew pool. Without this, plans block allocation on days the
+      // crew pool marks as work days.
+      if (lastSyncedCrewPoolKeyRef.current !== crewPoolSourceKey) {
+        lastSyncedCrewPoolKeyRef.current = crewPoolSourceKey;
+        for (const plan of selectedPlans) {
+          if (isPlanArchived(plan)) continue;
+          applyPlanMutation(plan.id, (p) =>
+            syncCrewPoolCalendarToPlan(p, stored.calendar, stored.defaultCrewSize),
+          );
+        }
+      }
       return;
     }
 
+    lastSyncedCrewPoolKeyRef.current = null;
     setCrewPoolDefaultCrewSize(derivedDefaultCrewSize);
     setCrewPoolCalendar((prev) => deriveCrewPoolCalendar(selectedPlans, {
       defaultCrewSize: derivedDefaultCrewSize,
       existingCalendar: prev.length > 0 ? prev : undefined,
     }));
-  }, [crewPoolSourceKey, derivedDefaultCrewSize, selectedPlans.length]);
+  }, [crewPoolSourceKey, derivedDefaultCrewSize, selectedPlans, selectedPlans.length]);
 
   useEffect(() => {
     if (selectedPlans.length === 0 || crewPoolCalendar.length === 0) return;
@@ -221,10 +249,14 @@ export function SharedScheduleView({
     date: string,
     crew: number,
   ) => {
-    if (applyPlanMutation(planId, (plan) => setSharedCrewForDate(plan, lineItemId, phase, date, crew))) {
+    if (
+      applyPlanMutation(planId, (plan) =>
+        setSharedCrewForDate(plan, lineItemId, phase, date, crew, crewPoolCalendar),
+      )
+    ) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
-  }, [applyPlanMutation]);
+  }, [applyPlanMutation, crewPoolCalendar]);
 
   const handleDefaultCrewSizeChange = (value: string) => {
     const newCrew = normalizeCrew(value);
@@ -256,6 +288,82 @@ export function SharedScheduleView({
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
   };
 
+  const handleAutoScheduleShared = () => {
+    // Only schedule non-archived plans
+    const mutablePlans = selectedPlans.filter((plan) => !isPlanArchived(plan));
+    if (mutablePlans.length === 0) return;
+
+    const { planUpdatesById, report } = runSharedAutoSchedule({
+      plans: mutablePlans,
+      calendar: crewPoolCalendar,
+      defaultCrewSize: crewPoolDefaultCrewSize,
+    });
+
+    if (report.changed.length === 0) {
+      setAssistantReport(report);
+      return;
+    }
+
+    // Check if any active plans were changed — require one global amendment note
+    const changedPlanIds = new Set(report.changed.map((row) => row.planId));
+    const hasActivePlanChanges = mutablePlans.some(
+      (plan) => plan.status === 'active' && changedPlanIds.has(plan.id),
+    );
+
+    let amendmentNote: string | null = null;
+    if (hasActivePlanChanges) {
+      const note = window.prompt('Shared assistant run amendment note (required for active plans):', '');
+      if (note == null) return;
+      if (note.trim().length === 0) {
+        window.alert('Amendment note is required for assistant runs affecting active plans.');
+        return;
+      }
+      amendmentNote = note.trim();
+    }
+
+    // Group changes by planId
+    const changesByPlanId = new Map<string, BulkScheduleAmendmentChange[]>();
+    for (const row of report.changed) {
+      const existing = changesByPlanId.get(row.planId) ?? [];
+      existing.push({
+        lineItemId: row.lineItemId,
+        phase: row.phase,
+        scheduledStart: row.scheduledStart,
+        scheduledEnd: row.scheduledEnd,
+      });
+      changesByPlanId.set(row.planId, existing);
+    }
+
+    // Apply mutations plan-by-plan
+    for (const plan of mutablePlans) {
+      const updatedPlan = planUpdatesById.get(plan.id);
+      if (!updatedPlan || updatedPlan === plan) continue;
+
+      const planChanges = changesByPlanId.get(plan.id);
+      if (plan.status === 'active' && planChanges && planChanges.length > 0 && amendmentNote) {
+        // Apply bulk amendment with note for active plans
+        applyPlanMutation(plan.id, () =>
+          applyBulkScheduleAmendment(plan, updatedPlan, planChanges, amendmentNote),
+        );
+      } else {
+        // Draft/reviewed plans: apply schedule changes directly
+        applyPlanMutation(plan.id, () => updatedPlan);
+      }
+    }
+
+    setAssistantReport(report);
+    trackTelemetryEvent('shared_schedule_assignment_edit');
+    trackTelemetryEvent('shared_schedule_assistant_run', {
+      changed_count: report.changed.length,
+      changed_plan_count: changedPlanIds.size,
+      unresolved_count: report.unresolved.length,
+      coverage_ratio_before: report.before.coverageRatio,
+      coverage_ratio_after: report.after.coverageRatio,
+      over_capacity_days_before: report.before.overCapacityDays,
+      over_capacity_days_after: report.after.overCapacityDays,
+    });
+  };
+
   return (
     <div className="planning-view schedule-view">
       <header className="planning-view__editor-header">
@@ -272,6 +380,19 @@ export function SharedScheduleView({
         <>
           <FeasibilityBar capacity={capacity} />
           <ConflictResolutionBanner capacity={capacity} />
+            {assistantReport && (
+              <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
+                <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
+                <p className="schedule-view__muted">
+                  {assistantReport.changed.length} updated across {new Set(assistantReport.changed.map((r) => r.planId)).size} plan{new Set(assistantReport.changed.map((r) => r.planId)).size === 1 ? '' : 's'} · {assistantReport.unresolved.length} unresolved
+                </p>
+                <p className="schedule-view__muted">
+                  Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+                  {' · '}
+                  Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+                </p>
+              </section>
+            )}
 
           <section className="schedule-view__block schedule-view__block--compact schedule-view__block--row">
             <h3 className="schedule-view__block-title">Crew Pool</h3>
@@ -308,6 +429,7 @@ export function SharedScheduleView({
             planTitleByPlanId={planTitleByPlanId}
             projectNameByPlanId={selectedProjectNamesByPlanId}
             itemByCompositeId={itemByCompositeId}
+              onAutoSchedule={handleAutoScheduleShared}
             onToggleAssignment={handleToggleAssignment}
             onCrewForDateChange={handleCrewForDateChange}
           />

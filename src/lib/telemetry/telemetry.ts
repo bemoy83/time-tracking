@@ -38,6 +38,7 @@ export type TelemetryEventName =
   | 'shared_schedule_plan_selection_change'
   | 'shared_schedule_crew_pool_edit'
   | 'shared_schedule_assignment_edit'
+  | 'shared_schedule_assistant_run'
   | 'schedule_calendar_edit'
   | 'schedule_assignment_edit'
   | 'schedule_assistant_run'

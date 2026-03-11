@@ -25,6 +25,7 @@ export function applyScheduleAmendment(
   nextScheduledStart: string | null,
   nextScheduledEnd: string | null,
   amendmentNote: string | null,
+  overrideCrewByDate?: Record<string, number> | undefined,
 ): Plan {
   const pf = getPhaseFields(lineItem, phase);
 
@@ -56,8 +57,10 @@ export function applyScheduleAmendment(
       }
 
       // Update crewByDate when span changes — only store work days to avoid orphaned non-work entries
-      let nextCrewByDate = pf.crewByDate;
-      if (nextScheduledStart && nextScheduledEnd) {
+      let nextCrewByDate: Record<string, number> | undefined = pf.crewByDate;
+      if (overrideCrewByDate !== undefined) {
+        nextCrewByDate = overrideCrewByDate;
+      } else if (nextScheduledStart && nextScheduledEnd) {
         const allDates = listDateRange(nextScheduledStart, nextScheduledEnd);
         const workDaySet =
           plan.workCalendar.length > 0

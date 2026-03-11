@@ -385,7 +385,7 @@ function schedulePhase(
       if (!pf.scheduledStart || !pf.scheduledEnd) continue;
       for (const [date, dayState] of dayStateMap) {
         if (date < pf.scheduledStart || date > pf.scheduledEnd) continue;
-        const crew = pf.crewByDate?.[date] ?? pf.crew;
+        const crew = pf.crewByDate ? (pf.crewByDate[date] ?? 0) : pf.crew;
         dayState.remainingCrew -= crew;
       }
     }

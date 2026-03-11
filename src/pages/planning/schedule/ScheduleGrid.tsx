@@ -64,6 +64,7 @@ interface SharedScheduleGridProps {
   planTitleByPlanId: Map<string, string>;
   projectNameByPlanId: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
+  onAutoSchedule?: () => void;
   onToggleAssignment: (
     planId: string,
     lineItemId: string,
@@ -118,6 +119,41 @@ export function getSchedulableUnscheduledPhaseRowCount(
       (day) => day.date >= phaseRange.start && day.date <= phaseRange.end,
     );
   }).length;
+}
+
+export function getSharedSchedulableUnscheduledCount(
+  rows: SharedScheduleRow[],
+  calendar: WorkCalendarDay[],
+  phaseDatesByPlanId: Map<string, PhaseDateValues>,
+  itemByCompositeId: Map<string, PlanLineItem>,
+): number {
+  const workDays = calendar.filter((d) => d.isWorkDay);
+  let count = 0;
+
+  for (const row of rows) {
+    if (row.type !== 'item') continue;
+    const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
+    if (!item) continue;
+
+    const pf = getPhaseFields(item, row.phase);
+    if (pf.scheduledStart != null && pf.scheduledEnd != null) continue;
+
+    const requiredPH = resolveRequiredPersonHoursForPhase(item, row.phase, 'time_hours_first');
+    if (requiredPH == null || requiredPH <= 0) continue;
+
+    const rowPhaseDates = phaseDatesByPlanId.get(row.planId);
+    const phaseRange = rowPhaseDates ? getPhaseRange(rowPhaseDates, row.phase) : null;
+    if (!phaseRange) {
+      if (workDays.length > 0) count += 1;
+      continue;
+    }
+
+    if (workDays.some((day) => day.date >= phaseRange.start && day.date <= phaseRange.end)) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 function getUnscheduledPhaseRowCount(lineItems: PlanLineItem[]): number {
@@ -325,6 +361,7 @@ function SharedScheduleGrid({
   planTitleByPlanId,
   projectNameByPlanId,
   itemByCompositeId,
+  onAutoSchedule,
   onToggleAssignment,
   onCrewForDateChange,
 }: SharedScheduleGridProps) {
@@ -334,8 +371,14 @@ function SharedScheduleGrid({
   );
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(280px, 1.6fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
+  const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
+
+  const schedulableUnscheduledCount = useMemo(
+    () => getSharedSchedulableUnscheduledCount(rows, calendar, phaseDatesByPlanId, itemByCompositeId),
+    [rows, calendar, phaseDatesByPlanId, itemByCompositeId],
+  );
 
   const projectPhaseIds = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -481,6 +524,9 @@ function SharedScheduleGrid({
             dayByDate={dayByDate}
             gridColumns={gridColumns}
             label="Shared crew pool"
+              onAutoSchedule={onAutoSchedule}
+              unscheduledCount={schedulableUnscheduledCount}
+              hasWorkDays={workDays.length > 0}
           />
 
           <div className="schedule-grid__body">
