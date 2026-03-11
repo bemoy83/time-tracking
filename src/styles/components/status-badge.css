@@ -19,7 +19,7 @@
 }
 
 .status-badge--draft {
-  background: var(--color-amber);
+  background: var(--status-badge-draft-bg);
   color: white;
 }
 

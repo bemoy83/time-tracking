@@ -154,6 +154,9 @@
   --color-primary-bg-badge: var(--state-info-bg-strong);
   --color-recording-bg-badge: var(--state-danger-bg);
   --color-muted-bg-badge: var(--state-neutral-bg);
+
+  /* Status badge draft — darker amber for WCAG AA (4.5:1) with white text */
+  --status-badge-draft-bg: #b45309;
 }
 
 /* High contrast mode support */
