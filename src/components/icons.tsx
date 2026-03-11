@@ -209,10 +209,13 @@ export function XIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps
   );
 }
 
+/** Sparkles — multiple stars for a more magical feel. */
 export function SparklesIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden={ariaHidden}>
       <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
+      <path d="M19 3l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z" opacity="0.8" />
+      <path d="M5 17l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z" opacity="0.8" />
     </svg>
   );
 }

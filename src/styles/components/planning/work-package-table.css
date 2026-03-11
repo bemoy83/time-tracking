@@ -177,20 +177,32 @@
 .planning-view__wp-actions-col {
   width: 104px;
   min-width: 104px;
+  vertical-align: top;
+}
+
+.planning-view__wp-actions-col-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  min-height: calc(var(--wp-group-header-height) + 36px);
+}
+
+.planning-view__wp-actions-col-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+.planning-view__wp-batch-apply {
+  margin-right: -4px;
 }
 
 .planning-view__wp-cell {
   height: 46px;
   background: transparent;
   transition: background-color 0.15s ease;
-}
-
-.planning-view__wp-row:hover .planning-view__wp-cell {
-  background: var(--surface-contained-hover);
-}
-
-.planning-view__wp-row:hover .planning-view__wp-phase-cell {
-  background: var(--wp-phase-bg-hover);
 }
 
 .planning-view__work-package-table tbody tr:not(:last-child) .planning-view__wp-cell {
@@ -280,12 +292,10 @@
   background: var(--wp-phase-bg-hover);
 }
 
-.planning-view__wp-row:hover .planning-view__wp-phase-cell--buildup,
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--buildup {
   background: var(--wp-phase-buildup-bg-hover);
 }
 
-.planning-view__wp-row:hover .planning-view__wp-phase-cell--teardown,
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--teardown {
   background: var(--wp-phase-teardown-bg-hover);
 }

@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronIcon } from '../../../components/icons';
-import type { Plan, PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
 import { getPhaseFields, isPhaseActive } from '../../../lib/planning/plan-model';
-import { getPhaseWorkDayCount } from '../../../lib/planning/plan-suggestions';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
 import { computeSharedRowAggregates } from '../../../lib/planning/scheduling/shared-row-aggregates';
+import { resolveRequiredPersonHoursForPhase } from '../../../lib/planning/scheduling/auto-schedule';
 import {
   BUILD_PHASE_LABELS,
   BUILD_PHASES,
@@ -45,7 +45,6 @@ function groupByPhase(lineItems: PlanLineItem[]): PhaseGroup[] {
 
 interface SingleScheduleGridProps {
   mode?: 'single';
-  plan: Plan;
   lineItems: PlanLineItem[];
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
@@ -87,8 +86,53 @@ function mapKey(planId: string, lineItemId: string): string {
   return `${planId}:${lineItemId}`;
 }
 
+interface PhaseRowCandidate {
+  item: PlanLineItem;
+  phase: BuildPhase;
+}
+
+export function getSchedulableUnscheduledPhaseRowCount(
+  lineItems: PlanLineItem[],
+  phaseDates: PhaseDateValues,
+  workDays: WorkCalendarDay[],
+): number {
+  const phaseRows: PhaseRowCandidate[] = [];
+  for (const item of lineItems) {
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      phaseRows.push({ item, phase });
+    }
+  }
+
+  return phaseRows.filter(({ item, phase }) => {
+    const pf = getPhaseFields(item, phase);
+    if (pf.scheduledStart != null && pf.scheduledEnd != null) return false;
+
+    const requiredPH = resolveRequiredPersonHoursForPhase(item, phase, 'time_hours_first');
+    if (requiredPH == null || requiredPH <= 0) return false;
+
+    const phaseRange = getPhaseRange(phaseDates, phase);
+    if (!phaseRange) return workDays.length > 0;
+
+    return workDays.some(
+      (day) => day.date >= phaseRange.start && day.date <= phaseRange.end,
+    );
+  }).length;
+}
+
+function getUnscheduledPhaseRowCount(lineItems: PlanLineItem[]): number {
+  let count = 0;
+  for (const item of lineItems) {
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      const pf = getPhaseFields(item, phase);
+      if (pf.scheduledStart == null || pf.scheduledEnd == null) count += 1;
+    }
+  }
+  return count;
+}
+
 function SingleScheduleGrid({
-  plan,
   lineItems,
   calendar,
   capacity,
@@ -104,37 +148,14 @@ function SingleScheduleGrid({
   );
   const hasPhaseWindows = hasCompletePhaseDates(phaseDates);
   const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
-  const unscheduled = lineItems.filter((item) => {
-    // An item is unscheduled if no active phase has scheduling
-    return BUILD_PHASES.every((phase) => {
-      if (!isPhaseActive(item, phase)) return true;
-      const pf = getPhaseFields(item, phase);
-      return pf.scheduledStart == null || pf.scheduledEnd == null;
-    });
-  });
-  const schedulableUnscheduled = useMemo(() => {
-    return lineItems
-      .filter((item) => {
-        return BUILD_PHASES.every((phase) => {
-          if (!isPhaseActive(item, phase)) return true;
-          const pf = getPhaseFields(item, phase);
-          return pf.scheduledStart == null || pf.scheduledEnd == null;
-        });
-      })
-      .filter((item) => {
-        // At least one active phase must be schedulable
-        return BUILD_PHASES.some((phase) => {
-          if (!isPhaseActive(item, phase)) return false;
-          const pf = getPhaseFields(item, phase);
-          const requiredPH = pf.rate > 0 ? item.workQuantity / pf.rate : 0;
-          if (requiredPH <= 0) return false;
-          if (hasPhaseWindows) {
-            return getPhaseWorkDayCount(plan, phase) > 0;
-          }
-          return workDays.length > 0;
-        });
-      });
-  }, [lineItems, hasPhaseWindows, plan, workDays.length]);
+  const unscheduledCount = useMemo(
+    () => getUnscheduledPhaseRowCount(lineItems),
+    [lineItems],
+  );
+  const schedulableUnscheduledCount = useMemo(
+    () => getSchedulableUnscheduledPhaseRowCount(lineItems, phaseDates, workDays),
+    [lineItems, phaseDates, workDays],
+  );
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
 
@@ -221,9 +242,9 @@ function SingleScheduleGrid({
       <header className="schedule-view__block-header" id="schedule-grid-title">
         <h3 className="schedule-view__block-title">
           Schedule Grid
-          {unscheduled.length > 0 && (
+          {unscheduledCount > 0 && (
             <span className="schedule-grid__unscheduled-badge">
-              {unscheduled.length} unscheduled
+              {unscheduledCount} unscheduled
             </span>
           )}
         </h3>
@@ -246,7 +267,7 @@ function SingleScheduleGrid({
             gridColumns={gridColumns}
             label="Work package"
             onAutoSchedule={onAutoSchedule}
-            unscheduledCount={schedulableUnscheduled.length}
+            unscheduledCount={schedulableUnscheduledCount}
             readOnly={readOnly}
             hasWorkDays={workDays.length > 0}
           />

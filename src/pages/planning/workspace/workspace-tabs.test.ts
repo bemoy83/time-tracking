@@ -26,7 +26,7 @@ describe('workspace-tabs', () => {
 
   it('builds base editable plan tab set', () => {
     const tabs = getVisiblePlanWorkspaceTabs(createContext({ hasLinkedTasks: false, isReviewed: false }));
-    expect(tabs.map((tab) => tab.id)).toEqual(['edit', 'schedule', 'shared-schedule']);
+    expect(tabs.map((tab) => tab.id)).toEqual(['edit', 'schedule']);
     expect(tabs.find((tab) => tab.id === 'edit')?.label).toBe('Edit');
   });
 
@@ -41,7 +41,6 @@ describe('workspace-tabs', () => {
     expect(tabs.map((tab) => tab.id)).toEqual([
       'edit',
       'schedule',
-      'shared-schedule',
       'progress',
       'insights',
       'review',
@@ -58,7 +57,6 @@ describe('workspace-tabs', () => {
 
     expect(tabs.map((tab) => tab.id)).toEqual([
       'edit',
-      'shared-schedule',
       'progress',
       'insights',
       'report',

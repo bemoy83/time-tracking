@@ -5,7 +5,7 @@ import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package'
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
-import { applyScheduleAmendment } from '../../lib/planning/scheduling/amendments';
+import { applyBulkScheduleAmendment, applyScheduleAmendment, type BulkScheduleAmendmentChange } from '../../lib/planning/scheduling/amendments';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import type { BuildPhase } from '../../lib/types';
 import {
@@ -17,7 +17,7 @@ import {
   updateLineItemCrewForDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
-import { autoSchedule } from '../../lib/planning/scheduling/auto-schedule';
+import { runAutoSchedule, type AutoScheduleReport } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
@@ -49,6 +49,10 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
+function toPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 export function ScheduleView({
   plan,
   onSave,
@@ -59,6 +63,7 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [assistantReport, setAssistantReport] = useState<AutoScheduleReport | null>(null);
   const phaseDates = readPhaseDateValues(currentPlan);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
@@ -180,8 +185,36 @@ export function ScheduleView({
   };
 
   const handleAutoSchedule = () => {
-    mutatePlan((prev) => autoSchedule(prev));
+    const { plan: scheduledPlan, report } = runAutoSchedule(currentPlan);
+
+    let nextPlan = scheduledPlan;
+    if (currentPlan.status === 'active' && report.changed.length > 0) {
+      const note = window.prompt('Assistant run amendment note (required):', '');
+      if (note == null) return;
+      if (note.trim().length === 0) {
+        window.alert('Amendment note is required for assistant runs on active plans.');
+        return;
+      }
+      const changes: BulkScheduleAmendmentChange[] = report.changed.map((row) => ({
+        lineItemId: row.lineItemId,
+        phase: row.phase,
+        scheduledStart: row.scheduledStart,
+        scheduledEnd: row.scheduledEnd,
+      }));
+      nextPlan = applyBulkScheduleAmendment(currentPlan, scheduledPlan, changes, note);
+    }
+
+    mutatePlan(() => nextPlan);
+    setAssistantReport(report);
     trackTelemetryEvent('schedule_assignment_edit');
+    trackTelemetryEvent('schedule_assistant_run', {
+      changed_count: report.changed.length,
+      unresolved_count: report.unresolved.length,
+      coverage_ratio_before: report.before.coverageRatio,
+      coverage_ratio_after: report.after.coverageRatio,
+      over_capacity_days_before: report.before.overCapacityDays,
+      over_capacity_days_after: report.after.overCapacityDays,
+    });
   };
 
   const handleCrewForDateChange = (lineItemId: string, phase: BuildPhase, date: string, crew: number) => {
@@ -256,6 +289,19 @@ export function ScheduleView({
 
       <FeasibilityBar capacity={capacity} />
       <ConflictResolutionBanner capacity={capacity} />
+      {assistantReport && (
+        <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
+          <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
+          <p className="schedule-view__muted">
+            {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
+          </p>
+          <p className="schedule-view__muted">
+            Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+            {' · '}
+            Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+          </p>
+        </section>
+      )}
 
       <ScheduleInputsBlock
         expanded={inputsExpanded}
@@ -288,7 +334,6 @@ export function ScheduleView({
       />
 
       <ScheduleGrid
-        plan={currentPlan}
         lineItems={currentPlan.lineItems}
         calendar={currentPlan.workCalendar}
         capacity={capacity}

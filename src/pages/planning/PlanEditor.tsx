@@ -269,6 +269,18 @@ export function PlanEditor({
   const handleUpdateItem = (itemId: string, updates: Partial<PlanLineItem>) => {
     mutatePlan((prev) => updatePlanLineItem(prev, itemId, updates));
   };
+  const handleBatchApplySuggestions = (
+    updates: Array<{ itemId: string; updates: Partial<PlanLineItem> }>,
+  ) => {
+    if (updates.length === 0) return;
+    mutatePlan((prev) => {
+      let next = prev;
+      for (const { itemId, updates: lineItemUpdates } of updates) {
+        next = updatePlanLineItem(next, itemId, lineItemUpdates);
+      }
+      return next;
+    });
+  };
 
   const handleDuplicateItem = (item: PlanLineItem) => {
     mutatePlan((prev) => addLineItemToPlan(prev, duplicateLineItem(item)));
@@ -689,6 +701,7 @@ export function PlanEditor({
               suggestionsByLineItemId={suggestionsByLineItemId}
               isLocked={readOnly || isLocked}
               onUpdate={handleUpdateItem}
+              onBatchApplySuggestions={readOnly || isLocked ? undefined : handleBatchApplySuggestions}
               onDuplicate={handleDuplicateItem}
               onRemove={handleRemoveItem}
             />

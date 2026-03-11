@@ -4,6 +4,13 @@ import { getPhaseFields, phaseFieldUpdates } from '../plan-model';
 import { nowUtc } from '../../types';
 import { listDateRange } from './work-calendar';
 
+export interface BulkScheduleAmendmentChange {
+  lineItemId: string;
+  phase: BuildPhase;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+}
+
 function didScheduleChange(
   previous: { scheduledStart: string | null; scheduledEnd: string | null },
   next: { scheduledStart: string | null; scheduledEnd: string | null },
@@ -81,6 +88,64 @@ export function applyScheduleAmendment(
         ...item,
         ...phaseUpdates,
         amendmentNote: amendmentNote?.trim() || null,
+        amendedAt: updatedAt,
+      };
+    }),
+  };
+}
+
+/**
+ * Apply a single amendment note/timestamp for a batch assistant run.
+ * Preserves the schedule/crewByDate already computed in `nextPlan`.
+ */
+export function applyBulkScheduleAmendment(
+  previousPlan: Plan,
+  nextPlan: Plan,
+  changes: BulkScheduleAmendmentChange[],
+  amendmentNote: string,
+): Plan {
+  const note = amendmentNote.trim();
+  if (note.length === 0 || changes.length === 0) return nextPlan;
+
+  const changedByItem = new Map<string, Set<BuildPhase>>();
+  for (const change of changes) {
+    const existing = changedByItem.get(change.lineItemId) ?? new Set<BuildPhase>();
+    existing.add(change.phase);
+    changedByItem.set(change.lineItemId, existing);
+  }
+
+  const previousByItem = new Map(previousPlan.lineItems.map((item) => [item.id, item]));
+  const updatedAt = nowUtc();
+
+  return {
+    ...nextPlan,
+    updatedAt,
+    lineItems: nextPlan.lineItems.map((item) => {
+      const changedPhases = changedByItem.get(item.id);
+      if (!changedPhases || changedPhases.size === 0) return item;
+
+      const previousItem = previousByItem.get(item.id) ?? item;
+      let updates: Partial<PlanLineItem> = {};
+
+      for (const phase of changedPhases) {
+        const previousPf = getPhaseFields(previousItem, phase);
+        const nextPf = getPhaseFields(item, phase);
+        updates = {
+          ...updates,
+          ...phaseFieldUpdates(phase, {
+            originalScheduledStart: previousPf.originalScheduledStart ?? previousPf.scheduledStart,
+            originalScheduledEnd: previousPf.originalScheduledEnd ?? previousPf.scheduledEnd,
+            scheduledStart: nextPf.scheduledStart,
+            scheduledEnd: nextPf.scheduledEnd,
+            crewByDate: nextPf.crewByDate,
+          }),
+        };
+      }
+
+      return {
+        ...item,
+        ...updates,
+        amendmentNote: note,
         amendedAt: updatedAt,
       };
     }),

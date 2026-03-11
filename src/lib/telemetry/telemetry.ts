@@ -40,6 +40,7 @@ export type TelemetryEventName =
   | 'shared_schedule_assignment_edit'
   | 'schedule_calendar_edit'
   | 'schedule_assignment_edit'
+  | 'schedule_assistant_run'
   | 'schedule_import_defaulted'
   | 'schedule_deadline_risk_visible'
   | 'remediation_bulk_apply'
@@ -48,9 +49,12 @@ export type TelemetryEventName =
   | 'archive_maintenance_archive_candidates'
   | 'archive_kpi_recompute';
 
+export type TelemetryPayload = Record<string, string | number | boolean | null>;
+
 export interface TelemetryRecord {
   count: number;
   lastAt: string;
+  lastPayload?: TelemetryPayload;
 }
 
 export type TelemetrySnapshot = Partial<Record<TelemetryEventName, TelemetryRecord>>;
@@ -75,12 +79,13 @@ function writeTelemetry(snapshot: TelemetrySnapshot): void {
   }
 }
 
-export function trackTelemetryEvent(name: TelemetryEventName): void {
+export function trackTelemetryEvent(name: TelemetryEventName, payload?: TelemetryPayload): void {
   const snapshot = readTelemetry();
   const existing = snapshot[name];
   snapshot[name] = {
     count: (existing?.count ?? 0) + 1,
     lastAt: nowUtc(),
+    lastPayload: payload,
   };
   writeTelemetry(snapshot);
 }

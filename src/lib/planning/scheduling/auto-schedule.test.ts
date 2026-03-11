@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLineItem, createPlan, getPhaseFields, type Plan, type PlanLineItem } from '../plan-model';
-import { autoSchedule } from './auto-schedule';
+import { autoSchedule, runAutoSchedule } from './auto-schedule';
 import type { BuildPhase } from '../../types';
 
 function makePhasePlan(overrides?: Partial<Plan>): Plan {
@@ -242,7 +242,7 @@ describe('autoSchedule', () => {
     expect(pf.scheduledStart).toBeTruthy();
   });
 
-  it('falls back gracefully when crew is fully exhausted (over-allocation)', () => {
+  it('marks unresolved when crew is fully exhausted (no forced over-allocation)', () => {
     const plan = makePhasePlan({
       defaultCrewSize: 2,
       buildUpStartDate: '2026-03-02',
@@ -262,11 +262,43 @@ describe('autoSchedule', () => {
     const newItem = makeItem('Extra', 'build-up', 8, 1, 1);
     plan.lineItems = [existing, newItem];
 
-    const result = autoSchedule(plan);
+    const { plan: result, report } = runAutoSchedule(plan);
     const scheduled = getItem(result, newItem.id);
     const pf = getPhaseFields(scheduled, 'build-up');
 
-    // Should still be scheduled (over-allocation is allowed, capacity view flags it)
+    expect(pf.scheduledStart).toBe(null);
+    expect(pf.scheduledEnd).toBe(null);
+    expect(report.unresolved).toEqual([
+      expect.objectContaining({
+        lineItemId: newItem.id,
+        phase: 'build-up',
+        reason: 'no_capacity_window',
+      }),
+    ]);
+  });
+
+  it('can over-allocate when allowOverAllocation is true', () => {
+    const plan = makePhasePlan({
+      defaultCrewSize: 2,
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-02',
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      ],
+    });
+
+    const existing = makeItem('Full', 'build-up', 16, 1, 2);
+    existing.buildUpScheduledStart = '2026-03-02';
+    existing.buildUpScheduledEnd = '2026-03-02';
+    existing.buildUpCrewByDate = { '2026-03-02': 2 };
+
+    const newItem = makeItem('Extra', 'build-up', 8, 1, 1);
+    plan.lineItems = [existing, newItem];
+
+    const { plan: result } = runAutoSchedule(plan, { allowOverAllocation: true });
+    const scheduled = getItem(result, newItem.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+
     expect(pf.scheduledStart).toBe('2026-03-02');
   });
 
@@ -312,5 +344,128 @@ describe('autoSchedule', () => {
       expect(date >= pf.scheduledStart!).toBe(true);
       expect(date <= pf.scheduledEnd!).toBe(true);
     }
+  });
+
+  it('uses time-hours-first required work when both time and rate exist', () => {
+    const plan = makePhasePlan({
+      buildUpEndDate: '2026-03-06',
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+        { date: '2026-03-04', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+        { date: '2026-03-05', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+        { date: '2026-03-06', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+      ],
+    });
+
+    const item = makeItem('Manual Time Wins', 'build-up', 100, 10, 1); // rate-based = 10 PH
+    item.buildUpTimeHours = 24; // explicit estimate = 24 PH
+    plan.lineItems = [item];
+
+    const { plan: result } = runAutoSchedule(plan);
+    const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+    const assignedDays = Object.keys(pf.crewByDate ?? {}).length;
+
+    expect(assignedDays).toBe(3); // 24 PH with 1 crew, 8h/day
+  });
+
+  it('falls back to quantity/rate and sets timeHours when estimate is missing', () => {
+    const plan = makePhasePlan();
+    const item = makeItem('Rate fallback', 'build-up', 80, 10, 2); // 8 PH
+    item.buildUpTimeHours = 0;
+    plan.lineItems = [item];
+
+    const { plan: result } = runAutoSchedule(plan);
+    const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+
+    expect(pf.scheduledStart).toBeTruthy();
+    expect(pf.timeHours).toBe(8); // Derived from actual max crew used on assigned days
+  });
+
+  it('reports missing required work when phase is active but no estimate source exists', () => {
+    const plan = makePhasePlan();
+    const item = makeItem('Incomplete', 'build-up', 100, 0, 2);
+    item.buildUpRate = 0;
+    item.buildUpTimeHours = 0;
+    item.buildUpCrew = 2;
+    plan.lineItems = [item];
+
+    const { plan: result, report } = runAutoSchedule(plan);
+    const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+
+    expect(pf.scheduledStart).toBe(null);
+    expect(report.unresolved).toEqual([
+      expect.objectContaining({
+        lineItemId: item.id,
+        phase: 'build-up',
+        reason: 'missing_required_hours',
+      }),
+    ]);
+  });
+
+  it('schedules partial work when full completion is impossible and reports shortfall', () => {
+    const plan = makePhasePlan({
+      defaultCrewSize: 1,
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 1 },
+      ],
+    });
+    const item = makeItem('Partial', 'build-up', 24, 1, 1); // 24 PH required, only 16 PH capacity
+    plan.lineItems = [item];
+
+    const { plan: result, report } = runAutoSchedule(plan);
+    const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+
+    expect(pf.scheduledStart).toBe('2026-03-02');
+    expect(pf.scheduledEnd).toBe('2026-03-03');
+    expect(Object.keys(pf.crewByDate ?? {})).toEqual(['2026-03-02', '2026-03-03']);
+    expect(report.unresolved).toEqual([
+      expect.objectContaining({
+        lineItemId: item.id,
+        phase: 'build-up',
+        reason: 'no_capacity_window',
+        requiredPH: 24,
+        assignedPH: 16,
+      }),
+    ]);
+  });
+
+  it('does not worsen schedule metrics when local rebalance is enabled', () => {
+    const plan = makePhasePlan({ defaultCrewSize: 3 });
+    const a = makeItem('A', 'build-up', 32, 1, 2);
+    const b = makeItem('B', 'build-up', 32, 1, 2);
+    const c = makeItem('C', 'build-up', 24, 1, 1);
+    plan.lineItems = [a, b, c];
+
+    const withoutLocal = runAutoSchedule(plan, { rebalance: 'none' });
+    const withLocal = runAutoSchedule(plan, { rebalance: 'local' });
+
+    expect(withLocal.report.after.coveredPersonHours).toBeGreaterThanOrEqual(withoutLocal.report.after.coveredPersonHours);
+    expect(withLocal.report.after.overCapacityDays).toBeLessThanOrEqual(withoutLocal.report.after.overCapacityDays);
+  });
+
+  it('is deterministic for identical inputs', () => {
+    const plan = makePhasePlan({ defaultCrewSize: 4 });
+    plan.lineItems = [
+      makeItem('Det A', 'build-up', 64, 1, 2),
+      makeItem('Det B', 'build-up', 24, 1, 3),
+      makeItem('Det C', 'tear-down', 16, 1, 2),
+    ];
+
+    const first = runAutoSchedule(plan);
+    const second = runAutoSchedule(plan);
+
+    const firstPlanStable = { ...first.plan, updatedAt: '<ignored>' };
+    const secondPlanStable = { ...second.plan, updatedAt: '<ignored>' };
+
+    expect(secondPlanStable).toEqual(firstPlanStable);
+    expect(second.report).toEqual(first.report);
   });
 });

@@ -22,6 +22,9 @@ interface WorkPackageTableProps {
   suggestionsByLineItemId: Map<string, LineItemSuggestion>;
   isLocked: boolean;
   onUpdate: (lineItemId: string, updates: Partial<PlanLineItem>) => void;
+  onBatchApplySuggestions?: (
+    updates: Array<{ itemId: string; updates: Partial<PlanLineItem> }>,
+  ) => void;
   onDuplicate: (item: PlanLineItem) => void;
   onRemove: (lineItemId: string) => void;
 }
@@ -97,6 +100,7 @@ export function WorkPackageTable({
   suggestionsByLineItemId,
   isLocked,
   onUpdate,
+  onBatchApplySuggestions,
   onDuplicate,
   onRemove,
 }: WorkPackageTableProps) {
@@ -150,6 +154,27 @@ export function WorkPackageTable({
     if (Object.keys(updates).length > 0) {
       onUpdate(item.id, updates);
     }
+  };
+  const batchApplyableUpdates = useMemo(
+    () =>
+      lineItems.flatMap((item) => {
+        const suggestion = suggestionsByLineItemId.get(item.id);
+        if (!suggestion) return [];
+        const updates: Partial<PlanLineItem> = {};
+        for (const phase of BUILD_PHASES) {
+          const phaseSuggestion = getSuggestionForPhase(suggestion, phase);
+          const phaseUpdates = getMagicPhaseUpdates(item, phase, phaseSuggestion);
+          if (phaseUpdates) Object.assign(updates, phaseUpdates);
+        }
+        if (Object.keys(updates).length === 0) return [];
+        return [{ itemId: item.id, updates }];
+      }),
+    [lineItems, suggestionsByLineItemId],
+  );
+  const batchApplyableCount = batchApplyableUpdates.length;
+  const handleBatchMagicApply = () => {
+    if (isLocked || !onBatchApplySuggestions || batchApplyableCount === 0) return;
+    onBatchApplySuggestions(batchApplyableUpdates);
   };
 
   const getPhaseActivationProps = (
@@ -205,7 +230,27 @@ export function WorkPackageTable({
             >
               Tear-down
             </th>
-            <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">Actions</th>
+            <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">
+              <div className="planning-view__wp-actions-col-content">
+                <span className="planning-view__wp-actions-col-label">Actions</span>
+                {!isLocked && onBatchApplySuggestions && (
+                  <button
+                    type="button"
+                    className="planning-view__wp-action-btn planning-view__wp-action-btn--magic planning-view__wp-batch-apply"
+                    onClick={handleBatchMagicApply}
+                    aria-label="Apply suggestions to all applicable work packages"
+                    title={
+                      batchApplyableCount > 0
+                        ? 'Apply suggested values to all rows'
+                        : 'No suggestions to apply'
+                    }
+                    disabled={batchApplyableCount === 0}
+                  >
+                    <SparklesIcon className="planning-view__wp-action-icon" />
+                  </button>
+                )}
+              </div>
+            </th>
           </tr>
           <tr className="planning-view__wp-header-columns">
             <th className="planning-view__wp-title-col" scope="col">Title</th>
