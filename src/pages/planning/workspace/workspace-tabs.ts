@@ -60,7 +60,7 @@ const PLAN_TAB_DESCRIPTORS: WorkspaceTabDescriptor[] = [
     id: 'shared-schedule',
     scope: 'plan',
     label: 'Shared Schedule',
-    isVisible: () => true,
+    isVisible: () => false, /* Hidden from plan nav — use sidebar footer for Shared Schedule */
     onSelect: (context) => context.onSetActiveTab('shared-schedule'),
   },
   {

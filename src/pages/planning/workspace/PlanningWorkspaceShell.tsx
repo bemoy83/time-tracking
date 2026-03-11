@@ -127,7 +127,11 @@ export function PlanningWorkspaceShell({
     const computeViewMetrics = (): SidebarMetricDescriptor[] => {
       if (activeTab === 'shared-schedule') {
         const cap = sharedScheduleCapacity
-          ? { totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours, totalAvailablePersonHours: sharedScheduleCapacity.totalAvailablePersonHours }
+          ? {
+              totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours,
+              totalAvailablePersonHours: sharedScheduleCapacity.totalAvailablePersonHours,
+              unscheduledLineItemCount: sharedScheduleCapacity.unscheduledLineItemCount,
+            }
           : undefined;
         return getSharedScheduleMetrics(plans, selectedPlanIdsForSharedSchedule, cap);
       }
@@ -223,13 +227,22 @@ export function PlanningWorkspaceShell({
       {/* Main pane */}
       <section className="planning-workspace__main">
         {wrapUpPlan ? (
-          <WrapUpReviewPane
+          <WrapUpMainPane
             plan={wrapUpPlan}
             tasks={tasks}
-            timeEntriesByTask={timeEntriesByTask}
-            onClose={onCloseWrapUp}
-            onCompleted={onWrapUpCompleted}
-          />
+            hasLinkedTasks={hasLinkedTasks}
+            planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+            onCloseWrapUp={onCloseWrapUp}
+            onSetActiveTab={onSetActiveTab}
+          >
+            <WrapUpReviewPane
+              plan={wrapUpPlan}
+              tasks={tasks}
+              timeEntriesByTask={timeEntriesByTask}
+              onClose={onCloseWrapUp}
+              onCompleted={onWrapUpCompleted}
+            />
+          </WrapUpMainPane>
         ) : activeTab === 'shared-schedule' ? (
           <SharedScheduleMainPane
             activeTab={activeTab}
@@ -292,6 +305,80 @@ export function PlanningWorkspaceShell({
   );
 }
 
+// --- Wrap-up main pane with tab strip ---
+
+interface WrapUpMainPaneProps {
+  plan: Plan;
+  tasks: Task[];
+  hasLinkedTasks: boolean;
+  planIdsWithImportedExecutionReturns: Set<string>;
+  onCloseWrapUp: () => void;
+  onSetActiveTab: (tab: WorkspaceTab) => void;
+  children: React.ReactNode;
+}
+
+function WrapUpMainPane({
+  plan,
+  tasks,
+  hasLinkedTasks,
+  planIdsWithImportedExecutionReturns,
+  onCloseWrapUp,
+  onSetActiveTab,
+  children,
+}: WrapUpMainPaneProps) {
+  const isReviewed = isPlanArchived(plan);
+  const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
+  const showScheduleTab = !isReviewed;
+
+  const handleTabSelect = useCallback(
+    (tab: WorkspaceTab) => {
+      if (tab !== 'review') {
+        onCloseWrapUp();
+        onSetActiveTab(tab);
+      }
+    },
+    [onCloseWrapUp, onSetActiveTab],
+  );
+
+  const tabs = getVisiblePlanWorkspaceTabs({
+    hasLinkedTasks,
+    isReviewed,
+    reviewReady: wrapUpEligible,
+    onOpenProgress: () => {
+      onCloseWrapUp();
+      onSetActiveTab('progress');
+    },
+    onSetActiveTab: handleTabSelect,
+    showScheduleTab,
+    onOpenInsights: () => {
+      onCloseWrapUp();
+      onSetActiveTab('insights');
+    },
+  });
+
+  return (
+    <div className="planning-workspace__main-inner">
+      <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
+        {tabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            tab={tab.id}
+            activeTab="review"
+            onClick={tab.onSelect}
+          >
+            {tab.label}
+          </TabButton>
+        ))}
+      </nav>
+      <div className="planning-workspace__tab-content" role="tabpanel">
+        <div className="planning-workspace__editor-canvas planning-workspace__editor-canvas--fill">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Shared Schedule main pane with tab strip ---
 
 interface SharedScheduleMainPaneProps {
@@ -322,7 +409,9 @@ function SharedScheduleMainPane({
         ))}
       </nav>
       <div className="planning-workspace__tab-content" role="tabpanel">
-        {children}
+        <div className="planning-workspace__editor-canvas">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -464,24 +553,28 @@ function WorkspaceMainPane({
           </div>
         )}
         {effectiveActiveTab === 'schedule' && showScheduleTab && (
-          <ScheduleView
-            plan={plan}
-            onSave={onSavePlan}
-            showBackButton={false}
-            onBack={() => onSetActiveTab('edit')}
-            readOnly={isReviewed}
-          />
+          <div className="planning-workspace__editor-canvas">
+            <ScheduleView
+              plan={plan}
+              onSave={onSavePlan}
+              showBackButton={false}
+              onBack={() => onSetActiveTab('edit')}
+              readOnly={isReviewed}
+            />
+          </div>
         )}
         {effectiveActiveTab === 'review' && (
-          <div className="planning-workspace__review-prompt">
-            <p>This plan is ready for review and wrap-up.</p>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => onOpenWrapUp(plan)}
-            >
-              Start Wrap Up
-            </button>
+          <div className="planning-workspace__editor-canvas">
+            <div className="planning-workspace__review-prompt">
+              <p>This plan is ready for review and wrap-up.</p>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => onOpenWrapUp(plan)}
+              >
+                Start Wrap Up
+              </button>
+            </div>
           </div>
         )}
         {effectiveActiveTab === 'report' && isReviewed && (

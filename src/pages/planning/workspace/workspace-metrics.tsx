@@ -310,19 +310,24 @@ export function getProgressViewMetrics(
 export function getSharedScheduleMetrics(
   plans: Plan[],
   selectedPlanIds: Set<string>,
-  capacityFromView?: { totalRequiredPersonHours: number; totalAvailablePersonHours: number } | null,
+  capacityFromView?: {
+    totalRequiredPersonHours: number;
+    totalAvailablePersonHours: number;
+    unscheduledLineItemCount?: number;
+  } | null,
 ): SidebarMetricDescriptor[] {
   const selectablePlans = plans.filter(isPlanInPlannerState);
   const selected = selectablePlans.filter((p) => selectedPlanIds.has(p.id));
-  const totalItems = selected.reduce((sum, p) => sum + p.lineItems.length, 0);
   const totalPH = selected.reduce((sum, p) => sum + planTotalPersonHours(p), 0);
 
   let scheduledRequiredHours = 0;
+  let unscheduledLineItemCount: number | undefined;
 
   // Use capacity from main view when provided (matches FeasibilityBar); otherwise derive
   let utilizationMetric = createUtilizationMetric(null);
   if (capacityFromView && capacityFromView.totalAvailablePersonHours > 0) {
     scheduledRequiredHours = capacityFromView.totalRequiredPersonHours;
+    unscheduledLineItemCount = capacityFromView.unscheduledLineItemCount;
     utilizationMetric = createUtilizationMetric(capacityFromView);
   } else if (selected.length > 0) {
     const calendar = deriveCrewPoolCalendar(selected);
@@ -342,12 +347,18 @@ export function getSharedScheduleMetrics(
       lineItems,
     });
     scheduledRequiredHours = cap.totalRequiredPersonHours;
+    unscheduledLineItemCount = cap.unscheduledLineItemCount;
     utilizationMetric = createUtilizationMetric({
       totalRequiredPersonHours: cap.totalRequiredPersonHours,
       totalAvailablePersonHours: cap.totalAvailablePersonHours,
     });
   }
   const unscheduledHours = Math.max(0, totalPH - scheduledRequiredHours);
+
+  const lineItemMeta =
+    unscheduledLineItemCount !== undefined && unscheduledLineItemCount > 0
+      ? `${unscheduledLineItemCount} line item${unscheduledLineItemCount === 1 ? '' : 's'}`
+      : undefined;
 
   return [
     { value: selectedPlanIds.size, label: 'Selected plans', icon: <CheckIcon />, iconVariant: 'tasks' },
@@ -363,7 +374,7 @@ export function getSharedScheduleMetrics(
       icon: <TaskListIcon />,
       iconVariant: 'estimate',
       variant: unscheduledHours > 0 ? 'risk' : 'default',
-      meta: `${totalItems} line items`,
+      meta: lineItemMeta,
     },
     utilizationMetric,
   ];
