@@ -231,13 +231,18 @@ export function PlanningWorkspaceShell({
             onCompleted={onWrapUpCompleted}
           />
         ) : activeTab === 'shared-schedule' ? (
-          <SharedScheduleView
-            plans={plans}
-            projects={projects}
-            selectedPlanIds={selectedPlanIdsForSharedSchedule}
-            onSavePlan={onSavePlan}
-            onCapacityChange={setSharedScheduleCapacity}
-          />
+          <SharedScheduleMainPane
+            activeTab={activeTab}
+            sidebarTabContext={sidebarTabContext}
+          >
+            <SharedScheduleView
+              plans={plans}
+              projects={projects}
+              selectedPlanIds={selectedPlanIdsForSharedSchedule}
+              onSavePlan={onSavePlan}
+              onCapacityChange={setSharedScheduleCapacity}
+            />
+          </SharedScheduleMainPane>
         ) : activePlan ? (
           <WorkspaceMainPane
             plan={activePlan}
@@ -256,7 +261,13 @@ export function PlanningWorkspaceShell({
             planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           />
         ) : activeTab === 'insights' ? (
-          <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} />
+          <div className="planning-workspace__main-inner">
+            <div className="planning-workspace__tab-content" role="tabpanel">
+              <div className="planning-workspace__editor-canvas">
+                <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} />
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="planning-workspace__empty">
             <TaskListIcon className="planning-workspace__empty-icon" />
@@ -277,6 +288,42 @@ export function PlanningWorkspaceShell({
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+// --- Shared Schedule main pane with tab strip ---
+
+interface SharedScheduleMainPaneProps {
+  activeTab: WorkspaceTab;
+  sidebarTabContext: WorkspaceRenderContext;
+  children: React.ReactNode;
+}
+
+function SharedScheduleMainPane({
+  activeTab,
+  sidebarTabContext,
+  children,
+}: SharedScheduleMainPaneProps) {
+  const tabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
+
+  return (
+    <div className="planning-workspace__main-inner">
+      <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
+        {tabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            tab={tab.id}
+            activeTab={activeTab}
+            onClick={tab.onSelect}
+          >
+            {tab.label}
+          </TabButton>
+        ))}
+      </nav>
+      <div className="planning-workspace__tab-content" role="tabpanel">
+        {children}
+      </div>
     </div>
   );
 }
@@ -395,22 +442,26 @@ function WorkspaceMainPane({
           </div>
         )}
         {effectiveActiveTab === 'progress' && (
-          <ProgressView
-            plan={plan}
-            tasks={tasks}
-            timeEntries={timeEntries}
-            showBackButton={false}
-            onBack={() => onSetActiveTab('edit')}
-            onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
-          />
+          <div className="planning-workspace__editor-canvas">
+            <ProgressView
+              plan={plan}
+              tasks={tasks}
+              timeEntries={timeEntries}
+              showBackButton={false}
+              onBack={() => onSetActiveTab('edit')}
+              onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
+            />
+          </div>
         )}
         {effectiveActiveTab === 'insights' && (
-          <InsightsView
-            tasks={tasks}
-            workTypes={workTypes}
-            planId={plan.id}
-            planTitle={plan.title}
-          />
+          <div className="planning-workspace__editor-canvas">
+            <InsightsView
+              tasks={tasks}
+              workTypes={workTypes}
+              planId={plan.id}
+              planTitle={plan.title}
+            />
+          </div>
         )}
         {effectiveActiveTab === 'schedule' && showScheduleTab && (
           <ScheduleView
