@@ -42,7 +42,7 @@ function formatUtilBadge(cap: DailyCapacity): string {
 export function ScheduleGridHeader({
   calendar,
   dayByDate,
-  gridColumns,
+  gridColumns: _gridColumns,
   label,
   onAutoSchedule,
   unscheduledCount,

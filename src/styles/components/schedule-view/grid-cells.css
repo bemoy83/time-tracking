@@ -78,7 +78,7 @@
   outline-offset: -2px;
 }
 
-.schedule-grid__cell:disabled {
+.schedule-grid__cell[aria-disabled="true"] {
   cursor: default;
 }
 
@@ -147,4 +147,3 @@
 }
 
 /* --- Inline crew controls (per cell) --- */
-

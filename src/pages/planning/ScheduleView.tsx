@@ -3,6 +3,7 @@ import { ChevronLeftIcon } from '../../components/icons';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
+import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
 import { lazyMigrateCrewByDate } from '../../lib/planning/scheduling/plan-schedule-update';
@@ -20,7 +21,6 @@ import {
 import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import {
   runAutoSchedule,
-  type AutoScheduleReport,
   type AutoScheduleUnresolvedReason,
 } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
@@ -65,16 +65,6 @@ interface RecommendationCta {
   onClick: () => void;
 }
 
-interface AssistantReviewIssue {
-  key: string;
-  lineItemId: string;
-  lineItemTitle: string;
-  phase: BuildPhase;
-  reason: AutoScheduleUnresolvedReason;
-  requiredPH: number;
-  assignedPH: number;
-}
-
 function toPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -102,9 +92,6 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [assistantReport, setAssistantReport] = useState<AutoScheduleReport | null>(null);
-  const [assistantReportStale, setAssistantReportStale] = useState(false);
-  const [activeAssistantIssueIndex, setActiveAssistantIssueIndex] = useState<number | null>(null);
   const workCalendarRef = useRef<HTMLDivElement>(null);
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const phaseDates = readPhaseDateValues(currentPlan);
@@ -130,12 +117,6 @@ export function ScheduleView({
 
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
-  }, [plan.id]);
-
-  useEffect(() => {
-    setAssistantReport(null);
-    setAssistantReportStale(false);
-    setActiveAssistantIssueIndex(null);
   }, [plan.id]);
 
   // Derive work calendar when at least one phase has dates but workCalendar is empty.
@@ -180,9 +161,25 @@ export function ScheduleView({
     return count;
   }, [currentPlan.lineItems]);
 
+  const {
+    assistantReport,
+    assistantReportStale,
+    assistantUnresolvedCount,
+    assistantReviewIssues,
+    activeAssistantIssue,
+    activeAssistantIssueIndex,
+    unresolvedIssueKeys,
+    markAssistantFindingsStale,
+    applyAssistantRunReport,
+    focusNextReviewIssue,
+    focusPrevReviewIssue,
+  } = useScheduleAssistantState({
+    planId: plan.id,
+    lineItems: currentPlan.lineItems,
+  });
+
   const clearAssistantReport = () => {
-    if (assistantReport != null) setAssistantReportStale(true);
-    setActiveAssistantIssueIndex((prev) => (prev == null ? prev : null));
+    markAssistantFindingsStale();
   };
 
   const handlePlanDateChange = (
@@ -283,7 +280,6 @@ export function ScheduleView({
       );
     });
     trackTelemetryEvent('schedule_assignment_edit');
-    trackTelemetryEvent('schedule_assignment_row_clear');
   };
 
   const handleClearAllSchedules = () => {
@@ -336,7 +332,6 @@ export function ScheduleView({
       return nextPlan;
     });
     trackTelemetryEvent('schedule_assignment_edit');
-    trackTelemetryEvent('schedule_assignment_clear_all', { cleared_rows: scheduledPhaseRowCount });
   };
 
   const handleAmendmentConfirm = (note: string | null) => {
@@ -375,9 +370,7 @@ export function ScheduleView({
     }
 
     mutatePlan(() => nextPlan);
-    setAssistantReport(report);
-    setAssistantReportStale(false);
-    setActiveAssistantIssueIndex(null);
+    applyAssistantRunReport(report);
     trackTelemetryEvent('schedule_assignment_edit');
     trackTelemetryEvent('schedule_assistant_run', {
       changed_count: report.changed.length,
@@ -430,65 +423,21 @@ export function ScheduleView({
     }
   };
 
-  const hasFreshAssistantReport = assistantReport != null && !assistantReportStale;
-  const assistantUnresolvedCount = hasFreshAssistantReport ? assistantReport.unresolved.length : 0;
-
-  const assistantReviewIssues = useMemo<AssistantReviewIssue[]>(() => {
-    if (!hasFreshAssistantReport || assistantReport.unresolved.length === 0) return [];
-    const titleByLineItemId = new Map(currentPlan.lineItems.map((item) => [item.id, item.title]));
-    const deduped = new Map<string, AssistantReviewIssue>();
-    for (const issue of assistantReport.unresolved) {
-      const key = `${issue.lineItemId}:${issue.phase}`;
-      if (deduped.has(key)) continue;
-      deduped.set(key, {
-        key,
-        lineItemId: issue.lineItemId,
-        lineItemTitle: titleByLineItemId.get(issue.lineItemId) ?? issue.lineItemId,
-        phase: issue.phase,
-        reason: issue.reason,
-        requiredPH: issue.requiredPH,
-        assignedPH: issue.assignedPH,
-      });
-    }
-    return [...deduped.values()];
-  }, [assistantReport, currentPlan.lineItems, hasFreshAssistantReport]);
-
-  const activeAssistantIssue =
-    activeAssistantIssueIndex != null
-      ? assistantReviewIssues[activeAssistantIssueIndex] ?? null
-      : null;
-
-  const unresolvedIssueKeys = useMemo(
-    () => new Set(assistantReviewIssues.map((issue) => issue.key)),
-    [assistantReviewIssues],
-  );
-
   const handleReviewAssistantIssues = () => {
-    if (assistantReviewIssues.length === 0) {
+    if (!focusNextReviewIssue()) {
       handleOpenScheduleGrid();
       return;
     }
-    setActiveAssistantIssueIndex((prev) => (
-      prev == null ? 0 : (prev + 1) % assistantReviewIssues.length
-    ));
     handleOpenScheduleGrid();
   };
 
   const handlePrevAssistantIssue = () => {
-    if (assistantReviewIssues.length === 0) return;
-    setActiveAssistantIssueIndex((prev) => {
-      const current = prev == null ? 0 : prev;
-      return (current - 1 + assistantReviewIssues.length) % assistantReviewIssues.length;
-    });
+    if (!focusPrevReviewIssue()) return;
     handleOpenScheduleGrid();
   };
 
   const handleNextAssistantIssue = () => {
-    if (assistantReviewIssues.length === 0) return;
-    setActiveAssistantIssueIndex((prev) => {
-      const current = prev == null ? -1 : prev;
-      return (current + 1) % assistantReviewIssues.length;
-    });
+    if (!focusNextReviewIssue()) return;
     handleOpenScheduleGrid();
   };
 

@@ -229,11 +229,11 @@ function SingleScheduleGrid({
   const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('schedule-grid__cell')) return;
-    const cells = gridRef.current?.querySelectorAll<HTMLButtonElement>('.schedule-grid__cell');
+    const allCells = gridRef.current?.querySelectorAll<HTMLElement>('.schedule-grid__cell');
+    const cells = allCells ? Array.from(allCells).filter((cell) => cell.tabIndex >= 0) : null;
     if (!cells) return;
 
-    const cellArray = Array.from(cells);
-    const currentIndex = cellArray.indexOf(target as HTMLButtonElement);
+    const currentIndex = cells.indexOf(target);
     if (currentIndex === -1) return;
 
     const colCount = calendar.length;
@@ -261,9 +261,9 @@ function SingleScheduleGrid({
         return;
     }
 
-    if (nextIndex >= 0 && nextIndex < cellArray.length) {
+    if (nextIndex >= 0 && nextIndex < cells.length) {
       e.preventDefault();
-      cellArray[nextIndex].focus();
+      cells[nextIndex].focus();
     }
   }, [calendar.length]);
 
@@ -491,11 +491,11 @@ function SharedScheduleGrid({
   const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('schedule-grid__cell')) return;
-    const cells = gridRef.current?.querySelectorAll<HTMLButtonElement>('.schedule-grid__cell');
+    const allCells = gridRef.current?.querySelectorAll<HTMLElement>('.schedule-grid__cell');
+    const cells = allCells ? Array.from(allCells).filter((cell) => cell.tabIndex >= 0) : null;
     if (!cells) return;
 
-    const cellArray = Array.from(cells);
-    const currentIndex = cellArray.indexOf(target as HTMLButtonElement);
+    const currentIndex = cells.indexOf(target);
     if (currentIndex === -1) return;
 
     const colCount = calendar.length;
@@ -523,9 +523,9 @@ function SharedScheduleGrid({
         return;
     }
 
-    if (nextIndex >= 0 && nextIndex < cellArray.length) {
+    if (nextIndex >= 0 && nextIndex < cells.length) {
       e.preventDefault();
-      cellArray[nextIndex].focus();
+      cells[nextIndex].focus();
     }
   }, [calendar.length]);
 

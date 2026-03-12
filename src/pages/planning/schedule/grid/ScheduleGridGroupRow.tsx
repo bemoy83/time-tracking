@@ -4,7 +4,7 @@ import type { GroupRowRenderInput } from './schedule-grid-types';
 export function ScheduleGridGroupRow({
   row,
   calendar,
-  gridColumns,
+  gridColumns: _gridColumns,
   aggregateByDate,
   isCollapsed,
   onToggle,

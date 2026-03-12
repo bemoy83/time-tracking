@@ -19,7 +19,7 @@ export function ScheduleGridItemRow({
   assignedDates,
   calendar,
   dayByDate,
-  gridColumns,
+  gridColumns: _gridColumns,
   phaseRange,
   hasPhaseWindows,
   readOnly,
@@ -133,18 +133,21 @@ export function ScheduleGridItemRow({
           const isTargetMet =
             isAssigned && isOnTarget && !isOver && !isOverCrew && !isOverWorker && !isOverTargetCell;
 
+          const isCellDisabled = readOnly || !day.isWorkDay || isOutOfPhase;
+
           return (
-            <button
+            <div
               key={`${item.id}:${phase}:${day.date}`}
-              type="button"
               role="gridcell"
               aria-colindex={colIdx + 2}
+              aria-disabled={isCellDisabled ? 'true' : undefined}
+              tabIndex={isCellDisabled ? -1 : 0}
               className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOutOfPhase ? ' schedule-grid__cell--phase-locked' : ''}${isPhaseMismatch ? ' schedule-grid__cell--phase-mismatch' : ''}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
               onClick={(e) => {
+                if (isCellDisabled) return;
                 if ((e.target as HTMLElement).closest('.schedule-grid__cell-crew-btn')) return;
                 onToggleAssignment(day.date, e.currentTarget);
               }}
-              disabled={readOnly || !day.isWorkDay || isOutOfPhase}
               title={
                 readOnly && readOnlyTitle
                   ? readOnlyTitle
@@ -229,7 +232,7 @@ export function ScheduleGridItemRow({
                   )}
                 </>
               ) : null}
-            </button>
+            </div>
           );
         })}
       </div>
