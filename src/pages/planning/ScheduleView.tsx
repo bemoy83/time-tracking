@@ -8,7 +8,7 @@ import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/sched
 import { lazyMigrateCrewByDate } from '../../lib/planning/scheduling/plan-schedule-update';
 import { applyBulkScheduleAmendment, applyScheduleAmendment, type BulkScheduleAmendmentChange } from '../../lib/planning/scheduling/amendments';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
-import type { BuildPhase } from '../../lib/types';
+import { BUILD_PHASES, type BuildPhase } from '../../lib/types';
 import {
   setPlanDefaultCrewSize,
   setPlanEventDate,
@@ -18,7 +18,11 @@ import {
   updateLineItemCrewForDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
-import { runAutoSchedule, type AutoScheduleReport } from '../../lib/planning/scheduling/auto-schedule';
+import {
+  runAutoSchedule,
+  type AutoScheduleReport,
+  type AutoScheduleUnresolvedReason,
+} from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
@@ -55,8 +59,37 @@ interface PlanningIssue {
   label: string;
 }
 
+interface RecommendationCta {
+  id: 'calendar' | 'grid' | 'assistant';
+  label: string;
+  onClick: () => void;
+}
+
+interface AssistantReviewIssue {
+  key: string;
+  lineItemId: string;
+  lineItemTitle: string;
+  phase: BuildPhase;
+  reason: AutoScheduleUnresolvedReason;
+  requiredPH: number;
+  assignedPH: number;
+}
+
 function toPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function unresolvedReasonLabel(reason: AutoScheduleUnresolvedReason): string {
+  switch (reason) {
+    case 'missing_required_hours':
+      return 'Missing required hours';
+    case 'no_work_days':
+      return 'No work days';
+    case 'no_capacity_window':
+      return 'No capacity window';
+    default:
+      return 'Unresolved';
+  }
 }
 
 export function ScheduleView({
@@ -70,6 +103,8 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [assistantReport, setAssistantReport] = useState<AutoScheduleReport | null>(null);
+  const [assistantReportStale, setAssistantReportStale] = useState(false);
+  const [activeAssistantIssueIndex, setActiveAssistantIssueIndex] = useState<number | null>(null);
   const workCalendarRef = useRef<HTMLDivElement>(null);
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const phaseDates = readPhaseDateValues(currentPlan);
@@ -95,6 +130,12 @@ export function ScheduleView({
 
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
+  }, [plan.id]);
+
+  useEffect(() => {
+    setAssistantReport(null);
+    setAssistantReportStale(false);
+    setActiveAssistantIssueIndex(null);
   }, [plan.id]);
 
   // Derive work calendar when at least one phase has dates but workCalendar is empty.
@@ -128,11 +169,27 @@ export function ScheduleView({
     () => getSchedulableUnscheduledPhaseRowCount(currentPlan.lineItems, phaseDates, workDays),
     [currentPlan.lineItems, phaseDates, workDays],
   );
+  const scheduledPhaseRowCount = useMemo(() => {
+    let count = 0;
+    for (const item of currentPlan.lineItems) {
+      for (const phase of BUILD_PHASES) {
+        const pf = getPhaseFields(item, phase);
+        if (pf.scheduledStart != null || pf.scheduledEnd != null) count += 1;
+      }
+    }
+    return count;
+  }, [currentPlan.lineItems]);
+
+  const clearAssistantReport = () => {
+    if (assistantReport != null) setAssistantReportStale(true);
+    setActiveAssistantIssueIndex((prev) => (prev == null ? prev : null));
+  };
 
   const handlePlanDateChange = (
     field: 'eventStartDate' | 'eventEndDate',
     value: string,
   ) => {
+    clearAssistantReport();
     mutatePlan((prev) => setPlanEventDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
@@ -141,16 +198,19 @@ export function ScheduleView({
     field: PhaseDateField,
     value: string,
   ) => {
+    clearAssistantReport();
     mutatePlan((prev) => setPlanPhaseDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
   const handleDefaultCrewChange = (value: string) => {
+    clearAssistantReport();
     mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
   const handleUpdateCalendarDay = (date: string, updates: Partial<Plan['workCalendar'][number]>) => {
+    clearAssistantReport();
     mutatePlan((prev) => updatePlanCalendarDay(prev, date, updates));
     trackTelemetryEvent('schedule_calendar_edit');
   };
@@ -167,6 +227,7 @@ export function ScheduleView({
   };
 
   const applyToggle = (lineItem: PlanLineItem, phase: BuildPhase, date: string, amendmentNote: string | null) => {
+    clearAssistantReport();
     mutatePlan((prev) => {
       const currentLineItem = prev.lineItems.find((item) => item.id === lineItem.id);
       if (!currentLineItem) return prev;
@@ -189,6 +250,95 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_assignment_edit');
   };
 
+  const handleClearRowSchedule = (lineItem: PlanLineItem, phase: BuildPhase) => {
+    let amendmentNote: string | null = null;
+    if (currentPlan.status === 'active') {
+      const note = window.prompt('Schedule clear amendment note (required):', '');
+      if (note == null) return;
+      if (note.trim().length === 0) {
+        window.alert('Amendment note is required when clearing schedule rows on active plans.');
+        return;
+      }
+      amendmentNote = note;
+    }
+
+    clearAssistantReport();
+    mutatePlan((prev) => {
+      const currentLineItem = prev.lineItems.find((item) => item.id === lineItem.id);
+      if (!currentLineItem) return prev;
+
+      const pf = getPhaseFields(currentLineItem, phase);
+      if (pf.scheduledStart == null && pf.scheduledEnd == null) return prev;
+
+      if (prev.status === 'active') {
+        return applyScheduleAmendment(prev, currentLineItem, phase, null, null, amendmentNote);
+      }
+
+      return updateLineItemAssignment(
+        prev,
+        currentLineItem.id,
+        phase,
+        { scheduledStart: null, scheduledEnd: null },
+        undefined,
+      );
+    });
+    trackTelemetryEvent('schedule_assignment_edit');
+    trackTelemetryEvent('schedule_assignment_row_clear');
+  };
+
+  const handleClearAllSchedules = () => {
+    if (scheduledPhaseRowCount === 0) return;
+    const confirmed = window.confirm(
+      `Clear schedule assignments for ${scheduledPhaseRowCount} ${scheduledPhaseRowCount === 1 ? 'row' : 'rows'}?`,
+    );
+    if (!confirmed) return;
+
+    let amendmentNote: string | null = null;
+    if (currentPlan.status === 'active') {
+      const note = window.prompt('Schedule clear-all amendment note (required):', '');
+      if (note == null) return;
+      if (note.trim().length === 0) {
+        window.alert('Amendment note is required when clearing all schedule rows on active plans.');
+        return;
+      }
+      amendmentNote = note;
+    }
+
+    clearAssistantReport();
+    mutatePlan((prev) => {
+      let nextPlan = prev;
+      const changes: BulkScheduleAmendmentChange[] = [];
+
+      for (const item of prev.lineItems) {
+        for (const phase of BUILD_PHASES) {
+          const pf = getPhaseFields(item, phase);
+          if (pf.scheduledStart == null && pf.scheduledEnd == null) continue;
+          nextPlan = updateLineItemAssignment(
+            nextPlan,
+            item.id,
+            phase,
+            { scheduledStart: null, scheduledEnd: null },
+            undefined,
+          );
+          changes.push({
+            lineItemId: item.id,
+            phase,
+            scheduledStart: null,
+            scheduledEnd: null,
+          });
+        }
+      }
+
+      if (changes.length === 0) return prev;
+      if (prev.status === 'active') {
+        return applyBulkScheduleAmendment(prev, nextPlan, changes, amendmentNote ?? '');
+      }
+      return nextPlan;
+    });
+    trackTelemetryEvent('schedule_assignment_edit');
+    trackTelemetryEvent('schedule_assignment_clear_all', { cleared_rows: scheduledPhaseRowCount });
+  };
+
   const handleAmendmentConfirm = (note: string | null) => {
     if (amendment) {
       applyToggle(amendment.lineItem, amendment.phase, amendment.date, note);
@@ -201,7 +351,11 @@ export function ScheduleView({
   };
 
   const handleAutoSchedule = () => {
-    const { plan: scheduledPlan, report } = runAutoSchedule(currentPlan);
+    const rerunFromStale = assistantReportStale;
+    const { plan: scheduledPlan, report } = runAutoSchedule(
+      currentPlan,
+      rerunFromStale ? { includeScheduled: true } : undefined,
+    );
 
     let nextPlan = scheduledPlan;
     if (currentPlan.status === 'active' && report.changed.length > 0) {
@@ -222,10 +376,13 @@ export function ScheduleView({
 
     mutatePlan(() => nextPlan);
     setAssistantReport(report);
+    setAssistantReportStale(false);
+    setActiveAssistantIssueIndex(null);
     trackTelemetryEvent('schedule_assignment_edit');
     trackTelemetryEvent('schedule_assistant_run', {
       changed_count: report.changed.length,
       unresolved_count: report.unresolved.length,
+      include_scheduled: rerunFromStale,
       coverage_ratio_before: report.before.coverageRatio,
       coverage_ratio_after: report.after.coverageRatio,
       over_capacity_days_before: report.before.overCapacityDays,
@@ -234,6 +391,7 @@ export function ScheduleView({
   };
 
   const handleCrewForDateChange = (lineItemId: string, phase: BuildPhase, date: string, crew: number) => {
+    clearAssistantReport();
     mutatePlan((prev) => updateLineItemCrewForDate(prev, lineItemId, phase, date, crew));
     trackTelemetryEvent('schedule_assignment_edit');
   };
@@ -259,11 +417,79 @@ export function ScheduleView({
   };
 
   const handleOpenWorkCalendar = () => {
-    workCalendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = workCalendarRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleOpenScheduleGrid = () => {
-    scheduleGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = scheduleGridRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const hasFreshAssistantReport = assistantReport != null && !assistantReportStale;
+  const assistantUnresolvedCount = hasFreshAssistantReport ? assistantReport.unresolved.length : 0;
+
+  const assistantReviewIssues = useMemo<AssistantReviewIssue[]>(() => {
+    if (!hasFreshAssistantReport || assistantReport.unresolved.length === 0) return [];
+    const titleByLineItemId = new Map(currentPlan.lineItems.map((item) => [item.id, item.title]));
+    const deduped = new Map<string, AssistantReviewIssue>();
+    for (const issue of assistantReport.unresolved) {
+      const key = `${issue.lineItemId}:${issue.phase}`;
+      if (deduped.has(key)) continue;
+      deduped.set(key, {
+        key,
+        lineItemId: issue.lineItemId,
+        lineItemTitle: titleByLineItemId.get(issue.lineItemId) ?? issue.lineItemId,
+        phase: issue.phase,
+        reason: issue.reason,
+        requiredPH: issue.requiredPH,
+        assignedPH: issue.assignedPH,
+      });
+    }
+    return [...deduped.values()];
+  }, [assistantReport, currentPlan.lineItems, hasFreshAssistantReport]);
+
+  const activeAssistantIssue =
+    activeAssistantIssueIndex != null
+      ? assistantReviewIssues[activeAssistantIssueIndex] ?? null
+      : null;
+
+  const unresolvedIssueKeys = useMemo(
+    () => new Set(assistantReviewIssues.map((issue) => issue.key)),
+    [assistantReviewIssues],
+  );
+
+  const handleReviewAssistantIssues = () => {
+    if (assistantReviewIssues.length === 0) {
+      handleOpenScheduleGrid();
+      return;
+    }
+    setActiveAssistantIssueIndex((prev) => (
+      prev == null ? 0 : (prev + 1) % assistantReviewIssues.length
+    ));
+    handleOpenScheduleGrid();
+  };
+
+  const handlePrevAssistantIssue = () => {
+    if (assistantReviewIssues.length === 0) return;
+    setActiveAssistantIssueIndex((prev) => {
+      const current = prev == null ? 0 : prev;
+      return (current - 1 + assistantReviewIssues.length) % assistantReviewIssues.length;
+    });
+    handleOpenScheduleGrid();
+  };
+
+  const handleNextAssistantIssue = () => {
+    if (assistantReviewIssues.length === 0) return;
+    setActiveAssistantIssueIndex((prev) => {
+      const current = prev == null ? -1 : prev;
+      return (current + 1) % assistantReviewIssues.length;
+    });
+    handleOpenScheduleGrid();
   };
 
   const planningIssues: PlanningIssue[] = [];
@@ -288,8 +514,15 @@ export function ScheduleView({
       label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'phase row is' : 'phase rows are'} still unscheduled`,
     });
   }
-  if ((assistantReport?.unresolved.length ?? 0) > 0) {
-    const unresolvedCount = assistantReport!.unresolved.length;
+  if (assistantReportStale) {
+    planningIssues.push({
+      id: 'assistant-stale',
+      severity: 'warning',
+      label: 'Assistant findings are stale after manual schedule edits',
+    });
+  }
+  if (assistantUnresolvedCount > 0) {
+    const unresolvedCount = assistantUnresolvedCount;
     planningIssues.push({
       id: 'assistant-unresolved',
       severity: 'warning',
@@ -304,22 +537,43 @@ export function ScheduleView({
     });
   }
 
-  const primaryAction = (() => {
-    if (readOnly) return null;
+  const recommendationText = (() => {
+    if (readOnly) return 'Read-only plan. Review issue queue and hand off when ready.';
     if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
-      return { label: 'Review calendar fixes', onClick: handleOpenWorkCalendar };
+      return 'Critical conflicts detected. Resolve calendar capacity before further scheduling.';
     }
-    if ((assistantReport?.unresolved.length ?? 0) > 0) {
-      return { label: 'Review assistant issues', onClick: handleOpenScheduleGrid };
+    if (assistantReportStale) {
+      return 'Assistant findings are stale after manual edits. Re-run assistant before activation.';
+    }
+    if (assistantUnresolvedCount > 0) {
+      return 'Assistant still has unresolved rows. Review and finalize assignments in the grid.';
     }
     if (schedulableUnscheduledCount > 0) {
-      return { label: 'Run assistant', onClick: handleAutoSchedule };
+      return 'Schedulable work remains unscheduled. Run assistant or place assignments manually.';
     }
-    if (!isLocked) {
-      return { label: 'Activate plan', onClick: handleToggleLock };
+    if (!isLocked) return 'No blockers detected. Plan is ready for activation when execution can begin.';
+    return 'Plan is active. Keep assignments aligned with live execution changes.';
+  })();
+
+  const recommendationCta: RecommendationCta | null = (() => {
+    if (readOnly) return null;
+    if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
+      return { id: 'calendar', label: 'Review calendar fixes', onClick: handleOpenWorkCalendar };
+    }
+    if (assistantReportStale) {
+      return { id: 'assistant', label: 'Re-run assistant', onClick: handleAutoSchedule };
+    }
+    if (assistantUnresolvedCount > 0) {
+      return { id: 'grid', label: 'Review assistant issues', onClick: handleReviewAssistantIssues };
+    }
+    if (schedulableUnscheduledCount > 0) {
+      return { id: 'assistant', label: 'Run assistant', onClick: handleAutoSchedule };
     }
     return null;
   })();
+
+  const criticalIssueCount = planningIssues.filter((issue) => issue.severity === 'critical').length;
+  const warningIssueCount = planningIssues.filter((issue) => issue.severity === 'warning').length;
 
   return (
     <div className="planning-view schedule-view">
@@ -336,99 +590,106 @@ export function ScheduleView({
               <h2 className="planning-view__title" style={{ flex: 1 }}>
                 Schedule
               </h2>
-            </div>
-
-            <div className="schedule-view__header-actions">
-              {!readOnly && (
-                <>
-                  <button
-                    type="button"
-                    className="btn btn--secondary btn--sm"
-                    onClick={handleExport}
-                    disabled={isExporting}
-                  >
-                    {isExporting ? 'Handing off...' : 'Hand off'}
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
-                    onClick={handleToggleLock}
-                  >
-                    {isLocked ? 'Revert to Draft' : 'Activate'}
-                  </button>
-                </>
-              )}
-              {readOnly && (
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={handleExport}
-                  disabled={isExporting}
-                >
-                  {isExporting ? 'Handing off...' : 'Hand off'}
-                </button>
-              )}
+              <div className="schedule-view__planning-meta" role="status" aria-live="polite">
+                <span className="schedule-view__planning-chip">
+                  {planningIssues.length} {planningIssues.length === 1 ? 'issue' : 'issues'}
+                </span>
+                {criticalIssueCount > 0 && (
+                  <span className="schedule-view__planning-chip schedule-view__planning-chip--critical">
+                    {criticalIssueCount} critical
+                  </span>
+                )}
+                {warningIssueCount > 0 && (
+                  <span className="schedule-view__planning-chip schedule-view__planning-chip--warning">
+                    {warningIssueCount} warning
+                  </span>
+                )}
+              </div>
             </div>
           </header>
 
-          <section className="schedule-view__planning-section" aria-label="Planning issues queue">
-            <h3 className="schedule-view__planning-title">Planning Issues Queue</h3>
-            {planningIssues.length === 0 ? (
-              <p className="schedule-view__muted">No planning blockers detected.</p>
-            ) : (
-              <ul className="schedule-view__planning-issues">
-                {planningIssues.map((issue) => (
-                  <li
-                    key={issue.id}
-                    className={`schedule-view__planning-issue schedule-view__planning-issue--${issue.severity}`}
-                  >
-                    <span className="schedule-view__planning-issue-severity">
-                      {issue.severity}
-                    </span>
-                    <span className="schedule-view__planning-issue-label">{issue.label}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <div className="schedule-view__planning-layout">
+            <section className="schedule-view__planning-section" aria-label="Planning issues queue">
+              <h3 className="schedule-view__planning-title">Planning Issues Queue</h3>
+              {planningIssues.length === 0 ? (
+                <p className="schedule-view__muted">No planning blockers detected.</p>
+              ) : (
+                <ul className="schedule-view__planning-issues">
+                  {planningIssues.map((issue) => (
+                    <li
+                      key={issue.id}
+                      className={`schedule-view__planning-issue schedule-view__planning-issue--${issue.severity}`}
+                    >
+                      <span className="schedule-view__planning-issue-severity">
+                        {issue.severity}
+                      </span>
+                      <span className="schedule-view__planning-issue-label">{issue.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
-          <section className="schedule-view__planning-section" aria-label="Next best action">
-            <h3 className="schedule-view__planning-title">Next Best Action</h3>
+            <section className="schedule-view__planning-section" aria-label="Planning focus">
+              <h3 className="schedule-view__planning-title">Planning Focus</h3>
+              <p className="schedule-view__planning-focus">{recommendationText}</p>
+              {assistantReportStale ? (
+                <p className="schedule-view__muted">
+                  Assistant findings are stale after manual schedule edits. Re-run assistant to refresh issue detection.
+                </p>
+              ) : assistantReport ? (
+                <div className="schedule-view__assistant-details">
+                  <h3 className="schedule-view__planning-title">Assistant run details</h3>
+                  <p className="schedule-view__muted">
+                    {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
+                  </p>
+                  <p className="schedule-view__muted">
+                    Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+                    {' · '}
+                    Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+                  </p>
+                </div>
+              ) : (
+                <p className="schedule-view__muted">Assistant has not been run in this session.</p>
+              )}
+            </section>
+          </div>
+
+          <div className="schedule-view__planning-footer">
             <div className="schedule-view__planning-actions">
-              {primaryAction && (
-                <button type="button" className="btn btn--primary btn--sm" onClick={primaryAction.onClick}>
-                  {primaryAction.label}
+              {recommendationCta && (
+                <button type="button" className="btn btn--primary btn--sm" onClick={recommendationCta.onClick}>
+                  {recommendationCta.label}
+                </button>
+              )}
+              {!readOnly && scheduledPhaseRowCount > 0 && (
+                <button
+                  type="button"
+                  className="btn btn--danger btn--sm"
+                  onClick={handleClearAllSchedules}
+                >
+                  Clear all schedules ({scheduledPhaseRowCount})
                 </button>
               )}
               <button
                 type="button"
                 className="btn btn--secondary btn--sm"
-                onClick={handleOpenWorkCalendar}
+                onClick={handleExport}
+                disabled={isExporting}
               >
-                Open Work Calendar
+                {isExporting ? 'Handing off...' : 'Hand off'}
               </button>
-              <button
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={handleOpenScheduleGrid}
-              >
-                Open Schedule Grid
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
+                  onClick={handleToggleLock}
+                >
+                  {isLocked ? 'Revert to Draft' : 'Activate'}
+                </button>
+              )}
             </div>
-            {assistantReport && (
-              <details className="schedule-view__assistant-details">
-                <summary className="schedule-view__assistant-summary">Assistant run details</summary>
-                <p className="schedule-view__muted">
-                  {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
-                </p>
-                <p className="schedule-view__muted">
-                  Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-                  {' · '}
-                  Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-                </p>
-              </details>
-            )}
-          </section>
+          </div>
         </section>
 
         <div className="schedule-view__top-band-inputs">
@@ -463,6 +724,36 @@ export function ScheduleView({
       </div>
 
       <div ref={scheduleGridRef}>
+        {assistantReviewIssues.length > 0 && (
+          <section className="schedule-view__assistant-review" aria-live="polite">
+            <div className="schedule-view__assistant-review-summary">
+              <span className="schedule-view__assistant-review-chip">
+                {assistantReviewIssues.length} unresolved {assistantReviewIssues.length === 1 ? 'issue' : 'issues'}
+              </span>
+              {activeAssistantIssue && (
+                <>
+                  <span className="schedule-view__assistant-review-chip schedule-view__assistant-review-chip--active">
+                    Issue {activeAssistantIssueIndex! + 1} of {assistantReviewIssues.length}
+                  </span>
+                  <span className="schedule-view__assistant-review-text">
+                    {activeAssistantIssue.lineItemTitle} · {activeAssistantIssue.phase} · {unresolvedReasonLabel(activeAssistantIssue.reason)}
+                  </span>
+                  <span className="schedule-view__assistant-review-text">
+                    {activeAssistantIssue.assignedPH.toFixed(1)}h / {activeAssistantIssue.requiredPH.toFixed(1)}h
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="schedule-view__assistant-review-actions">
+              <button type="button" className="btn btn--secondary btn--sm" onClick={handlePrevAssistantIssue}>
+                Prev
+              </button>
+              <button type="button" className="btn btn--secondary btn--sm" onClick={handleNextAssistantIssue}>
+                Next
+              </button>
+            </div>
+          </section>
+        )}
         <ScheduleGrid
           lineItems={currentPlan.lineItems}
           calendar={currentPlan.workCalendar}
@@ -471,7 +762,10 @@ export function ScheduleView({
           readOnly={readOnly}
           onAutoSchedule={handleAutoSchedule}
           onToggleAssignment={handleToggleAssignment}
+          onClearRowSchedule={handleClearRowSchedule}
           onCrewForDateChange={handleCrewForDateChange}
+          unresolvedIssueKeys={unresolvedIssueKeys}
+          activeIssueKey={activeAssistantIssue?.key ?? null}
         />
       </div>
 

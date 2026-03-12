@@ -7,6 +7,7 @@ import type { BuildPhase } from '../../../../lib/types';
 export type GridDayContext = Map<string, DailyCapacity>;
 
 export interface ItemRowRenderInput {
+  rowKey: string;
   rowIndex: number;
   item: PlanLineItem;
   phase: BuildPhase;
@@ -19,9 +20,12 @@ export interface ItemRowRenderInput {
   readOnly: boolean;
   metaPrefix?: string;
   onToggleAssignment: (date: string, cellElement?: HTMLElement) => void;
+  onClearSchedule?: () => void;
   onCrewForDateChange?: (date: string, crew: number) => void;
   outOfPhaseAriaUsesLabel: boolean;
   readOnlyTitle?: string;
+  isAssistantUnresolved?: boolean;
+  isAssistantActive?: boolean;
 }
 
 export interface GroupRowRenderInput {

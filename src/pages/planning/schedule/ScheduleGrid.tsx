@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronIcon } from '../../../components/icons';
 import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
 import { getPhaseFields, isPhaseActive } from '../../../lib/planning/plan-model';
@@ -52,7 +52,10 @@ interface SingleScheduleGridProps {
   readOnly: boolean;
   onAutoSchedule?: () => void;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
+  onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
   onCrewForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, crew: number) => void;
+  unresolvedIssueKeys?: Set<string>;
+  activeIssueKey?: string | null;
 }
 
 interface SharedScheduleGridProps {
@@ -176,7 +179,10 @@ function SingleScheduleGrid({
   readOnly,
   onAutoSchedule,
   onToggleAssignment,
+  onClearRowSchedule,
   onCrewForDateChange,
+  unresolvedIssueKeys,
+  activeIssueKey,
 }: SingleScheduleGridProps) {
   const dayByDate = useMemo(
     () => new Map(capacity.days.map((day) => [day.date, day])),
@@ -194,9 +200,31 @@ function SingleScheduleGrid({
   );
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
+  const unresolvedKeys = unresolvedIssueKeys ?? new Set<string>();
 
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(220px, 1.3fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
+
+  useEffect(() => {
+    if (!activeIssueKey) return;
+    const phase = activeIssueKey.split(':').slice(-1)[0] as BuildPhase;
+    if (!BUILD_PHASES.includes(phase)) return;
+    setCollapsedPhases((prev) => {
+      if (!prev.has(phase)) return prev;
+      const next = new Set(prev);
+      next.delete(phase);
+      return next;
+    });
+  }, [activeIssueKey]);
+
+  useEffect(() => {
+    if (!activeIssueKey) return;
+    const frame = requestAnimationFrame(() => {
+      const row = gridRef.current?.querySelector<HTMLElement>(`[data-row-key="${activeIssueKey}"]`);
+      row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeIssueKey]);
 
   const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
@@ -249,13 +277,15 @@ function SingleScheduleGrid({
   };
 
   const renderRow = (item: PlanLineItem, phase: BuildPhase, rowIndex: number) => {
+    const rowKey = `${item.id}:${phase}`;
     const pf = getPhaseFields(item, phase);
     const assignedDates = getAssignedDates(pf);
     const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, phase) : null;
 
     return (
       <ScheduleGridItemRow
-        key={`${item.id}:${phase}`}
+        key={rowKey}
+        rowKey={rowKey}
         rowIndex={rowIndex}
         item={item}
         phase={phase}
@@ -267,8 +297,11 @@ function SingleScheduleGrid({
         hasPhaseWindows={hasPhaseWindows}
         readOnly={readOnly}
         onToggleAssignment={(date, cellElement) => onToggleAssignment(item, phase, date, cellElement)}
+        onClearSchedule={onClearRowSchedule ? () => onClearRowSchedule(item, phase) : undefined}
         onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(item.id, phase, date, crew) : undefined}
         outOfPhaseAriaUsesLabel
+        isAssistantUnresolved={unresolvedKeys.has(rowKey)}
+        isAssistantActive={activeIssueKey === rowKey}
       />
     );
   };
@@ -545,6 +578,7 @@ function SharedScheduleGrid({
                 return (
                   <ScheduleGridItemRow
                     key={row.id}
+                    rowKey={row.id}
                     rowIndex={idx}
                     item={item}
                     phase={row.phase}

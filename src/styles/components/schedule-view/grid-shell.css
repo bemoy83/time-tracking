@@ -186,6 +186,63 @@
   color: var(--color-text);
 }
 
+.schedule-grid__line-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.schedule-grid__line-item-heading-main {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.schedule-grid__assistant-issue-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--state-warning-fg-strong);
+  background: var(--state-warning-bg-soft);
+  white-space: nowrap;
+}
+
+.schedule-grid__assistant-issue-badge--active {
+  color: var(--state-warning-fg-strong);
+  background: var(--state-warning-bg);
+}
+
+.schedule-grid__row-clear-btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-caption);
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.schedule-grid__row-clear-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.schedule-grid__row-clear-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 .schedule-grid__line-item-meta {
   display: block;
   margin-top: 2px;

@@ -20,7 +20,7 @@ function ScheduleCoverageRing({ metric }: { metric: ScheduleCoverageMetric }) {
     : 'planning-workspace__coverage-card--open';
   const statusText = metric.isComplete
     ? 'All required work is scheduled.'
-    : `${formatHours(metric.unscheduledHours)}h unscheduled. Close the ring to finish scheduling.`;
+    : `${formatHours(metric.unscheduledHours)}h unscheduled`;
 
   return (
     <div className={`planning-workspace__coverage-card ${cardStateClass}`}>

@@ -269,6 +269,7 @@ function simulatePlacement(
   requestedCrew: number,
   allowOverAllocation: boolean,
   availableByDate?: Map<string, number>,
+  allowCrewScaleUp = false,
 ): Placement | null {
   const crewByDate: Record<string, number> = {};
   let phLeft = requiredPH;
@@ -279,7 +280,36 @@ function simulatePlacement(
     lastIndex = i;
     const day = candidates[i];
     const remainingCrew = availableByDate?.get(day.date) ?? day.remainingCrew;
-    const usableCrew = getUsableCrew(requestedCrew, remainingCrew, allowOverAllocation);
+    let usableCrew = getUsableCrew(requestedCrew, remainingCrew, allowOverAllocation);
+
+    // If requested crew cannot cover remaining work across the remaining window,
+    // allow temporary scale-up (bounded by day crew availability) to finish.
+    if (allowCrewScaleUp && day.accessHours > 0 && phLeft > 0.01) {
+      let requestedPotentialPH = 0;
+      for (let j = i; j < candidates.length; j++) {
+        const future = candidates[j];
+        const futureRemaining = availableByDate?.get(future.date) ?? future.remainingCrew;
+        const futureCrew = getUsableCrew(requestedCrew, futureRemaining, allowOverAllocation);
+        if (futureCrew <= 0 || future.accessHours <= 0) continue;
+        requestedPotentialPH += futureCrew * future.accessHours;
+      }
+
+      const shortagePH = phLeft - requestedPotentialPH;
+      if (shortagePH > 0.01) {
+        const maxCrewToday = allowOverAllocation
+          ? Math.max(usableCrew, Math.ceil(phLeft / day.accessHours))
+          : Math.max(usableCrew, remainingCrew);
+        const maxExtraTodayPH = Math.max(0, (maxCrewToday - usableCrew) * day.accessHours);
+        const extraTodayPH = Math.min(shortagePH, maxExtraTodayPH);
+        if (extraTodayPH > 0.01) {
+          usableCrew = Math.min(
+            maxCrewToday,
+            usableCrew + Math.ceil(extraTodayPH / day.accessHours),
+          );
+        }
+      }
+    }
+
     if (usableCrew <= 0 || day.accessHours <= 0) continue;
 
     const dayPH = usableCrew * day.accessHours;
@@ -478,6 +508,21 @@ function schedulePhase(
         assignedPH: 0,
       });
       continue;
+    }
+
+    if (!best.covers) {
+      const scaled = simulatePlacement(
+        candidates,
+        best.startIndex,
+        row.requiredPH,
+        row.requestedCrew,
+        options.allowOverAllocation,
+        undefined,
+        true,
+      );
+      if (scaled && isPlacementBetter(scaled, best)) {
+        best = scaled;
+      }
     }
 
     applyPlacementToDayState(dayStateMap, best.crewByDate, 1);

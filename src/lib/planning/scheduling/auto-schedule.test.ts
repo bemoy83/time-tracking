@@ -437,6 +437,29 @@ describe('autoSchedule', () => {
     ]);
   });
 
+  it('scales crew above requested when required hours cannot be covered otherwise', () => {
+    const plan = makePhasePlan({
+      defaultCrewSize: 4,
+      buildUpStartDate: '2026-03-02',
+      buildUpEndDate: '2026-03-03',
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    });
+    const item = makeItem('Needs scale-up', 'build-up', 24, 1, 1); // 24 PH required
+    plan.lineItems = [item];
+
+    const { plan: result, report } = runAutoSchedule(plan);
+    const scheduled = getItem(result, item.id);
+    const pf = getPhaseFields(scheduled, 'build-up');
+    const maxCrew = Math.max(...Object.values(pf.crewByDate ?? {}));
+
+    expect(pf.scheduledStart).toBeTruthy();
+    expect(report.unresolved).toHaveLength(0);
+    expect(maxCrew).toBeGreaterThan(1);
+  });
+
   it('does not worsen schedule metrics when local rebalance is enabled', () => {
     const plan = makePhasePlan({ defaultCrewSize: 3 });
     const a = makeItem('A', 'build-up', 32, 1, 2);

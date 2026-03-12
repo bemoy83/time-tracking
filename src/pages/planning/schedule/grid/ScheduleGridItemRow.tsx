@@ -12,6 +12,7 @@ import type { ItemRowRenderInput } from './schedule-grid-types';
 import { isDateWithinSpan } from '../schedule-date-ui';
 
 export function ScheduleGridItemRow({
+  rowKey,
   rowIndex,
   item,
   phase,
@@ -24,9 +25,12 @@ export function ScheduleGridItemRow({
   readOnly,
   metaPrefix,
   onToggleAssignment,
+  onClearSchedule,
   onCrewForDateChange,
   outOfPhaseAriaUsesLabel,
   readOnlyTitle,
+  isAssistantUnresolved = false,
+  isAssistantActive = false,
 }: ItemRowRenderInput) {
   const pf = getPhaseFields(item, phase);
   const assigned = new Set(assignedDates);
@@ -47,12 +51,46 @@ export function ScheduleGridItemRow({
         : isOverTarget
           ? 'schedule-grid__row--over-target'
           : '';
+  const unresolvedClass = isAssistantUnresolved ? ' schedule-grid__row--assistant-unresolved' : '';
+  const activeClass = isAssistantActive ? ' schedule-grid__row--assistant-active' : '';
 
   return (
     <div>
-      <div className={`schedule-grid__row${rowStatusClass ? ` ${rowStatusClass}` : ''}`} role="row" aria-rowindex={rowIndex + 2} style={{ gridTemplateColumns: gridColumns }}>
+      <div
+        data-row-key={rowKey}
+        className={`schedule-grid__row${rowStatusClass ? ` ${rowStatusClass}` : ''}${unresolvedClass}${activeClass}`}
+        role="row"
+        aria-rowindex={rowIndex + 2}
+        style={{ gridTemplateColumns: gridColumns }}
+      >
         <div className={`schedule-grid__line-item${metaPrefix ? ' schedule-grid__line-item--shared' : ''}`} role="rowheader">
-          <span className="schedule-grid__line-item-title">{item.title}</span>
+          <span className="schedule-grid__line-item-heading">
+            <span className="schedule-grid__line-item-heading-main">
+              <span className="schedule-grid__line-item-title">{item.title}</span>
+              {isAssistantUnresolved && (
+                <span
+                  className={`schedule-grid__assistant-issue-badge${isAssistantActive ? ' schedule-grid__assistant-issue-badge--active' : ''}`}
+                  aria-label={isAssistantActive ? 'Active assistant issue' : 'Assistant issue'}
+                >
+                  {isAssistantActive ? 'Reviewing issue' : 'Assistant issue'}
+                </span>
+              )}
+            </span>
+            {!readOnly && hasAssignments && onClearSchedule && (
+              <button
+                type="button"
+                className="schedule-grid__row-clear-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearSchedule();
+                }}
+                aria-label={`Clear schedule for ${item.title} (${BUILD_PHASE_LABELS[phase]})`}
+                title="Clear this row schedule"
+              >
+                Clear
+              </button>
+            )}
+          </span>
           <span className="schedule-grid__line-item-meta">
             {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]}
             {metaPrefix ? ` · ${metaPrefix}` : ''} ·{' '}

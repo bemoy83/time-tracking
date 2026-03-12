@@ -55,6 +55,15 @@
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
 }
 
+/* Assistant issue row states must override the generic dark line-item background. */
+.schedule-view .schedule-grid__row--assistant-unresolved .schedule-grid__line-item {
+  background: color-mix(in srgb, var(--state-warning-bg-soft) 82%, var(--surface-contained-bg));
+}
+
+.schedule-view .schedule-grid__row--assistant-active .schedule-grid__line-item {
+  background: color-mix(in srgb, var(--state-warning-bg-strong) 78%, var(--surface-contained-bg));
+}
+
 /* Work Calendar — muted headers (Mon, Tue, Wk 1, etc.) */
 .schedule-view .wc-col-head,
 .schedule-view .wc-week-label {
