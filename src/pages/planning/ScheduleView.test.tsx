@@ -53,6 +53,17 @@ describe('ScheduleView top-band layout', () => {
 
     expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Hand off' })).toBeTruthy();
     expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Activate' })).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getByText('Planning Issues Queue')).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getByText('Next Best Action')).toBeTruthy();
+  });
+
+  it('shows no-blockers message and activation recommendation for editable draft plans', () => {
+    const { container } = renderSchedule({ desktop: true, readOnly: false });
+    const healthColumn = container.querySelector('.schedule-view__top-band-health');
+    expect(healthColumn).toBeTruthy();
+
+    expect(within(healthColumn as HTMLElement).getByText('No planning blockers detected.')).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Activate plan' })).toBeTruthy();
   });
 
   it('keeps schedule inputs always visible and non-collapsible on desktop', () => {

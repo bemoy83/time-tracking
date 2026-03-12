@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
@@ -20,13 +20,9 @@ import {
 import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import { runAutoSchedule, type AutoScheduleReport } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
-import { ScheduleGrid } from './schedule/ScheduleGrid';
-import { FeasibilityBar } from './schedule/FeasibilityBar';
+import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
-import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
-import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
-import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
-import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
+import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -51,6 +47,14 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
+type PlanningIssueSeverity = 'critical' | 'warning' | 'info';
+
+interface PlanningIssue {
+  id: string;
+  severity: PlanningIssueSeverity;
+  label: string;
+}
+
 function toPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
@@ -66,6 +70,8 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [assistantReport, setAssistantReport] = useState<AutoScheduleReport | null>(null);
+  const workCalendarRef = useRef<HTMLDivElement>(null);
+  const scheduleGridRef = useRef<HTMLDivElement>(null);
   const phaseDates = readPhaseDateValues(currentPlan);
   const primaryRange = getPrimaryScheduleRange(
     phaseDates,
@@ -86,10 +92,6 @@ export function ScheduleView({
       phaseDates.tearDownEndDate,
     ],
   );
-  const isEmpty = primaryRange == null;
-  const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
-  const isDesktopTopBand = useMediaQuery('(min-width: 1200px)');
-  const scheduleInputsExpanded = isDesktopTopBand ? true : inputsExpanded;
 
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
@@ -117,6 +119,14 @@ export function ScheduleView({
   const capacity = useMemo(
     () => computeCapacitySummary(currentPlan),
     [currentPlan],
+  );
+  const workDays = useMemo(
+    () => currentPlan.workCalendar.filter((day) => day.isWorkDay),
+    [currentPlan.workCalendar],
+  );
+  const schedulableUnscheduledCount = useMemo(
+    () => getSchedulableUnscheduledPhaseRowCount(currentPlan.lineItems, phaseDates, workDays),
+    [currentPlan.lineItems, phaseDates, workDays],
   );
 
   const handlePlanDateChange = (
@@ -248,6 +258,69 @@ export function ScheduleView({
     trackTelemetryEvent('planning_lock_toggle');
   };
 
+  const handleOpenWorkCalendar = () => {
+    workCalendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleOpenScheduleGrid = () => {
+    scheduleGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const planningIssues: PlanningIssue[] = [];
+  if (capacity.overWorkerCapacityDayCount > 0) {
+    planningIssues.push({
+      id: 'worker-capacity',
+      severity: 'critical',
+      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day exceeds' : 'days exceed'} worker capacity`,
+    });
+  }
+  if (capacity.overAllocatedDayCount > 0) {
+    planningIssues.push({
+      id: 'over-allocated',
+      severity: 'critical',
+      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} over-allocated`,
+    });
+  }
+  if (schedulableUnscheduledCount > 0) {
+    planningIssues.push({
+      id: 'unscheduled',
+      severity: 'warning',
+      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'phase row is' : 'phase rows are'} still unscheduled`,
+    });
+  }
+  if ((assistantReport?.unresolved.length ?? 0) > 0) {
+    const unresolvedCount = assistantReport!.unresolved.length;
+    planningIssues.push({
+      id: 'assistant-unresolved',
+      severity: 'warning',
+      label: `Assistant still has ${unresolvedCount} unresolved ${unresolvedCount === 1 ? 'item' : 'items'}`,
+    });
+  }
+  if (capacity.overStaffedDayCount > 0) {
+    planningIssues.push({
+      id: 'over-staffed',
+      severity: 'info',
+      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day has' : 'days have'} excess crew capacity`,
+    });
+  }
+
+  const primaryAction = (() => {
+    if (readOnly) return null;
+    if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
+      return { label: 'Review calendar fixes', onClick: handleOpenWorkCalendar };
+    }
+    if ((assistantReport?.unresolved.length ?? 0) > 0) {
+      return { label: 'Review assistant issues', onClick: handleOpenScheduleGrid };
+    }
+    if (schedulableUnscheduledCount > 0) {
+      return { label: 'Run assistant', onClick: handleAutoSchedule };
+    }
+    if (!isLocked) {
+      return { label: 'Activate plan', onClick: handleToggleLock };
+    }
+    return null;
+  })();
+
   return (
     <div className="planning-view schedule-view">
       <div className="schedule-view__top-band">
@@ -298,67 +371,109 @@ export function ScheduleView({
             </div>
           </header>
 
-          <FeasibilityBar capacity={capacity} />
-          <ConflictResolutionBanner capacity={capacity} />
-          {assistantReport && (
-            <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
-              <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
-              <p className="schedule-view__muted">
-                {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
-              </p>
-              <p className="schedule-view__muted">
-                Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-                {' · '}
-                Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-              </p>
-            </section>
-          )}
+          <section className="schedule-view__planning-section" aria-label="Planning issues queue">
+            <h3 className="schedule-view__planning-title">Planning Issues Queue</h3>
+            {planningIssues.length === 0 ? (
+              <p className="schedule-view__muted">No planning blockers detected.</p>
+            ) : (
+              <ul className="schedule-view__planning-issues">
+                {planningIssues.map((issue) => (
+                  <li
+                    key={issue.id}
+                    className={`schedule-view__planning-issue schedule-view__planning-issue--${issue.severity}`}
+                  >
+                    <span className="schedule-view__planning-issue-severity">
+                      {issue.severity}
+                    </span>
+                    <span className="schedule-view__planning-issue-label">{issue.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="schedule-view__planning-section" aria-label="Next best action">
+            <h3 className="schedule-view__planning-title">Next Best Action</h3>
+            <div className="schedule-view__planning-actions">
+              {primaryAction && (
+                <button type="button" className="btn btn--primary btn--sm" onClick={primaryAction.onClick}>
+                  {primaryAction.label}
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={handleOpenWorkCalendar}
+              >
+                Open Work Calendar
+              </button>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={handleOpenScheduleGrid}
+              >
+                Open Schedule Grid
+              </button>
+            </div>
+            {assistantReport && (
+              <details className="schedule-view__assistant-details">
+                <summary className="schedule-view__assistant-summary">Assistant run details</summary>
+                <p className="schedule-view__muted">
+                  {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
+                </p>
+                <p className="schedule-view__muted">
+                  Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+                  {' · '}
+                  Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+                </p>
+              </details>
+            )}
+          </section>
         </section>
 
         <div className="schedule-view__top-band-inputs">
-          <ScheduleInputsBlock
-            expanded={scheduleInputsExpanded}
-            onToggle={() => setInputsExpanded((prev) => !prev)}
-            collapsible={!isDesktopTopBand}
+          <PlanScheduleInputsPanel
+            buildUpStartDate={phaseDates.buildUpStartDate}
+            buildUpEndDate={phaseDates.buildUpEndDate}
+            tearDownStartDate={phaseDates.tearDownStartDate}
+            tearDownEndDate={phaseDates.tearDownEndDate}
+            eventStartDate={currentPlan.eventStartDate}
+            eventEndDate={currentPlan.eventEndDate}
+            defaultCrewSize={currentPlan.defaultCrewSize}
+            readOnly={readOnly}
+            showBackButton={showBackButton}
             primaryRange={workCalendarRange ?? primaryRange}
             dayCount={currentPlan.workCalendar.length}
             crewSize={currentPlan.defaultCrewSize ?? null}
             totalAvailable={capacity.totalAvailablePersonHours}
-          >
-            <PlanScheduleInputs
-              buildUpStartDate={phaseDates.buildUpStartDate}
-              buildUpEndDate={phaseDates.buildUpEndDate}
-              tearDownStartDate={phaseDates.tearDownStartDate}
-              tearDownEndDate={phaseDates.tearDownEndDate}
-              eventStartDate={currentPlan.eventStartDate}
-              eventEndDate={currentPlan.eventEndDate}
-              defaultCrewSize={currentPlan.defaultCrewSize}
-              readOnly={readOnly}
-              onPhaseDateChange={handlePlanPhaseDateChange}
-              onEventDateChange={handlePlanDateChange}
-              onDefaultCrewSizeChange={handleDefaultCrewChange}
-            />
-          </ScheduleInputsBlock>
+            onPhaseDateChange={handlePlanPhaseDateChange}
+            onEventDateChange={handlePlanDateChange}
+            onDefaultCrewSizeChange={handleDefaultCrewChange}
+          />
         </div>
       </div>
 
-      <WorkCalendarEditor
-        calendar={currentPlan.workCalendar}
-        readOnly={readOnly}
-        onUpdateDay={handleUpdateCalendarDay}
-        planDefaultCrewSize={currentPlan.defaultCrewSize}
-      />
+      <div ref={workCalendarRef}>
+        <WorkCalendarEditor
+          calendar={currentPlan.workCalendar}
+          readOnly={readOnly}
+          onUpdateDay={handleUpdateCalendarDay}
+          planDefaultCrewSize={currentPlan.defaultCrewSize}
+        />
+      </div>
 
-      <ScheduleGrid
-        lineItems={currentPlan.lineItems}
-        calendar={currentPlan.workCalendar}
-        capacity={capacity}
-        phaseDates={phaseDates}
-        readOnly={readOnly}
-        onAutoSchedule={handleAutoSchedule}
-        onToggleAssignment={handleToggleAssignment}
-        onCrewForDateChange={handleCrewForDateChange}
-      />
+      <div ref={scheduleGridRef}>
+        <ScheduleGrid
+          lineItems={currentPlan.lineItems}
+          calendar={currentPlan.workCalendar}
+          capacity={capacity}
+          phaseDates={phaseDates}
+          readOnly={readOnly}
+          onAutoSchedule={handleAutoSchedule}
+          onToggleAssignment={handleToggleAssignment}
+          onCrewForDateChange={handleCrewForDateChange}
+        />
+      </div>
 
       {amendment && (
         <AmendmentPopover

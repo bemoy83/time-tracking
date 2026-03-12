@@ -33,9 +33,7 @@ import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
 import { shouldClearPlanProjectId } from './plan-editor-state';
-import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
-import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
-import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
+import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -116,10 +114,6 @@ export function PlanEditor({
     ],
   );
   const summaryRange = workCalendarRange ?? primaryRange;
-  const isEmpty = summaryRange == null;
-  const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
-  const isDesktopControlBand = useMediaQuery('(min-width: 1200px)') && !showBackButton;
-  const scheduleInputsExpanded = isDesktopControlBand ? true : inputsExpanded;
 
   const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
   const suggestionsByLineItemId = useMemo(
@@ -567,29 +561,24 @@ export function PlanEditor({
         </section>
 
         <div className="planning-view__schedule-inputs-wrap">
-          <ScheduleInputsBlock
-            expanded={scheduleInputsExpanded}
-            onToggle={() => setInputsExpanded((p) => !p)}
-            collapsible={!isDesktopControlBand}
+          <PlanScheduleInputsPanel
+            buildUpStartDate={phaseDates.buildUpStartDate}
+            buildUpEndDate={phaseDates.buildUpEndDate}
+            tearDownStartDate={phaseDates.tearDownStartDate}
+            tearDownEndDate={phaseDates.tearDownEndDate}
+            eventStartDate={currentPlan.eventStartDate}
+            eventEndDate={currentPlan.eventEndDate}
+            defaultCrewSize={currentPlan.defaultCrewSize}
+            readOnly={readOnly || isLocked}
+            showBackButton={showBackButton}
             primaryRange={summaryRange}
             dayCount={availableScope?.workDayCount ?? 0}
             crewSize={currentPlan.defaultCrewSize ?? null}
             totalAvailable={availableScope?.totalAvailable ?? 0}
-          >
-            <PlanScheduleInputs
-              buildUpStartDate={phaseDates.buildUpStartDate}
-              buildUpEndDate={phaseDates.buildUpEndDate}
-              tearDownStartDate={phaseDates.tearDownStartDate}
-              tearDownEndDate={phaseDates.tearDownEndDate}
-              eventStartDate={currentPlan.eventStartDate}
-              eventEndDate={currentPlan.eventEndDate}
-              defaultCrewSize={currentPlan.defaultCrewSize}
-              readOnly={readOnly || isLocked}
-              onPhaseDateChange={handleSetPhaseDate}
-              onEventDateChange={handleSetEventDate}
-              onDefaultCrewSizeChange={handleSetDefaultCrewSize}
-            />
-          </ScheduleInputsBlock>
+            onPhaseDateChange={handleSetPhaseDate}
+            onEventDateChange={handleSetEventDate}
+            onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+          />
         </div>
       </div>
 
