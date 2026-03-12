@@ -76,8 +76,8 @@ describe('ScheduleView top-band layout', () => {
 
     expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Hand off' })).toBeTruthy();
     expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Activate' })).toBeTruthy();
-    expect(within(healthColumn as HTMLElement).getByText('Planning Issues Queue')).toBeTruthy();
-    expect(within(healthColumn as HTMLElement).getByText('Planning Focus')).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getByText('Things to check')).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getByText('What to do next')).toBeTruthy();
   });
 
   it('shows no-blockers message without duplicate activate actions for editable draft plans', () => {
@@ -85,7 +85,7 @@ describe('ScheduleView top-band layout', () => {
     const healthColumn = container.querySelector('.schedule-view__top-band-health');
     expect(healthColumn).toBeTruthy();
 
-    expect(within(healthColumn as HTMLElement).getByText('No planning blockers detected.')).toBeTruthy();
+    expect(within(healthColumn as HTMLElement).getAllByText('Nothing blocking — you can activate when ready.')).toHaveLength(2);
     expect(within(healthColumn as HTMLElement).queryByRole('button', { name: 'Activate plan' })).toBeNull();
     expect(within(healthColumn as HTMLElement).getAllByRole('button', { name: 'Activate' })).toHaveLength(1);
   });
@@ -149,7 +149,7 @@ describe('ScheduleView top-band layout', () => {
     fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
 
     await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByText(/Assistant still has 1 unresolved item/i)).toBeTruthy();
+      expect(within(healthColumn as HTMLElement).getByText(/1 item still needs review/i)).toBeTruthy();
     });
 
     const firstDateInput = container.querySelector('input[type="date"]') as HTMLInputElement | null;
@@ -157,7 +157,7 @@ describe('ScheduleView top-band layout', () => {
     fireEvent.change(firstDateInput as HTMLInputElement, { target: { value: '2026-03-03' } });
 
     await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).queryByText(/Assistant still has 1 unresolved item/i)).toBeNull();
+      expect(within(healthColumn as HTMLElement).queryByText(/1 item still needs review/i)).toBeNull();
     });
   });
 
@@ -191,7 +191,7 @@ describe('ScheduleView top-band layout', () => {
     fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
 
     await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByText(/Assistant still has 1 unresolved item/i)).toBeTruthy();
+      expect(within(healthColumn as HTMLElement).getByText(/1 item still needs review/i)).toBeTruthy();
     });
 
     fireEvent.click(
@@ -199,23 +199,23 @@ describe('ScheduleView top-band layout', () => {
     );
 
     await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).queryByText(/Assistant still has 1 unresolved item/i)).toBeNull();
+      expect(within(healthColumn as HTMLElement).queryByText(/1 item still needs review/i)).toBeNull();
       expect(
-        within(healthColumn as HTMLElement).getByText(/^Assistant findings are stale after manual schedule edits$/i),
+        within(healthColumn as HTMLElement).getByText(/^Schedule changed — re-run to re-check$/i),
       ).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).getByText(/Re-run assistant before activation/i)).toBeTruthy();
+      expect(within(healthColumn as HTMLElement).getByText(/Re-run the assistant to re-check before activating/i)).toBeTruthy();
       expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Re-run assistant' })).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).queryByText(/No blockers detected/i)).toBeNull();
+      expect(within(healthColumn as HTMLElement).queryByText(/Nothing blocking/i)).toBeNull();
     });
 
     fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Re-run assistant' }));
 
     await waitFor(() => {
       expect(
-        within(healthColumn as HTMLElement).queryByText(/^Assistant findings are stale after manual schedule edits$/i),
+        within(healthColumn as HTMLElement).queryByText(/^Schedule changed — re-run to re-check$/i),
       ).toBeNull();
-      expect(within(healthColumn as HTMLElement).getByText(/Assistant still has [0-9]+ unresolved item/i)).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).queryByText(/No blockers detected/i)).toBeNull();
+      expect(within(healthColumn as HTMLElement).getByText(/[0-9]+ item(s)? still need(s)? review/i)).toBeTruthy();
+      expect(within(healthColumn as HTMLElement).queryByText(/Nothing blocking/i)).toBeNull();
     });
   });
 
@@ -245,10 +245,10 @@ describe('ScheduleView top-band layout', () => {
     fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
 
     await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review assistant issues' })).toBeTruthy();
+      expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review issues' })).toBeTruthy();
     });
 
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review assistant issues' }));
+    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review issues' }));
 
     await waitFor(() => {
       const reviewBar = container.querySelector('.schedule-view__assistant-review');
@@ -332,7 +332,7 @@ describe('ScheduleView top-band layout', () => {
       expect(healthColumn).toBeTruthy();
       expect(grid).toBeTruthy();
 
-      fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Clear all schedules (2)' }));
+      fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Clear all (2)' }));
 
       await waitFor(() => {
         expect(container.querySelector('.schedule-grid__unscheduled-badge')?.textContent).toContain('2 unscheduled');

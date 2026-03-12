@@ -1,11 +1,14 @@
 .schedule-view {
-  gap: var(--space-md);
+  --schedule-view-section-gap: var(--space-md);
+  --schedule-view-block-padding: var(--space-md);
+  --schedule-view-block-gap: var(--space-sm);
+  gap: var(--schedule-view-section-gap);
 }
 
 .schedule-view__top-band {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--schedule-view-section-gap);
 }
 
 .schedule-view__top-band-health {
@@ -135,7 +138,7 @@
 .schedule-view__planning-footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: var(--space-xs);
+  padding-top: var(--space-sm);
 }
 
 .schedule-view__planning-meta {
@@ -182,23 +185,20 @@
   margin-bottom: var(--space-xs);
 }
 
-.schedule-view__assistant-review {
+.schedule-view__block.schedule-view__assistant-review {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-lg);
-  background: var(--surface-contained-bg);
+  flex-wrap: nowrap;
 }
 
 .schedule-view__assistant-review-summary {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
 }
 
@@ -221,12 +221,14 @@
 .schedule-view__assistant-review-text {
   font-size: var(--font-small);
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .schedule-view__assistant-review-actions {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
+  flex-shrink: 0;
 }
 
 @media (max-width: 920px) {
@@ -246,11 +248,18 @@
 .schedule-view__block {
   background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
-  padding: var(--space-md);
+  padding: var(--schedule-view-block-padding);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--schedule-view-block-gap);
   min-width: 0; /* Allow shrinking so schedule grid scrolls instead of expanding the card */
+}
+
+.schedule-view__grid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--schedule-view-section-gap);
+  min-width: 0;
 }
 
 .schedule-view__block-header {
@@ -300,7 +309,7 @@
 /* --- Block toggle/compact --- */
 
 .schedule-view__block--compact {
-  padding: var(--space-md);
+  padding: var(--schedule-view-block-padding);
 }
 
 /* Single-row inline strip (e.g. Crew Pool) */
@@ -357,12 +366,12 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
-    gap: var(--space-md);
+    gap: var(--schedule-view-section-gap);
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--color-bg);
-    padding-bottom: var(--space-md);
+    padding-bottom: 0;
   }
 
   .planning-workspace__editor-canvas .schedule-view__top-band-health {

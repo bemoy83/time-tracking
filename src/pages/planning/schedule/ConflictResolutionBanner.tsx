@@ -34,7 +34,7 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
         <span className="conflict-banner__title">
           {suggestions.hasConflicts
             ? `Schedule has capacity conflicts on ${conflictDayCount} ${conflictDayCount === 1 ? 'day' : 'days'}`
-            : `${suggestions.excessCapacitySuggestion!.dayCount} ${suggestions.excessCapacitySuggestion!.dayCount === 1 ? 'day has' : 'days have'} excess crew capacity`}
+            : `${suggestions.excessCapacitySuggestion!.dayCount} ${suggestions.excessCapacitySuggestion!.dayCount === 1 ? 'day' : 'days'} may be overstaffed`}
         </span>
         <button
           type="button"
@@ -68,7 +68,7 @@ export function ConflictResolutionBanner({ capacity }: ConflictResolutionBannerP
           )}
           {hasExcess && (
             <div className="conflict-banner__option conflict-banner__option--info">
-              <span className="conflict-banner__option-label">Excess crew capacity:</span>
+              <span className="conflict-banner__option-label">Overstaffed:</span>
               <span className="conflict-banner__option-detail">
                 {formatExcessSuggestionSummary(suggestions.excessCapacitySuggestion!)}
               </span>

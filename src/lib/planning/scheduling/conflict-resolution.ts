@@ -133,7 +133,7 @@ export function formatCrewSuggestionSummary(suggestions: CrewSuggestion[]): stri
 
 export function formatExcessSuggestionSummary(suggestion: ExcessCapacitySuggestion): string {
   const { dayCount } = suggestion;
-  return `${dayCount} ${dayCount === 1 ? 'day has' : 'days have'} excess crew capacity — reduce crew in Crew/day to match demand, or leave as buffer.`;
+  return `${dayCount} ${dayCount === 1 ? 'day' : 'days'} may be overstaffed — reduce crew in Crew/day to match demand, or leave as buffer.`;
 }
 
 export function formatOvertimeSuggestionSummary(suggestions: OvertimeSuggestion[]): string {

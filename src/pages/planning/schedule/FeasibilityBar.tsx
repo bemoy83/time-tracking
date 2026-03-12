@@ -27,7 +27,7 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           <span className="feasibility-bar__separator">&middot;</span>
           <span className="feasibility-bar__warning">
             <WarningIcon className="feasibility-bar__warning-icon" />
-            {capacity.overAllocatedDayCount} over-allocated {capacity.overAllocatedDayCount === 1 ? 'day' : 'days'}
+            {capacity.overAllocatedDayCount} overloaded {capacity.overAllocatedDayCount === 1 ? 'day' : 'days'}
           </span>
         </>
       )}
@@ -36,7 +36,7 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           <span className="feasibility-bar__separator">&middot;</span>
           <span className="feasibility-bar__warning feasibility-bar__warning--worker">
             <WarningIcon className="feasibility-bar__warning-icon" />
-            {capacity.overWorkerCapacityDayCount} {capacity.overWorkerCapacityDayCount === 1 ? 'day exceeds' : 'days exceed'} worker capacity
+            {capacity.overWorkerCapacityDayCount} {capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew
           </span>
         </>
       )}
@@ -44,7 +44,7 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
         <>
           <span className="feasibility-bar__separator">&middot;</span>
           <span className="feasibility-bar__info feasibility-bar__info--excess">
-            {capacity.overStaffedDayCount} {capacity.overStaffedDayCount === 1 ? 'day' : 'days'} with excess crew capacity
+            {capacity.overStaffedDayCount} {capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed
           </span>
         </>
       )}

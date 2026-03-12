@@ -446,28 +446,28 @@ export function ScheduleView({
     planningIssues.push({
       id: 'worker-capacity',
       severity: 'critical',
-      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day exceeds' : 'days exceed'} worker capacity`,
+      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
     });
   }
   if (capacity.overAllocatedDayCount > 0) {
     planningIssues.push({
       id: 'over-allocated',
       severity: 'critical',
-      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} over-allocated`,
+      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
     });
   }
   if (schedulableUnscheduledCount > 0) {
     planningIssues.push({
       id: 'unscheduled',
       severity: 'warning',
-      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'phase row is' : 'phase rows are'} still unscheduled`,
+      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
     });
   }
   if (assistantReportStale) {
     planningIssues.push({
       id: 'assistant-stale',
       severity: 'warning',
-      label: 'Assistant findings are stale after manual schedule edits',
+      label: 'Schedule changed — re-run to re-check',
     });
   }
   if (assistantUnresolvedCount > 0) {
@@ -475,32 +475,32 @@ export function ScheduleView({
     planningIssues.push({
       id: 'assistant-unresolved',
       severity: 'warning',
-      label: `Assistant still has ${unresolvedCount} unresolved ${unresolvedCount === 1 ? 'item' : 'items'}`,
+      label: `${unresolvedCount} ${unresolvedCount === 1 ? 'item' : 'items'} still ${unresolvedCount === 1 ? 'needs' : 'need'} review`,
     });
   }
   if (capacity.overStaffedDayCount > 0) {
     planningIssues.push({
       id: 'over-staffed',
       severity: 'info',
-      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day has' : 'days have'} excess crew capacity`,
+      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed`,
     });
   }
 
   const recommendationText = (() => {
     if (readOnly) return 'Read-only plan. Review issue queue and hand off when ready.';
     if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
-      return 'Critical conflicts detected. Resolve calendar capacity before further scheduling.';
+      return 'Critical conflicts on some days — fix crew or calendar before continuing.';
     }
     if (assistantReportStale) {
-      return 'Assistant findings are stale after manual edits. Re-run assistant before activation.';
+      return 'You changed the schedule. Re-run the assistant to re-check before activating.';
     }
     if (assistantUnresolvedCount > 0) {
-      return 'Assistant still has unresolved rows. Review and finalize assignments in the grid.';
+      return 'Some items still need review — check the grid and finalize assignments.';
     }
     if (schedulableUnscheduledCount > 0) {
-      return 'Schedulable work remains unscheduled. Run assistant or place assignments manually.';
+      return 'Some work isn\'t scheduled yet — run the assistant or add assignments manually.';
     }
-    if (!isLocked) return 'No blockers detected. Plan is ready for activation when execution can begin.';
+    if (!isLocked) return 'Nothing blocking — you can activate when ready.';
     return 'Plan is active. Keep assignments aligned with live execution changes.';
   })();
 
@@ -513,7 +513,7 @@ export function ScheduleView({
       return { id: 'assistant', label: 'Re-run assistant', onClick: handleAutoSchedule };
     }
     if (assistantUnresolvedCount > 0) {
-      return { id: 'grid', label: 'Review assistant issues', onClick: handleReviewAssistantIssues };
+      return { id: 'grid', label: 'Review issues', onClick: handleReviewAssistantIssues };
     }
     if (schedulableUnscheduledCount > 0) {
       return { id: 'assistant', label: 'Run assistant', onClick: handleAutoSchedule };
@@ -558,10 +558,10 @@ export function ScheduleView({
           </header>
 
           <div className="schedule-view__planning-layout">
-            <section className="schedule-view__planning-section" aria-label="Planning issues queue">
-              <h3 className="schedule-view__planning-title">Planning Issues Queue</h3>
+            <section className="schedule-view__planning-section" aria-label="Things to check">
+              <h3 className="schedule-view__planning-title">Things to check</h3>
               {planningIssues.length === 0 ? (
-                <p className="schedule-view__muted">No planning blockers detected.</p>
+                <p className="schedule-view__muted">Nothing blocking — you can activate when ready.</p>
               ) : (
                 <ul className="schedule-view__planning-issues">
                   {planningIssues.map((issue) => (
@@ -579,14 +579,10 @@ export function ScheduleView({
               )}
             </section>
 
-            <section className="schedule-view__planning-section" aria-label="Planning focus">
-              <h3 className="schedule-view__planning-title">Planning Focus</h3>
+            <section className="schedule-view__planning-section" aria-label="What to do next">
+              <h3 className="schedule-view__planning-title">What to do next</h3>
               <p className="schedule-view__planning-focus">{recommendationText}</p>
-              {assistantReportStale ? (
-                <p className="schedule-view__muted">
-                  Assistant findings are stale after manual schedule edits. Re-run assistant to refresh issue detection.
-                </p>
-              ) : assistantReport ? (
+              {assistantReportStale ? null : assistantReport ? (
                 <div className="schedule-view__assistant-details">
                   <h3 className="schedule-view__planning-title">Assistant run details</h3>
                   <p className="schedule-view__muted">
@@ -617,7 +613,7 @@ export function ScheduleView({
                   className="btn btn--danger btn--sm"
                   onClick={handleClearAllSchedules}
                 >
-                  Clear all schedules ({scheduledPhaseRowCount})
+                  Clear all ({scheduledPhaseRowCount})
                 </button>
               )}
               <button
@@ -672,9 +668,9 @@ export function ScheduleView({
         />
       </div>
 
-      <div ref={scheduleGridRef}>
+      <div ref={scheduleGridRef} className="schedule-view__grid-stack">
         {assistantReviewIssues.length > 0 && (
-          <section className="schedule-view__assistant-review" aria-live="polite">
+          <section className="schedule-view__block schedule-view__assistant-review" aria-live="polite">
             <div className="schedule-view__assistant-review-summary">
               <span className="schedule-view__assistant-review-chip">
                 {assistantReviewIssues.length} unresolved {assistantReviewIssues.length === 1 ? 'issue' : 'issues'}
