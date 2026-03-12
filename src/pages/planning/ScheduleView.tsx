@@ -26,6 +26,7 @@ import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import { ScheduleInputsBlock } from './schedule/ScheduleInputsBlock';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
+import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -87,6 +88,8 @@ export function ScheduleView({
   );
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
+  const isDesktopTopBand = useMediaQuery('(min-width: 1200px)');
+  const scheduleInputsExpanded = isDesktopTopBand ? true : inputsExpanded;
 
   useEffect(() => {
     trackTelemetryEvent('schedule_tab_open');
@@ -247,87 +250,97 @@ export function ScheduleView({
 
   return (
     <div className="planning-view schedule-view">
-      <header className="planning-view__editor-header">
-        {showBackButton && (
-          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-            <ChevronLeftIcon className="planning-view__back-icon" />
-            Back
-          </button>
-        )}
-        <h2 className="planning-view__title" style={{ flex: 1 }}>
-          Schedule
-        </h2>
-        <div className="schedule-view__header-actions">
-          {!readOnly && (
-            <>
-              <button
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={handleExport}
-                disabled={isExporting}
-              >
-                {isExporting ? 'Handing off...' : 'Hand off'}
-              </button>
-              <button
-                type="button"
-                className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
-                onClick={handleToggleLock}
-              >
-                {isLocked ? 'Revert to Draft' : 'Activate'}
-              </button>
-            </>
-          )}
-          {readOnly && (
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={handleExport}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Handing off...' : 'Hand off'}
-            </button>
-          )}
-        </div>
-      </header>
+      <div className="schedule-view__top-band">
+        <section className="schedule-view__block schedule-view__top-band-health" aria-label="Schedule health and controls">
+          <header className="schedule-view__top-band-header">
+            <div className="schedule-view__top-band-title-row">
+              {showBackButton && (
+                <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+                  <ChevronLeftIcon className="planning-view__back-icon" />
+                  Back
+                </button>
+              )}
+              <h2 className="planning-view__title" style={{ flex: 1 }}>
+                Schedule
+              </h2>
+            </div>
 
-      <FeasibilityBar capacity={capacity} />
-      <ConflictResolutionBanner capacity={capacity} />
-      {assistantReport && (
-        <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
-          <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
-          <p className="schedule-view__muted">
-            {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
-          </p>
-          <p className="schedule-view__muted">
-            Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-            {' · '}
-            Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-          </p>
+            <div className="schedule-view__header-actions">
+              {!readOnly && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? 'Handing off...' : 'Hand off'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
+                    onClick={handleToggleLock}
+                  >
+                    {isLocked ? 'Revert to Draft' : 'Activate'}
+                  </button>
+                </>
+              )}
+              {readOnly && (
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Handing off...' : 'Hand off'}
+                </button>
+              )}
+            </div>
+          </header>
+
+          <FeasibilityBar capacity={capacity} />
+          <ConflictResolutionBanner capacity={capacity} />
+          {assistantReport && (
+            <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
+              <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
+              <p className="schedule-view__muted">
+                {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
+              </p>
+              <p className="schedule-view__muted">
+                Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+                {' · '}
+                Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+              </p>
+            </section>
+          )}
         </section>
-      )}
 
-      <ScheduleInputsBlock
-        expanded={inputsExpanded}
-        onToggle={() => setInputsExpanded((prev) => !prev)}
-        primaryRange={workCalendarRange ?? primaryRange}
-        dayCount={currentPlan.workCalendar.length}
-        crewSize={currentPlan.defaultCrewSize ?? null}
-        totalAvailable={capacity.totalAvailablePersonHours}
-      >
-        <PlanScheduleInputs
-          buildUpStartDate={phaseDates.buildUpStartDate}
-          buildUpEndDate={phaseDates.buildUpEndDate}
-          tearDownStartDate={phaseDates.tearDownStartDate}
-          tearDownEndDate={phaseDates.tearDownEndDate}
-          eventStartDate={currentPlan.eventStartDate}
-          eventEndDate={currentPlan.eventEndDate}
-          defaultCrewSize={currentPlan.defaultCrewSize}
-          readOnly={readOnly}
-          onPhaseDateChange={handlePlanPhaseDateChange}
-          onEventDateChange={handlePlanDateChange}
-          onDefaultCrewSizeChange={handleDefaultCrewChange}
-        />
-      </ScheduleInputsBlock>
+        <div className="schedule-view__top-band-inputs">
+          <ScheduleInputsBlock
+            expanded={scheduleInputsExpanded}
+            onToggle={() => setInputsExpanded((prev) => !prev)}
+            collapsible={!isDesktopTopBand}
+            primaryRange={workCalendarRange ?? primaryRange}
+            dayCount={currentPlan.workCalendar.length}
+            crewSize={currentPlan.defaultCrewSize ?? null}
+            totalAvailable={capacity.totalAvailablePersonHours}
+          >
+            <PlanScheduleInputs
+              buildUpStartDate={phaseDates.buildUpStartDate}
+              buildUpEndDate={phaseDates.buildUpEndDate}
+              tearDownStartDate={phaseDates.tearDownStartDate}
+              tearDownEndDate={phaseDates.tearDownEndDate}
+              eventStartDate={currentPlan.eventStartDate}
+              eventEndDate={currentPlan.eventEndDate}
+              defaultCrewSize={currentPlan.defaultCrewSize}
+              readOnly={readOnly}
+              onPhaseDateChange={handlePlanPhaseDateChange}
+              onEventDateChange={handlePlanDateChange}
+              onDefaultCrewSizeChange={handleDefaultCrewChange}
+            />
+          </ScheduleInputsBlock>
+        </div>
+      </div>
 
       <WorkCalendarEditor
         calendar={currentPlan.workCalendar}

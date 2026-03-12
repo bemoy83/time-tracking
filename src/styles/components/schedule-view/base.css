@@ -2,6 +2,37 @@
   gap: var(--space-md);
 }
 
+.schedule-view__top-band {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.schedule-view__top-band-health {
+  gap: var(--space-sm);
+}
+
+.schedule-view__top-band-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.schedule-view__top-band-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.schedule-view__top-band-inputs {
+  min-width: 0;
+}
+
+.schedule-view__top-band .feasibility-bar {
+  position: static;
+  top: auto;
+}
+
 .schedule-view__block {
   background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
@@ -108,4 +139,31 @@
   font-size: var(--font-caption);
   line-height: 1.35;
   color: var(--color-text-muted);
+}
+
+@media (min-width: 1200px) {
+  .planning-workspace__editor-canvas .schedule-view__top-band {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: var(--space-md);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--color-bg);
+    padding-bottom: var(--space-md);
+  }
+
+  .planning-workspace__editor-canvas .schedule-view__top-band-health {
+    min-width: 0;
+  }
+
+  .planning-workspace__editor-canvas .schedule-view__top-band-inputs {
+    height: 100%;
+    min-width: 0;
+  }
+
+  .planning-workspace__editor-canvas .schedule-view__top-band-inputs .schedule-view__block {
+    height: 100%;
+  }
 }
