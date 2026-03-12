@@ -55,13 +55,12 @@ export function ScheduleGridItemRow({
   const activeClass = isAssistantActive ? ' schedule-grid__row--assistant-active' : '';
 
   return (
-    <div>
+    <div className="schedule-grid__row-wrapper">
       <div
         data-row-key={rowKey}
         className={`schedule-grid__row${rowStatusClass ? ` ${rowStatusClass}` : ''}${unresolvedClass}${activeClass}`}
         role="row"
         aria-rowindex={rowIndex + 2}
-        style={{ gridTemplateColumns: gridColumns }}
       >
         <div className={`schedule-grid__line-item${metaPrefix ? ' schedule-grid__line-item--shared' : ''}`} role="rowheader">
           <span className="schedule-grid__line-item-heading">

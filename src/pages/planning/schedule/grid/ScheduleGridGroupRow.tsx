@@ -16,7 +16,6 @@ export function ScheduleGridGroupRow({
         className={`schedule-grid__phase-header schedule-grid__phase-header--${row.type}`}
         onClick={onToggle}
         aria-expanded={!isCollapsed}
-        style={{ gridTemplateColumns: gridColumns }}
       >
         <span className={`schedule-grid__phase-label schedule-grid__phase-label--depth-${row.depth}`}>
           <ChevronIcon

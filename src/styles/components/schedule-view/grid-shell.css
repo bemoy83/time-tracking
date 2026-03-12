@@ -1,18 +1,38 @@
 /* --- Schedule Grid --- */
 
-.schedule-grid {
-  display: flex;
-  flex-direction: column;
+/* Wrapper constrains grid width so overflow-x scrolls instead of expanding the card */
+.schedule-grid__scroll-wrap {
   overflow-x: auto;
-  background: transparent;
-  border-radius: 0;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
+.schedule-grid {
+  display: grid;
+  grid-auto-rows: auto;
+  overflow-x: visible; /* Scroll handled by __scroll-wrap */
+  background: transparent;
+  border-radius: 0;
+  min-width: calc(220px + 144px * var(--schedule-day-count, 4));
+}
+
+/* Subgrid unifies column tracks so phase-label, line-item-col, and line-item share the same right edge */
 .schedule-grid__header,
+.schedule-grid__phase-header,
 .schedule-grid__row,
 .schedule-grid__footer {
   display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   min-width: calc(220px + 144px * var(--schedule-day-count, 4));
+}
+
+.schedule-grid__body {
+  display: contents;
+}
+
+.schedule-grid__row-wrapper {
+  display: contents;
 }
 
 .schedule-grid__row {

@@ -322,14 +322,15 @@ function SingleScheduleGrid({
       {calendar.length === 0 ? (
         <p className="schedule-view__muted">Set schedule dates to open the schedule grid.</p>
       ) : (
-        <div
-          className="schedule-grid"
-          ref={gridRef}
-          onKeyDown={handleGridKeyDown}
-          role="grid"
-          aria-label="Schedule grid"
-          style={{ '--schedule-day-count': calendar.length } as React.CSSProperties}
-        >
+        <div className="schedule-grid__scroll-wrap">
+          <div
+            className="schedule-grid"
+            ref={gridRef}
+            onKeyDown={handleGridKeyDown}
+            role="grid"
+            aria-label="Schedule grid"
+            style={{ '--schedule-day-count': calendar.length, gridTemplateColumns: gridColumns } as React.CSSProperties}
+          >
           <ScheduleGridHeader
             calendar={calendar}
             dayByDate={dayByDate}
@@ -356,7 +357,6 @@ function SingleScheduleGrid({
                           className="schedule-grid__phase-header"
                           onClick={() => togglePhase(group.phase)}
                           aria-expanded={!isCollapsed}
-                          style={{ gridTemplateColumns: gridColumns }}
                         >
                           <span className="schedule-grid__phase-label">
                             <ChevronIcon className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`} />
@@ -380,6 +380,7 @@ function SingleScheduleGrid({
                   })
             }
           </div>
+        </div>
         </div>
       )}
     </section>
@@ -544,14 +545,15 @@ function SharedScheduleGrid({
       {calendar.length === 0 ? (
         <p className="schedule-view__muted">Configure crew pool dates to open the shared schedule grid.</p>
       ) : (
-        <div
-          className="schedule-grid"
-          ref={gridRef}
-          onKeyDown={handleGridKeyDown}
-          role="grid"
-          aria-label="Shared schedule grid"
-          style={{ '--schedule-day-count': calendar.length } as React.CSSProperties}
-        >
+        <div className="schedule-grid__scroll-wrap">
+          <div
+            className="schedule-grid"
+            ref={gridRef}
+            onKeyDown={handleGridKeyDown}
+            role="grid"
+            aria-label="Shared schedule grid"
+            style={{ '--schedule-day-count': calendar.length, gridTemplateColumns: gridColumns } as React.CSSProperties}
+          >
           <ScheduleGridHeader
             calendar={calendar}
             dayByDate={dayByDate}
@@ -619,6 +621,7 @@ function SharedScheduleGrid({
               );
             })}
           </div>
+        </div>
         </div>
       )}
     </section>

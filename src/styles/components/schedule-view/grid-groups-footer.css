@@ -1,6 +1,7 @@
 /* --- Phase grouping --- */
 
-.schedule-grid__phase-group {
+.schedule-grid__phase-group,
+.schedule-grid__project-group {
   display: contents;
 }
 

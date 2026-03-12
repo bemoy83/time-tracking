@@ -49,7 +49,7 @@ export function ScheduleGridHeader({
   readOnly = false,
 }: ScheduleGridHeaderProps) {
   return (
-    <div className="schedule-grid__header" role="row" style={{ gridTemplateColumns: gridColumns }}>
+    <div className="schedule-grid__header" role="row">
       <div className={`schedule-grid__line-item-col${onAutoSchedule ? ' schedule-grid__line-item-col--with-action' : ''}`} role="columnheader">
         <span className="schedule-grid__line-item-col-label">{label}</span>
         {onAutoSchedule && (
