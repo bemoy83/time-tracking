@@ -1,4 +1,5 @@
 import type { WorkspaceTab } from './usePlanningWorkspaceState';
+import type { SidebarPane } from '../workspace/schedule-issue-panel-types';
 
 const STORAGE_KEY = 'planning-workspace-session';
 
@@ -6,12 +7,14 @@ interface PlanningSession {
   selectedPlanId: string | null;
   activeTab: WorkspaceTab;
   selectedPlanIdsForSharedSchedule: string[];
+  sidebarPane: SidebarPane;
 }
 
 const DEFAULT_SESSION: PlanningSession = {
   selectedPlanId: null,
   activeTab: 'edit',
   selectedPlanIdsForSharedSchedule: [],
+  sidebarPane: 'metrics',
 };
 
 function isWorkspaceTab(value: unknown): value is WorkspaceTab {
@@ -22,6 +25,10 @@ function isWorkspaceTab(value: unknown): value is WorkspaceTab {
     || value === 'review'
     || value === 'insights'
     || value === 'report';
+}
+
+function isSidebarPane(value: unknown): value is SidebarPane {
+  return value === 'metrics' || value === 'issues';
 }
 
 export function loadPlanningSession(): PlanningSession {
@@ -35,6 +42,7 @@ export function loadPlanningSession(): PlanningSession {
       selectedPlanIdsForSharedSchedule: Array.isArray(parsed.selectedPlanIdsForSharedSchedule)
         ? parsed.selectedPlanIdsForSharedSchedule.filter((id): id is string => typeof id === 'string')
         : [],
+      sidebarPane: isSidebarPane(parsed.sidebarPane) ? parsed.sidebarPane : 'metrics',
     };
   } catch {
     return DEFAULT_SESSION;

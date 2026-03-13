@@ -39,6 +39,7 @@ describe('usePlanningSession', () => {
       selectedPlanId: null,
       activeTab: 'edit',
       selectedPlanIdsForSharedSchedule: [],
+      sidebarPane: 'metrics',
     });
   });
 
@@ -47,11 +48,13 @@ describe('usePlanningSession', () => {
       selectedPlanId: 'plan-1',
       activeTab: 'progress',
       selectedPlanIdsForSharedSchedule: ['plan-1', 'plan-2'],
+      sidebarPane: 'issues',
     });
     const session = loadPlanningSession();
     expect(session.selectedPlanId).toBe('plan-1');
     expect(session.activeTab).toBe('progress');
     expect(session.selectedPlanIdsForSharedSchedule).toEqual(['plan-1', 'plan-2']);
+    expect(session.sidebarPane).toBe('issues');
   });
 
   it('merges partial updates', () => {
@@ -60,6 +63,7 @@ describe('usePlanningSession', () => {
     const session = loadPlanningSession();
     expect(session.selectedPlanId).toBe('plan-1');
     expect(session.activeTab).toBe('schedule');
+    expect(session.sidebarPane).toBe('metrics');
   });
 
   it('handles corrupted storage gracefully', () => {
@@ -69,6 +73,7 @@ describe('usePlanningSession', () => {
       selectedPlanId: null,
       activeTab: 'edit',
       selectedPlanIdsForSharedSchedule: [],
+      sidebarPane: 'metrics',
     });
   });
 });

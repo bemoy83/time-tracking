@@ -97,6 +97,13 @@ export function useScheduleAssistantState({
     return true;
   }, [assistantReviewIssues.length]);
 
+  const focusReviewIssueByKey = useCallback((issueKey: string) => {
+    const index = assistantReviewIssues.findIndex((issue) => issue.key === issueKey);
+    if (index < 0) return false;
+    setActiveAssistantIssueIndex(index);
+    return true;
+  }, [assistantReviewIssues]);
+
   return {
     assistantReport,
     assistantReportStale,
@@ -109,6 +116,6 @@ export function useScheduleAssistantState({
     applyAssistantRunReport,
     focusNextReviewIssue,
     focusPrevReviewIssue,
+    focusReviewIssueByKey,
   };
 }
-

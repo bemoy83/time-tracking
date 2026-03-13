@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { createLineItem, createPlan } from '../../lib/planning/plan-model';
 import type { Plan } from '../../lib/planning/plan-model';
 import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
@@ -22,9 +22,13 @@ afterEach(() => {
 function renderSchedule({
   desktop = false,
   readOnly = false,
+  isWorkspaceMode = false,
+  onIssuePanelChange,
 }: {
   desktop?: boolean;
   readOnly?: boolean;
+  isWorkspaceMode?: boolean;
+  onIssuePanelChange?: (payload: unknown) => void;
 }) {
   mockedUseMediaQuery.mockReturnValue(desktop);
   const plan = createPlan('Schedule Test');
@@ -36,6 +40,8 @@ function renderSchedule({
       onBack={vi.fn()}
       showBackButton={false}
       readOnly={readOnly}
+      isWorkspaceMode={isWorkspaceMode}
+      onIssuePanelChange={onIssuePanelChange}
     />,
   );
 }
@@ -45,9 +51,13 @@ function renderScheduleWithPlan(
   {
     desktop = false,
     readOnly = false,
+    isWorkspaceMode = false,
+    onIssuePanelChange,
   }: {
     desktop?: boolean;
     readOnly?: boolean;
+    isWorkspaceMode?: boolean;
+    onIssuePanelChange?: (payload: unknown) => void;
   },
 ) {
   mockedUseMediaQuery.mockReturnValue(desktop);
@@ -58,6 +68,8 @@ function renderScheduleWithPlan(
       onBack={vi.fn()}
       showBackButton={false}
       readOnly={readOnly}
+      isWorkspaceMode={isWorkspaceMode}
+      onIssuePanelChange={onIssuePanelChange}
     />,
   );
 }
@@ -342,5 +354,110 @@ describe('ScheduleView top-band layout', () => {
     } finally {
       confirmSpy.mockRestore();
     }
+  });
+
+  it('publishes issue panel payload and allows sidebar issue selection in workspace mode', async () => {
+    const plan = createPlan('Issue Payload');
+    plan.buildUpStartDate = '2026-03-02';
+    plan.buildUpEndDate = '2026-03-02';
+    plan.defaultCrewSize = 0;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 0,
+      },
+    ];
+    plan.lineItems = [createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0)];
+
+    let latestPayload: any = null;
+    const onIssuePanelChange = vi.fn((payload) => {
+      latestPayload = payload;
+    });
+
+    const { container, unmount } = renderScheduleWithPlan(
+      plan,
+      {
+        desktop: true,
+        readOnly: false,
+        isWorkspaceMode: true,
+        onIssuePanelChange,
+      },
+    );
+
+    await waitFor(() => {
+      expect(latestPayload?.state?.planId).toBe(plan.id);
+      expect(latestPayload?.state?.canRunAssistant).toBe(true);
+    });
+
+    await act(async () => {
+      await latestPayload.actions.runAssistant();
+    });
+
+    await waitFor(() => {
+      expect(latestPayload?.state?.unresolvedCount).toBeGreaterThan(0);
+    });
+
+    const unresolvedIssue = latestPayload.state.issues.find((issue: any) => issue.kind === 'assistant-unresolved');
+    expect(unresolvedIssue?.issueKey).toBeTruthy();
+
+    act(() => {
+      latestPayload.actions.selectIssue(unresolvedIssue.issueKey);
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('.schedule-grid__row--assistant-active')).toBeTruthy();
+    });
+
+    unmount();
+    await waitFor(() => {
+      expect(onIssuePanelChange).toHaveBeenLastCalledWith(null);
+    });
+  });
+
+  it('keeps plan overview block and review strip unchanged in workspace mode', async () => {
+    const plan = createPlan('Workspace De-dupe');
+    plan.buildUpStartDate = '2026-03-02';
+    plan.buildUpEndDate = '2026-03-02';
+    plan.defaultCrewSize = 0;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 0,
+      },
+    ];
+    plan.lineItems = [createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0)];
+
+    let latestPayload: any = null;
+    const onIssuePanelChange = vi.fn((payload) => {
+      latestPayload = payload;
+    });
+
+    const { container } = renderScheduleWithPlan(
+      plan,
+      {
+        desktop: true,
+        readOnly: false,
+        isWorkspaceMode: true,
+        onIssuePanelChange,
+      },
+    );
+
+    expect(within(container).getByText('Things to check')).toBeTruthy();
+    expect(within(container).getByText('What to do next')).toBeTruthy();
+
+    await act(async () => {
+      await latestPayload.actions.runAssistant();
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('.schedule-view__assistant-review')).toBeTruthy();
+      expect(within(container).getByText('Assistant run details')).toBeTruthy();
+    });
   });
 });

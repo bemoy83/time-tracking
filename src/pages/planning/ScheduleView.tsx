@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
@@ -27,6 +27,10 @@ import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
+import type {
+  ScheduleIssueItem,
+  ScheduleIssuePanelPayload,
+} from './workspace/schedule-issue-panel-types';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -41,6 +45,8 @@ interface ScheduleViewProps {
   onBack: () => void;
   showBackButton?: boolean;
   readOnly: boolean;
+  isWorkspaceMode?: boolean;
+  onIssuePanelChange?: (payload: ScheduleIssuePanelPayload | null) => void;
 }
 
 interface AmendmentState {
@@ -88,6 +94,8 @@ export function ScheduleView({
   onBack,
   showBackButton = true,
   readOnly,
+  isWorkspaceMode = false,
+  onIssuePanelChange,
 }: ScheduleViewProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
@@ -173,14 +181,15 @@ export function ScheduleView({
     applyAssistantRunReport,
     focusNextReviewIssue,
     focusPrevReviewIssue,
+    focusReviewIssueByKey,
   } = useScheduleAssistantState({
     planId: plan.id,
     lineItems: currentPlan.lineItems,
   });
 
-  const clearAssistantReport = () => {
+  const clearAssistantReport = useCallback(() => {
     markAssistantFindingsStale();
-  };
+  }, [markAssistantFindingsStale]);
 
   const handlePlanDateChange = (
     field: 'eventStartDate' | 'eventEndDate',
@@ -282,7 +291,7 @@ export function ScheduleView({
     trackTelemetryEvent('schedule_assignment_edit');
   };
 
-  const handleClearAllSchedules = () => {
+  const handleClearAllSchedules = useCallback(() => {
     if (scheduledPhaseRowCount === 0) return;
     const confirmed = window.confirm(
       `Clear schedule assignments for ${scheduledPhaseRowCount} ${scheduledPhaseRowCount === 1 ? 'row' : 'rows'}?`,
@@ -332,7 +341,7 @@ export function ScheduleView({
       return nextPlan;
     });
     trackTelemetryEvent('schedule_assignment_edit');
-  };
+  }, [clearAssistantReport, currentPlan.status, mutatePlan, scheduledPhaseRowCount]);
 
   const handleAmendmentConfirm = (note: string | null) => {
     if (amendment) {
@@ -345,7 +354,7 @@ export function ScheduleView({
     setAmendment(null);
   };
 
-  const handleAutoSchedule = () => {
+  const handleAutoSchedule = useCallback(() => {
     const rerunFromStale = assistantReportStale;
     const { plan: scheduledPlan, report } = runAutoSchedule(
       currentPlan,
@@ -381,7 +390,7 @@ export function ScheduleView({
       over_capacity_days_before: report.before.overCapacityDays,
       over_capacity_days_after: report.after.overCapacityDays,
     });
-  };
+  }, [assistantReportStale, applyAssistantRunReport, currentPlan, mutatePlan]);
 
   const handleCrewForDateChange = (lineItemId: string, phase: BuildPhase, date: string, crew: number) => {
     clearAssistantReport();
@@ -409,19 +418,19 @@ export function ScheduleView({
     trackTelemetryEvent('planning_lock_toggle');
   };
 
-  const handleOpenWorkCalendar = () => {
+  const handleOpenWorkCalendar = useCallback(() => {
     const el = workCalendarRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
 
-  const handleOpenScheduleGrid = () => {
+  const handleOpenScheduleGrid = useCallback(() => {
     const el = scheduleGridRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  };
+  }, []);
 
   const handleReviewAssistantIssues = () => {
     if (!focusNextReviewIssue()) {
@@ -431,15 +440,20 @@ export function ScheduleView({
     handleOpenScheduleGrid();
   };
 
-  const handlePrevAssistantIssue = () => {
+  const handlePrevAssistantIssue = useCallback(() => {
     if (!focusPrevReviewIssue()) return;
     handleOpenScheduleGrid();
-  };
+  }, [focusPrevReviewIssue, handleOpenScheduleGrid]);
 
-  const handleNextAssistantIssue = () => {
+  const handleNextAssistantIssue = useCallback(() => {
     if (!focusNextReviewIssue()) return;
     handleOpenScheduleGrid();
-  };
+  }, [focusNextReviewIssue, handleOpenScheduleGrid]);
+
+  const handleSelectAssistantIssue = useCallback((issueKey: string) => {
+    if (!focusReviewIssueByKey(issueKey)) return;
+    handleOpenScheduleGrid();
+  }, [focusReviewIssueByKey, handleOpenScheduleGrid]);
 
   const planningIssues: PlanningIssue[] = [];
   if (capacity.overWorkerCapacityDayCount > 0) {
@@ -485,6 +499,122 @@ export function ScheduleView({
       label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed`,
     });
   }
+
+  const panelIssues = useMemo<ScheduleIssueItem[]>(() => {
+    const issues: ScheduleIssueItem[] = [];
+
+    if (capacity.overWorkerCapacityDayCount > 0) {
+      issues.push({
+        id: 'worker-capacity',
+        kind: 'capacity',
+        severity: 'critical',
+        label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
+      });
+    }
+
+    if (capacity.overAllocatedDayCount > 0) {
+      issues.push({
+        id: 'over-allocated',
+        kind: 'capacity',
+        severity: 'critical',
+        label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
+      });
+    }
+
+    if (schedulableUnscheduledCount > 0) {
+      issues.push({
+        id: 'unscheduled',
+        kind: 'unscheduled',
+        severity: 'warning',
+        label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
+      });
+    }
+
+    if (assistantReportStale) {
+      issues.push({
+        id: 'assistant-stale',
+        kind: 'assistant-stale',
+        severity: 'warning',
+        label: 'Schedule changed — re-run to re-check',
+      });
+    }
+
+    if (!assistantReportStale) {
+      for (const issue of assistantReviewIssues) {
+        issues.push({
+          id: `assistant-unresolved-${issue.key}`,
+          kind: 'assistant-unresolved',
+          severity: 'warning',
+          label: `${issue.lineItemTitle} · ${issue.phase} · ${unresolvedReasonLabel(issue.reason)}`,
+          lineItemId: issue.lineItemId,
+          phase: issue.phase,
+          issueKey: issue.key,
+          unresolvedReason: issue.reason,
+          requiredPH: issue.requiredPH,
+          assignedPH: issue.assignedPH,
+        });
+      }
+    }
+
+    return issues;
+  }, [
+    assistantReportStale,
+    assistantReviewIssues,
+    capacity.overAllocatedDayCount,
+    capacity.overWorkerCapacityDayCount,
+    schedulableUnscheduledCount,
+  ]);
+
+  const runAssistantFromPanel = useCallback(async () => {
+    handleAutoSchedule();
+  }, [handleAutoSchedule]);
+
+  const issuePanelPayload = useMemo<ScheduleIssuePanelPayload>(() => ({
+    state: {
+      planId: plan.id,
+      isStale: assistantReportStale,
+      unresolvedCount: assistantUnresolvedCount,
+      issues: panelIssues,
+      activeIssueKey: activeAssistantIssue?.key ?? null,
+      canRunAssistant: !readOnly,
+      canClearAll: !readOnly && scheduledPhaseRowCount > 0,
+    },
+    actions: {
+      selectIssue: handleSelectAssistantIssue,
+      focusNext: handleNextAssistantIssue,
+      focusPrev: handlePrevAssistantIssue,
+      runAssistant: runAssistantFromPanel,
+      clearAllSchedules: handleClearAllSchedules,
+      openCalendar: handleOpenWorkCalendar,
+    },
+  }), [
+    plan.id,
+    assistantReportStale,
+    assistantUnresolvedCount,
+    panelIssues,
+    activeAssistantIssue,
+    readOnly,
+    scheduledPhaseRowCount,
+    handleSelectAssistantIssue,
+    handleNextAssistantIssue,
+    handlePrevAssistantIssue,
+    runAssistantFromPanel,
+    handleClearAllSchedules,
+    handleOpenWorkCalendar,
+  ]);
+
+  useEffect(() => {
+    if (onIssuePanelChange == null) return;
+    if (!isWorkspaceMode) {
+      onIssuePanelChange(null);
+      return;
+    }
+    onIssuePanelChange(issuePanelPayload);
+  }, [isWorkspaceMode, issuePanelPayload, onIssuePanelChange]);
+
+  useEffect(() => () => {
+    onIssuePanelChange?.(null);
+  }, [onIssuePanelChange]);
 
   const recommendationText = (() => {
     if (readOnly) return 'Read-only plan. Review issue queue and hand off when ready.';

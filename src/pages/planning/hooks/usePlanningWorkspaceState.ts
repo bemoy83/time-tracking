@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import { usePlanningData, type PlanningData } from './usePlanningData';
 import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
+import type { SidebarPane } from '../workspace/schedule-issue-panel-types';
 
 /**
  * Navigation mode determines layout and navigation behavior.
@@ -62,6 +63,9 @@ export function usePlanningWorkspaceState({
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     session?.activeTab ?? 'edit',
   );
+  const [sidebarPane, setSidebarPane] = useState<SidebarPane>(
+    session?.sidebarPane ?? 'metrics',
+  );
 
   const initialNavigationAppliedRef = useRef(false);
   const sessionRestoredRef = useRef(false);
@@ -90,8 +94,9 @@ export function usePlanningWorkspaceState({
       selectedPlanId: activePlan?.id ?? null,
       activeTab,
       selectedPlanIdsForSharedSchedule: Array.from(selectedPlanIdsForSharedScheduleState),
+      sidebarPane,
     });
-  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState]);
+  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState, sidebarPane]);
 
   // Remove shared-schedule selection entries that no longer exist.
   useEffect(() => {
@@ -270,6 +275,8 @@ export function usePlanningWorkspaceState({
     // Workspace navigation (desktop)
     activeTab,
     setActiveTab,
+    sidebarPane,
+    setSidebarPane,
 
     // Sidebar preferences
     archiveExpanded,
