@@ -274,9 +274,33 @@
   color: var(--state-warning-fg-strong);
 }
 
-.planning-workspace__sidebar-issues-chip--stale {
+.planning-workspace__sidebar-issues-chip--stale,
+.planning-workspace__sidebar-issues-chip--assistant-stale {
   background: var(--state-danger-bg);
   color: var(--state-danger-fg-strong);
+}
+
+.planning-workspace__sidebar-issues-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--surface-contained-inset);
+}
+
+.planning-workspace__sidebar-issues-summary-title {
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.planning-workspace__sidebar-issues-summary-body {
+  margin: 0;
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .planning-workspace__sidebar-issues-stale {
@@ -308,22 +332,10 @@
   letter-spacing: 0.03em;
 }
 
-.planning-workspace__sidebar-issues-kind {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.planning-workspace__sidebar-issues-kind-title {
-  margin: 0;
-  font-size: var(--font-caption);
-  color: var(--color-text-muted);
-}
-
 .planning-workspace__sidebar-issue-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-xs);
   padding: var(--space-sm);
   border-radius: var(--radius-lg);
   background: var(--surface-contained-inset);
@@ -342,7 +354,26 @@
   color: var(--color-text);
 }
 
+.planning-workspace__sidebar-issue-detail {
+  margin: 0;
+  font-size: var(--font-caption);
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
 .planning-workspace__sidebar-issue-metric {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+.planning-workspace__sidebar-issue-facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.planning-workspace__sidebar-issue-fact {
   font-size: var(--font-caption);
   color: var(--color-text-muted);
 }
@@ -356,7 +387,7 @@
 
 .planning-workspace__sidebar-issue-suggestion {
   font-size: var(--font-caption);
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .planning-workspace__sidebar-issues-empty {

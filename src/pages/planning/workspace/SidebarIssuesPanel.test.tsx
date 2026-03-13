@@ -18,12 +18,20 @@ function createPayload(overrides: Partial<ScheduleIssuePanelPayload['state']> = 
           kind: 'capacity',
           severity: 'critical',
           label: '1 day has too much work for available crew',
+          scope: 'plan',
+          category: 'blocking',
+          detail: 'Assigned work exceeds available day capacity.',
+          facts: ['Add 2 crew on Tue Mar 12.'],
         },
         {
           id: 'assistant-1',
           kind: 'assistant-unresolved',
           severity: 'warning',
           label: 'WP-1 · build-up · Missing required hours',
+          scope: 'item',
+          category: 'adjustment',
+          detail: '8.0h missing of 16.0h required for build-up.',
+          facts: ['8.0h currently scheduled of 16.0h needed.'],
           issueKey: 'line-1:build-up',
           lineItemId: 'line-1',
           phase: 'build-up',
@@ -49,32 +57,40 @@ function createPayload(overrides: Partial<ScheduleIssuePanelPayload['state']> = 
 }
 
 describe('SidebarIssuesPanel', () => {
-  it('renders grouped issues and active issue metrics', () => {
+  it('renders help summary and groups issues by help category', () => {
     const payload = createPayload();
     const { container } = render(
       <SidebarIssuesPanel payload={payload} isScheduleContext />,
     );
 
-    expect(within(container).getByText('Critical blockers')).toBeTruthy();
-    expect(within(container).getByText('Warnings')).toBeTruthy();
+    expect(within(container).getByText('Scheduling help')).toBeTruthy();
+    expect(within(container).getAllByText('Needs review').length).toBe(2);
+    expect(within(container).getByText(/understand what is blocking the schedule/i)).toBeTruthy();
+    expect(within(container).getByText('Blocking activation')).toBeTruthy();
+    expect(within(container).getByText('Needs schedule adjustment')).toBeTruthy();
     expect(within(container).getByText('1 day has too much work for available crew')).toBeTruthy();
     expect(within(container).getByText('WP-1 · build-up · Missing required hours')).toBeTruthy();
+    expect(within(container).getByText('Assigned work exceeds available day capacity.')).toBeTruthy();
+    expect(within(container).getByText('8.0h missing of 16.0h required for build-up.')).toBeTruthy();
+    expect(within(container).getByText('Add 2 crew on Tue Mar 12.')).toBeTruthy();
+    expect(within(container).getByText('8.0h currently scheduled of 16.0h needed.')).toBeTruthy();
     expect(within(container).getByText('8.0h / 16.0h')).toBeTruthy();
-    expect(within(container).getByText('Consider increasing crew on the scheduled days for this phase.')).toBeTruthy();
+    expect(within(container).getByText('Add crew on the scheduled days to recover the missing 8.0h.')).toBeTruthy();
   });
 
-  it('renders read-only suggestions without action buttons', () => {
+  it('shows ready summary with no issues', () => {
     const payload = createPayload({
-      canRunAssistant: false,
+      unresolvedCount: 0,
+      issues: [],
     });
 
     const { container } = render(<SidebarIssuesPanel payload={payload} isScheduleContext />);
-    expect(within(container).queryByRole('button', { name: /Run assistant/i })).toBeNull();
-    expect(within(container).queryByRole('button', { name: 'Prev' })).toBeNull();
-    expect(within(container).getByText('Consider adjusting crew size or access hours in Work Calendar.')).toBeTruthy();
+    expect(within(container).getAllByText('Ready').length).toBe(2);
+    expect(within(container).getByText(/No scheduling blockers are currently detected/i)).toBeTruthy();
+    expect(within(container).getByText('No open issues')).toBeTruthy();
   });
 
-  it('shows stale guidance copy when assistant findings are outdated', () => {
+  it('shows assistant stale summary and hides unresolved item cards while stale', () => {
     const payload = createPayload({
       isStale: true,
       issues: [
@@ -83,14 +99,28 @@ describe('SidebarIssuesPanel', () => {
           kind: 'assistant-stale',
           severity: 'warning',
           label: 'Schedule changed — re-run to re-check',
+          scope: 'plan',
+          category: 'blocking',
+          detail: 'Assistant findings are out of date.',
+        },
+        {
+          id: 'assistant-1',
+          kind: 'assistant-unresolved',
+          severity: 'warning',
+          label: 'WP-1 · build-up · Missing required hours',
+          scope: 'item',
+          category: 'adjustment',
+          detail: '8.0h missing of 16.0h required for build-up.',
+          issueKey: 'line-1:build-up',
         },
       ],
       unresolvedCount: 0,
     });
 
     const { container } = render(<SidebarIssuesPanel payload={payload} isScheduleContext />);
+    expect(within(container).getAllByText('Assistant stale').length).toBe(2);
     expect(within(container).getByText('Schedule changed after assistant run. Re-run assistant to refresh unresolved findings.')).toBeTruthy();
-    expect(within(container).getByText('Re-run assistant to refresh findings')).toBeTruthy();
+    expect(within(container).queryByText('WP-1 · build-up · Missing required hours')).toBeNull();
   });
 
   it('shows empty-context state outside schedule tab', () => {

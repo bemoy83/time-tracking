@@ -3,6 +3,7 @@ import {
   buildIssueSuggestions,
 } from './schedule-issue-suggestions';
 import type {
+  ScheduleIssueCategory,
   ScheduleIssueItem,
   ScheduleIssuePanelPayload,
 } from './schedule-issue-panel-types';
@@ -12,55 +13,43 @@ interface SidebarIssuesPanelProps {
   isScheduleContext: boolean;
 }
 
-const SEVERITY_ORDER = ['critical', 'warning', 'info'] as const;
+const CATEGORY_ORDER: ScheduleIssueCategory[] = ['blocking', 'adjustment', 'optimization'];
 
-type Severity = (typeof SEVERITY_ORDER)[number];
-
-function severityHeading(severity: Severity): string {
-  if (severity === 'critical') return 'Critical blockers';
-  if (severity === 'warning') return 'Warnings';
-  return 'Info';
-}
-
-function kindHeading(kind: ScheduleIssueItem['kind']): string {
-  if (kind === 'capacity') return 'Capacity';
-  if (kind === 'assistant-unresolved') return 'Assistant unresolved';
-  if (kind === 'assistant-stale') return 'Assistant status';
-  return 'Unscheduled';
+function categoryHeading(category: ScheduleIssueCategory): string {
+  if (category === 'blocking') return 'Blocking activation';
+  if (category === 'adjustment') return 'Needs schedule adjustment';
+  return 'Optimization opportunities';
 }
 
 function statusLabel(payload: ScheduleIssuePanelPayload): string {
-  if (payload.state.isStale) return 'Stale';
+  if (payload.state.isStale) return 'Assistant stale';
   if (payload.state.unresolvedCount > 0) return 'Needs review';
-  if (payload.state.issues.length > 0) return 'Open issues';
   return 'Ready';
 }
 
+function statusCopy(payload: ScheduleIssuePanelPayload): string {
+  if (payload.state.isStale) {
+    return 'The schedule changed after the last assistant run. Refresh assistant findings before trusting unresolved issue guidance.';
+  }
+  if (payload.state.unresolvedCount > 0) {
+    return 'Use the guidance below to understand what is blocking the schedule without scanning the full grid row by row.';
+  }
+  return 'No scheduling blockers are currently detected. This tab will explain conflicts here when the grid becomes too large to scan comfortably.';
+}
+
 function groupIssues(issues: ScheduleIssueItem[]): Array<{
-  severity: Severity;
-  kinds: Array<{ kind: ScheduleIssueItem['kind']; items: ScheduleIssueItem[] }>;
+  category: ScheduleIssueCategory;
+  items: ScheduleIssueItem[];
 }> {
   const groups: Array<{
-    severity: Severity;
-    kinds: Array<{ kind: ScheduleIssueItem['kind']; items: ScheduleIssueItem[] }>;
+    category: ScheduleIssueCategory;
+    items: ScheduleIssueItem[];
   }> = [];
 
-  for (const severity of SEVERITY_ORDER) {
-    const severityIssues = issues.filter((issue) => issue.severity === severity);
-    if (severityIssues.length === 0) continue;
-
-    const byKind = new Map<ScheduleIssueItem['kind'], ScheduleIssueItem[]>();
-    for (const issue of severityIssues) {
-      const list = byKind.get(issue.kind);
-      if (list) list.push(issue);
-      else byKind.set(issue.kind, [issue]);
-    }
-
-    const kinds = [...byKind.entries()]
-      .map(([kind, items]) => ({ kind, items }))
-      .sort((a, b) => kindHeading(a.kind).localeCompare(kindHeading(b.kind)));
-
-    groups.push({ severity, kinds });
+  for (const category of CATEGORY_ORDER) {
+    const items = issues.filter((issue) => issue.category === category);
+    if (items.length === 0) continue;
+    groups.push({ category, items });
   }
 
   return groups;
@@ -69,8 +58,11 @@ function groupIssues(issues: ScheduleIssueItem[]): Array<{
 export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssuesPanelProps) {
   const visibleIssues = useMemo(() => {
     if (!payload) return [];
-    if (!payload.state.isStale) return payload.state.issues;
-    return payload.state.issues.filter((issue) => issue.kind !== 'assistant-unresolved');
+    return payload.state.issues.filter((issue) => {
+      if (issue.kind === 'assistant-stale') return false;
+      if (payload.state.isStale && issue.kind === 'assistant-unresolved') return false;
+      return true;
+    });
   }, [payload]);
 
   const issueGroups = useMemo(() => groupIssues(visibleIssues), [visibleIssues]);
@@ -101,7 +93,7 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
     <div className="planning-workspace__sidebar-issues">
       <header className="planning-workspace__sidebar-issues-header" aria-live="polite">
         <div className="planning-workspace__sidebar-issues-status">
-          <h3 className="planning-workspace__sidebar-issues-title">Issue help</h3>
+          <h3 className="planning-workspace__sidebar-issues-title">Scheduling help</h3>
           <span className={`planning-workspace__sidebar-issues-chip planning-workspace__sidebar-issues-chip--${status.toLowerCase().replace(/\s+/g, '-')}`}>
             {status}
           </span>
@@ -110,6 +102,11 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
           {state.issues.length} total · {state.unresolvedCount} unresolved
         </p>
       </header>
+
+      <section className="planning-workspace__sidebar-issues-summary" aria-label="Scheduling help summary">
+        <p className="planning-workspace__sidebar-issues-summary-title">{status}</p>
+        <p className="planning-workspace__sidebar-issues-summary-body">{statusCopy(payload)}</p>
+      </section>
 
       {state.isStale && (
         <p className="planning-workspace__sidebar-issues-stale">
@@ -126,50 +123,55 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
         </div>
       ) : (
         <div className="planning-workspace__sidebar-issues-list" role="list">
-          {issueGroups.map((severityGroup) => (
+          {issueGroups.map((categoryGroup) => (
             <section
-              key={severityGroup.severity}
+              key={categoryGroup.category}
               className="planning-workspace__sidebar-issues-group"
-              aria-label={severityHeading(severityGroup.severity)}
+              aria-label={categoryHeading(categoryGroup.category)}
             >
               <h4 className="planning-workspace__sidebar-issues-group-title">
-                {severityHeading(severityGroup.severity)}
+                {categoryHeading(categoryGroup.category)}
               </h4>
-              {severityGroup.kinds.map((kindGroup) => (
-                <div key={kindGroup.kind} className="planning-workspace__sidebar-issues-kind">
-                  <p className="planning-workspace__sidebar-issues-kind-title">{kindHeading(kindGroup.kind)}</p>
-                  {kindGroup.items.map((issue) => {
-                    const suggestions = buildIssueSuggestions(issue, state);
-                    return (
-                      <article
-                        key={issue.id}
-                        className="planning-workspace__sidebar-issue-card"
-                      >
-                        <div className="planning-workspace__sidebar-issue-head">
-                          <p className="planning-workspace__sidebar-issue-label">{issue.label}</p>
-                          {issue.requiredPH != null && issue.assignedPH != null && (
-                            <span className="planning-workspace__sidebar-issue-metric">
-                              {issue.assignedPH.toFixed(1)}h / {issue.requiredPH.toFixed(1)}h
-                            </span>
-                          )}
-                        </div>
-                        {suggestions.length > 0 && (
-                          <ul className="planning-workspace__sidebar-issue-suggestions" aria-label="Suggested ways to resolve this issue">
-                            {suggestions.map((suggestion) => (
-                              <li
-                                key={suggestion.id}
-                                className="planning-workspace__sidebar-issue-suggestion"
-                              >
-                                {suggestion.label}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              ))}
+              {categoryGroup.items.map((issue) => {
+                const suggestions = buildIssueSuggestions(issue, state);
+                return (
+                  <article
+                    key={issue.id}
+                    className="planning-workspace__sidebar-issue-card"
+                  >
+                    <div className="planning-workspace__sidebar-issue-head">
+                      <p className="planning-workspace__sidebar-issue-label">{issue.label}</p>
+                      {issue.detail && (
+                        <p className="planning-workspace__sidebar-issue-detail">{issue.detail}</p>
+                      )}
+                      {issue.requiredPH != null && issue.assignedPH != null && (
+                        <span className="planning-workspace__sidebar-issue-metric">
+                          {issue.assignedPH.toFixed(1)}h / {issue.requiredPH.toFixed(1)}h
+                        </span>
+                      )}
+                    </div>
+                    {issue.facts && issue.facts.length > 0 && (
+                      <ul className="planning-workspace__sidebar-issue-facts" aria-label="Issue facts">
+                        {issue.facts.slice(0, 2).map((fact) => (
+                          <li key={fact} className="planning-workspace__sidebar-issue-fact">{fact}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {suggestions.length > 0 && (
+                      <ul className="planning-workspace__sidebar-issue-suggestions" aria-label="Suggested ways to resolve this issue">
+                        {suggestions.slice(0, 3).map((suggestion) => (
+                          <li
+                            key={suggestion.id}
+                            className="planning-workspace__sidebar-issue-suggestion"
+                          >
+                            {suggestion.label}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </article>
+                );
+              })}
             </section>
           ))}
         </div>

@@ -401,7 +401,16 @@ describe('ScheduleView top-band layout', () => {
     });
 
     const unresolvedIssue = latestPayload.state.issues.find((issue: any) => issue.kind === 'assistant-unresolved');
+    const unscheduledIssue = latestPayload.state.issues.find((issue: any) => issue.kind === 'unscheduled');
     expect(unresolvedIssue?.issueKey).toBeTruthy();
+    expect(unresolvedIssue?.scope).toBe('item');
+    expect(unresolvedIssue?.category).toBe('adjustment');
+    expect(typeof unresolvedIssue?.detail).toBe('string');
+    expect(unresolvedIssue?.detail.length).toBeGreaterThan(0);
+    expect(Array.isArray(unresolvedIssue?.facts)).toBe(true);
+    expect(unscheduledIssue?.scope).toBe('plan');
+    expect(unscheduledIssue?.category).toBe('adjustment');
+    expect(unscheduledIssue?.detail).toMatch(/no scheduled span/i);
 
     act(() => {
       latestPayload.actions.selectIssue(unresolvedIssue.issueKey);
@@ -458,6 +467,50 @@ describe('ScheduleView top-band layout', () => {
     await waitFor(() => {
       expect(container.querySelector('.schedule-view__assistant-review')).toBeTruthy();
       expect(within(container).getByText('Assistant run details')).toBeTruthy();
+    });
+  });
+
+  it('publishes capacity help facts for blocking plan-level issues', async () => {
+    const plan = createPlan('Capacity Payload');
+    plan.buildUpStartDate = '2026-03-02';
+    plan.buildUpEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+
+    const item = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
+    item.buildUpScheduledStart = '2026-03-02';
+    item.buildUpScheduledEnd = '2026-03-02';
+    item.buildUpCrewByDate = { '2026-03-02': 2 };
+    plan.lineItems = [item];
+
+    let latestPayload: any = null;
+    const onIssuePanelChange = vi.fn((payload) => {
+      latestPayload = payload;
+    });
+
+    renderScheduleWithPlan(plan, {
+      desktop: true,
+      readOnly: false,
+      isWorkspaceMode: true,
+      onIssuePanelChange,
+    });
+
+    await waitFor(() => {
+      const capacityIssue = latestPayload?.state?.issues?.find((issue: any) => issue.id === 'worker-capacity');
+      expect(capacityIssue).toBeTruthy();
+      expect(capacityIssue.scope).toBe('plan');
+      expect(capacityIssue.category).toBe('blocking');
+      expect(capacityIssue.detail).toMatch(/assigned crew/i);
+      expect(Array.isArray(capacityIssue.facts)).toBe(true);
+      expect(capacityIssue.facts.length).toBeGreaterThan(0);
     });
   });
 });

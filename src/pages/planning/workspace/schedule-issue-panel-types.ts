@@ -5,13 +5,26 @@ export type SidebarPane = 'metrics' | 'issues';
 
 export type ScheduleIssueSeverity = 'critical' | 'warning' | 'info';
 
-export type ScheduleIssueKind = 'capacity' | 'assistant-unresolved' | 'assistant-stale' | 'unscheduled';
+export type ScheduleIssueKind =
+  | 'capacity'
+  | 'assistant-unresolved'
+  | 'assistant-stale'
+  | 'unscheduled'
+  | 'overstaffed';
+
+export type ScheduleIssueScope = 'plan' | 'item';
+
+export type ScheduleIssueCategory = 'blocking' | 'adjustment' | 'optimization';
 
 export interface ScheduleIssueItem {
   id: string;
   kind: ScheduleIssueKind;
   severity: ScheduleIssueSeverity;
   label: string;
+  scope?: ScheduleIssueScope;
+  category?: ScheduleIssueCategory;
+  detail?: string;
+  facts?: string[];
   lineItemId?: string;
   phase?: BuildPhase;
   issueKey?: string;

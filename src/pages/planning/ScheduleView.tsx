@@ -5,6 +5,7 @@ import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package'
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
+import { generateConflictSuggestions } from '../../lib/planning/scheduling/conflict-resolution';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
 import { lazyMigrateCrewByDate } from '../../lib/planning/scheduling/plan-schedule-update';
 import { applyBulkScheduleAmendment, applyScheduleAmendment, type BulkScheduleAmendmentChange } from '../../lib/planning/scheduling/amendments';
@@ -88,6 +89,21 @@ function unresolvedReasonLabel(reason: AutoScheduleUnresolvedReason): string {
   }
 }
 
+function formatShortDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatMinutesAsDuration(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 export function ScheduleView({
   plan,
   onSave,
@@ -149,6 +165,10 @@ export function ScheduleView({
   const capacity = useMemo(
     () => computeCapacitySummary(currentPlan),
     [currentPlan],
+  );
+  const conflictSuggestions = useMemo(
+    () => generateConflictSuggestions(capacity),
+    [capacity],
   );
   const workDays = useMemo(
     () => currentPlan.workCalendar.filter((day) => day.isWorkDay),
@@ -509,6 +529,12 @@ export function ScheduleView({
         kind: 'capacity',
         severity: 'critical',
         label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
+        scope: 'plan',
+        category: 'blocking',
+        detail: 'Some scheduled days require more person-hours than the assigned crew can physically deliver.',
+        facts: conflictSuggestions.workerCapacitySuggestions
+          .slice(0, 2)
+          .map((suggestion) => suggestion.message),
       });
     }
 
@@ -518,6 +544,17 @@ export function ScheduleView({
         kind: 'capacity',
         severity: 'critical',
         label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
+        scope: 'plan',
+        category: 'blocking',
+        detail: 'Assigned work currently exceeds the available crew capacity on some scheduled days.',
+        facts: [
+          ...conflictSuggestions.crewSuggestions
+            .slice(0, 1)
+            .map((suggestion) => `Add ${suggestion.additionalCrew} crew on ${formatShortDate(suggestion.date)}.`),
+          ...conflictSuggestions.overtimeSuggestions
+            .slice(0, 1)
+            .map((suggestion) => `Extend ${formatShortDate(suggestion.date)} by ${formatMinutesAsDuration(suggestion.extendMinutes)}.`),
+        ],
       });
     }
 
@@ -527,6 +564,12 @@ export function ScheduleView({
         kind: 'unscheduled',
         severity: 'warning',
         label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
+        scope: 'plan',
+        category: 'adjustment',
+        detail: 'These rows still have no scheduled span, so the work has nowhere to be placed in the grid yet.',
+        facts: [
+          `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'row is' : 'rows are'} still missing scheduled dates.`,
+        ],
       });
     }
 
@@ -536,16 +579,37 @@ export function ScheduleView({
         kind: 'assistant-stale',
         severity: 'warning',
         label: 'Schedule changed — re-run to re-check',
+        scope: 'plan',
+        category: 'blocking',
+        detail: 'Assistant findings are out of date because the schedule changed after the last run.',
       });
     }
 
     if (!assistantReportStale) {
       for (const issue of assistantReviewIssues) {
+        const missingHours = Math.max(0, issue.requiredPH - issue.assignedPH);
+        const detail =
+          issue.reason === 'missing_required_hours'
+            ? `${missingHours.toFixed(1)}h missing of ${issue.requiredPH.toFixed(1)}h required for ${issue.phase}.`
+            : issue.reason === 'no_work_days'
+              ? `The current ${issue.phase} window contains no work days the assistant can use.`
+              : `The current ${issue.phase} window has no remaining crew capacity the assistant can use.`;
+        const facts: string[] = [];
+        if (issue.reason === 'missing_required_hours') {
+          facts.push(`${issue.assignedPH.toFixed(1)}h currently scheduled of ${issue.requiredPH.toFixed(1)}h needed.`);
+        }
+        if (issue.phase != null) {
+          facts.push(`${issue.lineItemTitle} is blocked in ${issue.phase}.`);
+        }
         issues.push({
           id: `assistant-unresolved-${issue.key}`,
           kind: 'assistant-unresolved',
           severity: 'warning',
           label: `${issue.lineItemTitle} · ${issue.phase} · ${unresolvedReasonLabel(issue.reason)}`,
+          scope: 'item',
+          category: 'adjustment',
+          detail,
+          facts: facts.slice(0, 2),
           lineItemId: issue.lineItemId,
           phase: issue.phase,
           issueKey: issue.key,
@@ -556,11 +620,28 @@ export function ScheduleView({
       }
     }
 
+    if (capacity.overStaffedDayCount > 0) {
+      issues.push({
+        id: 'overstaffed',
+        kind: 'overstaffed',
+        severity: 'info',
+        label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day may be' : 'days may be'} overstaffed`,
+        scope: 'plan',
+        category: 'optimization',
+        detail: 'Some days appear to carry more crew than the planned work currently needs.',
+        facts: [`${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day has' : 'days have'} spare crew capacity.`],
+      });
+    }
+
     return issues;
   }, [
     assistantReportStale,
     assistantReviewIssues,
+    conflictSuggestions.crewSuggestions,
+    conflictSuggestions.overtimeSuggestions,
+    conflictSuggestions.workerCapacitySuggestions,
     capacity.overAllocatedDayCount,
+    capacity.overStaffedDayCount,
     capacity.overWorkerCapacityDayCount,
     schedulableUnscheduledCount,
   ]);
