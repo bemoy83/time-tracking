@@ -3,6 +3,7 @@ import { BreadcrumbNav } from '../../components/BreadcrumbNav';
 import { Fab } from '../../components/Fab';
 import { ImportIcon, TaskListIcon } from '../../components/icons';
 import { FieldPlanActionSheet } from './components/FieldPlanActionSheet';
+import { FieldPlanPhaseView } from './components/FieldPlanPhaseView';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
 import { FieldPlanPlanSelector } from './components/FieldPlanPlanSelector';
 import { useFieldPlanModel } from './useFieldPlanModel';
@@ -113,35 +114,64 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
           </div>
         ) : (
           <>
-            <FieldPlanPlanSelector
-              receivedPlans={model.receivedPlans}
-              closedPlans={model.closedPlans}
-              selectedPlanId={model.selectedPlanId}
-              showPastEvents={model.showPastEvents}
-              onTogglePastEvents={model.togglePastEvents}
-              onSelectPlan={model.setSelectedPlanId}
-            />
+            <div className="field-plan__view-toggle">
+              <button
+                type="button"
+                className={`field-plan__view-btn${model.viewMode === 'by-plan' ? ' field-plan__view-btn--active' : ''}`}
+                onClick={() => model.setViewMode('by-plan')}
+              >
+                Plans
+              </button>
+              <button
+                type="button"
+                className={`field-plan__view-btn${model.viewMode === 'by-phase' ? ' field-plan__view-btn--active' : ''}`}
+                onClick={() => model.setViewMode('by-phase')}
+              >
+                Phases
+              </button>
+            </div>
 
-            {model.selectedPlan && (
-              <FieldPlanPlanDetail
-                selectedPlan={model.selectedPlan}
-                projectColor={model.projectColor}
-                progressPercent={model.progressPercent}
-                lineItemStatusSummary={model.lineItemStatusSummary}
-                lineItems={model.lineItems}
-                deadlineSummary={model.deadlineSummary}
-                statusGroups={model.statusGroups}
-                completedExpanded={model.completedExpanded}
-                deferredExpanded={model.deferredExpanded}
-                canExecute={model.canExecute}
-                personHours={model.selectedPlanPersonHours}
-                unplannedTasks={model.unplannedTasks}
-                onToggleCompletedExpanded={model.toggleCompletedExpanded}
-                onToggleDeferredExpanded={model.toggleDeferredExpanded}
+            {model.viewMode === 'by-phase' ? (
+              <FieldPlanPhaseView
+                allLineItems={model.allActiveLineItems}
                 onReleaseToToday={model.handleReleaseToToday}
                 onOpenActions={model.openActions}
-                onExportExecutionReturn={() => { void model.handleExportExecutionReturn(); }}
               />
+            ) : (
+              <>
+                <FieldPlanPlanSelector
+                  receivedPlans={model.receivedPlans}
+                  closedPlans={model.closedPlans}
+                  selectedPlanId={model.selectedPlanId}
+                  showPastEvents={model.showPastEvents}
+                  onTogglePastEvents={model.togglePastEvents}
+                  onSelectPlan={model.setSelectedPlanId}
+                />
+
+                {model.selectedPlan && (
+                  <FieldPlanPlanDetail
+                    selectedPlan={model.selectedPlan}
+                    projectColor={model.projectColor}
+                    progressPercent={model.progressPercent}
+                    lineItemStatusSummary={model.lineItemStatusSummary}
+                    lineItems={model.lineItems}
+                    deadlineSummary={model.deadlineSummary}
+                    statusGroups={model.statusGroups}
+                    completedExpanded={model.completedExpanded}
+                    deferredExpanded={model.deferredExpanded}
+                    canExecute={model.canExecute}
+                    personHours={model.selectedPlanPersonHours}
+                    unplannedTasks={model.unplannedTasks}
+                    phaseFilter={model.phaseFilter}
+                    onPhaseFilterChange={model.setPhaseFilter}
+                    onToggleCompletedExpanded={model.toggleCompletedExpanded}
+                    onToggleDeferredExpanded={model.toggleDeferredExpanded}
+                    onReleaseToToday={model.handleReleaseToToday}
+                    onOpenActions={model.openActions}
+                    onExportExecutionReturn={() => { void model.handleExportExecutionReturn(); }}
+                  />
+                )}
+              </>
             )}
           </>
         )}

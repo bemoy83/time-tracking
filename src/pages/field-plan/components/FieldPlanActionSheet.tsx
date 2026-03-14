@@ -6,7 +6,7 @@ import {
   PencilIcon,
   PlayIcon,
 } from '../../../components/icons';
-import type { BlockCategory, PlanLineItem } from '../../../lib/planning/plan-model';
+import type { BlockCategory } from '../../../lib/planning/plan-model';
 import type { BuildPhase } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FormMode } from '../field-plan-overlay-types';
@@ -24,11 +24,11 @@ interface FieldPlanActionSheetProps {
   onClose: () => void;
   onSetFormMode: (formMode: FormMode | null) => void;
   onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
-  onBlockSubmit: (lineItemId: string, phase: BuildPhase, reason: string, category: BlockCategory | null) => Promise<void>;
-  onDeferSubmit: (lineItemId: string, phase: BuildPhase, note: string | null) => Promise<void>;
-  onNoteSubmit: (lineItemId: string, phase: BuildPhase, note: string | null) => Promise<void>;
-  onClearBlock: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
-  onReactivateDeferred: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
+  onBlockSubmit: (lineItemId: string, phase: BuildPhase, planId: string, reason: string, category: BlockCategory | null) => Promise<void>;
+  onDeferSubmit: (lineItemId: string, phase: BuildPhase, planId: string, note: string | null) => Promise<void>;
+  onNoteSubmit: (lineItemId: string, phase: BuildPhase, planId: string, note: string | null) => Promise<void>;
+  onClearBlock: (lineItem: FieldPlanLineItemSummary) => Promise<void>;
+  onReactivateDeferred: (lineItem: FieldPlanLineItemSummary) => Promise<void>;
 }
 
 export function FieldPlanActionSheet({
@@ -70,7 +70,7 @@ export function FieldPlanActionSheet({
         <BlockForm
           lineItem={formMode.lineItem}
           onSubmit={(reason, category) => {
-            void onBlockSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, reason, category);
+            void onBlockSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, formMode.lineItem.planId, reason, category);
             onClose();
           }}
           onCancel={onClose}
@@ -81,7 +81,7 @@ export function FieldPlanActionSheet({
         <DeferForm
           lineItem={formMode.lineItem}
           onSubmit={(note) => {
-            void onDeferSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, note);
+            void onDeferSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, formMode.lineItem.planId, note);
             onClose();
           }}
           onCancel={onClose}
@@ -92,7 +92,7 @@ export function FieldPlanActionSheet({
         <NoteForm
           lineItem={formMode.lineItem}
           onSubmit={(note) => {
-            void onNoteSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, note);
+            void onNoteSubmit(formMode.lineItem.item.id, formMode.lineItem.phase, formMode.lineItem.planId, note);
             onClose();
           }}
           onCancel={onClose}
@@ -114,8 +114,8 @@ function FieldPlanActionList({
   onClose: () => void;
   onSetFormMode: (formMode: FormMode | null) => void;
   onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
-  onClearBlock: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
-  onReactivateDeferred: (lineItem: PlanLineItem, phase: BuildPhase) => Promise<void>;
+  onClearBlock: (lineItem: FieldPlanLineItemSummary) => Promise<void>;
+  onReactivateDeferred: (lineItem: FieldPlanLineItemSummary) => Promise<void>;
 }) {
   return (
     <div className="field-plan__action-list">
@@ -160,7 +160,7 @@ function FieldPlanActionList({
           type="button"
           className="field-plan__action-btn"
           onClick={() => {
-            void onClearBlock(lineItem.item, lineItem.phase);
+            void onClearBlock(lineItem);
             onClose();
           }}
         >
@@ -174,7 +174,7 @@ function FieldPlanActionList({
           type="button"
           className="field-plan__action-btn"
           onClick={() => {
-            void onReactivateDeferred(lineItem.item, lineItem.phase);
+            void onReactivateDeferred(lineItem);
             onClose();
           }}
         >

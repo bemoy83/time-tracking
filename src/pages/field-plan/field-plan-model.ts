@@ -15,9 +15,13 @@ export interface FieldPlanLineItemSummary {
   status: LineItemExecutionStatus;
   deadlineStatus: DeadlineStatus;
   dueDate: string | null;
+  planId: string;
+  planTitle: string;
+  planProjectId: string | null;
+  planCanExecute: boolean;
 }
 
-const STATUS_PRIORITY: Record<LineItemExecutionStatus, number> = {
+export const STATUS_PRIORITY: Record<LineItemExecutionStatus, number> = {
   blocked: 0,
   'in-progress': 1,
   pending: 2,
@@ -54,6 +58,7 @@ export function buildFieldPlanLineItemSummaries(
   tasks: Task[],
   timeEntries: TimeEntry[],
 ): FieldPlanLineItemSummary[] {
+  const planCanExecute = plan.status === 'received' || plan.status === 'session-closed';
   const linkedByLineItem = new Map<string, Task[]>();
   const entriesByTaskId = new Map<string, TimeEntry[]>();
   const todayDate = new Date().toISOString().slice(0, 10);
@@ -100,6 +105,10 @@ export function buildFieldPlanLineItemSummaries(
         status: deriveLineItemStatus(pf, phaseTasks),
         deadlineStatus: deadline.status,
         dueDate: deadline.dueDate,
+        planId: plan.id,
+        planTitle: plan.title,
+        planProjectId: plan.projectId,
+        planCanExecute,
       });
     }
   }

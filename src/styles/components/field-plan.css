@@ -24,12 +24,6 @@
 }
 
 .field-plan-view__content {
-  max-width: 720px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 var(--space-md);
-  padding-bottom: calc(var(--space-xl) + 64px);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -233,6 +227,111 @@
 .field-plan__summary-icon {
   width: 14px;
   height: 14px;
+}
+
+.field-plan__phase-filter {
+  display: flex;
+  gap: 0;
+  background: var(--color-border);
+  border-radius: 9999px;
+  padding: 3px;
+  width: 100%;
+}
+
+.field-plan__phase-filter-btn {
+  flex: 1;
+  min-height: 32px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 600;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.field-plan__phase-filter-btn:hover:not(.field-plan__phase-filter-btn--active) {
+  color: var(--color-text);
+}
+
+.field-plan__phase-filter-btn--active {
+  background: #1f1f1f;
+  color: var(--state-on-solid);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* ============================================================
+   View Toggle (Plans / Phases)
+   ============================================================ */
+
+.field-plan__view-toggle {
+  display: flex;
+  gap: 0;
+  background: var(--color-border);
+  border-radius: 9999px;
+  padding: 3px;
+  align-self: flex-start;
+}
+
+.field-plan__view-btn {
+  flex: 1;
+  min-height: 36px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 700;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.field-plan__view-btn:hover:not(.field-plan__view-btn--active) {
+  color: var(--color-text);
+}
+
+.field-plan__view-btn--active {
+  background: #1f1f1f;
+  color: var(--state-on-solid);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* ============================================================
+   Phase View (cross-plan phase-grouped view)
+   ============================================================ */
+
+.field-plan__phase-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.field-plan__phase-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.field-plan__phase-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  font-size: var(--font-base);
+  font-weight: 700;
+}
+
+.field-plan-row__plan-label {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 /* ============================================================
@@ -441,6 +540,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.field-plan-row__phase-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  padding: 2px 8px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.field-plan-row__phase-badge--build-up {
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.field-plan-row__phase-badge--tear-down {
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #b45309;
 }
 
 .field-plan-row__chip {

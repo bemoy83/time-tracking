@@ -2,6 +2,48 @@
   gap: var(--space-md);
 }
 
+.progress-view__import-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.progress-view__import-card {
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.progress-view__import-title {
+  margin: 0;
+  font-size: var(--font-small);
+}
+
+.progress-view__import-meta {
+  margin: 0;
+  font-size: var(--font-xsmall);
+  color: var(--color-text-muted);
+}
+
+.progress-view__import-meta--warn {
+  color: var(--color-warning, #f59e0b);
+}
+
+.progress-view__import-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+.progress-view__import-msg {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 .progress-view__summary {
   display: flex;
   align-items: center;

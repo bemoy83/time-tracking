@@ -9,7 +9,7 @@ import {
   WarningIcon,
 } from '../../../components/icons';
 import type { Plan } from '../../../lib/planning/plan-model';
-import type { Task } from '../../../lib/types';
+import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
@@ -36,6 +36,8 @@ interface FieldPlanPlanDetailProps {
   canExecute: boolean;
   personHours: string;
   unplannedTasks: Task[];
+  phaseFilter: 'all' | BuildPhase;
+  onPhaseFilterChange: (filter: 'all' | BuildPhase) => void;
   onToggleCompletedExpanded: () => void;
   onToggleDeferredExpanded: () => void;
   onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
@@ -56,6 +58,8 @@ export function FieldPlanPlanDetail({
   canExecute,
   personHours,
   unplannedTasks,
+  phaseFilter,
+  onPhaseFilterChange,
   onToggleCompletedExpanded,
   onToggleDeferredExpanded,
   onReleaseToToday,
@@ -97,6 +101,18 @@ export function FieldPlanPlanDetail({
               {deadlineSummary.atRisk} at risk
             </span>
           )}
+        </div>
+        <div className="field-plan__phase-filter">
+          {(['all', 'build-up', 'tear-down'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`field-plan__phase-filter-btn${phaseFilter === f ? ' field-plan__phase-filter-btn--active' : ''}`}
+              onClick={() => onPhaseFilterChange(f)}
+            >
+              {f === 'all' ? 'All' : BUILD_PHASE_LABELS[f]}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -245,7 +261,7 @@ export function FieldPlanPlanDetail({
         className="btn btn--primary btn--full"
         onClick={onExportExecutionReturn}
       >
-        Export Execution Return
+        Send Progress Report
       </button>
     </>
   );

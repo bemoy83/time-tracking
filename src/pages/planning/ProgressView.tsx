@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
@@ -7,6 +7,12 @@ import { computePlanProgress } from '../../lib/planning/plan-progress';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
 import { useExecutionReturnForProgress } from './hooks/useExecutionReturnForProgress';
+import {
+  parseExecutionReturnJson,
+  previewExecutionReturnImport,
+  applyExecutionReturnImport,
+} from '../../lib/interop/data-transfer/execution-return-import';
+import type { ExecutionReturnImportPreview } from '../../lib/interop/data-transfer/contracts';
 
 interface ProgressViewProps {
   plan: Plan;
@@ -42,6 +48,32 @@ export function ProgressView({
   onWrapUp,
 }: ProgressViewProps) {
   const importedExecutionStatus = useExecutionReturnForProgress(plan.id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [filePreview, setFilePreview] = useState<ExecutionReturnImportPreview | null>(null);
+  const [importMsg, setImportMsg] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const text = await file.text();
+    const parsed = parseExecutionReturnJson(text);
+    if (!parsed.ok) { setImportMsg(`Invalid file: ${parsed.error}`); return; }
+    const preview = await previewExecutionReturnImport(parsed.envelope);
+    setFilePreview(preview);
+    setImportMsg('');
+  }
+
+  async function handleApply() {
+    if (!filePreview) return;
+    setIsApplying(true);
+    const result = await applyExecutionReturnImport(filePreview);
+    setFilePreview(null);
+    setImportMsg(result.reason);
+    setIsApplying(false);
+  }
+
   const progress = useMemo(
     () => computePlanProgress(plan, tasks, timeEntries, importedExecutionStatus),
     [plan, tasks, timeEntries, importedExecutionStatus],
@@ -74,6 +106,64 @@ export function ProgressView({
           </button>
         )}
       </header>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={(e) => { void handleFileChange(e); }}
+      />
+
+      <section className="progress-view__import-section">
+        {!filePreview && (
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import Progress Report
+          </button>
+        )}
+        {filePreview && (
+          <div className="progress-view__import-card">
+            <p className="progress-view__import-title">
+              <strong>{filePreview.planTitle}</strong> · {filePreview.lineItemCount} items · {filePreview.timeEntryCount} time entries
+            </p>
+            {filePreview.dateRangeStart && (
+              <p className="progress-view__import-meta">
+                {filePreview.dateRangeStart} → {filePreview.dateRangeEnd ?? '—'}
+              </p>
+            )}
+            {filePreview.duplicateTimeEntryIds.length > 0 && (
+              <p className="progress-view__import-meta progress-view__import-meta--warn">
+                {filePreview.duplicateTimeEntryIds.length} duplicate time {filePreview.duplicateTimeEntryIds.length === 1 ? 'entry' : 'entries'} will be skipped.
+              </p>
+            )}
+            <div className="progress-view__import-actions">
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => setFilePreview(null)}
+                disabled={isApplying}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => { void handleApply(); }}
+                disabled={isApplying}
+              >
+                {isApplying ? 'Importing…' : 'Apply Import'}
+              </button>
+            </div>
+          </div>
+        )}
+        {importMsg && !filePreview && (
+          <p className="progress-view__import-msg">{importMsg}</p>
+        )}
+      </section>
 
       <section
         className={`progress-view__summary${progress.deadline.enabled && progress.deadline.status && progress.deadline.status !== 'on-track' ? ' progress-view__summary--risk' : ''}`}

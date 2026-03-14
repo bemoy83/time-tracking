@@ -38,6 +38,8 @@ export function useFieldPlanModel() {
   const [completedExpanded, setCompletedExpanded] = useState(false);
   const [deferredExpanded, setDeferredExpanded] = useState(false);
   const [formMode, setFormMode] = useState<FormMode | null>(null);
+  const [phaseFilter, setPhaseFilter] = useState<'all' | BuildPhase>('all');
+  const [viewMode, setViewMode] = useState<'by-plan' | 'by-phase'>('by-plan');
 
   const hadDeadlineRiskRef = useRef(false);
 
@@ -74,10 +76,12 @@ export function useFieldPlanModel() {
     void reloadData();
   }, [reloadData, resetImportPreview]);
 
-  // Auto-select a plan when plans change
+  // Auto-select a plan when plans change; reset phase filter on plan change
   useEffect(() => {
     const hasSelection = selectedPlanId != null && plans.some((plan) => plan.id === selectedPlanId);
     if (hasSelection) return;
+
+    setPhaseFilter('all');
 
     const received = plans.find((plan) => plan.status === 'received');
     if (received) {
@@ -117,16 +121,26 @@ export function useFieldPlanModel() {
     return buildFieldPlanLineItemSummaries(selectedPlan, tasks, timeEntries);
   }, [selectedPlan, tasks, timeEntries]);
 
-  const lineItemStatusSummary = useMemo(
-    () => summarizeLineItemStatuses(lineItems),
-    [lineItems],
+  const allActiveLineItems = useMemo(
+    () => receivedPlans.flatMap((plan) => buildFieldPlanLineItemSummaries(plan, tasks, timeEntries)),
+    [receivedPlans, tasks, timeEntries],
   );
 
-  const statusGroups = useMemo(() => groupByStatus(lineItems), [lineItems]);
+  const displayLineItems = useMemo(
+    () => phaseFilter === 'all' ? lineItems : lineItems.filter((li) => li.phase === phaseFilter),
+    [lineItems, phaseFilter],
+  );
+
+  const lineItemStatusSummary = useMemo(
+    () => summarizeLineItemStatuses(displayLineItems),
+    [displayLineItems],
+  );
+
+  const statusGroups = useMemo(() => groupByStatus(displayLineItems), [displayLineItems]);
 
   const progressPercent = useMemo(
-    () => lineItems.length === 0 ? 0 : Math.round((lineItemStatusSummary.completed / lineItems.length) * 100),
-    [lineItems.length, lineItemStatusSummary.completed],
+    () => displayLineItems.length === 0 ? 0 : Math.round((lineItemStatusSummary.completed / displayLineItems.length) * 100),
+    [displayLineItems.length, lineItemStatusSummary.completed],
   );
 
   const deadlineSummary = useMemo(() => {
@@ -161,21 +175,22 @@ export function useFieldPlanModel() {
     selectedPlan?.status === 'received' || selectedPlan?.status === 'session-closed';
 
   const patchLineItem = useCallback(
-    async (lineItemId: string, updates: Partial<Omit<PlanLineItem, 'id'>>) => {
-      if (!selectedPlan) return;
-      const nextPlan = updatePlanLineItem(selectedPlan, lineItemId, updates);
+    async (planId: string, lineItemId: string, updates: Partial<Omit<PlanLineItem, 'id'>>) => {
+      const targetPlan = plans.find((p) => p.id === planId);
+      if (!targetPlan) return;
+      const nextPlan = updatePlanLineItem(targetPlan, lineItemId, updates);
       await updatePlan(nextPlan);
-      setPlans((prev) => prev.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan)));
+      setPlans((prev) => prev.map((p) => (p.id === nextPlan.id ? nextPlan : p)));
     },
-    [selectedPlan],
+    [plans],
   );
 
   const handleReleaseToToday = useCallback(
     (lineItem: FieldPlanLineItemSummary) => {
-      if (!selectedPlan || !canExecute || lineItem.item.removedFromSource) return;
+      if (!lineItem.planCanExecute || lineItem.item.removedFromSource) return;
       const alreadyReleased = tasks.some(
         (task) =>
-          task.sourcePlanId === selectedPlan.id
+          task.sourcePlanId === lineItem.planId
           && task.sourceLineItemId === lineItem.item.id
           && (task.buildPhase ?? 'build-up') === lineItem.phase,
       );
@@ -185,72 +200,67 @@ export function useFieldPlanModel() {
         lineItem.item,
         lineItem.phase,
         {
-          planId: selectedPlan.id,
-          projectId: selectedPlan.projectId,
+          planId: lineItem.planId,
+          projectId: lineItem.planProjectId,
         },
       ));
     },
-    [canExecute, selectedPlan, tasks],
+    [tasks],
   );
 
   const handleBlockSubmit = useCallback(
-    async (lineItemId: string, phase: BuildPhase, reason: string, category: BlockCategory | null) => {
-      if (!canExecute || !selectedPlan) return;
-      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
+    async (lineItemId: string, phase: BuildPhase, planId: string, reason: string, category: BlockCategory | null) => {
+      await patchLineItem(planId, lineItemId, phaseFieldUpdates(phase, {
         executionStatus: 'blocked',
         blockReason: reason,
         blockCategory: category,
       }));
-      await syncLineItemBlockToTasks(selectedPlan.id, lineItemId, reason, category);
+      await syncLineItemBlockToTasks(planId, lineItemId, reason, category);
     },
-    [canExecute, patchLineItem, selectedPlan],
+    [patchLineItem],
   );
 
   const handleDeferSubmit = useCallback(
-    async (lineItemId: string, phase: BuildPhase, note: string | null) => {
-      if (!canExecute) return;
-      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
+    async (lineItemId: string, phase: BuildPhase, planId: string, note: string | null) => {
+      await patchLineItem(planId, lineItemId, phaseFieldUpdates(phase, {
         executionStatus: 'deferred',
         deferredNote: note,
         blockReason: null,
         blockCategory: null,
       }));
     },
-    [canExecute, patchLineItem],
+    [patchLineItem],
   );
 
   const handleNoteSubmit = useCallback(
-    async (lineItemId: string, phase: BuildPhase, note: string | null) => {
-      if (!canExecute) return;
-      await patchLineItem(lineItemId, phaseFieldUpdates(phase, {
+    async (lineItemId: string, phase: BuildPhase, planId: string, note: string | null) => {
+      await patchLineItem(planId, lineItemId, phaseFieldUpdates(phase, {
         executorNote: note,
       }));
     },
-    [canExecute, patchLineItem],
+    [patchLineItem],
   );
 
   const handleClearBlock = useCallback(
-    async (lineItem: PlanLineItem, phase: BuildPhase) => {
-      if (!canExecute || !selectedPlan) return;
-      await patchLineItem(lineItem.id, phaseFieldUpdates(phase, {
+    async (lineItem: FieldPlanLineItemSummary) => {
+      await patchLineItem(lineItem.planId, lineItem.item.id, phaseFieldUpdates(lineItem.phase, {
         executionStatus: 'pending',
         blockReason: null,
         blockCategory: null,
       }));
-      await syncLineItemUnblockToTasks(selectedPlan.id, lineItem.id);
+      await syncLineItemUnblockToTasks(lineItem.planId, lineItem.item.id);
     },
-    [canExecute, patchLineItem, selectedPlan],
+    [patchLineItem],
   );
 
   const handleReactivateDeferred = useCallback(
-    async (lineItem: PlanLineItem, phase: BuildPhase) => {
-      if (!canExecute) return;
-      await patchLineItem(lineItem.id, phaseFieldUpdates(phase, {
+    async (lineItem: FieldPlanLineItemSummary) => {
+      await patchLineItem(lineItem.planId, lineItem.item.id, phaseFieldUpdates(lineItem.phase, {
         executionStatus: 'pending',
         deferredNote: null,
       }));
     },
-    [canExecute, patchLineItem],
+    [patchLineItem],
   );
 
   const handleExportExecutionReturn = useCallback(async () => {
@@ -318,8 +328,10 @@ export function useFieldPlanModel() {
     formMode,
     completedExpanded,
     deferredExpanded,
+    phaseFilter,
 
     lineItems,
+    allActiveLineItems,
     lineItemStatusSummary,
     statusGroups,
     progressPercent,
@@ -327,12 +339,15 @@ export function useFieldPlanModel() {
     selectedPlanPersonHours,
     unplannedTasks,
     canExecute,
+    viewMode,
 
     setSelectedPlanId,
     togglePastEvents: () => setShowPastEvents((prev) => !prev),
     toggleCompletedExpanded: () => setCompletedExpanded((prev) => !prev),
     toggleDeferredExpanded: () => setDeferredExpanded((prev) => !prev),
     setFormMode,
+    setPhaseFilter,
+    setViewMode,
 
     closeForm,
     openActions,

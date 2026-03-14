@@ -16,6 +16,7 @@ interface FieldPlanLineItemRowProps {
   lineItem: FieldPlanLineItemSummary;
   projectColor?: string;
   canExecute: boolean;
+  showPlanLabel?: boolean;
   onRelease: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
 }
@@ -24,6 +25,7 @@ export function FieldPlanLineItemRow({
   lineItem,
   projectColor,
   canExecute,
+  showPlanLabel = false,
   onRelease,
   onOpenActions,
 }: FieldPlanLineItemRowProps) {
@@ -71,8 +73,14 @@ export function FieldPlanLineItemRow({
         </div>
         <div className="field-plan-row__content">
           <span className="field-plan-row__title">{item.title}</span>
+          <span className={`field-plan-row__phase-badge field-plan-row__phase-badge--${phase}`}>
+            {BUILD_PHASE_LABELS[phase]}
+          </span>
+          {showPlanLabel && (
+            <span className="field-plan-row__plan-label">{lineItem.planTitle}</span>
+          )}
           <span className="field-plan-row__meta">
-            {item.workTypeTitle} · {quantity} {WORK_UNIT_LABELS[item.workUnit]} · {BUILD_PHASE_LABELS[phase]} · {pf.crew} crew · {pf.timeHours.toFixed(1)}h
+            {item.workTypeTitle} · {quantity} {WORK_UNIT_LABELS[item.workUnit]} · {pf.crew} crew · {pf.timeHours.toFixed(1)}h
           </span>
           {pf.blockReason && (
             <span className="field-plan-row__chip field-plan-row__chip--blocked">
