@@ -166,19 +166,19 @@ export async function buildExecutionReturnEnvelope(
         id: syntheticId,
         title: lineItem.workTypeTitle,
         workUnit: lineItem.workUnit,
-        buildUpRate: lineItem.buildUpRate,
-        tearDownRate: lineItem.tearDownRate,
+        assemblyRate: lineItem.assemblyRate,
+        dismantleRate: lineItem.dismantleRate,
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
     } else {
-      const isTearDown = task.buildPhase === 'tear-down';
+      const isTearDown = task.buildPhase === 'dismantle';
       workTypes.push({
         id: syntheticId,
         title: task.title,
         workUnit: task.workUnit ?? 'm2',
-        buildUpRate: isTearDown ? 0 : 10,
-        tearDownRate: isTearDown ? 10 : 0,
+        assemblyRate: isTearDown ? 0 : 10,
+        dismantleRate: isTearDown ? 10 : 0,
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });

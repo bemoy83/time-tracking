@@ -56,26 +56,26 @@ function resolveWorkType(
 }
 
 async function applyTaskBackfill(task: Task, workType: WorkType): Promise<void> {
-  const rate = task.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
+  const rate = task.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
   await updateTaskFields(task.id, {
     workTypeId: workType.id,
     workUnit: task.workUnit ?? workType.workUnit,
     targetProductivity:
       task.targetProductivity != null && task.targetProductivity > 0
         ? task.targetProductivity
-        : (rate || workType.buildUpRate || workType.tearDownRate),
+        : (rate || workType.assemblyRate || workType.dismantleRate),
   });
 }
 
 async function applyTemplateBackfill(template: TaskTemplate, workType: WorkType): Promise<void> {
-  const rate = template.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
+  const rate = template.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
   await updateTemplate(template.id, {
     workTypeId: workType.id,
     workUnit: template.workUnit ?? workType.workUnit,
     targetProductivity:
       template.targetProductivity != null && template.targetProductivity > 0
         ? template.targetProductivity
-        : (rate || workType.buildUpRate || workType.tearDownRate),
+        : (rate || workType.assemblyRate || workType.dismantleRate),
   });
 }
 

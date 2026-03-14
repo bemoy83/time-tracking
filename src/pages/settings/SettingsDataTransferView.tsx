@@ -73,9 +73,6 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
       if (result.applied) {
         setPlanPreview(null);
         trackTelemetryEvent(result.merged ? 'interop_plan_package_merge' : 'interop_plan_package_import');
-        if (planPreview.envelope.schemaVersion === '1.0') {
-          trackTelemetryEvent('schedule_import_defaulted');
-        }
       } else if (resolution === 'skip') {
         trackTelemetryEvent('interop_plan_package_skip');
       } else {

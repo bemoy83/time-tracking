@@ -52,7 +52,7 @@ export function WorkTypePicker({
       )}
       {showRate && selectedWorkType && (
         <div className="task-work-quantity__hint">
-          Build-up: {selectedWorkType.buildUpRate} · Tear-down: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+          Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
         </div>
       )}
     </div>

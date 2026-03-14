@@ -15,8 +15,8 @@ export interface ImportedWorkType {
   mappingKey: string;
   title: string;
   workUnit: WorkUnit;
-  buildUpRate: number;
-  tearDownRate: number;
+  assemblyRate: number;
+  dismantleRate: number;
 }
 
 export interface ImportValidationError {
@@ -51,7 +51,7 @@ export interface WorkTypeImportPreview {
 
 /**
  * Parse CSV text into validated WorkType definitions.
- * Required columns: title, workUnit, buildUpRate, tearDownRate
+ * Required columns: title, workUnit, assemblyRate, dismantleRate
  */
 export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
   const lines = csvText.trim().split('\n');
@@ -65,7 +65,7 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
 
   const delimiter = detectCsvDelimiter(lines[0]);
   const headers = parseCsvLine(lines[0], delimiter).map((header) => header.trim().toLowerCase());
-  const requiredHeaders = ['title', 'workunit', 'builduprate', 'teardownrate'];
+  const requiredHeaders = ['title', 'workunit', 'assemblyrate', 'dismantlerate'];
   const missingHeaders = requiredHeaders.filter((header) => !headers.includes(header));
   if (missingHeaders.length > 0) {
     return {
@@ -107,16 +107,16 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
       });
     }
 
-    const buildUpRate = parseOptionalNumber(row.builduprate, rowNum, 'buildUpRate', rowErrors);
-    const tearDownRate = parseOptionalNumber(row.teardownrate, rowNum, 'tearDownRate', rowErrors);
+    const assemblyRate = parseOptionalNumber(row.assemblyrate, rowNum, 'assemblyRate', rowErrors);
+    const dismantleRate = parseOptionalNumber(row.dismantlerate, rowNum, 'dismantleRate', rowErrors);
 
-    if ((buildUpRate ?? 0) < 0) {
-      rowErrors.push({ row: rowNum, field: 'buildUpRate', message: 'Build-up rate cannot be negative' });
+    if ((assemblyRate ?? 0) < 0) {
+      rowErrors.push({ row: rowNum, field: 'assemblyRate', message: 'Assembly rate cannot be negative' });
     }
-    if ((tearDownRate ?? 0) < 0) {
-      rowErrors.push({ row: rowNum, field: 'tearDownRate', message: 'Tear-down rate cannot be negative' });
+    if ((dismantleRate ?? 0) < 0) {
+      rowErrors.push({ row: rowNum, field: 'dismantleRate', message: 'Dismantle rate cannot be negative' });
     }
-    if ((buildUpRate ?? 0) === 0 && (tearDownRate ?? 0) === 0) {
+    if ((assemblyRate ?? 0) === 0 && (dismantleRate ?? 0) === 0) {
       rowErrors.push({ row: rowNum, field: 'rates', message: 'At least one rate must be greater than 0' });
     }
 
@@ -129,8 +129,8 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
       mappingKey: workTypeKeyString(title, workUnitRaw as WorkUnit),
       title,
       workUnit: workUnitRaw as WorkUnit,
-      buildUpRate: buildUpRate ?? 0,
-      tearDownRate: tearDownRate ?? 0,
+      assemblyRate: assemblyRate ?? 0,
+      dismantleRate: dismantleRate ?? 0,
     });
   }
 
@@ -193,8 +193,8 @@ export async function applyWorkTypeImport(
       await updateWorkTypeFields(existing.id, {
         title: item.title,
         workUnit: item.workUnit,
-        buildUpRate: item.buildUpRate,
-        tearDownRate: item.tearDownRate,
+        assemblyRate: item.assemblyRate,
+        dismantleRate: item.dismantleRate,
       });
       updated += 1;
       continue;
@@ -203,8 +203,8 @@ export async function applyWorkTypeImport(
     await createWorkType({
       title: item.title,
       workUnit: item.workUnit,
-      buildUpRate: item.buildUpRate,
-      tearDownRate: item.tearDownRate,
+      assemblyRate: item.assemblyRate,
+      dismantleRate: item.dismantleRate,
     });
     created += 1;
   }

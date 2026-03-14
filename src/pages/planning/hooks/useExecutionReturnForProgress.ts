@@ -24,7 +24,7 @@ export function useExecutionReturnForProgress(planId: string | null): ImportedEx
       const fallbackByLineItem = new Map<string, ImportedLineItemExecutionState>();
       for (const li of bundle.lineItems) {
         if (VALID_STATUSES.includes(li.executionStatus as (typeof VALID_STATUSES)[number])) {
-          const phase: BuildPhase = li.phase === 'tear-down' ? 'tear-down' : 'build-up';
+          const phase: BuildPhase = li.phase === 'dismantle' ? 'dismantle' : 'assembly';
           const state: ImportedLineItemExecutionState = {
             status: li.executionStatus as ImportedLineItemExecutionState['status'],
             blockReason: li.blockReason ?? null,

@@ -47,20 +47,20 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.eventEndDate = null;
   }
 
-  if (raw.buildUpStartDate === undefined) {
-    raw.buildUpStartDate = null;
+  if (raw.assemblyStartDate === undefined) {
+    raw.assemblyStartDate = null;
   }
 
-  if (raw.buildUpEndDate === undefined) {
-    raw.buildUpEndDate = null;
+  if (raw.assemblyEndDate === undefined) {
+    raw.assemblyEndDate = null;
   }
 
-  if (raw.tearDownStartDate === undefined) {
-    raw.tearDownStartDate = null;
+  if (raw.dismantleStartDate === undefined) {
+    raw.dismantleStartDate = null;
   }
 
-  if (raw.tearDownEndDate === undefined) {
-    raw.tearDownEndDate = null;
+  if (raw.dismantleEndDate === undefined) {
+    raw.dismantleEndDate = null;
   }
 
   if (raw.defaultCrewSize === undefined) {

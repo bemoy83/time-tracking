@@ -107,10 +107,10 @@ export function PlanEditor({
   const workCalendarPhaseSpans = useMemo(
     () => getWorkCalendarPhaseSpans(phaseDates),
     [
-      phaseDates.buildUpStartDate,
-      phaseDates.buildUpEndDate,
-      phaseDates.tearDownStartDate,
-      phaseDates.tearDownEndDate,
+      phaseDates.assemblyStartDate,
+      phaseDates.assemblyEndDate,
+      phaseDates.dismantleStartDate,
+      phaseDates.dismantleEndDate,
     ],
   );
   const summaryRange = workCalendarRange ?? primaryRange;
@@ -121,8 +121,8 @@ export function PlanEditor({
     [suggestions.items],
   );
   const totalPersonHours = planTotalPersonHours(currentPlan);
-  const buildUpPersonHours = planPhasePersonHours(currentPlan, 'build-up');
-  const tearDownPersonHours = planPhasePersonHours(currentPlan, 'tear-down');
+  const assemblyPersonHours = planPhasePersonHours(currentPlan, 'assembly');
+  const dismantlePersonHours = planPhasePersonHours(currentPlan, 'dismantle');
 
   const availableScope = (() => {
     const { defaultCrewSize, workCalendar } = currentPlan;
@@ -221,8 +221,8 @@ export function PlanEditor({
         newWorkType.title,
         newWorkType.workUnit,
         newQuantityValue,
-        newWorkType.buildUpRate,
-        newWorkType.tearDownRate,
+        newWorkType.assemblyRate,
+        newWorkType.dismantleRate,
         'template',
         newWorkType.id,
       ),
@@ -562,10 +562,10 @@ export function PlanEditor({
 
         <div className="planning-view__schedule-inputs-wrap">
           <PlanScheduleInputsPanel
-            buildUpStartDate={phaseDates.buildUpStartDate}
-            buildUpEndDate={phaseDates.buildUpEndDate}
-            tearDownStartDate={phaseDates.tearDownStartDate}
-            tearDownEndDate={phaseDates.tearDownEndDate}
+            assemblyStartDate={phaseDates.assemblyStartDate}
+            assemblyEndDate={phaseDates.assemblyEndDate}
+            dismantleStartDate={phaseDates.dismantleStartDate}
+            dismantleEndDate={phaseDates.dismantleEndDate}
             eventStartDate={currentPlan.eventStartDate}
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
@@ -588,8 +588,8 @@ export function PlanEditor({
             <h2 id="work-packages-heading" className="planning-view__items-title">Work Packages</h2>
             <div className="planning-view__items-summary">
               <span>{currentPlan.lineItems.length} packages</span>
-              <span>Build-up {buildUpPersonHours.toFixed(1)} ph</span>
-              <span>Tear-down {tearDownPersonHours.toFixed(1)} ph</span>
+              <span>Assembly {assemblyPersonHours.toFixed(1)} ph</span>
+              <span>Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
             </div>
           </div>
 

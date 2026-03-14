@@ -10,8 +10,8 @@ function makePlan(
   title: string,
   defaultCrewSize: number,
   options: {
-    buildUp?: { start: string; end: string };
-    tearDown?: { start: string; end: string };
+    assembly?: { start: string; end: string };
+    dismantle?: { start: string; end: string };
   } = {},
 ): Plan {
   const plan = createPlan(title);
@@ -19,10 +19,10 @@ function makePlan(
     ...plan,
     id,
     defaultCrewSize,
-    buildUpStartDate: options.buildUp?.start ?? plan.buildUpStartDate,
-    buildUpEndDate: options.buildUp?.end ?? plan.buildUpEndDate,
-    tearDownStartDate: options.tearDown?.start ?? plan.tearDownStartDate,
-    tearDownEndDate: options.tearDown?.end ?? plan.tearDownEndDate,
+    assemblyStartDate: options.assembly?.start ?? plan.assemblyStartDate,
+    assemblyEndDate: options.assembly?.end ?? plan.assemblyEndDate,
+    dismantleStartDate: options.dismantle?.start ?? plan.dismantleStartDate,
+    dismantleEndDate: options.dismantle?.end ?? plan.dismantleEndDate,
   };
 }
 
@@ -38,8 +38,8 @@ describe('crew-pool-calendar', () => {
 
   it('builds a calendar across the union of phase windows using weekday defaults', () => {
     const plans = [
-      makePlan('a', 'Plan A', 2, { buildUp: { start: '2026-03-02', end: '2026-03-03' } }),
-      makePlan('b', 'Plan B', 6, { buildUp: { start: '2026-03-05', end: '2026-03-06' } }),
+      makePlan('a', 'Plan A', 2, { assembly: { start: '2026-03-02', end: '2026-03-03' } }),
+      makePlan('b', 'Plan B', 6, { assembly: { start: '2026-03-05', end: '2026-03-06' } }),
     ];
 
     const calendar = deriveCrewPoolCalendar(plans);
@@ -50,11 +50,11 @@ describe('crew-pool-calendar', () => {
     expect(calendar.every((day) => day.isWorkDay)).toBe(true);
   });
 
-  it('does not fill the gap between build-up and tear-down for a single plan', () => {
+  it('does not fill the gap between assembly and dismantle for a single plan', () => {
     const plans = [
       makePlan('a', 'Plan A', 4, {
-        buildUp: { start: '2026-03-02', end: '2026-03-03' },
-        tearDown: { start: '2026-03-06', end: '2026-03-07' },
+        assembly: { start: '2026-03-02', end: '2026-03-03' },
+        dismantle: { start: '2026-03-06', end: '2026-03-07' },
       }),
     ];
 
@@ -65,7 +65,7 @@ describe('crew-pool-calendar', () => {
 
   it('preserves existing day overrides when selection changes and calendar is reconciled', () => {
     const plans = [
-      makePlan('a', 'Plan A', 4, { buildUp: { start: '2026-03-02', end: '2026-03-04' } }),
+      makePlan('a', 'Plan A', 4, { assembly: { start: '2026-03-02', end: '2026-03-04' } }),
     ];
 
     const existing = [

@@ -89,7 +89,7 @@ describe('normalizePlan', () => {
           title: 'Install',
           workTypeTitle: 'Carpet',
           workUnit: 'm2',
-          buildPhase: 'build-up',
+          buildPhase: 'assembly',
           workTypeId: null,
           workQuantity: 10,
           crew: 1,
@@ -107,10 +107,10 @@ describe('normalizePlan', () => {
     const plan = normalizePlan(raw);
     expect(plan.eventStartDate).toBeNull();
     expect(plan.eventEndDate).toBeNull();
-    expect(plan.buildUpStartDate).toBeNull();
-    expect(plan.buildUpEndDate).toBeNull();
-    expect(plan.tearDownStartDate).toBeNull();
-    expect(plan.tearDownEndDate).toBeNull();
+    expect(plan.assemblyStartDate).toBeNull();
+    expect(plan.assemblyEndDate).toBeNull();
+    expect(plan.dismantleStartDate).toBeNull();
+    expect(plan.dismantleEndDate).toBeNull();
     expect(plan.defaultCrewSize).toBeNull();
     expect(Array.isArray(plan.workCalendar)).toBe(true);
     // normalizePlan sets legacy fields on raw line item objects

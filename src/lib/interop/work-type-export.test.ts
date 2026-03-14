@@ -7,8 +7,8 @@ function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
     id: 'wt-1',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildUpRate: 9.5,
-    tearDownRate: 0,
+    assemblyRate: 9.5,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -20,7 +20,7 @@ describe('exportWorkTypesCsv', () => {
     const csv = exportWorkTypesCsv([makeWorkType()]);
     const lines = csv.split('\n');
 
-    expect(lines[0]).toBe('mappingKey,title,workUnit,buildUpRate,tearDownRate');
+    expect(lines[0]).toBe('mappingKey,title,workUnit,assemblyRate,dismantleRate');
     expect(lines[1]).toContain('carpet tiles:m2');
     expect(lines[1]).toContain('Carpet Tiles,m2,9.5,0');
   });
@@ -42,6 +42,6 @@ describe('exportWorkTypesCsv', () => {
   });
 
   it('returns header-only CSV for empty list', () => {
-    expect(exportWorkTypesCsv([])).toBe('mappingKey,title,workUnit,buildUpRate,tearDownRate');
+    expect(exportWorkTypesCsv([])).toBe('mappingKey,title,workUnit,assemblyRate,dismantleRate');
   });
 });

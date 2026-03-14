@@ -7,12 +7,12 @@ function createIssue(overrides: Partial<ScheduleIssueItem> = {}): ScheduleIssueI
     id: 'issue-1',
     kind: 'assistant-unresolved',
     severity: 'warning',
-    label: 'WP-1 · build-up · Missing required hours',
+    label: 'WP-1 · assembly · Missing required hours',
     category: 'adjustment',
     scope: 'item',
     assistantPriority: 50,
     unresolvedReason: 'missing_required_hours',
-    phase: 'build-up',
+    phase: 'assembly',
     ...overrides,
   };
 }
@@ -70,19 +70,19 @@ describe('synthesizeScheduleAssistant', () => {
           id: 'issue-a',
           unresolvedReason: 'no_work_days',
           assistantPriority: 40,
-          sharedConstraintKey: 'reason:no_work_days:build-up',
+          sharedConstraintKey: 'reason:no_work_days:assembly',
         }),
         createIssue({
           id: 'issue-b',
           unresolvedReason: 'no_work_days',
           assistantPriority: 40,
-          sharedConstraintKey: 'reason:no_work_days:build-up',
+          sharedConstraintKey: 'reason:no_work_days:assembly',
         }),
       ],
     });
 
     expect(result.assistantInsights).toContain(
-      'Several build-up rows fail because their current windows contain no work days.',
+      'Several assembly rows fail because their current windows contain no work days.',
     );
   });
 
@@ -94,17 +94,17 @@ describe('synthesizeScheduleAssistant', () => {
       issues: [
         createIssue({
           id: 'issue-a',
-          sharedConstraintKey: 'reason:missing_required_hours:build-up',
+          sharedConstraintKey: 'reason:missing_required_hours:assembly',
         }),
         createIssue({
           id: 'issue-b',
-          sharedConstraintKey: 'reason:missing_required_hours:build-up',
+          sharedConstraintKey: 'reason:missing_required_hours:assembly',
         }),
       ],
     });
 
     expect(result.assistantInsights).toContain(
-      'Most unresolved build-up rows are short on capacity, not dates.',
+      'Most unresolved assembly rows are short on capacity, not dates.',
     );
   });
 });

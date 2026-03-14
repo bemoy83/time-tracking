@@ -50,8 +50,8 @@ export interface ClassifyTaskToWorkTypeResult {
 export interface CreateAndClassifyInput {
   title?: string;
   workUnit?: WorkUnit;
-  buildUpRate?: number;
-  tearDownRate?: number;
+  assemblyRate?: number;
+  dismantleRate?: number;
 }
 
 export interface CreateAndClassifyResult extends ClassifyEntryToWorkTypeResult {
@@ -121,12 +121,12 @@ function resolveTaskUpdates(task: Task, workType: WorkType): Pick<Task, 'workTyp
     );
   }
 
-  const rate = task.buildPhase === 'tear-down' ? workType.tearDownRate : workType.buildUpRate;
+  const rate = task.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
 
   return {
     workTypeId: workType.id,
     workUnit: task.workUnit ?? workType.workUnit,
-    targetProductivity: rate || workType.buildUpRate || workType.tearDownRate,
+    targetProductivity: rate || workType.assemblyRate || workType.dismantleRate,
   };
 }
 
@@ -245,9 +245,9 @@ export async function createAndClassifyFromEntry(
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
   const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
-  const buildUpRate = input.buildUpRate ?? (task.buildPhase !== 'tear-down' ? defaultRate : 0);
-  const tearDownRate = input.tearDownRate ?? (task.buildPhase === 'tear-down' ? defaultRate : 0);
-  if (buildUpRate <= 0 && tearDownRate <= 0) {
+  const assemblyRate = input.assemblyRate ?? (task.buildPhase !== 'dismantle' ? defaultRate : 0);
+  const dismantleRate = input.dismantleRate ?? (task.buildPhase === 'dismantle' ? defaultRate : 0);
+  if (assemblyRate <= 0 && dismantleRate <= 0) {
     throw new Error('At least one rate must be greater than 0.');
   }
 
@@ -260,8 +260,8 @@ export async function createAndClassifyFromEntry(
   const created = await createWorkType({
     title,
     workUnit,
-    buildUpRate,
-    tearDownRate,
+    assemblyRate,
+    dismantleRate,
   });
 
   const classified = await classifyEntryToWorkType(entryId, created.id, normalizedReason);
@@ -288,9 +288,9 @@ export async function createAndClassifyFromTask(
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
   const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
-  const buildUpRate = input.buildUpRate ?? (task.buildPhase !== 'tear-down' ? defaultRate : 0);
-  const tearDownRate = input.tearDownRate ?? (task.buildPhase === 'tear-down' ? defaultRate : 0);
-  if (buildUpRate <= 0 && tearDownRate <= 0) {
+  const assemblyRate = input.assemblyRate ?? (task.buildPhase !== 'dismantle' ? defaultRate : 0);
+  const dismantleRate = input.dismantleRate ?? (task.buildPhase === 'dismantle' ? defaultRate : 0);
+  if (assemblyRate <= 0 && dismantleRate <= 0) {
     throw new Error('At least one rate must be greater than 0.');
   }
 
@@ -303,8 +303,8 @@ export async function createAndClassifyFromTask(
   const created = await createWorkType({
     title,
     workUnit,
-    buildUpRate,
-    tearDownRate,
+    assemblyRate,
+    dismantleRate,
   });
 
   const classified = await classifyTaskToWorkType(taskId, created.id, normalizedReason);

@@ -38,7 +38,7 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
     const isCurrentSelectionValid = filteredWorkTypes.some((wt) => wt.id === selectedWorkTypeId);
     if (!isCurrentSelectionValid) {
       setSelectedWorkTypeId(filteredWorkTypes[0].id);
-      setRate(filteredWorkTypes[0].buildUpRate || filteredWorkTypes[0].tearDownRate);
+      setRate(filteredWorkTypes[0].assemblyRate || filteredWorkTypes[0].dismantleRate);
     }
   }, [filteredWorkTypes, selectedWorkTypeId]);
 
@@ -50,7 +50,7 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
     setSelectedWorkTypeId(wtId);
     const wt = filteredWorkTypes.find((candidate) => candidate.id === wtId);
     if (wt) {
-      setRate(wt.buildUpRate || wt.tearDownRate);
+      setRate(wt.assemblyRate || wt.dismantleRate);
     }
   };
 
@@ -62,7 +62,7 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
       selectedWorkType.workUnit,
       workQuantity,
       rate,
-      selectedWorkType.tearDownRate || rate,
+      selectedWorkType.dismantleRate || rate,
       'template',
       selectedWorkType.id,
     );

@@ -30,8 +30,8 @@ export function WorkTypeFormSheet({
 
   const [title, setTitle] = useState('');
   const [workUnit, setWorkUnit] = useState<WorkUnit>('m2');
-  const [buildUpRate, setBuildUpRate] = useState('');
-  const [tearDownRate, setTearDownRate] = useState('');
+  const [assemblyRate, setAssemblyRate] = useState('');
+  const [dismantleRate, setDismantleRate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,20 +41,20 @@ export function WorkTypeFormSheet({
       if (workType) {
         setTitle(workType.title);
         setWorkUnit(workType.workUnit);
-        setBuildUpRate(String(workType.buildUpRate));
-        setTearDownRate(String(workType.tearDownRate));
+        setAssemblyRate(String(workType.assemblyRate));
+        setDismantleRate(String(workType.dismantleRate));
       } else {
         setTitle('');
         setWorkUnit('m2');
-        setBuildUpRate('');
-        setTearDownRate('');
+        setAssemblyRate('');
+        setDismantleRate('');
       }
     }
   }, [isOpen, workType]);
 
-  const parsedBuildUpRate = parseFloat(buildUpRate) || 0;
-  const parsedTearDownRate = parseFloat(tearDownRate) || 0;
-  const hasAtLeastOneRate = parsedBuildUpRate > 0 || parsedTearDownRate > 0;
+  const parsedAssemblyRate = parseFloat(assemblyRate) || 0;
+  const parsedDismantleRate = parseFloat(dismantleRate) || 0;
+  const hasAtLeastOneRate = parsedAssemblyRate > 0 || parsedDismantleRate > 0;
   const canSave = title.trim().length > 0 && hasAtLeastOneRate && !isSaving;
 
   const handleSave = async () => {
@@ -66,15 +66,15 @@ export function WorkTypeFormSheet({
         await updateWorkTypeFields(workType.id, {
           title: title.trim(),
           workUnit,
-          buildUpRate: parsedBuildUpRate,
-          tearDownRate: parsedTearDownRate,
+          assemblyRate: parsedAssemblyRate,
+          dismantleRate: parsedDismantleRate,
         });
       } else {
         await createWorkType({
           title: title.trim(),
           workUnit,
-          buildUpRate: parsedBuildUpRate,
-          tearDownRate: parsedTearDownRate,
+          assemblyRate: parsedAssemblyRate,
+          dismantleRate: parsedDismantleRate,
         });
       }
       onClose();
@@ -125,17 +125,17 @@ export function WorkTypeFormSheet({
           </div>
         </div>
 
-        {/* Build-up Rate */}
+        {/* Assembly Rate */}
         <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Build-up rate</label>
+          <label className="entry-modal__label">Assembly rate</label>
           <div className="task-work-quantity__input-wrap">
             <input
               inputMode="decimal"
               className="task-work-quantity__number-input"
-              value={buildUpRate}
-              onChange={(e) => setBuildUpRate(e.target.value)}
+              value={assemblyRate}
+              onChange={(e) => setAssemblyRate(e.target.value)}
               placeholder="0"
-              style={{ width: `${Math.max(String(buildUpRate || '0').length, 1)}ch` }}
+              style={{ width: `${Math.max(String(assemblyRate || '0').length, 1)}ch` }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
               {WORK_UNIT_LABELS[workUnit]}/person-hr
@@ -143,17 +143,17 @@ export function WorkTypeFormSheet({
           </div>
         </div>
 
-        {/* Tear-down Rate */}
+        {/* Dismantle Rate */}
         <div className="create-task-sheet__section">
-          <label className="entry-modal__label">Tear-down rate</label>
+          <label className="entry-modal__label">Dismantle rate</label>
           <div className="task-work-quantity__input-wrap">
             <input
               inputMode="decimal"
               className="task-work-quantity__number-input"
-              value={tearDownRate}
-              onChange={(e) => setTearDownRate(e.target.value)}
+              value={dismantleRate}
+              onChange={(e) => setDismantleRate(e.target.value)}
               placeholder="0"
-              style={{ width: `${Math.max(String(tearDownRate || '0').length, 1)}ch` }}
+              style={{ width: `${Math.max(String(dismantleRate || '0').length, 1)}ch` }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
               {WORK_UNIT_LABELS[workUnit]}/person-hr

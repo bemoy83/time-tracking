@@ -375,7 +375,7 @@ function SingleScheduleGrid({
                 ? phaseGroups[0].rows.map(({ item, phase }, i) => renderRow(item, phase, i))
                 : lineItems.map((item, i) => {
                     // Fallback: render for each active phase
-                    const activePhase = BUILD_PHASES.find((p) => isPhaseActive(item, p)) ?? 'build-up';
+                    const activePhase = BUILD_PHASES.find((p) => isPhaseActive(item, p)) ?? 'assembly';
                     return renderRow(item, activePhase, i);
                   })
             }

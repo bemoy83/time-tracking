@@ -32,7 +32,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
 describe('deriveLineItemStatus', () => {
   it('returns blocked when any linked task is blocked and item is not explicitly deferred/blocked', () => {
     const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0);
-    const pf = getPhaseFields(item, 'build-up');
+    const pf = getPhaseFields(item, 'assembly');
     const status = deriveLineItemStatus(pf, [
       makeTask({ id: 'task-1', status: 'active' }),
       makeTask({ id: 'task-2', status: 'blocked', blockReason: 'No materials' }),
@@ -44,9 +44,9 @@ describe('deriveLineItemStatus', () => {
   it('preserves explicit deferred status over task-derived statuses', () => {
     const item = {
       ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0),
-      buildUpExecutionStatus: 'deferred' as const,
+      assemblyExecutionStatus: 'deferred' as const,
     };
-    const pf = getPhaseFields(item, 'build-up');
+    const pf = getPhaseFields(item, 'assembly');
     const status = deriveLineItemStatus(pf, [
       makeTask({ status: 'blocked', blockReason: 'No materials' }),
     ]);

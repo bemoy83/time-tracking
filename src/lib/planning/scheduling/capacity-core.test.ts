@@ -18,10 +18,10 @@ describe('capacity-core parity', () => {
     };
 
     const scheduled = createLineItem('Scheduled', 'Scheduled', 'pcs', 1, 1, 0);
-    scheduled.buildUpCrew = 2;
-    scheduled.buildUpTimeHours = 10;
-    scheduled.buildUpScheduledStart = '2026-03-02';
-    scheduled.buildUpScheduledEnd = '2026-03-03';
+    scheduled.assemblyCrew = 2;
+    scheduled.assemblyTimeHours = 10;
+    scheduled.assemblyScheduledStart = '2026-03-02';
+    scheduled.assemblyScheduledEnd = '2026-03-03';
 
     const unscheduled = createLineItem('Unscheduled', 'Unscheduled', 'pcs', 1, 1, 0);
 
@@ -34,7 +34,7 @@ describe('capacity-core parity', () => {
       scheduledEntries: [
         {
           item: scheduled,
-          phase: 'build-up',
+          phase: 'assembly',
           dates: ['2026-03-02', '2026-03-03'],
         },
       ],
@@ -48,32 +48,32 @@ describe('capacity-core parity', () => {
   it('matches shared wrapper output when phase-window filtering applies', () => {
     const planA = {
       ...createPlan('Plan A'),
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-02',
-      tearDownStartDate: '2026-03-03',
-      tearDownEndDate: '2026-03-03',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-02',
+      dismantleStartDate: '2026-03-03',
+      dismantleEndDate: '2026-03-03',
     };
 
     const itemA = createLineItem('A', 'A', 'pcs', 1, 1, 0);
-    itemA.buildUpCrew = 1;
-    itemA.buildUpTimeHours = 12;
-    itemA.buildUpScheduledStart = '2026-03-02';
-    itemA.buildUpScheduledEnd = '2026-03-03';
+    itemA.assemblyCrew = 1;
+    itemA.assemblyTimeHours = 12;
+    itemA.assemblyScheduledStart = '2026-03-02';
+    itemA.assemblyScheduledEnd = '2026-03-03';
     planA.lineItems = [itemA];
 
     const planB = {
       ...createPlan('Plan B'),
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-03',
-      tearDownStartDate: '2026-03-03',
-      tearDownEndDate: '2026-03-03',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-03',
+      dismantleStartDate: '2026-03-03',
+      dismantleEndDate: '2026-03-03',
     };
 
     const itemB = createLineItem('B', 'B', 'pcs', 1, 1, 0);
-    itemB.buildUpCrew = 1;
-    itemB.buildUpTimeHours = 8;
-    itemB.buildUpScheduledStart = '2026-03-02';
-    itemB.buildUpScheduledEnd = '2026-03-02';
+    itemB.assemblyCrew = 1;
+    itemB.assemblyTimeHours = 8;
+    itemB.assemblyScheduledStart = '2026-03-02';
+    itemB.assemblyScheduledEnd = '2026-03-02';
     planB.lineItems = [itemB];
 
     const calendar = [
@@ -92,8 +92,8 @@ describe('capacity-core parity', () => {
 
     const wrapperSummary = computeSharedCapacitySummary(input);
 
-    const itemAPf = getPhaseFields(itemA, 'build-up');
-    const itemBPf = getPhaseFields(itemB, 'build-up');
+    const itemAPf = getPhaseFields(itemA, 'assembly');
+    const itemBPf = getPhaseFields(itemB, 'assembly');
 
     const coreSummary = computeCapacityFromNormalizedInput({
       calendar,
@@ -101,17 +101,17 @@ describe('capacity-core parity', () => {
       scheduledEntries: [
         {
           item: itemA,
-          phase: 'build-up',
+          phase: 'assembly',
           dates: listDateRange(itemAPf.scheduledStart!, itemAPf.scheduledEnd!).filter((date) => {
-            const span = getPhaseSpan(planA, 'build-up');
+            const span = getPhaseSpan(planA, 'assembly');
             return span ? date >= span.start && date <= span.end : true;
           }),
         },
         {
           item: itemB,
-          phase: 'build-up',
+          phase: 'assembly',
           dates: listDateRange(itemBPf.scheduledStart!, itemBPf.scheduledEnd!).filter((date) => {
-            const span = getPhaseSpan(planB, 'build-up');
+            const span = getPhaseSpan(planB, 'assembly');
             return span ? date >= span.start && date <= span.end : true;
           }),
         },

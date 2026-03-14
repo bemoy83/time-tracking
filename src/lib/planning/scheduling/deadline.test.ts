@@ -16,7 +16,7 @@ function makeTask(overrides: Partial<Task>): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: 2,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: 'wt-1',
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T00:00:00.000Z',
@@ -47,19 +47,19 @@ function makeEntry(overrides: Partial<TimeEntry>): TimeEntry {
 describe('evaluateLineItemDeadline', () => {
   it('marks overdue when past due and incomplete', () => {
     const item = createLineItem('Install', 'Carpet', 'm2', 10, 2, 0);
-    item.buildUpScheduledStart = '2026-03-01';
-    item.buildUpScheduledEnd = '2026-03-01';
-    const result = evaluateLineItemDeadline(item, 'build-up', [makeTask({ status: 'active' })], [], '2026-03-02');
+    item.assemblyScheduledStart = '2026-03-01';
+    item.assemblyScheduledEnd = '2026-03-01';
+    const result = evaluateLineItemDeadline(item, 'assembly', [makeTask({ status: 'active' })], [], '2026-03-02');
     expect(result.status).toBe('overdue');
   });
 
   it('marks done-on-time when completed by due date', () => {
     const item = createLineItem('Install', 'Carpet', 'm2', 10, 2, 0);
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-02';
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
     const task = makeTask({ status: 'completed' });
     const entry = makeEntry({ endUtc: '2026-03-02T12:00:00.000Z' });
-    const result = evaluateLineItemDeadline(item, 'build-up', [task], [entry], '2026-03-02');
+    const result = evaluateLineItemDeadline(item, 'assembly', [task], [entry], '2026-03-02');
     expect(result.status).toBe('done-on-time');
   });
 });
@@ -74,8 +74,8 @@ describe('computePlanDeadlineSummary', () => {
   it('returns behind when overdue exists', () => {
     const plan = createPlan('P');
     plan.lineItems = [createLineItem('Install', 'Carpet', 'm2', 10, 2, 0)];
-    plan.lineItems[0].buildUpScheduledStart = '2026-03-02';
-    plan.lineItems[0].buildUpScheduledEnd = '2026-03-02';
+    plan.lineItems[0].assemblyScheduledStart = '2026-03-02';
+    plan.lineItems[0].assemblyScheduledEnd = '2026-03-02';
     plan.workCalendar = [{ date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null }];
     const summary = computePlanDeadlineSummary(
       plan,

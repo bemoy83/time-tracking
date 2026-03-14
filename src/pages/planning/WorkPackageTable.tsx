@@ -43,7 +43,7 @@ function getSuggestionForPhase(
   suggestion: LineItemSuggestion,
   phase: BuildPhase,
 ): PhaseSuggestion {
-  return phase === 'build-up' ? suggestion.buildUp : suggestion.tearDown;
+  return phase === 'assembly' ? suggestion.assembly : suggestion.dismantle;
 }
 
 function getMagicPhaseUpdates(
@@ -111,30 +111,30 @@ export function WorkPackageTable({
   );
 
   const handleWorkTypeChange = (item: PlanLineItem, nextWorkType: WorkType) => {
-    const buildUpCrew = nextWorkType.buildUpRate > 0 ? Math.max(1, item.buildUpCrew) : 0;
-    const tearDownCrew = nextWorkType.tearDownRate > 0 ? Math.max(1, item.tearDownCrew) : 0;
-    const tearDownQuantity = item.tearDownQuantity ?? item.workQuantity;
-    const buildUpTimeHours =
-      item.workQuantity > 0 && buildUpCrew > 0 && nextWorkType.buildUpRate > 0
-        ? roundTo1(item.workQuantity / (nextWorkType.buildUpRate * buildUpCrew))
+    const assemblyCrew = nextWorkType.assemblyRate > 0 ? Math.max(1, item.assemblyCrew) : 0;
+    const dismantleCrew = nextWorkType.dismantleRate > 0 ? Math.max(1, item.dismantleCrew) : 0;
+    const dismantleQuantity = item.dismantleQuantity ?? item.workQuantity;
+    const assemblyTimeHours =
+      item.workQuantity > 0 && assemblyCrew > 0 && nextWorkType.assemblyRate > 0
+        ? roundTo1(item.workQuantity / (nextWorkType.assemblyRate * assemblyCrew))
         : 0;
-    const tearDownTimeHours =
-      tearDownQuantity > 0 && tearDownCrew > 0 && nextWorkType.tearDownRate > 0
-        ? roundTo1(tearDownQuantity / (nextWorkType.tearDownRate * tearDownCrew))
+    const dismantleTimeHours =
+      dismantleQuantity > 0 && dismantleCrew > 0 && nextWorkType.dismantleRate > 0
+        ? roundTo1(dismantleQuantity / (nextWorkType.dismantleRate * dismantleCrew))
         : 0;
 
     onUpdate(item.id, {
       workTypeId: nextWorkType.id,
       workTypeTitle: nextWorkType.title,
       workUnit: nextWorkType.workUnit,
-      buildUpRate: nextWorkType.buildUpRate,
-      buildUpCrew,
-      buildUpRateSource: 'template',
-      buildUpTimeHours,
-      tearDownRate: nextWorkType.tearDownRate,
-      tearDownCrew,
-      tearDownRateSource: 'template',
-      tearDownTimeHours,
+      assemblyRate: nextWorkType.assemblyRate,
+      assemblyCrew,
+      assemblyRateSource: 'template',
+      assemblyTimeHours,
+      dismantleRate: nextWorkType.dismantleRate,
+      dismantleCrew,
+      dismantleRateSource: 'template',
+      dismantleTimeHours,
     });
   };
 
@@ -184,7 +184,7 @@ export function WorkPackageTable({
   ) => {
     if (isLocked || !inactive) return {};
     const activate = () => handleActivatePhase(item, phase);
-    const phaseLabel = phase === 'build-up' ? 'build-up' : 'tear-down';
+    const phaseLabel = phase === 'assembly' ? 'assembly' : 'dismantle';
     return {
       role: 'button' as const,
       tabIndex: 0,
@@ -205,7 +205,7 @@ export function WorkPackageTable({
     <div className="planning-view__work-package-table-wrap">
       <table className="planning-view__work-package-table">
         <caption className="sr-only">
-          Work packages with editable quantity, type, and build-up/tear-down staffing fields.
+          Work packages with editable quantity, type, and assembly/dismantle staffing fields.
         </caption>
         <thead>
           <tr className="planning-view__wp-header-group">
@@ -214,21 +214,21 @@ export function WorkPackageTable({
             </th>
             <th
               colSpan={3}
-              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--buildup planning-view__wp-phase-group-start"
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--assembly planning-view__wp-phase-group-start"
               scope="colgroup"
               title="Defaults from work type. Edit values only when overriding."
-              aria-label="Build-up defaults from work type; editable to override"
+              aria-label="Assembly defaults from work type; editable to override"
             >
-              Build-up
+              Assembly
             </th>
             <th
               colSpan={3}
-              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--teardown planning-view__wp-phase-group-start"
+              className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--dismantle planning-view__wp-phase-group-start"
               scope="colgroup"
               title="Defaults from work type. Edit values only when overriding."
-              aria-label="Tear-down defaults from work type; editable to override"
+              aria-label="Dismantle defaults from work type; editable to override"
             >
-              Tear-down
+              Dismantle
             </th>
             <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">
               <div className="planning-view__wp-actions-col-content">
@@ -258,37 +258,37 @@ export function WorkPackageTable({
             <th className="planning-view__wp-qty-col" scope="col">Qty</th>
             <th className="planning-view__wp-unit-col" scope="col">Unit</th>
             <th
-              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup planning-view__wp-phase-group-start"
+              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--assembly planning-view__wp-phase-group-start"
               scope="col"
             >
               Rate
             </th>
             <th
-              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup"
+              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--assembly"
               scope="col"
             >
               Crew
             </th>
             <th
-              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--buildup"
+              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--assembly"
               scope="col"
             >
               Hrs
             </th>
             <th
-              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown planning-view__wp-phase-group-start"
+              className="planning-view__wp-rate-col planning-view__wp-phase-col planning-view__wp-phase-col--dismantle planning-view__wp-phase-group-start"
               scope="col"
             >
               Rate
             </th>
             <th
-              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown"
+              className="planning-view__wp-crew-col planning-view__wp-phase-col planning-view__wp-phase-col--dismantle"
               scope="col"
             >
               Crew
             </th>
             <th
-              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--teardown"
+              className="planning-view__wp-hours-col planning-view__wp-phase-col planning-view__wp-phase-col--dismantle"
               scope="col"
             >
               Hrs
@@ -306,13 +306,13 @@ export function WorkPackageTable({
           {lineItems.map((item) => {
             const suggestion = suggestionsByLineItemId.get(item.id) ?? null;
             const rowCanApplyMagic = canApplyMagic(item, suggestion);
-            const buildUpFields = getPhaseFields(item, 'build-up');
-            const tearDownFields = getPhaseFields(item, 'tear-down');
-            const buildUpInactive = !isPhaseActive(item, 'build-up');
-            const tearDownInactive = !isPhaseActive(item, 'tear-down');
+            const assemblyFields = getPhaseFields(item, 'assembly');
+            const dismantleFields = getPhaseFields(item, 'dismantle');
+            const assemblyInactive = !isPhaseActive(item, 'assembly');
+            const dismantleInactive = !isPhaseActive(item, 'dismantle');
             const currentWorkTypeLabel = `${resolveLineItemWorkTypeTitle(item)} · ${WORK_UNIT_LABELS[item.workUnit]}`;
-            const buildUpActivationProps = getPhaseActivationProps(item, 'build-up', buildUpInactive);
-            const tearDownActivationProps = getPhaseActivationProps(item, 'tear-down', tearDownInactive);
+            const assemblyActivationProps = getPhaseActivationProps(item, 'assembly', assemblyInactive);
+            const dismantleActivationProps = getPhaseActivationProps(item, 'dismantle', dismantleInactive);
 
             return (
               <tr key={item.id} className="planning-view__wp-row">
@@ -376,147 +376,147 @@ export function WorkPackageTable({
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell planning-view__wp-phase-group-start${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...buildUpActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--assembly planning-view__wp-number-cell planning-view__wp-phase-group-start${assemblyInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && assemblyInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...assemblyActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{roundTo1(buildUpFields.rate)}</span>
+                    <span className="planning-view__wp-static">{roundTo1(assemblyFields.rate)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={roundTo1(buildUpFields.rate)}
+                      value={roundTo1(assemblyFields.rate)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('build-up', { rate: roundTo1(parseInputNumber(e.target.value)) }),
+                          phaseFieldUpdates('assembly', { rate: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
-                      disabled={buildUpInactive}
-                      aria-label={`Build-up rate for ${item.title}`}
+                      disabled={assemblyInactive}
+                      aria-label={`Assembly rate for ${item.title}`}
                     />
                   )}
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...buildUpActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--assembly planning-view__wp-number-cell${assemblyInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && assemblyInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...assemblyActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{buildUpFields.crew}</span>
+                    <span className="planning-view__wp-static">{assemblyFields.crew}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       min={0}
                       step={1}
-                      value={buildUpFields.crew}
+                      value={assemblyFields.crew}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('build-up', { crew: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('assembly', { crew: parseInputNumber(e.target.value) }),
                         )
                       }
-                      disabled={buildUpInactive}
-                      aria-label={`Build-up crew for ${item.title}`}
+                      disabled={assemblyInactive}
+                      aria-label={`Assembly crew for ${item.title}`}
                     />
                   )}
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--buildup planning-view__wp-number-cell${buildUpInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && buildUpInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...buildUpActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--assembly planning-view__wp-number-cell${assemblyInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && assemblyInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...assemblyActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{roundTo1(buildUpFields.timeHours)}</span>
+                    <span className="planning-view__wp-static">{roundTo1(assemblyFields.timeHours)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={roundTo1(buildUpFields.timeHours)}
+                      value={roundTo1(assemblyFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('build-up', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
+                          phaseFieldUpdates('assembly', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
-                      disabled={buildUpInactive}
-                      aria-label={`Build-up hours for ${item.title}`}
+                      disabled={assemblyInactive}
+                      aria-label={`Assembly hours for ${item.title}`}
                     />
                   )}
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell planning-view__wp-phase-group-start${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...tearDownActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--dismantle planning-view__wp-number-cell planning-view__wp-phase-group-start${dismantleInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && dismantleInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...dismantleActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{roundTo1(tearDownFields.rate)}</span>
+                    <span className="planning-view__wp-static">{roundTo1(dismantleFields.rate)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={roundTo1(tearDownFields.rate)}
+                      value={roundTo1(dismantleFields.rate)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('tear-down', { rate: roundTo1(parseInputNumber(e.target.value)) }),
+                          phaseFieldUpdates('dismantle', { rate: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
-                      disabled={tearDownInactive}
-                      aria-label={`Tear-down rate for ${item.title}`}
+                      disabled={dismantleInactive}
+                      aria-label={`Dismantle rate for ${item.title}`}
                     />
                   )}
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...tearDownActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--dismantle planning-view__wp-number-cell${dismantleInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && dismantleInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...dismantleActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{tearDownFields.crew}</span>
+                    <span className="planning-view__wp-static">{dismantleFields.crew}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       min={0}
                       step={1}
-                      value={tearDownFields.crew}
+                      value={dismantleFields.crew}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('tear-down', { crew: parseInputNumber(e.target.value) }),
+                          phaseFieldUpdates('dismantle', { crew: parseInputNumber(e.target.value) }),
                         )
                       }
-                      disabled={tearDownInactive}
-                      aria-label={`Tear-down crew for ${item.title}`}
+                      disabled={dismantleInactive}
+                      aria-label={`Dismantle crew for ${item.title}`}
                     />
                   )}
                 </td>
 
                 <td
-                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--teardown planning-view__wp-number-cell${tearDownInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && tearDownInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
-                  {...tearDownActivationProps}
+                  className={`planning-view__wp-cell planning-view__wp-phase-cell planning-view__wp-phase-cell--dismantle planning-view__wp-number-cell${dismantleInactive ? ' planning-view__wp-phase-cell--inactive' : ''}${!isLocked && dismantleInactive ? ' planning-view__wp-phase-cell--activatable' : ''}`}
+                  {...dismantleActivationProps}
                 >
                   {isLocked ? (
-                    <span className="planning-view__wp-static">{roundTo1(tearDownFields.timeHours)}</span>
+                    <span className="planning-view__wp-static">{roundTo1(dismantleFields.timeHours)}</span>
                   ) : (
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       step={0.1}
-                      value={roundTo1(tearDownFields.timeHours)}
+                      value={roundTo1(dismantleFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(
                           item.id,
-                          phaseFieldUpdates('tear-down', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
+                          phaseFieldUpdates('dismantle', { timeHours: roundTo1(parseInputNumber(e.target.value)) }),
                         )
                       }
-                      disabled={tearDownInactive}
-                      aria-label={`Tear-down hours for ${item.title}`}
+                      disabled={dismantleInactive}
+                      aria-label={`Dismantle hours for ${item.title}`}
                     />
                   )}
                 </td>

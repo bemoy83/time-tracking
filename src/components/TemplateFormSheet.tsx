@@ -81,11 +81,11 @@ export function TemplateFormSheet({
         title: title.trim(),
         workTypeId,
         workUnit: selectedWorkType.workUnit,
-        buildPhase: 'build-up' as const,
+        buildPhase: 'assembly' as const,
         workQuantity: !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : null,
         estimatedMinutes: totalMinutes > 0 ? totalMinutes : null,
         crew: workers > 1 ? workers : null,
-        targetProductivity: selectedWorkType.buildUpRate || selectedWorkType.tearDownRate,
+        targetProductivity: selectedWorkType.assemblyRate || selectedWorkType.dismantleRate,
       };
 
       if (isEdit && template) {
@@ -151,7 +151,7 @@ export function TemplateFormSheet({
         {selectedWorkType && (
           <div className="create-task-sheet__section">
             <div className="settings-view__row-detail">
-              BU: {selectedWorkType.buildUpRate} · TD: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+              Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
             </div>
           </div>
         )}

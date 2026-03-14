@@ -61,8 +61,8 @@ export function lineItemPhaseToWorkPackageCore(
   phase: BuildPhase,
 ): WorkPackageCore {
   const pf = getPhaseFields(item, phase);
-  const quantity = phase === 'tear-down' && item.tearDownQuantity != null
-    ? item.tearDownQuantity
+  const quantity = phase === 'dismantle' && item.dismantleQuantity != null
+    ? item.dismantleQuantity
     : item.workQuantity;
   return {
     title: item.title,
@@ -84,7 +84,7 @@ export function taskToWorkPackageCore(task: Task, workType?: WorkType | null): W
     workTypeId: task.workTypeId,
     workTypeTitle: workType?.title,
     workUnit: task.workUnit ?? workType?.workUnit ?? 'm2',
-    buildPhase: task.buildPhase ?? 'build-up',
+    buildPhase: task.buildPhase ?? 'assembly',
     workQuantity: task.workQuantity ?? 0,
     crew: task.crew ?? 1,
     productivityRate: task.targetProductivity ?? 0,

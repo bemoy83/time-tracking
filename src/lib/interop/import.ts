@@ -17,7 +17,7 @@ import { findWorkTypeByKey } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
 
 const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
-const VALID_BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
+const VALID_BUILD_PHASES: BuildPhase[] = ['assembly', 'dismantle'];
 
 export interface ImportedWorkPackage {
   /** Stable mapping key for round-trip reliability. */

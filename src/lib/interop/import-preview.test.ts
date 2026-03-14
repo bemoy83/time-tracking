@@ -11,11 +11,11 @@ const WORK_TYPE_TITLE_BY_ID = new Map([
 
 function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedWorkPackage {
   return {
-    mappingKey: 'Install carpet::Carpet Tiles:m2:build-up',
+    mappingKey: 'Install carpet::Carpet Tiles:m2:assembly',
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: 'wt-carpet',
     workQuantity: 100,
     estimatedMinutes: 60,
@@ -34,7 +34,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     estimatedMinutes: 60,
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: 'wt-carpet',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
@@ -55,7 +55,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -134,12 +134,12 @@ describe('generateImportPreview', () => {
 
     const preview = generateImportPreview([item1, item2], [], [], WORK_TYPE_TITLE_BY_ID);
 
-    expect(preview.duplicateKeys).toContain('Install carpet::Carpet Tiles:m2:build-up');
+    expect(preview.duplicateKeys).toContain('Install carpet::Carpet Tiles:m2:assembly');
   });
 
   it('handles mixed actions', () => {
     const create = makeImportItem({
-      mappingKey: 'New task::Furniture:pcs:build-up',
+      mappingKey: 'New task::Furniture:pcs:assembly',
       title: 'New task',
       workTypeTitle: 'Furniture',
       workTypeId: 'wt-furniture',
@@ -147,7 +147,7 @@ describe('generateImportPreview', () => {
     });
     const skip = makeImportItem();
     const update = makeImportItem({
-      mappingKey: 'Walls::Partition Walls:m2:build-up',
+      mappingKey: 'Walls::Partition Walls:m2:assembly',
       title: 'Walls',
       workTypeTitle: 'Partition Walls',
       workTypeId: 'wt-walls',

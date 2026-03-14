@@ -14,23 +14,23 @@ export function FieldPlanPhaseView({
   onReleaseToToday,
   onOpenActions,
 }: FieldPlanPhaseViewProps) {
-  const buildUpItems = allLineItems
-    .filter((li) => li.phase === 'build-up')
+  const assemblyItems = allLineItems
+    .filter((li) => li.phase === 'assembly')
     .sort((a, b) => {
       const byStatus = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
       if (byStatus !== 0) return byStatus;
       return a.planTitle.localeCompare(b.planTitle) || a.item.title.localeCompare(b.item.title);
     });
 
-  const tearDownItems = allLineItems
-    .filter((li) => li.phase === 'tear-down')
+  const dismantleItems = allLineItems
+    .filter((li) => li.phase === 'dismantle')
     .sort((a, b) => {
       const byStatus = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
       if (byStatus !== 0) return byStatus;
       return a.planTitle.localeCompare(b.planTitle) || a.item.title.localeCompare(b.item.title);
     });
 
-  if (buildUpItems.length === 0 && tearDownItems.length === 0) {
+  if (assemblyItems.length === 0 && dismantleItems.length === 0) {
     return (
       <p className="field-plan-view__message">No active line items across received plans.</p>
     );
@@ -38,16 +38,16 @@ export function FieldPlanPhaseView({
 
   return (
     <div className="field-plan__phase-view">
-      {buildUpItems.length > 0 && (
+      {assemblyItems.length > 0 && (
         <section className="field-plan__phase-section">
           <h2 className="field-plan__phase-section-title">
-            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--build-up">
-              {BUILD_PHASE_LABELS['build-up']}
+            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--assembly">
+              {BUILD_PHASE_LABELS['assembly']}
             </span>
-            <CountBadge count={buildUpItems.length} variant="muted" />
+            <CountBadge count={assemblyItems.length} variant="muted" />
           </h2>
           <div className="field-plan__task-list">
-            {buildUpItems.map((li) => (
+            {assemblyItems.map((li) => (
               <FieldPlanLineItemRow
                 key={`${li.planId}:${li.item.id}:${li.phase}`}
                 lineItem={li}
@@ -61,16 +61,16 @@ export function FieldPlanPhaseView({
         </section>
       )}
 
-      {tearDownItems.length > 0 && (
+      {dismantleItems.length > 0 && (
         <section className="field-plan__phase-section">
           <h2 className="field-plan__phase-section-title">
-            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--tear-down">
-              {BUILD_PHASE_LABELS['tear-down']}
+            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--dismantle">
+              {BUILD_PHASE_LABELS['dismantle']}
             </span>
-            <CountBadge count={tearDownItems.length} variant="muted" />
+            <CountBadge count={dismantleItems.length} variant="muted" />
           </h2>
           <div className="field-plan__task-list">
-            {tearDownItems.map((li) => (
+            {dismantleItems.map((li) => (
               <FieldPlanLineItemRow
                 key={`${li.planId}:${li.item.id}:${li.phase}`}
                 lineItem={li}

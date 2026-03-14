@@ -29,7 +29,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: 20,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: 'wt-1',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
@@ -196,13 +196,13 @@ describe('computePlanProgress', () => {
     expect(itemB.blockCategory).toBe('materials');
   });
 
-  it('treats legacy linked tasks with null buildPhase as build-up', () => {
+  it('treats legacy linked tasks with null buildPhase as assembly', () => {
     const plan = makePlan();
     const [lineItemA, lineItemB] = plan.lineItems;
-    lineItemA.tearDownRate = 5;
-    lineItemA.tearDownCrew = 1;
-    lineItemA.tearDownTimeHours = 2;
-    lineItemA.tearDownRateSource = 'manual';
+    lineItemA.dismantleRate = 5;
+    lineItemA.dismantleCrew = 1;
+    lineItemA.dismantleTimeHours = 2;
+    lineItemA.dismantleRateSource = 'manual';
 
     const legacyTask = makeTask({
       id: 'task-legacy',
@@ -221,20 +221,20 @@ describe('computePlanProgress', () => {
     ];
 
     const progress = computePlanProgress(plan, [legacyTask], entries);
-    const buildUp = progress.lineItems.find((item) =>
-      item.lineItemId === lineItemA.id && item.phase === 'build-up',
+    const assembly = progress.lineItems.find((item) =>
+      item.lineItemId === lineItemA.id && item.phase === 'assembly',
     )!;
-    const tearDown = progress.lineItems.find((item) =>
-      item.lineItemId === lineItemA.id && item.phase === 'tear-down',
+    const dismantle = progress.lineItems.find((item) =>
+      item.lineItemId === lineItemA.id && item.phase === 'dismantle',
     )!;
     const untouched = progress.lineItems.find((item) =>
-      item.lineItemId === lineItemB.id && item.phase === 'build-up',
+      item.lineItemId === lineItemB.id && item.phase === 'assembly',
     )!;
 
-    expect(buildUp.actualHours).toBe(2);
-    expect(buildUp.status).toBe('completed');
-    expect(tearDown.actualHours).toBe(0);
-    expect(tearDown.status).toBe('unreleased');
+    expect(assembly.actualHours).toBe(2);
+    expect(assembly.status).toBe('completed');
+    expect(dismantle.actualHours).toBe(0);
+    expect(dismantle.status).toBe('unreleased');
     expect(untouched.status).toBe('unreleased');
   });
 });

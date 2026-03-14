@@ -20,8 +20,8 @@ function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
     id: 'wt-1',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildUpRate: 10,
-    tearDownRate: 0,
+    assemblyRate: 10,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -66,8 +66,8 @@ describe('ensureWorkTypeExistsOrCreate', () => {
     const created = dbMocks.addWorkType.mock.calls[0][0] as WorkType;
     expect(created.title).toBe('Furniture');
     expect(created.workUnit).toBe('pcs');
-    expect(created.buildUpRate).toBe(0);
-    expect(created.tearDownRate).toBe(5);
+    expect(created.assemblyRate).toBe(0);
+    expect(created.dismantleRate).toBe(5);
     expect(id).toBe(created.id);
   });
 });

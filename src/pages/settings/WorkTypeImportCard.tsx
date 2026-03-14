@@ -33,7 +33,7 @@ export function WorkTypeImportCard({
         />
       </div>
       <p className="settings-view__helper">
-        Choose a CSV file (title, workUnit, buildUpRate, tearDownRate)
+        Choose a CSV file (title, workUnit, assemblyRate, dismantleRate)
       </p>
 
       <input

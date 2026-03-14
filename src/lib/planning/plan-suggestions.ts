@@ -41,8 +41,8 @@ export interface LineItemSuggestion {
   /** Matching KPI data, if found. */
   kpi: WorkTypeKpi | null;
   /** Per-phase suggestions. */
-  buildUp: PhaseSuggestion;
-  tearDown: PhaseSuggestion;
+  assembly: PhaseSuggestion;
+  dismantle: PhaseSuggestion;
   /** Confidence of the suggestion. */
   confidence: ConfidenceLevel | null;
   /** Risk assessment for this line item. */
@@ -193,8 +193,8 @@ export function generatePlanSuggestions(
     return {
       lineItemId: item.id,
       kpi,
-      buildUp: buildPhaseSuggestion(item, 'build-up', plan, suggestedRate),
-      tearDown: buildPhaseSuggestion(item, 'tear-down', plan, suggestedRate),
+      assembly: buildPhaseSuggestion(item, 'assembly', plan, suggestedRate),
+      dismantle: buildPhaseSuggestion(item, 'dismantle', plan, suggestedRate),
       confidence,
       risk,
       riskReasons: reasons,

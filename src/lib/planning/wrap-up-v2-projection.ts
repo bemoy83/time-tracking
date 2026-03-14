@@ -59,7 +59,7 @@ function computeTasksPersonHours(taskIds: string[], timeEntriesByTask: TimeEntri
 }
 
 function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
-  const taskPhase = task.buildPhase ?? 'build-up';
+  const taskPhase = task.buildPhase ?? 'assembly';
   return taskPhase === phase;
 }
 
@@ -82,7 +82,7 @@ export async function loadWrapUpV2Projection(
 
   const importedLineItemById = new Map(
     (latestBundle?.lineItems ?? []).map((lineItem) => {
-      const phase = lineItem.phase === 'tear-down' ? 'tear-down' : 'build-up';
+      const phase = lineItem.phase === 'dismantle' ? 'dismantle' : 'assembly';
       return [`${lineItem.lineItemId}:${phase}`, lineItem] as const;
     }),
   );

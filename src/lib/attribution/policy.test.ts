@@ -45,7 +45,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     id: 'source',
     projectId: 'p1',
     workUnit: 'm2',
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: null,
   });
   const candidate = makeTask({
@@ -53,7 +53,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     projectId: 'p1',
     workQuantity: 50,
     workUnit: 'm2',
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: 'wt-1',
   });
   const unrelated = makeTask({
@@ -61,7 +61,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     projectId: 'p2',
     workQuantity: 50,
     workUnit: 'pcs',
-    buildPhase: 'tear-down',
+    buildPhase: 'dismantle',
     workTypeId: 'wt-2',
   });
 

@@ -83,8 +83,8 @@ const baseWorkType = {
   id: 'wt-1',
   title: 'Carpet Tiles',
   workUnit: 'm2' as const,
-  buildUpRate: 55,
-  tearDownRate: 0,
+  assemblyRate: 55,
+  dismantleRate: 0,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -134,7 +134,7 @@ describe('classifyEntryToWorkType', () => {
       ...baseTask,
       workQuantity: null,
       workUnit: 'm2',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
     mockGetTaskById.mockReturnValue(undefined);
 
@@ -155,7 +155,7 @@ describe('classifyEntryToWorkType', () => {
       title: 'Parent Scope',
       workQuantity: 80,
       workUnit: 'm2' as const,
-      buildPhase: 'build-up' as const,
+      buildPhase: 'assembly' as const,
     };
     const childTask = {
       ...baseTask,
@@ -209,8 +209,8 @@ describe('createAndClassifyFromEntry', () => {
       ...baseWorkType,
       id: 'wt-new',
       title: 'Install carpet',
-      buildUpRate: 10,
-      tearDownRate: 0,
+      assemblyRate: 10,
+      dismantleRate: 0,
     };
     mockCreateWorkType.mockResolvedValue(created);
     mockGetWorkType.mockResolvedValue(created);
@@ -221,8 +221,8 @@ describe('createAndClassifyFromEntry', () => {
     expect(mockCreateWorkType).toHaveBeenCalledWith({
       title: 'Install carpet',
       workUnit: 'm2',
-      buildUpRate: 10,
-      tearDownRate: 0,
+      assemblyRate: 10,
+      dismantleRate: 0,
     });
     expect(result.createdWorkTypeId).toBe('wt-new');
     expect(mockUpdateTaskFields).toHaveBeenCalled();

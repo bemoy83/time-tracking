@@ -21,7 +21,7 @@ const mockCreateWorkType = vi.mocked(createWorkType);
 const mockFindWorkTypeByKey = vi.mocked(findWorkTypeByKey);
 const mockUpdateWorkTypeFields = vi.mocked(updateWorkTypeFields);
 
-const VALID_HEADER = 'title,workUnit,buildUpRate,tearDownRate';
+const VALID_HEADER = 'title,workUnit,assemblyRate,dismantleRate';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -32,8 +32,8 @@ function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
     id: 'wt-1',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildUpRate: 10,
-    tearDownRate: 0,
+    assemblyRate: 10,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -59,17 +59,17 @@ describe('parseWorkTypeCsv', () => {
       mappingKey: 'carpet tiles:m2',
       title: 'Carpet Tiles',
       workUnit: 'm2',
-      buildUpRate: 11.5,
-      tearDownRate: 3,
+      assemblyRate: 11.5,
+      dismantleRate: 3,
     });
   });
 
-  it('requires buildUpRate and tearDownRate headers', () => {
+  it('requires assemblyRate and dismantleRate headers', () => {
     const result = parseWorkTypeCsv('title,workUnit\nCarpet Tiles,m2');
 
     expect(result.valid).toBe(false);
     expect(result.errors[0].field).toBe('headers');
-    expect(result.errors[0].message).toContain('builduprate');
+    expect(result.errors[0].message).toContain('assemblyrate');
   });
 
   it('validates enum fields and rates', () => {
@@ -79,7 +79,7 @@ describe('parseWorkTypeCsv', () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors.some((error) => error.field === 'workUnit')).toBe(true);
-    expect(result.errors.some((error) => error.field === 'buildUpRate')).toBe(true);
+    expect(result.errors.some((error) => error.field === 'assemblyRate')).toBe(true);
   });
 
   it('handles quoted values', () => {
@@ -93,7 +93,7 @@ describe('parseWorkTypeCsv', () => {
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
-      'title;workUnit;buildUpRate;tearDownRate',
+      'title;workUnit;assemblyRate;dismantleRate',
       'Carpet Tiles;m2;11.5;3',
     ].join('\n');
     const result = parseWorkTypeCsv(semicolonCsv);
@@ -103,8 +103,8 @@ describe('parseWorkTypeCsv', () => {
     expect(result.items[0]).toMatchObject({
       title: 'Carpet Tiles',
       workUnit: 'm2',
-      buildUpRate: 11.5,
-      tearDownRate: 3,
+      assemblyRate: 11.5,
+      dismantleRate: 3,
     });
   });
 });
@@ -149,7 +149,7 @@ describe('applyWorkTypeImport', () => {
     mockFindWorkTypeByKey
       .mockReturnValueOnce(makeWorkType({ id: 'wt-existing', title: 'Carpet Tiles' }))
       .mockReturnValueOnce(undefined);
-    mockCreateWorkType.mockResolvedValue(makeWorkType({ id: 'wt-created', title: 'Furniture', workUnit: 'pcs', buildUpRate: 6, tearDownRate: 2 }));
+    mockCreateWorkType.mockResolvedValue(makeWorkType({ id: 'wt-created', title: 'Furniture', workUnit: 'pcs', assemblyRate: 6, dismantleRate: 2 }));
 
     const result = await applyWorkTypeImport(parsed.items);
 
@@ -157,14 +157,14 @@ describe('applyWorkTypeImport', () => {
     expect(mockUpdateWorkTypeFields).toHaveBeenCalledWith('wt-existing', {
       title: 'Carpet Tiles',
       workUnit: 'm2',
-      buildUpRate: 14,
-      tearDownRate: 3,
+      assemblyRate: 14,
+      dismantleRate: 3,
     });
     expect(mockCreateWorkType).toHaveBeenCalledWith({
       title: 'Furniture',
       workUnit: 'pcs',
-      buildUpRate: 6,
-      tearDownRate: 2,
+      assemblyRate: 6,
+      dismantleRate: 2,
     });
   });
 });

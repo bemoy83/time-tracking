@@ -12,7 +12,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     estimatedMinutes: 60,
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -34,7 +34,7 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toContain('Install carpet,Carpet Tiles,m2,build-up,100,60,2,10');
+    expect(row).toContain('Install carpet,Carpet Tiles,m2,assembly,100,60,2,10');
   });
 
   it('exports empty workTypeTitle when workTypeId is null', () => {
@@ -44,7 +44,7 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toMatch(/^Install carpet,,m2,build-up/);
+    expect(row).toMatch(/^Install carpet,,m2,assembly/);
   });
 
   it('exports empty workTypeTitle when id is missing in map', () => {
@@ -54,6 +54,6 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toMatch(/^Install carpet,,m2,build-up/);
+    expect(row).toMatch(/^Install carpet,,m2,assembly/);
   });
 });

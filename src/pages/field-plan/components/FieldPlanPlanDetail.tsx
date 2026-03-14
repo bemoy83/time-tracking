@@ -103,7 +103,7 @@ export function FieldPlanPlanDetail({
           )}
         </div>
         <div className="field-plan__phase-filter">
-          {(['all', 'build-up', 'tear-down'] as const).map((f) => (
+          {(['all', 'assembly', 'dismantle'] as const).map((f) => (
             <button
               key={f}
               type="button"

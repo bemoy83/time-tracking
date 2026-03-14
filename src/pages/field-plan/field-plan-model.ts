@@ -91,7 +91,7 @@ export function buildFieldPlanLineItemSummaries(
       const pf = getPhaseFields(item, phase);
       const phaseTasks = linkedTasks.filter((task) => {
         if (task.buildPhase == null) {
-          return phase === 'build-up';
+          return phase === 'assembly';
         }
         return task.buildPhase === phase;
       });

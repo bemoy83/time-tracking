@@ -83,7 +83,7 @@ function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string
   if (idx <= 0) return null;
   const sourceWorkPackageId = lineItemId.slice(0, idx);
   const phaseRaw = lineItemId.slice(idx + PHASE_LINE_ITEM_ID_SEPARATOR.length);
-  if (phaseRaw !== 'build-up' && phaseRaw !== 'tear-down') return null;
+  if (phaseRaw !== 'assembly' && phaseRaw !== 'dismantle') return null;
   return {
     sourceWorkPackageId,
     phase: phaseRaw,
@@ -91,7 +91,7 @@ function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string
 }
 
 function normalizeTaskBuildPhase(phase: Task['buildPhase']): BuildPhase {
-  return phase === 'tear-down' ? 'tear-down' : 'build-up';
+  return phase === 'dismantle' ? 'dismantle' : 'assembly';
 }
 
 function normalizeExecutionReturnLineItems(
@@ -99,7 +99,7 @@ function normalizeExecutionReturnLineItems(
 ): NormalizedExecutionReturnLineItem[] {
   return lineItems.map((lineItem) => {
     const parsed = parsePhaseLineItemId(lineItem.lineItemId);
-    const phase = lineItem.phase ?? parsed?.phase ?? 'build-up';
+    const phase = lineItem.phase ?? parsed?.phase ?? 'assembly';
     const sourceWorkPackageId =
       lineItem.sourceWorkPackageId ?? parsed?.sourceWorkPackageId ?? lineItem.lineItemId;
     return {
@@ -331,7 +331,7 @@ async function applyImportedLineItemsToPlan(
   const nextLineItems = plan.lineItems.map((lineItem) => {
     let next = lineItem;
 
-    for (const phase of ['build-up', 'tear-down'] as const) {
+    for (const phase of ['assembly', 'dismantle'] as const) {
       const imported = lineItemByPhase.get(`${lineItem.id}:${phase}`);
       if (!imported) continue;
       next = {

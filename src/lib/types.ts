@@ -26,14 +26,14 @@ export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
 };
 
 // Build phases for task templates
-export type BuildPhase = 'build-up' | 'tear-down';
+export type BuildPhase = 'assembly' | 'dismantle';
 
 export const BUILD_PHASE_LABELS: Record<BuildPhase, string> = {
-  'build-up': 'Build-up',
-  'tear-down': 'Tear-down',
+  'assembly': 'Assembly',
+  'dismantle': 'Dismantle',
 };
 
-export const BUILD_PHASES: BuildPhase[] = ['build-up', 'tear-down'];
+export const BUILD_PHASES: BuildPhase[] = ['assembly', 'dismantle'];
 
 /**
  * Reusable Work Type definition.
@@ -44,8 +44,8 @@ export interface WorkType {
   id: string;
   title: string;                   // e.g. "Carpet Tiles"
   workUnit: WorkUnit;              // m2 | m | pcs | orders
-  buildUpRate: number;             // units/person-hr for build-up (0 = not applicable)
-  tearDownRate: number;            // units/person-hr for tear-down (0 = not applicable)
+  assemblyRate: number;             // units/person-hr for assembly (0 = not applicable)
+  dismantleRate: number;            // units/person-hr for dismantle (0 = not applicable)
   /** Read-only imported definitions are scoped to plan handoff on executor device. */
   readOnly?: boolean;
   /** Source plan ID for imported read-only work types. null/undefined for regular library types. */

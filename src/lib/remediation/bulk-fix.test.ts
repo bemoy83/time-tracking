@@ -170,7 +170,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['task-old'],
-      { workUnit: 'm2', workQuantity: 100, buildPhase: 'build-up', workTypeId: 'wt-1' },
+      { workUnit: 'm2', workQuantity: 100, buildPhase: 'assembly', workTypeId: 'wt-1' },
     );
 
     expect(result.succeeded).toBe(1);

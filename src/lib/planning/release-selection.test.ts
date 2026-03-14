@@ -21,37 +21,37 @@ describe('selectedPlanItemsToCreateTaskInputs', () => {
     const planA = withItems({ ...createPlan('Plan A'), projectId: 'project-a' }, ['A1', 'A2']);
     const planB = withItems({ ...createPlan('Plan B'), projectId: 'project-b' }, ['B1']);
 
-    planA.lineItems[0].tearDownRate = 4;
-    planA.lineItems[0].tearDownCrew = 2;
-    planA.lineItems[0].tearDownTimeHours = 2.5;
-    planA.lineItems[0].tearDownRateSource = 'template';
+    planA.lineItems[0].dismantleRate = 4;
+    planA.lineItems[0].dismantleCrew = 2;
+    planA.lineItems[0].dismantleTimeHours = 2.5;
+    planA.lineItems[0].dismantleRateSource = 'template';
     const selected = new Set([
       encodePlanLineItemPhaseSelection({
         planId: planA.id,
         lineItemId: planA.lineItems[0].id,
-        phase: 'build-up',
+        phase: 'assembly',
       }),
       encodePlanLineItemPhaseSelection({
         planId: planA.id,
         lineItemId: planA.lineItems[0].id,
-        phase: 'tear-down',
+        phase: 'dismantle',
       }),
       encodePlanLineItemPhaseSelection({
         planId: planB.id,
         lineItemId: planB.lineItems[0].id,
-        phase: 'build-up',
+        phase: 'assembly',
       }),
     ]);
     const inputs = selectedPlanItemsToCreateTaskInputs([planA, planB], selected);
 
     expect(inputs).toHaveLength(3);
-    expect(inputs[0].title).toBe('A1 — Build-up');
+    expect(inputs[0].title).toBe('A1 — Assembly');
     expect(inputs[0].projectId).toBe('project-a');
     expect(inputs[0].sourcePlanId).toBe(planA.id);
     expect(inputs[0].sourceLineItemId).toBe(planA.lineItems[0].id);
-    expect(inputs[1].title).toBe('A1 — Tear-down');
-    expect(inputs[1].buildPhase).toBe('tear-down');
-    expect(inputs[2].title).toBe('B1 — Build-up');
+    expect(inputs[1].title).toBe('A1 — Dismantle');
+    expect(inputs[1].buildPhase).toBe('dismantle');
+    expect(inputs[2].title).toBe('B1 — Assembly');
     expect(inputs[2].projectId).toBe('project-b');
     expect(inputs[2].sourcePlanId).toBe(planB.id);
     expect(inputs[2].sourceLineItemId).toBe(planB.lineItems[0].id);
@@ -63,7 +63,7 @@ describe('selectedPlanItemsToCreateTaskInputs', () => {
       encodePlanLineItemPhaseSelection({
         planId: plan.id,
         lineItemId: plan.lineItems[0].id,
-        phase: 'build-up',
+        phase: 'assembly',
       }),
     ]);
     const inputs = selectedPlanItemsToCreateTaskInputs([plan], selected);
@@ -78,17 +78,17 @@ describe('selectedPlanItemsToCreateTaskInputs', () => {
       encodePlanLineItemPhaseSelection({
         planId: plan.id,
         lineItemId: plan.lineItems[1].id,
-        phase: 'build-up',
+        phase: 'assembly',
       }),
       encodePlanLineItemPhaseSelection({
         planId: plan.id,
         lineItemId: plan.lineItems[2].id,
-        phase: 'tear-down',
+        phase: 'dismantle',
       }),
     ]);
     const inputs = selectedPlanItemsToCreateTaskInputs([plan], selected);
 
     expect(inputs).toHaveLength(1);
-    expect(inputs[0].title).toBe('A2 — Build-up');
+    expect(inputs[0].title).toBe('A2 — Assembly');
   });
 });

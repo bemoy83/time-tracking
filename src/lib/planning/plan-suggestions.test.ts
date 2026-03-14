@@ -11,35 +11,35 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     workUnit: 'm2',
     workTypeId: null,
     workQuantity: 100,
-    tearDownQuantity: null,
-    buildUpRate: 10,
-    buildUpCrew: 2,
-    buildUpTimeHours: 5,
-    buildUpRateSource: 'manual' as const,
-    tearDownRate: 0,
-    tearDownCrew: 0,
-    tearDownTimeHours: 0,
-    tearDownRateSource: 'manual' as const,
-    buildUpScheduledStart: null,
-    buildUpScheduledEnd: null,
-    buildUpOriginalScheduledStart: null,
-    buildUpOriginalScheduledEnd: null,
-    buildUpCrewByDate: undefined,
-    tearDownScheduledStart: null,
-    tearDownScheduledEnd: null,
-    tearDownOriginalScheduledStart: null,
-    tearDownOriginalScheduledEnd: null,
-    tearDownCrewByDate: undefined,
-    buildUpExecutionStatus: 'pending' as const,
-    buildUpBlockReason: null,
-    buildUpBlockCategory: null,
-    buildUpExecutorNote: null,
-    buildUpDeferredNote: null,
-    tearDownExecutionStatus: 'pending' as const,
-    tearDownBlockReason: null,
-    tearDownBlockCategory: null,
-    tearDownExecutorNote: null,
-    tearDownDeferredNote: null,
+    dismantleQuantity: null,
+    assemblyRate: 10,
+    assemblyCrew: 2,
+    assemblyTimeHours: 5,
+    assemblyRateSource: 'manual' as const,
+    dismantleRate: 0,
+    dismantleCrew: 0,
+    dismantleTimeHours: 0,
+    dismantleRateSource: 'manual' as const,
+    assemblyScheduledStart: null,
+    assemblyScheduledEnd: null,
+    assemblyOriginalScheduledStart: null,
+    assemblyOriginalScheduledEnd: null,
+    assemblyCrewByDate: undefined,
+    dismantleScheduledStart: null,
+    dismantleScheduledEnd: null,
+    dismantleOriginalScheduledStart: null,
+    dismantleOriginalScheduledEnd: null,
+    dismantleCrewByDate: undefined,
+    assemblyExecutionStatus: 'pending' as const,
+    assemblyBlockReason: null,
+    assemblyBlockCategory: null,
+    assemblyExecutorNote: null,
+    assemblyDeferredNote: null,
+    dismantleExecutionStatus: 'pending' as const,
+    dismantleBlockReason: null,
+    dismantleBlockCategory: null,
+    dismantleExecutorNote: null,
+    dismantleDeferredNote: null,
     rationale: null,
     removedFromSource: false,
     amendmentNote: null,
@@ -75,10 +75,10 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     projectId: null,
     eventStartDate: null,
     eventEndDate: null,
-    buildUpStartDate: null,
-    buildUpEndDate: null,
-    tearDownStartDate: null,
-    tearDownEndDate: null,
+    assemblyStartDate: null,
+    assemblyEndDate: null,
+    dismantleStartDate: null,
+    dismantleEndDate: null,
     defaultCrewSize: 2,
     workCalendar: [],
     createdAt: '2026-03-01T00:00:00.000Z',
@@ -96,18 +96,18 @@ describe('generatePlanSuggestions', () => {
     const result = generatePlanSuggestions([makeLineItem()], [makeKpi()]);
 
     expect(result.items).toHaveLength(1);
-    expect(result.items[0].buildUp.suggestedRate).toBe(12);
+    expect(result.items[0].assembly.suggestedRate).toBe(12);
     expect(result.items[0].confidence).toBe('high');
     expect(result.items[0].risk).toBe('none');
     // 100 / (12 * 2) = 4.166...
-    expect(result.items[0].buildUp.suggestedTimeHours).toBeCloseTo(4.167, 2);
+    expect(result.items[0].assembly.suggestedTimeHours).toBeCloseTo(4.167, 2);
   });
 
   it('flags high risk when no KPI data', () => {
     const result = generatePlanSuggestions([makeLineItem()], []);
 
     expect(result.items[0].kpi).toBeNull();
-    expect(result.items[0].buildUp.suggestedRate).toBeNull();
+    expect(result.items[0].assembly.suggestedRate).toBeNull();
     expect(result.items[0].risk).toBe('high');
     expect(result.items[0].riskReasons).toContain('No historical data available');
     expect(result.noDataCount).toBe(1);
@@ -117,7 +117,7 @@ describe('generatePlanSuggestions', () => {
     const kpi = makeKpi({ sampleCount: 1, confidence: 'insufficient' });
     const result = generatePlanSuggestions([makeLineItem()], [kpi]);
 
-    expect(result.items[0].buildUp.suggestedRate).toBeNull(); // insufficient → no suggestion
+    expect(result.items[0].assembly.suggestedRate).toBeNull(); // insufficient → no suggestion
     expect(result.items[0].risk).toBe('high');
   });
 
@@ -164,123 +164,123 @@ describe('generatePlanSuggestions', () => {
 
   it('computes suggested crew from phase window with default calendar', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-06',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-06',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
     const item = makeLineItem({
       workQuantity: 500,
-      buildUpRate: 10,
+      assemblyRate: 10,
     });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBe(2);
-    expect(result.items[0].buildUp.phaseWorkDayCount).toBeGreaterThan(0);
+    expect(result.items[0].assembly.suggestedCrew).toBe(2);
+    expect(result.items[0].assembly.phaseWorkDayCount).toBeGreaterThan(0);
   });
 
   it('sets phaseWorkDayCount to 0 when phase has no work days', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-07',
-      buildUpEndDate: '2026-03-08',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-07',
+      assemblyEndDate: '2026-03-08',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
     const item = makeLineItem();
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.phaseWorkDayCount).toBe(0);
+    expect(result.items[0].assembly.phaseWorkDayCount).toBe(0);
   });
 
   it('uses KPI rate for suggested crew when line-item rate is invalid', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-06',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-06',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
     const item = makeLineItem({
       workQuantity: 100,
-      buildUpRate: 0,
+      assemblyRate: 0,
     });
     const kpi = makeKpi({ avgProductivity: 5, confidence: 'high' });
 
     const result = generatePlanSuggestions([item], [kpi], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBe(1);
+    expect(result.items[0].assembly.suggestedCrew).toBe(1);
   });
 
-  it('computes phaseWorkDayCount and suggestedCrew for build-up when only build-up dates are set (tear-down optional)', () => {
+  it('computes phaseWorkDayCount and suggestedCrew for assembly when only assembly dates are set (dismantle optional)', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-06',
-      tearDownStartDate: null,
-      tearDownEndDate: null,
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-06',
+      dismantleStartDate: null,
+      dismantleEndDate: null,
     });
     const item = makeLineItem({
       workQuantity: 500,
-      buildUpRate: 10,
+      assemblyRate: 10,
     });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.phaseWorkDayCount).toBeGreaterThan(0);
-    expect(result.items[0].buildUp.suggestedCrew).toBe(2);
+    expect(result.items[0].assembly.phaseWorkDayCount).toBeGreaterThan(0);
+    expect(result.items[0].assembly.suggestedCrew).toBe(2);
   });
 
   it('returns null suggested crew when phase dates are missing', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: null,
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: null,
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
-    const item = makeLineItem({ workQuantity: 100, buildUpRate: 10 });
+    const item = makeLineItem({ workQuantity: 100, assemblyRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
+    expect(result.items[0].assembly.suggestedCrew).toBeNull();
   });
 
   it('returns null suggested crew when phase has no work days', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-07',
-      buildUpEndDate: '2026-03-08',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-07',
+      assemblyEndDate: '2026-03-08',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
-    const item = makeLineItem({ workQuantity: 100, buildUpRate: 10 });
+    const item = makeLineItem({ workQuantity: 100, assemblyRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
+    expect(result.items[0].assembly.suggestedCrew).toBeNull();
   });
 
   it('returns null suggested crew when quantity or effective rate is invalid', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-06',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-06',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
     });
-    const zeroQuantity = makeLineItem({ id: 'li-zero-qty', workQuantity: 0, buildUpRate: 10 });
-    const zeroRate = makeLineItem({ id: 'li-zero-rate', workQuantity: 100, buildUpRate: 0 });
+    const zeroQuantity = makeLineItem({ id: 'li-zero-qty', workQuantity: 0, assemblyRate: 10 });
+    const zeroRate = makeLineItem({ id: 'li-zero-rate', workQuantity: 100, assemblyRate: 0 });
 
     const result = generatePlanSuggestions([zeroQuantity, zeroRate], [], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBeNull();
-    expect(result.items[1].buildUp.suggestedCrew).toBeNull();
+    expect(result.items[0].assembly.suggestedCrew).toBeNull();
+    expect(result.items[1].assembly.suggestedCrew).toBeNull();
   });
 
   it('uses access hours from calendar day when custom calendar exists', () => {
     const plan = makePlan({
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-03',
-      tearDownStartDate: '2026-03-09',
-      tearDownEndDate: '2026-03-10',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-03',
+      dismantleStartDate: '2026-03-09',
+      dismantleEndDate: '2026-03-10',
       workCalendar: [
         { date: '2026-03-02', isWorkDay: true, accessStart: '06:00', accessEnd: '12:00', crewSize: null },
         { date: '2026-03-03', isWorkDay: true, accessStart: '06:00', accessEnd: '12:00', crewSize: null },
       ],
     });
-    const item = makeLineItem({ workQuantity: 120, buildUpRate: 10 });
+    const item = makeLineItem({ workQuantity: 120, assemblyRate: 10 });
 
     const result = generatePlanSuggestions([item], [], plan);
-    expect(result.items[0].buildUp.suggestedCrew).toBe(1);
+    expect(result.items[0].assembly.suggestedCrew).toBe(1);
   });
 });

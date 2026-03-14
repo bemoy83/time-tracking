@@ -20,8 +20,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-carpet',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildUpRate: 55,
-    tearDownRate: 0,
+    assemblyRate: 55,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -29,8 +29,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-furniture',
     title: 'Furniture',
     workUnit: 'pcs',
-    buildUpRate: 20,
-    tearDownRate: 0,
+    assemblyRate: 20,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -83,14 +83,14 @@ describe('KPI <-> Calculator parity', () => {
       workQuantity: 100,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
     const t2 = makeTask({
       id: 't2',
       workQuantity: 200,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
 
     // Entries logged on each task
@@ -141,7 +141,7 @@ describe('KPI <-> Calculator parity', () => {
       workQuantity: 100,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
     const unmeasurable = makeTask({ id: 'u1' });
 

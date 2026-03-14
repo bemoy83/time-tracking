@@ -28,7 +28,7 @@ interface LineItemCardProps {
   item: PlanLineItem;
   suggestion: LineItemSuggestion | null;
   isLocked: boolean;
-  /** Which phase to display in this card. Defaults to build-up. */
+  /** Which phase to display in this card. Defaults to assembly. */
   displayPhase?: BuildPhase;
   onUpdate: (updates: Partial<PlanLineItem>) => void;
   onDuplicate?: (item: PlanLineItem) => void;
@@ -39,7 +39,7 @@ export function LineItemCard({
   item,
   suggestion,
   isLocked,
-  displayPhase = 'build-up',
+  displayPhase = 'assembly',
   onUpdate,
   onDuplicate,
   onRemove,
@@ -52,7 +52,7 @@ export function LineItemCard({
   // Read phase fields for the display phase
   const pf = getPhaseFields(item, displayPhase);
   const phaseSuggestion = suggestion
-    ? (displayPhase === 'build-up' ? suggestion.buildUp : suggestion.tearDown)
+    ? (displayPhase === 'assembly' ? suggestion.assembly : suggestion.dismantle)
     : null;
   const suggestedCrew = phaseSuggestion?.suggestedCrew ?? null;
 
@@ -111,8 +111,8 @@ export function LineItemCard({
     setUnitChangeWarning(
       wt.workUnit !== item.workUnit ? { from: item.workUnit, to: wt.workUnit } : null,
     );
-    const effectiveWtRate = displayPhase === 'tear-down' ? wt.tearDownRate : wt.buildUpRate;
-    const chosenRate = effectiveWtRate || wt.buildUpRate || wt.tearDownRate;
+    const effectiveWtRate = displayPhase === 'dismantle' ? wt.dismantleRate : wt.assemblyRate;
+    const chosenRate = effectiveWtRate || wt.assemblyRate || wt.dismantleRate;
     const updates: Partial<PlanLineItem> = {
       workTypeId: wt.id,
       workTypeTitle: wt.title,

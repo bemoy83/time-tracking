@@ -19,10 +19,10 @@ function createScheduledPlan(title: string, hours: number): Plan {
   ];
 
   const item = createLineItem('Install', 'Install', 'pcs', 8, 1, 0);
-  item.buildUpCrew = 1;
-  item.buildUpTimeHours = hours;
-  item.buildUpScheduledStart = '2026-03-10';
-  item.buildUpScheduledEnd = '2026-03-10';
+  item.assemblyCrew = 1;
+  item.assemblyTimeHours = hours;
+  item.assemblyScheduledStart = '2026-03-10';
+  item.assemblyScheduledEnd = '2026-03-10';
   plan.lineItems = [item];
   return plan;
 }
@@ -43,8 +43,8 @@ describe('schedule coverage metrics', () => {
   it('keeps the ring open when required work has no schedule', () => {
     const plan = createPlan('Open Ring');
     const item = createLineItem('Audio', 'Audio', 'pcs', 8, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 8;
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 8;
     plan.lineItems = [item];
 
     const metric = getPlanScheduleCoverageMetric(plan);

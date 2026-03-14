@@ -11,8 +11,8 @@ function makePlanWithItem(status: Plan['status']): { plan: Plan; itemId: string 
     { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
   ];
   const item = createLineItem('Item', 'Item', 'pcs', 8, 1, 0);
-  item.buildUpScheduledStart = null;
-  item.buildUpScheduledEnd = null;
+  item.assemblyScheduledStart = null;
+  item.assemblyScheduledEnd = null;
   plan.lineItems = [item];
   return { plan, itemId: item.id };
 }
@@ -21,9 +21,9 @@ describe('shared-schedule-mutations', () => {
   it('toggles assignment for editable plans', () => {
     const { plan, itemId } = makePlanWithItem('draft');
 
-    const updated = toggleSharedAssignment(plan, itemId, 'build-up', '2026-03-02');
+    const updated = toggleSharedAssignment(plan, itemId, 'assembly', '2026-03-02');
     const item = updated.lineItems.find((lineItem) => lineItem.id === itemId)!;
-    const pf = getPhaseFields(item, 'build-up');
+    const pf = getPhaseFields(item, 'assembly');
 
     expect(pf.scheduledStart).toBe('2026-03-02');
     expect(pf.scheduledEnd).toBe('2026-03-02');
@@ -33,8 +33,8 @@ describe('shared-schedule-mutations', () => {
   it('returns unchanged reviewed plans for assignment and crew edits', () => {
     const { plan, itemId } = makePlanWithItem('reviewed');
 
-    const toggled = toggleSharedAssignment(plan, itemId, 'build-up', '2026-03-02');
-    const crewUpdated = setSharedCrewForDate(plan, itemId, 'build-up', '2026-03-02', 7);
+    const toggled = toggleSharedAssignment(plan, itemId, 'assembly', '2026-03-02');
+    const crewUpdated = setSharedCrewForDate(plan, itemId, 'assembly', '2026-03-02', 7);
 
     expect(toggled).toBe(plan);
     expect(crewUpdated).toBe(plan);
@@ -42,11 +42,11 @@ describe('shared-schedule-mutations', () => {
 
   it('updates targeted item crew for editable plans', () => {
     const { plan, itemId } = makePlanWithItem('active');
-    const assigned = toggleSharedAssignment(plan, itemId, 'build-up', '2026-03-02');
+    const assigned = toggleSharedAssignment(plan, itemId, 'assembly', '2026-03-02');
 
-    const updated = setSharedCrewForDate(assigned, itemId, 'build-up', '2026-03-02', 5);
+    const updated = setSharedCrewForDate(assigned, itemId, 'assembly', '2026-03-02', 5);
     const item = updated.lineItems.find((lineItem) => lineItem.id === itemId)!;
-    const pf = getPhaseFields(item, 'build-up');
+    const pf = getPhaseFields(item, 'assembly');
 
     expect(pf.crewByDate?.['2026-03-02']).toBe(5);
   });
@@ -56,16 +56,16 @@ describe('shared-schedule-mutations', () => {
     const plan = createPlan('Shared Plan');
     plan.status = 'draft';
     plan.defaultCrewSize = 4;
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-07'; // includes Sat Mar 7
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-07'; // includes Sat Mar 7
     plan.workCalendar = [
       { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
       { date: '2026-03-07', isWorkDay: false, accessStart: null, accessEnd: null, crewSize: null }, // Saturday off
     ];
     const item = createLineItem('Item', 'Item', 'pcs', 8, 1, 0);
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-07';
-    item.buildUpCrewByDate = { '2026-03-02': 1, '2026-03-07': 1 };
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-07';
+    item.assemblyCrewByDate = { '2026-03-02': 1, '2026-03-07': 1 };
     plan.lineItems = [item];
 
     // Crew pool has Saturday as work day (user toggled weekends on)
@@ -74,8 +74,8 @@ describe('shared-schedule-mutations', () => {
       { date: '2026-03-07', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
     ];
 
-    const updated = setSharedCrewForDate(plan, item.id, 'build-up', '2026-03-07', 3, crewPoolCalendar);
-    const pf = getPhaseFields(updated.lineItems[0]!, 'build-up');
+    const updated = setSharedCrewForDate(plan, item.id, 'assembly', '2026-03-07', 3, crewPoolCalendar);
+    const pf = getPhaseFields(updated.lineItems[0]!, 'assembly');
 
     expect(pf.crewByDate?.['2026-03-07']).toBe(3);
   });

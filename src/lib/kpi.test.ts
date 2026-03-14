@@ -19,8 +19,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-carpet',
     title: 'Carpet Tiles',
     workUnit: 'm2',
-    buildUpRate: 55,
-    tearDownRate: 0,
+    assemblyRate: 55,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -28,8 +28,8 @@ const WORK_TYPES: WorkType[] = [
     id: 'wt-furniture',
     title: 'Furniture',
     workUnit: 'pcs',
-    buildUpRate: 20,
-    tearDownRate: 0,
+    assemblyRate: 20,
+    dismantleRate: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
   },
@@ -48,7 +48,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: null,
     targetProductivity: null,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: '2024-01-05T00:00:00.000Z',
@@ -92,9 +92,9 @@ describe('computeWorkTypeKpis', () => {
   });
 
   it('groups tasks by work type key', () => {
-    const t1 = makeTask({ id: 't1', workQuantity: 100, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'build-up' });
-    const t2 = makeTask({ id: 't2', workQuantity: 200, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'build-up' });
-    const t3 = makeTask({ id: 't3', workQuantity: 50, workTypeId: 'wt-furniture', workUnit: 'pcs', buildPhase: 'build-up' });
+    const t1 = makeTask({ id: 't1', workQuantity: 100, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'assembly' });
+    const t2 = makeTask({ id: 't2', workQuantity: 200, workTypeId: 'wt-carpet', workUnit: 'm2', buildPhase: 'assembly' });
+    const t3 = makeTask({ id: 't3', workQuantity: 50, workTypeId: 'wt-furniture', workUnit: 'pcs', buildPhase: 'assembly' });
 
     const entriesByTask = new Map([
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],
@@ -177,7 +177,7 @@ describe('computeWorkTypeKpis', () => {
       workQuantity: 100,
       workTypeId: 'wt-deleted',
       workUnit: 'm2',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
     const entriesByTask = new Map([
       ['t1', [makeAttributedEntry({ taskId: 't1', ownerTaskId: 't1', personHours: 10 })]],

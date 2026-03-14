@@ -35,7 +35,7 @@ const baseTask = {
   workUnit: 'm2' as const,
   crew: null,
   targetProductivity: null,
-  buildPhase: 'build-up' as const,
+  buildPhase: 'assembly' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
@@ -52,7 +52,7 @@ const baseTemplate = {
   estimatedMinutes: null,
   crew: null,
   targetProductivity: 10,
-  buildPhase: 'build-up' as const,
+  buildPhase: 'assembly' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };

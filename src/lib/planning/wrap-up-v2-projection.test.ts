@@ -31,7 +31,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: null,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -65,7 +65,7 @@ describe('loadWrapUpV2Projection', () => {
     mockGetLatestExecutionReturnBundleByPlanId.mockResolvedValue(null);
   });
 
-  it('treats legacy linked tasks with null buildPhase as build-up', async () => {
+  it('treats legacy linked tasks with null buildPhase as assembly', async () => {
     const plan = makePlan();
     const lineItem = createLineItem('Install carpet', 'Carpet', 'm2', 100, 10, 0);
     lineItem.id = 'line-1';
@@ -82,24 +82,24 @@ describe('loadWrapUpV2Projection', () => {
     ]);
 
     const projection = await loadWrapUpV2Projection(plan, [task], entriesByTask);
-    const buildUp = projection.lineItems.find((item) => item.phase === 'build-up')!;
+    const assembly = projection.lineItems.find((item) => item.phase === 'assembly')!;
 
-    expect(buildUp.linkedTaskIds).toEqual([task.id]);
-    expect(buildUp.executionStatus).toBe('completed');
-    expect(buildUp.actualPersonHours).toBe(2);
+    expect(assembly.linkedTaskIds).toEqual([task.id]);
+    expect(assembly.executionStatus).toBe('completed');
+    expect(assembly.actualPersonHours).toBe(2);
   });
 
-  it('uses tear-down quantity override when computing tear-down productivity', async () => {
+  it('uses dismantle quantity override when computing dismantle productivity', async () => {
     const plan = makePlan();
     const lineItem = createLineItem('Remove carpet', 'Carpet', 'm2', 100, 0, 10);
     lineItem.id = 'line-1';
-    lineItem.tearDownQuantity = 40;
+    lineItem.dismantleQuantity = 40;
     plan.lineItems = [lineItem];
 
     const task = makeTask({
-      id: 'task-teardown',
+      id: 'task-dismantle',
       sourceLineItemId: lineItem.id,
-      buildPhase: 'tear-down',
+      buildPhase: 'dismantle',
       status: 'completed',
       workQuantity: 40,
     });
@@ -113,10 +113,10 @@ describe('loadWrapUpV2Projection', () => {
     ]);
 
     const projection = await loadWrapUpV2Projection(plan, [task], entriesByTask);
-    const tearDown = projection.lineItems.find((item) => item.phase === 'tear-down')!;
+    const dismantle = projection.lineItems.find((item) => item.phase === 'dismantle')!;
 
-    expect(tearDown.actualPersonHours).toBe(4);
-    expect(tearDown.actualProductivity).toBe(10);
+    expect(dismantle.actualPersonHours).toBe(4);
+    expect(dismantle.actualProductivity).toBe(10);
   });
 });
 

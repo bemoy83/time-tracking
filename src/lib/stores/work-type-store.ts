@@ -63,8 +63,8 @@ export async function initializeWorkTypeStore(): Promise<void> {
 export interface CreateWorkTypeInput {
   title: string;
   workUnit: WorkUnit;
-  buildUpRate: number;
-  tearDownRate: number;
+  assemblyRate: number;
+  dismantleRate: number;
   readOnly?: boolean;
   importedForPlanId?: string | null;
 }
@@ -103,8 +103,8 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
     id: generateId(),
     title: input.title.trim(),
     workUnit: input.workUnit,
-    buildUpRate: input.buildUpRate,
-    tearDownRate: input.tearDownRate,
+    assemblyRate: input.assemblyRate,
+    dismantleRate: input.dismantleRate,
     readOnly: input.readOnly ?? false,
     importedForPlanId: input.importedForPlanId ?? null,
     createdAt: now,
@@ -203,8 +203,8 @@ export async function ensureWorkTypeExistsOrCreate(
   const created = await createWorkType({
     title,
     workUnit,
-    buildUpRate: defaultBuildUpRate,
-    tearDownRate: defaultTearDownRate,
+    assemblyRate: defaultBuildUpRate,
+    dismantleRate: defaultTearDownRate,
   });
   return created.id;
 }

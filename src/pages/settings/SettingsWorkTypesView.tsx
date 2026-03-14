@@ -136,7 +136,7 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
                 <div className="settings-view__template-info">
                   <span className="settings-view__row-label">{wt.title}</span>
                   <span className="settings-view__row-detail">
-                    {WORK_UNIT_LABELS[wt.workUnit]} · BU {wt.buildUpRate} · TD {wt.tearDownRate} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
+                    {WORK_UNIT_LABELS[wt.workUnit]} · Assembly {wt.assemblyRate} · Dismantle {wt.dismantleRate} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
                   </span>
                 </div>
               </button>

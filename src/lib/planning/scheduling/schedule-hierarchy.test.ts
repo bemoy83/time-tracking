@@ -25,13 +25,13 @@ describe('buildSharedRows', () => {
 
     expect(rows.map((row) => row.id)).toEqual([
       'project:plan-a',
-      'phase:plan-a:build-up',
-      `item:plan-a:build-up:${aBuild.id}`,
-      'phase:plan-a:tear-down',
-      `item:plan-a:tear-down:${aTear.id}`,
+      'phase:plan-a:assembly',
+      `item:plan-a:assembly:${aBuild.id}`,
+      'phase:plan-a:dismantle',
+      `item:plan-a:dismantle:${aTear.id}`,
       'project:plan-b',
-      'phase:plan-b:build-up',
-      `item:plan-b:build-up:${bBuild.id}`,
+      'phase:plan-b:assembly',
+      `item:plan-b:assembly:${bBuild.id}`,
     ]);
   });
 

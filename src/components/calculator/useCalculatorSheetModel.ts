@@ -164,7 +164,7 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
   const templateRate = useMemo((): RateInfo | null => {
     if (!selectedWorkType) return null;
     return {
-      rate: selectedWorkType.buildUpRate || selectedWorkType.tearDownRate,
+      rate: selectedWorkType.assemblyRate || selectedWorkType.dismantleRate,
       source: 'template',
       confidence: null,
       sampleCount: null,

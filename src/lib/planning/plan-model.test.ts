@@ -22,10 +22,10 @@ describe('createPlan', () => {
     expect(plan.projectId).toBeNull();
     expect(plan.eventStartDate).toBeNull();
     expect(plan.eventEndDate).toBeNull();
-    expect(plan.buildUpStartDate).toBeNull();
-    expect(plan.buildUpEndDate).toBeNull();
-    expect(plan.tearDownStartDate).toBeNull();
-    expect(plan.tearDownEndDate).toBeNull();
+    expect(plan.assemblyStartDate).toBeNull();
+    expect(plan.assemblyEndDate).toBeNull();
+    expect(plan.dismantleStartDate).toBeNull();
+    expect(plan.dismantleEndDate).toBeNull();
     expect(plan.defaultCrewSize).toBeNull();
     expect(plan.workCalendar).toEqual([]);
     expect(plan.activatedAt).toBeNull();
@@ -39,22 +39,22 @@ describe('createLineItem', () => {
     const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0);
     expect(item.title).toBe('Install carpet');
     expect(item.workQuantity).toBe(100);
-    expect(item.buildUpRate).toBe(10);
-    expect(item.buildUpTimeHours).toBe(10); // 100 / 10
-    expect(item.buildUpCrew).toBe(1);
-    expect(item.buildUpRateSource).toBe('manual');
+    expect(item.assemblyRate).toBe(10);
+    expect(item.assemblyTimeHours).toBe(10); // 100 / 10
+    expect(item.assemblyCrew).toBe(1);
+    expect(item.assemblyRateSource).toBe('manual');
     expect(item.reviewNote).toBeNull();
-    expect(item.buildUpScheduledStart).toBeNull();
-    expect(item.buildUpScheduledEnd).toBeNull();
-    expect(item.buildUpOriginalScheduledStart).toBeNull();
-    expect(item.buildUpOriginalScheduledEnd).toBeNull();
+    expect(item.assemblyScheduledStart).toBeNull();
+    expect(item.assemblyScheduledEnd).toBeNull();
+    expect(item.assemblyOriginalScheduledStart).toBeNull();
+    expect(item.assemblyOriginalScheduledEnd).toBeNull();
     expect(item.amendmentNote).toBeNull();
     expect(item.amendedAt).toBeNull();
   });
 
   it('handles zero productivity rate', () => {
     const item = createLineItem('Task', 'Furniture', 'pcs', 50, 0, 0);
-    expect(item.buildUpTimeHours).toBe(0);
+    expect(item.assemblyTimeHours).toBe(0);
   });
 });
 
@@ -94,8 +94,8 @@ describe('plan line item operations', () => {
     const plan = createPlan('Test');
     const item = createLineItem('Task A', 'Carpet Tiles', 'm2', 100, 10, 0);
     const withItem = addLineItemToPlan(plan, item);
-    const updated = updatePlanLineItem(withItem, item.id, { buildUpCrew: 3 });
-    expect(updated.lineItems[0].buildUpCrew).toBe(3);
+    const updated = updatePlanLineItem(withItem, item.id, { assemblyCrew: 3 });
+    expect(updated.lineItems[0].assemblyCrew).toBe(3);
   });
 });
 
@@ -103,7 +103,7 @@ describe('planTotalPersonHours', () => {
   it('sums time × crew across all items', () => {
     let plan = createPlan('Test');
     plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 100, 10, 0)); // 10h × 1 crew = 10
-    const item2 = { ...createLineItem('B', 'Furniture', 'pcs', 50, 5, 0), buildUpCrew: 2 }; // 10h × 2 crew = 20
+    const item2 = { ...createLineItem('B', 'Furniture', 'pcs', 50, 5, 0), assemblyCrew: 2 }; // 10h × 2 crew = 20
     plan = addLineItemToPlan(plan, item2);
     expect(planTotalPersonHours(plan)).toBe(30);
   });
@@ -134,8 +134,8 @@ describe('lineItemWorkTypeKey', () => {
 describe('duplicateLineItem', () => {
   it('copies work-type and assumption fields with a normalized copy title', () => {
     const original = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0, 'historical', 'wt-1');
-    original.buildUpCrew = 3;
-    original.buildUpTimeHours = 12.5;
+    original.assemblyCrew = 3;
+    original.assemblyTimeHours = 12.5;
     original.rationale = 'Keep a note';
 
     const duplicate = duplicateLineItem(original);
@@ -146,16 +146,16 @@ describe('duplicateLineItem', () => {
     expect(duplicate.workUnit).toBe(original.workUnit);
     expect(duplicate.workTypeId).toBe(original.workTypeId);
     expect(duplicate.workQuantity).toBe(original.workQuantity);
-    expect(duplicate.buildUpCrew).toBe(original.buildUpCrew);
-    expect(duplicate.buildUpTimeHours).toBe(original.buildUpTimeHours);
-    expect(duplicate.buildUpRate).toBe(original.buildUpRate);
-    expect(duplicate.buildUpRateSource).toBe(original.buildUpRateSource);
+    expect(duplicate.assemblyCrew).toBe(original.assemblyCrew);
+    expect(duplicate.assemblyTimeHours).toBe(original.assemblyTimeHours);
+    expect(duplicate.assemblyRate).toBe(original.assemblyRate);
+    expect(duplicate.assemblyRateSource).toBe(original.assemblyRateSource);
     expect(duplicate.rationale).toBeNull();
     expect(duplicate.reviewNote).toBeNull();
-    expect(duplicate.buildUpScheduledStart).toBe(original.buildUpScheduledStart);
-    expect(duplicate.buildUpScheduledEnd).toBe(original.buildUpScheduledEnd);
-    expect(duplicate.buildUpOriginalScheduledStart).toBe(original.buildUpOriginalScheduledStart);
-    expect(duplicate.buildUpOriginalScheduledEnd).toBe(original.buildUpOriginalScheduledEnd);
+    expect(duplicate.assemblyScheduledStart).toBe(original.assemblyScheduledStart);
+    expect(duplicate.assemblyScheduledEnd).toBe(original.assemblyScheduledEnd);
+    expect(duplicate.assemblyOriginalScheduledStart).toBe(original.assemblyOriginalScheduledStart);
+    expect(duplicate.assemblyOriginalScheduledEnd).toBe(original.assemblyOriginalScheduledEnd);
     expect(duplicate.amendmentNote).toBe(original.amendmentNote);
     expect(duplicate.amendedAt).toBe(original.amendedAt);
   });

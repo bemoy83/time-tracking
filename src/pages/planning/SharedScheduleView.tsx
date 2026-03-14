@@ -109,10 +109,10 @@ export function SharedScheduleView({
     () => selectedPlans
       .map((plan) => [
         plan.id,
-        plan.buildUpStartDate ?? '',
-        plan.buildUpEndDate ?? '',
-        plan.tearDownStartDate ?? '',
-        plan.tearDownEndDate ?? '',
+        plan.assemblyStartDate ?? '',
+        plan.assemblyEndDate ?? '',
+        plan.dismantleStartDate ?? '',
+        plan.dismantleEndDate ?? '',
         String(plan.defaultCrewSize ?? ''),
       ].join(':'))
       .join('|'),

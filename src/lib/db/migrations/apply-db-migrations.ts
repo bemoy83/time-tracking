@@ -5,6 +5,19 @@ import type { TimeTrackingDBSchema } from '../schema';
 /** Legacy placeholder task ID - removed; migration cleans up any existing instances. */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
 
+function normalizeLegacyPhaseValue(value: unknown): 'assembly' | 'dismantle' | null {
+  if (value === 'assembly' || value === 'build-up') return 'assembly';
+  if (value === 'dismantle' || value === 'tear-down') return 'dismantle';
+  return null;
+}
+
+function renameField(record: Record<string, unknown>, from: string, to: string): boolean {
+  if (!(from in record) || to in record) return false;
+  record[to] = record[from];
+  delete record[from];
+  return true;
+}
+
 type OpenDbOptions = NonNullable<Parameters<typeof openDB<TimeTrackingDBSchema>>[2]>;
 export type DbUpgradeCallback = NonNullable<OpenDbOptions['upgrade']>;
 
@@ -515,26 +528,26 @@ export const applyDbMigrations: DbUpgradeCallback = (
               if (records.length === 1) {
                 // Single record — convert in place
                 const r = records[0];
-                const phase = r.buildPhase as string;
+                const phase = normalizeLegacyPhaseValue(r.buildPhase);
                 const rate = (r.expectedProductivity as number) ?? 0;
-                r.buildUpRate = phase === 'build-up' ? rate : 0;
-                r.tearDownRate = phase === 'tear-down' ? rate : 0;
+                r.assemblyRate = phase === 'assembly' ? rate : 0;
+                r.dismantleRate = phase === 'dismantle' ? rate : 0;
                 delete r.buildPhase;
                 delete r.expectedProductivity;
                 wtStore.put(r as never);
               } else {
                 // Multiple records — merge into first, delete rest
-                let buildUpRate = 0;
-                let tearDownRate = 0;
+                let assemblyRate = 0;
+                let dismantleRate = 0;
                 const primary = records[0];
                 for (const r of records) {
-                  const phase = r.buildPhase as string;
+                  const phase = normalizeLegacyPhaseValue(r.buildPhase);
                   const rate = (r.expectedProductivity as number) ?? 0;
-                  if (phase === 'build-up') buildUpRate = rate;
-                  if (phase === 'tear-down') tearDownRate = rate;
+                  if (phase === 'assembly') assemblyRate = rate;
+                  if (phase === 'dismantle') dismantleRate = rate;
                 }
-                primary.buildUpRate = buildUpRate;
-                primary.tearDownRate = tearDownRate;
+                primary.assemblyRate = assemblyRate;
+                primary.dismantleRate = dismantleRate;
                 delete primary.buildPhase;
                 delete primary.expectedProductivity;
                 wtStore.put(primary as never);
@@ -546,5 +559,111 @@ export const applyDbMigrations: DbUpgradeCallback = (
               }
             }
           });
+        }
+
+        // Version 29: Rename assembly/dismantle plan fields and canonicalize stored phase values
+        if (oldVersion < 29) {
+          if (db.objectStoreNames.contains('plans')) {
+            backfillStore('plans', (plan) => {
+              const p = plan as unknown as Record<string, unknown>;
+              let changed = false;
+
+              changed = renameField(p, 'buildUpStartDate', 'assemblyStartDate') || changed;
+              changed = renameField(p, 'buildUpEndDate', 'assemblyEndDate') || changed;
+              changed = renameField(p, 'tearDownStartDate', 'dismantleStartDate') || changed;
+              changed = renameField(p, 'tearDownEndDate', 'dismantleEndDate') || changed;
+
+              const lineItemFieldPairs: Array<[string, string]> = [
+                ['tearDownQuantity', 'dismantleQuantity'],
+                ['buildUpRate', 'assemblyRate'],
+                ['buildUpCrew', 'assemblyCrew'],
+                ['buildUpTimeHours', 'assemblyTimeHours'],
+                ['buildUpRateSource', 'assemblyRateSource'],
+                ['buildUpScheduledStart', 'assemblyScheduledStart'],
+                ['buildUpScheduledEnd', 'assemblyScheduledEnd'],
+                ['buildUpOriginalScheduledStart', 'assemblyOriginalScheduledStart'],
+                ['buildUpOriginalScheduledEnd', 'assemblyOriginalScheduledEnd'],
+                ['buildUpCrewByDate', 'assemblyCrewByDate'],
+                ['buildUpExecutionStatus', 'assemblyExecutionStatus'],
+                ['buildUpBlockReason', 'assemblyBlockReason'],
+                ['buildUpBlockCategory', 'assemblyBlockCategory'],
+                ['buildUpExecutorNote', 'assemblyExecutorNote'],
+                ['buildUpDeferredNote', 'assemblyDeferredNote'],
+                ['tearDownRate', 'dismantleRate'],
+                ['tearDownCrew', 'dismantleCrew'],
+                ['tearDownTimeHours', 'dismantleTimeHours'],
+                ['tearDownRateSource', 'dismantleRateSource'],
+                ['tearDownScheduledStart', 'dismantleScheduledStart'],
+                ['tearDownScheduledEnd', 'dismantleScheduledEnd'],
+                ['tearDownOriginalScheduledStart', 'dismantleOriginalScheduledStart'],
+                ['tearDownOriginalScheduledEnd', 'dismantleOriginalScheduledEnd'],
+                ['tearDownCrewByDate', 'dismantleCrewByDate'],
+                ['tearDownExecutionStatus', 'dismantleExecutionStatus'],
+                ['tearDownBlockReason', 'dismantleBlockReason'],
+                ['tearDownBlockCategory', 'dismantleBlockCategory'],
+                ['tearDownExecutorNote', 'dismantleExecutorNote'],
+                ['tearDownDeferredNote', 'dismantleDeferredNote'],
+              ];
+
+              for (const item of plan.lineItems) {
+                const lineItem = item as unknown as Record<string, unknown>;
+                for (const [from, to] of lineItemFieldPairs) {
+                  changed = renameField(lineItem, from, to) || changed;
+                }
+              }
+
+              return changed;
+            });
+          }
+
+          if (db.objectStoreNames.contains('tasks')) {
+            backfillStore('tasks', (task) => {
+              const t = task as unknown as Record<string, unknown>;
+              const normalizedPhase = normalizeLegacyPhaseValue(t.buildPhase);
+              if (normalizedPhase == null || normalizedPhase === t.buildPhase) return false;
+              t.buildPhase = normalizedPhase;
+              return true;
+            });
+          }
+
+          if (db.objectStoreNames.contains('taskTemplates')) {
+            backfillStore('taskTemplates', (template) => {
+              const t = template as unknown as Record<string, unknown>;
+              const normalizedPhase = normalizeLegacyPhaseValue(t.buildPhase);
+              if (normalizedPhase == null || normalizedPhase === t.buildPhase) return false;
+              t.buildPhase = normalizedPhase;
+              return true;
+            });
+          }
+
+          if (db.objectStoreNames.contains('workTypes')) {
+            backfillStore('workTypes', (workType) => {
+              const wt = workType as unknown as Record<string, unknown>;
+              let changed = false;
+              changed = renameField(wt, 'buildUpRate', 'assemblyRate') || changed;
+              changed = renameField(wt, 'tearDownRate', 'dismantleRate') || changed;
+              return changed;
+            });
+          }
+
+          if (db.objectStoreNames.contains('executionReturnLineItems')) {
+            backfillStore('executionReturnLineItems', (record) => {
+              const lineItem = record as unknown as Record<string, unknown>;
+              const normalizedPhase = normalizeLegacyPhaseValue(lineItem.phase);
+              if (normalizedPhase == null || normalizedPhase === lineItem.phase) return false;
+              lineItem.phase = normalizedPhase;
+              return true;
+            });
+          }
+
+          if (db.objectStoreNames.contains('executionReturnUnplannedTasks')) {
+            backfillStore('executionReturnUnplannedTasks', (record) => {
+              const task = record as unknown as Record<string, unknown>;
+              const normalizedPhase = normalizeLegacyPhaseValue(task.buildPhase);
+              if (normalizedPhase == null || normalizedPhase === task.buildPhase) return false;
+              task.buildPhase = normalizedPhase;
+              return true;
+            });
+          }
         }
 };

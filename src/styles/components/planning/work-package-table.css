@@ -154,24 +154,24 @@
   background: var(--wp-phase-header-bg);
 }
 
-.planning-view__wp-group-heading--buildup {
-  background: var(--wp-phase-buildup-header-bg);
+.planning-view__wp-group-heading--assembly {
+  background: var(--wp-phase-assembly-header-bg);
 }
 
-.planning-view__wp-group-heading--teardown {
-  background: var(--wp-phase-teardown-header-bg);
+.planning-view__wp-group-heading--dismantle {
+  background: var(--wp-phase-dismantle-header-bg);
 }
 
 .planning-view__wp-phase-col {
   background: var(--wp-phase-header-col-bg);
 }
 
-.planning-view__wp-phase-col--buildup {
-  background: var(--wp-phase-buildup-header-col-bg);
+.planning-view__wp-phase-col--assembly {
+  background: var(--wp-phase-assembly-header-col-bg);
 }
 
-.planning-view__wp-phase-col--teardown {
-  background: var(--wp-phase-teardown-header-col-bg);
+.planning-view__wp-phase-col--dismantle {
+  background: var(--wp-phase-dismantle-header-col-bg);
 }
 
 .planning-view__wp-actions-col {
@@ -280,24 +280,24 @@
   background: var(--wp-phase-bg);
 }
 
-.planning-view__wp-phase-cell--buildup {
-  background: var(--wp-phase-buildup-bg);
+.planning-view__wp-phase-cell--assembly {
+  background: var(--wp-phase-assembly-bg);
 }
 
-.planning-view__wp-phase-cell--teardown {
-  background: var(--wp-phase-teardown-bg);
+.planning-view__wp-phase-cell--dismantle {
+  background: var(--wp-phase-dismantle-bg);
 }
 
 .planning-view__wp-row:focus-within .planning-view__wp-phase-cell {
   background: var(--wp-phase-bg-hover);
 }
 
-.planning-view__wp-row:focus-within .planning-view__wp-phase-cell--buildup {
-  background: var(--wp-phase-buildup-bg-hover);
+.planning-view__wp-row:focus-within .planning-view__wp-phase-cell--assembly {
+  background: var(--wp-phase-assembly-bg-hover);
 }
 
-.planning-view__wp-row:focus-within .planning-view__wp-phase-cell--teardown {
-  background: var(--wp-phase-teardown-bg-hover);
+.planning-view__wp-row:focus-within .planning-view__wp-phase-cell--dismantle {
+  background: var(--wp-phase-dismantle-bg-hover);
 }
 
 .planning-view__wp-cell-input {

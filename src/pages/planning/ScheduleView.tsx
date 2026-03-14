@@ -133,10 +133,10 @@ export function ScheduleView({
   const workCalendarPhaseSpans = useMemo(
     () => getWorkCalendarPhaseSpans(phaseDates),
     [
-      phaseDates.buildUpStartDate,
-      phaseDates.buildUpEndDate,
-      phaseDates.tearDownStartDate,
-      phaseDates.tearDownEndDate,
+      phaseDates.assemblyStartDate,
+      phaseDates.assemblyEndDate,
+      phaseDates.dismantleStartDate,
+      phaseDates.dismantleEndDate,
     ],
   );
 
@@ -145,7 +145,7 @@ export function ScheduleView({
   }, [plan.id]);
 
   // Derive work calendar when at least one phase has dates but workCalendar is empty.
-  // Build-up and tear-down are resolved independently (event dates are ignored).
+  // Assembly and dismantle are resolved independently (event dates are ignored).
   useEffect(() => {
     if (workCalendarPhaseSpans.length > 0 && currentPlan.workCalendar.length === 0) {
       mutatePlan((prev) => ({
@@ -890,10 +890,10 @@ export function ScheduleView({
 
         <div className="schedule-view__top-band-inputs">
           <PlanScheduleInputsPanel
-            buildUpStartDate={phaseDates.buildUpStartDate}
-            buildUpEndDate={phaseDates.buildUpEndDate}
-            tearDownStartDate={phaseDates.tearDownStartDate}
-            tearDownEndDate={phaseDates.tearDownEndDate}
+            assemblyStartDate={phaseDates.assemblyStartDate}
+            assemblyEndDate={phaseDates.assemblyEndDate}
+            dismantleStartDate={phaseDates.dismantleStartDate}
+            dismantleEndDate={phaseDates.dismantleEndDate}
             eventStartDate={currentPlan.eventStartDate}
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}

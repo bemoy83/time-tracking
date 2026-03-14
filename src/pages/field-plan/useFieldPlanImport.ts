@@ -64,9 +64,6 @@ export function useFieldPlanImport({
         setPreview(null);
         await onImportApplied(preview.planId);
         trackTelemetryEvent(result.merged ? 'interop_plan_package_merge' : 'interop_plan_package_import');
-        if (preview.envelope.schemaVersion === '1.0') {
-          trackTelemetryEvent('schedule_import_defaulted');
-        }
       } else if (resolution === 'skip') {
         trackTelemetryEvent('interop_plan_package_skip');
       } else {

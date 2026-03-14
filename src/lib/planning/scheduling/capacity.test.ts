@@ -33,10 +33,10 @@ describe('computeCapacitySummary', () => {
       ...createPlan('Phase Plan'),
       eventStartDate: null,
       eventEndDate: null,
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-03',
-      tearDownStartDate: '2026-03-04',
-      tearDownEndDate: '2026-03-05',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-03',
+      dismantleStartDate: '2026-03-04',
+      dismantleEndDate: '2026-03-05',
       defaultCrewSize: 3,
       workCalendar: [
         { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
@@ -44,10 +44,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Install', 'Install', 'pcs', 8, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 8;
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-02';
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 8;
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -61,10 +61,10 @@ describe('computeCapacitySummary', () => {
     // Day 1: 2 crew × 8h = 16h capacity. Day 2: 2 crew × 4h = 8h capacity.
     // 20h total → Day 1 does 16h (full capacity), Day 2 does remaining 4h.
     const item = createLineItem('Install carpet', 'Carpet', 'm2', 20, 2, 0);
-    item.buildUpCrew = 2;
-    item.buildUpTimeHours = 10; // 2×10 = 20h total
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 2;
+    item.assemblyTimeHours = 10; // 2×10 = 20h total
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -88,10 +88,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Rigging', 'Rigging', 'm2', 10, 1, 0);
-    item.buildUpCrew = 4;
-    item.buildUpTimeHours = 5; // 4×5 = 20h total. Day 1 capacity: 4×8 = 32h → all done Day 1.
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 4;
+    item.assemblyTimeHours = 5; // 4×5 = 20h total. Day 1 capacity: 4×8 = 32h → all done Day 1.
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -124,10 +124,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Audio', 'Audio', 'pcs', 5, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 20; // 20h total, 16h total capacity → can't finish
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 20; // 20h total, 16h total capacity → can't finish
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -157,10 +157,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Rigging', 'Rigging', 'm2', 10, 1, 0);
-    item.buildUpCrew = 6; // 6 crew assigned
-    item.buildUpTimeHours = 8;
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 6; // 6 crew assigned
+    item.assemblyTimeHours = 8;
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -182,12 +182,12 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Flooring', 'Flooring', 'm2', 100, 1, 0);
-    item.buildUpCrew = 6;
-    item.buildUpTimeHours = 10; // 60h total
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 6;
+    item.assemblyTimeHours = 10; // 60h total
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     // Day 1: 8 crew × 8h = 64h capacity, Day 2: 4 crew × 8h = 32h
-    item.buildUpCrewByDate = { '2026-03-02': 8, '2026-03-03': 4 };
+    item.assemblyCrewByDate = { '2026-03-02': 8, '2026-03-03': 4 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -210,10 +210,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Flooring', 'Flooring', 'm2', 100, 1, 0);
-    item.buildUpCrew = 4;
-    item.buildUpTimeHours = 8; // 32h total
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 4;
+    item.assemblyTimeHours = 8; // 32h total
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -236,10 +236,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Rigging', 'Rigging', 'm2', 10, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 10; // 10h total. Day 1: 1×8=8h capacity, does 8h. Day 2: 1×8=8h capacity, does 2h.
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 10; // 10h total. Day 1: 1×8=8h capacity, does 8h. Day 2: 1×8=8h capacity, does 2h.
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -262,10 +262,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Audio', 'Audio', 'pcs', 5, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 16; // 16h total, 8h capacity/day → fills both days exactly
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-03';
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 16; // 16h total, 8h capacity/day → fills both days exactly
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -296,10 +296,10 @@ describe('computeCapacitySummary', () => {
       ],
     };
     const item = createLineItem('Rigging', 'Rigging', 'm2', 10, 1, 0);
-    item.buildUpCrew = 1;
-    item.buildUpTimeHours = 24; // 24h total spanning Thu–Tue
-    item.buildUpScheduledStart = '2026-03-05';
-    item.buildUpScheduledEnd = '2026-03-10';
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 24; // 24h total spanning Thu–Tue
+    item.assemblyScheduledStart = '2026-03-05';
+    item.assemblyScheduledEnd = '2026-03-10';
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -318,32 +318,32 @@ describe('computeCapacitySummary', () => {
   it('computes shared capacity across plans using a single crew-pool calendar', () => {
     const planA: Plan = {
       ...createPlan('Plan A'),
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-03',
-      tearDownStartDate: '2026-03-05',
-      tearDownEndDate: '2026-03-06',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-03',
+      dismantleStartDate: '2026-03-05',
+      dismantleEndDate: '2026-03-06',
       defaultCrewSize: 2,
     };
     const itemA = createLineItem('A', 'A', 'pcs', 8, 1, 0);
-    itemA.buildUpCrew = 1;
-    itemA.buildUpTimeHours = 8;
-    itemA.buildUpScheduledStart = '2026-03-02';
-    itemA.buildUpScheduledEnd = '2026-03-02';
+    itemA.assemblyCrew = 1;
+    itemA.assemblyTimeHours = 8;
+    itemA.assemblyScheduledStart = '2026-03-02';
+    itemA.assemblyScheduledEnd = '2026-03-02';
     planA.lineItems = [itemA];
 
     const planB: Plan = {
       ...createPlan('Plan B'),
-      buildUpStartDate: '2026-03-02',
-      buildUpEndDate: '2026-03-03',
-      tearDownStartDate: '2026-03-05',
-      tearDownEndDate: '2026-03-06',
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-03',
+      dismantleStartDate: '2026-03-05',
+      dismantleEndDate: '2026-03-06',
       defaultCrewSize: 3,
     };
     const itemB = createLineItem('B', 'B', 'pcs', 8, 1, 0);
-    itemB.buildUpCrew = 1;
-    itemB.buildUpTimeHours = 8;
-    itemB.buildUpScheduledStart = '2026-03-02';
-    itemB.buildUpScheduledEnd = '2026-03-02';
+    itemB.assemblyCrew = 1;
+    itemB.assemblyTimeHours = 8;
+    itemB.assemblyScheduledStart = '2026-03-02';
+    itemB.assemblyScheduledEnd = '2026-03-02';
     planB.lineItems = [itemB];
 
     const summary = computeSharedCapacitySummary({

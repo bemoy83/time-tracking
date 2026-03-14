@@ -13,9 +13,9 @@ describe('applyBulkScheduleAmendment', () => {
   it('applies one note/timestamp to all changed rows while preserving computed schedule', () => {
     const { plan: previousPlan, item } = makePlanWithItem();
     const previousItem = previousPlan.lineItems[0];
-    previousItem.buildUpScheduledStart = '2026-03-02';
-    previousItem.buildUpScheduledEnd = '2026-03-03';
-    previousItem.buildUpCrewByDate = { '2026-03-02': 2, '2026-03-03': 2 };
+    previousItem.assemblyScheduledStart = '2026-03-02';
+    previousItem.assemblyScheduledEnd = '2026-03-03';
+    previousItem.assemblyCrewByDate = { '2026-03-02': 2, '2026-03-03': 2 };
 
     const nextPlan = {
       ...previousPlan,
@@ -23,9 +23,9 @@ describe('applyBulkScheduleAmendment', () => {
         lineItem.id === item.id
           ? {
               ...lineItem,
-              buildUpScheduledStart: '2026-03-04',
-              buildUpScheduledEnd: '2026-03-05',
-              buildUpCrewByDate: { '2026-03-04': 1, '2026-03-05': 2 },
+              assemblyScheduledStart: '2026-03-04',
+              assemblyScheduledEnd: '2026-03-05',
+              assemblyCrewByDate: { '2026-03-04': 1, '2026-03-05': 2 },
             }
           : lineItem
       )),
@@ -36,7 +36,7 @@ describe('applyBulkScheduleAmendment', () => {
       nextPlan,
       [{
         lineItemId: item.id,
-        phase: 'build-up',
+        phase: 'assembly',
         scheduledStart: '2026-03-04',
         scheduledEnd: '2026-03-05',
       }],
@@ -44,7 +44,7 @@ describe('applyBulkScheduleAmendment', () => {
     );
 
     const amended = result.lineItems.find((lineItem) => lineItem.id === item.id)!;
-    const pf = getPhaseFields(amended, 'build-up');
+    const pf = getPhaseFields(amended, 'assembly');
 
     expect(pf.scheduledStart).toBe('2026-03-04');
     expect(pf.scheduledEnd).toBe('2026-03-05');
@@ -62,7 +62,7 @@ describe('applyBulkScheduleAmendment', () => {
     expect(applyBulkScheduleAmendment(plan, plan, [], 'note')).toBe(plan);
     expect(applyBulkScheduleAmendment(plan, plan, [{
       lineItemId: plan.lineItems[0].id,
-      phase: 'build-up',
+      phase: 'assembly',
       scheduledStart: null,
       scheduledEnd: null,
     }], '   ')).toBe(plan);

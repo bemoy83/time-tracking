@@ -7,22 +7,22 @@ import {
 
 function makePhaseDates(overrides: Partial<PhaseDateValues> = {}): PhaseDateValues {
   return {
-    buildUpStartDate: null,
-    buildUpEndDate: null,
-    tearDownStartDate: null,
-    tearDownEndDate: null,
+    assemblyStartDate: null,
+    assemblyEndDate: null,
+    dismantleStartDate: null,
+    dismantleEndDate: null,
     ...overrides,
   };
 }
 
 describe('schedule-span work-calendar helpers', () => {
-  it('returns phase spans for build-up and tear-down independently', () => {
+  it('returns phase spans for assembly and dismantle independently', () => {
     const spans = getWorkCalendarPhaseSpans(
       makePhaseDates({
-        buildUpStartDate: '2026-03-02',
-        buildUpEndDate: '2026-03-03',
-        tearDownStartDate: '2026-03-06',
-        tearDownEndDate: '2026-03-07',
+        assemblyStartDate: '2026-03-02',
+        assemblyEndDate: '2026-03-03',
+        dismantleStartDate: '2026-03-06',
+        dismantleEndDate: '2026-03-07',
       }),
     );
 
@@ -44,8 +44,8 @@ describe('schedule-span work-calendar helpers', () => {
   it('returns a phase summary range when at least one phase is complete', () => {
     const range = getScheduleRangeForWorkCalendar(
       makePhaseDates({
-        tearDownStartDate: '2026-03-10',
-        tearDownEndDate: '2026-03-12',
+        dismantleStartDate: '2026-03-10',
+        dismantleEndDate: '2026-03-12',
       }),
       null,
       null,

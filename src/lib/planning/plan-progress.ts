@@ -100,7 +100,7 @@ function resolveLineItemStatus(tasks: Task[], actualPersonHours: number): LineIt
 }
 
 function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
-  const taskPhase = task.buildPhase ?? 'build-up';
+  const taskPhase = task.buildPhase ?? 'assembly';
   return taskPhase === phase;
 }
 

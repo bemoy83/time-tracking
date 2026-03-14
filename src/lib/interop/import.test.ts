@@ -9,15 +9,15 @@ function csv(rows: string[]): string {
 
 describe('workPackageMappingKey', () => {
   it('generates stable key from fields', () => {
-    const key = workPackageMappingKey('Install carpet', 'Carpet Tiles', 'm2', 'build-up');
-    expect(key).toBe('Install carpet::Carpet Tiles:m2:build-up');
+    const key = workPackageMappingKey('Install carpet', 'Carpet Tiles', 'm2', 'assembly');
+    expect(key).toBe('Install carpet::Carpet Tiles:m2:assembly');
   });
 });
 
 describe('parseWorkPackageCsv', () => {
   it('parses valid CSV row', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,build-up,100,60,2,10',
+      'Install carpet,Carpet Tiles,m2,assembly,100,60,2,10',
     ]));
 
     expect(result.valid).toBe(true);
@@ -25,7 +25,7 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].title).toBe('Install carpet');
     expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
     expect(result.items[0].workUnit).toBe('m2');
-    expect(result.items[0].buildPhase).toBe('build-up');
+    expect(result.items[0].buildPhase).toBe('assembly');
     expect(result.items[0].workQuantity).toBe(100);
     expect(result.items[0].estimatedMinutes).toBe(60);
     expect(result.items[0].crew).toBe(2);
@@ -34,7 +34,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('handles optional fields as null', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,build-up,,,,',
+      'Install carpet,Carpet Tiles,m2,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -46,16 +46,16 @@ describe('parseWorkPackageCsv', () => {
 
   it('generates mapping key for round-trip', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,build-up,100,,,',
+      'Install carpet,Carpet Tiles,m2,assembly,100,,,',
     ]));
 
-    expect(result.items[0].mappingKey).toBe('Install carpet::Carpet Tiles:m2:build-up');
+    expect(result.items[0].mappingKey).toBe('Install carpet::Carpet Tiles:m2:assembly');
   });
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
       'title;workTypeTitle;workUnit;buildPhase;workQuantity;estimatedMinutes;crew;targetProductivity',
-      'Install carpet;Carpet Tiles;m2;build-up;100;60;2;10',
+      'Install carpet;Carpet Tiles;m2;assembly;100;60;2;10',
     ].join('\n');
     const result = parseWorkPackageCsv(semicolonCsv);
 
@@ -64,14 +64,14 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].title).toBe('Install carpet');
     expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
     expect(result.items[0].workUnit).toBe('m2');
-    expect(result.items[0].buildPhase).toBe('build-up');
+    expect(result.items[0].buildPhase).toBe('assembly');
     expect(result.items[0].workQuantity).toBe(100);
   });
 
   it('accepts legacy defaultWorkers header and maps it to crew', () => {
     const legacyHeaderCsv = [
       'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
-      'Install carpet,Carpet Tiles,m2,build-up,100,60,3,10',
+      'Install carpet,Carpet Tiles,m2,assembly,100,60,3,10',
     ].join('\n');
     const result = parseWorkPackageCsv(legacyHeaderCsv);
 
@@ -90,7 +90,7 @@ describe('parseWorkPackageCsv', () => {
   it('requires workTypeTitle header', () => {
     const result = parseWorkPackageCsv([
       'title,workUnit,buildPhase,workQuantity,estimatedMinutes,crew,targetProductivity',
-      'Task,m2,build-up,,,,',
+      'Task,m2,assembly,,,,',
     ].join('\n'));
 
     expect(result.valid).toBe(false);
@@ -99,7 +99,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects invalid workUnit', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,invalid,build-up,,,,',
+      'Task,Carpet Tiles,invalid,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -117,7 +117,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects non-numeric values for numeric fields', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,build-up,abc,,,',
+      'Task,Carpet Tiles,m2,assembly,abc,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -127,7 +127,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects negative workQuantity', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,build-up,-10,,,',
+      'Task,Carpet Tiles,m2,assembly,-10,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -136,7 +136,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects crew out of range', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,build-up,100,,25,',
+      'Task,Carpet Tiles,m2,assembly,100,,25,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -145,7 +145,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects missing title', () => {
     const result = parseWorkPackageCsv(csv([
-      ',Carpet Tiles,m2,build-up,,,,',
+      ',Carpet Tiles,m2,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -154,8 +154,8 @@ describe('parseWorkPackageCsv', () => {
 
   it('parses multiple rows', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task A,Carpet Tiles,m2,build-up,100,,,',
-      'Task B,Furniture,pcs,build-up,50,,,',
+      'Task A,Carpet Tiles,m2,assembly,100,,,',
+      'Task B,Furniture,pcs,assembly,50,,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -164,9 +164,9 @@ describe('parseWorkPackageCsv', () => {
 
   it('skips empty lines', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task A,Carpet Tiles,m2,build-up,100,,,',
+      'Task A,Carpet Tiles,m2,assembly,100,,,',
       '',
-      'Task B,Furniture,pcs,build-up,50,,,',
+      'Task B,Furniture,pcs,assembly,50,,,',
     ]));
 
     expect(result.items).toHaveLength(2);
@@ -174,7 +174,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('handles quoted fields with commas', () => {
     const result = parseWorkPackageCsv(csv([
-      '"Install carpet, phase 1",Carpet Tiles,m2,build-up,100,,,',
+      '"Install carpet, phase 1",Carpet Tiles,m2,assembly,100,,,',
     ]));
 
     expect(result.valid).toBe(true);

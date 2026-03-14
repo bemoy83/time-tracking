@@ -16,10 +16,10 @@ interface PlanScheduleInputsProps extends PhaseDateValues {
 }
 
 export function PlanScheduleInputs({
-  buildUpStartDate,
-  buildUpEndDate,
-  tearDownStartDate,
-  tearDownEndDate,
+  assemblyStartDate,
+  assemblyEndDate,
+  dismantleStartDate,
+  dismantleEndDate,
   eventStartDate,
   eventEndDate,
   defaultCrewSize,
@@ -29,10 +29,10 @@ export function PlanScheduleInputs({
   onDefaultCrewSizeChange,
 }: PlanScheduleInputsProps) {
   const phaseDates: PhaseDateValues = {
-    buildUpStartDate,
-    buildUpEndDate,
-    tearDownStartDate,
-    tearDownEndDate,
+    assemblyStartDate,
+    assemblyEndDate,
+    dismantleStartDate,
+    dismantleEndDate,
   };
 
   const validationErrors = useMemo(
@@ -44,15 +44,15 @@ export function PlanScheduleInputs({
     <>
       <div className="planning-view__schedule-inputs planning-view__schedule-inputs--phase">
         <fieldset className="planning-view__schedule-group" disabled={readOnly}>
-          <legend className="planning-view__schedule-group-title">Build-up</legend>
+          <legend className="planning-view__schedule-group-title">Assembly</legend>
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
               <input
                 className="input"
                 type="date"
-                value={buildUpStartDate ?? ''}
-                onChange={(event) => onPhaseDateChange('buildUpStartDate', event.target.value)}
+                value={assemblyStartDate ?? ''}
+                onChange={(event) => onPhaseDateChange('assemblyStartDate', event.target.value)}
               />
             </label>
             <label className="planning-view__schedule-input">
@@ -60,23 +60,23 @@ export function PlanScheduleInputs({
               <input
                 className="input"
                 type="date"
-                value={buildUpEndDate ?? ''}
-                onChange={(event) => onPhaseDateChange('buildUpEndDate', event.target.value)}
+                value={assemblyEndDate ?? ''}
+                onChange={(event) => onPhaseDateChange('assemblyEndDate', event.target.value)}
               />
             </label>
           </div>
         </fieldset>
 
         <fieldset className="planning-view__schedule-group" disabled={readOnly}>
-          <legend className="planning-view__schedule-group-title">Tear-down</legend>
+          <legend className="planning-view__schedule-group-title">Dismantle</legend>
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
               <input
                 className="input"
                 type="date"
-                value={tearDownStartDate ?? ''}
-                onChange={(event) => onPhaseDateChange('tearDownStartDate', event.target.value)}
+                value={dismantleStartDate ?? ''}
+                onChange={(event) => onPhaseDateChange('dismantleStartDate', event.target.value)}
               />
             </label>
             <label className="planning-view__schedule-input">
@@ -84,8 +84,8 @@ export function PlanScheduleInputs({
               <input
                 className="input"
                 type="date"
-                value={tearDownEndDate ?? ''}
-                onChange={(event) => onPhaseDateChange('tearDownEndDate', event.target.value)}
+                value={dismantleEndDate ?? ''}
+                onChange={(event) => onPhaseDateChange('dismantleEndDate', event.target.value)}
               />
             </label>
           </div>

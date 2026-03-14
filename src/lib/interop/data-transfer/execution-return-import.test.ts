@@ -61,7 +61,7 @@ function makePlanTask(
     workUnit: 'm2',
     crew: null,
     targetProductivity: null,
-    buildPhase: 'build-up',
+    buildPhase: 'assembly',
     workTypeId: null,
     createdAt: '2026-02-27T08:00:00.000Z',
     updatedAt: '2026-02-27T09:00:00.000Z',
@@ -76,13 +76,13 @@ function makePlanTask(
 
 function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
   return {
-    schemaVersion: '1.0',
+    schemaVersion: '1.2',
     exportType: 'execution-return',
     exportedAt: '2026-02-27T00:00:00.000Z',
     appVersion: '0.0.1',
     payload: {
       planId: 'plan-1',
-      planTitle: 'Build-up Plan',
+      planTitle: 'Assembly Plan',
       closedAt: '2026-02-27T10:00:00.000Z',
       summary: {
         completed: 1,
@@ -179,7 +179,7 @@ describe('execution-return import', () => {
 
   it('rejects non-execution-return exports', () => {
     const text = JSON.stringify({
-      schemaVersion: '1.0',
+      schemaVersion: '1.2',
       exportType: 'plan-package',
       payload: {},
     });
@@ -272,9 +272,9 @@ describe('execution-return import', () => {
     const envelope = makeEnvelope();
     envelope.payload.lineItems = [
       {
-        lineItemId: 'wp-1::phase::tear-down',
+        lineItemId: 'wp-1::phase::dismantle',
         sourceWorkPackageId: 'wp-1',
-        phase: 'tear-down',
+        phase: 'dismantle',
         title: 'Install carpet',
         executionStatus: 'completed',
         blockReason: null,
@@ -293,9 +293,9 @@ describe('execution-return import', () => {
       makePlanTask({
         id: 'task-td-1',
         status: 'active',
-        sourceLineItemId: 'wp-1::phase::tear-down',
+        sourceLineItemId: 'wp-1::phase::dismantle',
       }),
-    ].map((task) => ({ ...task, buildPhase: 'tear-down' as const }));
+    ].map((task) => ({ ...task, buildPhase: 'dismantle' as const }));
     envelope.payload.unplannedTasks = [];
     envelope.payload.timeEntries = [];
 
@@ -320,7 +320,7 @@ describe('execution-return import', () => {
       expect.objectContaining({
         id: 'task-td-1',
         sourceLineItemId: 'wp-1',
-        buildPhase: 'tear-down',
+        buildPhase: 'dismantle',
         status: 'completed',
       }),
     );
@@ -330,8 +330,8 @@ describe('execution-return import', () => {
         lineItems: [
           expect.objectContaining({
             id: 'wp-1',
-            buildUpExecutionStatus: 'pending',
-            tearDownExecutionStatus: 'completed',
+            assemblyExecutionStatus: 'pending',
+            dismantleExecutionStatus: 'completed',
           }),
         ],
       }),

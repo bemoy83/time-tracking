@@ -2,8 +2,8 @@ import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus, RateSo
 import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnit } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
-export const DATA_TRANSFER_SCHEMA_VERSION = '1.1';
-export const DATA_TRANSFER_SCHEMA_COMPAT = ['1.0', '1.1'] as const;
+export const DATA_TRANSFER_SCHEMA_VERSION = '1.2';
+export const DATA_TRANSFER_SCHEMA_COMPAT = ['1.2'] as const;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -28,7 +28,7 @@ export interface PlanPackagePayload {
 
 /**
  * Legacy single-phase line-item wire format used for plan-package exports.
- * A unified work package can emit up to two records (build-up + tear-down).
+ * A unified work package can emit up to two records (assembly + dismantle).
  */
 export interface LegacyPlanPackageLineItem {
   id: string;

@@ -120,9 +120,9 @@ describe('task-plan-block-sync', () => {
         lineItems: [
           expect.objectContaining({
             id: 'line-1',
-            buildUpExecutionStatus: 'blocked',
-            buildUpBlockReason: 'Waiting for materials',
-            buildUpBlockCategory: null,
+            assemblyExecutionStatus: 'blocked',
+            assemblyBlockReason: 'Waiting for materials',
+            assemblyBlockCategory: null,
           }),
         ],
       }),
@@ -175,9 +175,9 @@ describe('task-plan-block-sync', () => {
         lineItems: [
           expect.objectContaining({
             id: 'line-1',
-            buildUpExecutionStatus: 'pending',
-            buildUpBlockReason: null,
-            buildUpBlockCategory: null,
+            assemblyExecutionStatus: 'pending',
+            assemblyBlockReason: null,
+            assemblyBlockCategory: null,
           }),
         ],
       }),

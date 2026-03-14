@@ -205,10 +205,10 @@ export function getEffectiveScheduleSpan(
     Plan,
     | 'eventStartDate'
     | 'eventEndDate'
-    | 'buildUpStartDate'
-    | 'buildUpEndDate'
-    | 'tearDownStartDate'
-    | 'tearDownEndDate'
+    | 'assemblyStartDate'
+    | 'assemblyEndDate'
+    | 'dismantleStartDate'
+    | 'dismantleEndDate'
   >,
 ): PlanDateSpan | null {
   return getPlanEffectiveSpan(plan);

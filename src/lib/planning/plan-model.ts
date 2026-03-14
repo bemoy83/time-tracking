@@ -6,7 +6,7 @@
  * or executor states ('received' | 'session-closed').
  *
  * Each line item is phase-agnostic: it carries per-phase assumptions (rate,
- * crew, time) for both build-up and tear-down. A phase with rate=0 and
+ * crew, time) for both assembly and dismantle. A phase with rate=0 and
  * crew=0 and timeHours=0 is considered inactive.
  */
 
@@ -69,50 +69,50 @@ export interface PlanLineItem {
   workTypeId: string | null;
   /** Shared work quantity (default for both phases). */
   workQuantity: number;
-  /** Override quantity for tear-down when unlinked from build-up. */
-  tearDownQuantity?: number | null;
+  /** Override quantity for dismantle when unlinked from assembly. */
+  dismantleQuantity?: number | null;
 
-  // Build-up assumptions
-  /** Productivity rate for build-up (units/person-hr). 0 = phase not applicable. */
-  buildUpRate: number;
-  buildUpCrew: number;
-  buildUpTimeHours: number;
-  buildUpRateSource: RateSource;
+  // Assembly assumptions
+  /** Productivity rate for assembly (units/person-hr). 0 = phase not applicable. */
+  assemblyRate: number;
+  assemblyCrew: number;
+  assemblyTimeHours: number;
+  assemblyRateSource: RateSource;
 
-  // Tear-down assumptions
-  /** Productivity rate for tear-down (units/person-hr). 0 = phase not applicable. */
-  tearDownRate: number;
-  tearDownCrew: number;
-  tearDownTimeHours: number;
-  tearDownRateSource: RateSource;
+  // Dismantle assumptions
+  /** Productivity rate for dismantle (units/person-hr). 0 = phase not applicable. */
+  dismantleRate: number;
+  dismantleCrew: number;
+  dismantleTimeHours: number;
+  dismantleRateSource: RateSource;
 
-  // Build-up scheduling (independent per phase)
-  buildUpScheduledStart: string | null;
-  buildUpScheduledEnd: string | null;
-  buildUpOriginalScheduledStart: string | null;
-  buildUpOriginalScheduledEnd: string | null;
-  buildUpCrewByDate?: Record<string, number>;
+  // Assembly scheduling (independent per phase)
+  assemblyScheduledStart: string | null;
+  assemblyScheduledEnd: string | null;
+  assemblyOriginalScheduledStart: string | null;
+  assemblyOriginalScheduledEnd: string | null;
+  assemblyCrewByDate?: Record<string, number>;
 
-  // Tear-down scheduling (independent per phase)
-  tearDownScheduledStart: string | null;
-  tearDownScheduledEnd: string | null;
-  tearDownOriginalScheduledStart: string | null;
-  tearDownOriginalScheduledEnd: string | null;
-  tearDownCrewByDate?: Record<string, number>;
+  // Dismantle scheduling (independent per phase)
+  dismantleScheduledStart: string | null;
+  dismantleScheduledEnd: string | null;
+  dismantleOriginalScheduledStart: string | null;
+  dismantleOriginalScheduledEnd: string | null;
+  dismantleCrewByDate?: Record<string, number>;
 
-  // Build-up execution state
-  buildUpExecutionStatus: LineItemExecutionStatus;
-  buildUpBlockReason: string | null;
-  buildUpBlockCategory: BlockCategory | null;
-  buildUpExecutorNote: string | null;
-  buildUpDeferredNote: string | null;
+  // Assembly execution state
+  assemblyExecutionStatus: LineItemExecutionStatus;
+  assemblyBlockReason: string | null;
+  assemblyBlockCategory: BlockCategory | null;
+  assemblyExecutorNote: string | null;
+  assemblyDeferredNote: string | null;
 
-  // Tear-down execution state
-  tearDownExecutionStatus: LineItemExecutionStatus;
-  tearDownBlockReason: string | null;
-  tearDownBlockCategory: BlockCategory | null;
-  tearDownExecutorNote: string | null;
-  tearDownDeferredNote: string | null;
+  // Dismantle execution state
+  dismantleExecutionStatus: LineItemExecutionStatus;
+  dismantleBlockReason: string | null;
+  dismantleBlockCategory: BlockCategory | null;
+  dismantleExecutorNote: string | null;
+  dismantleDeferredNote: string | null;
 
   // Shared
   /** Optional rationale note for this line item. */
@@ -153,39 +153,39 @@ export interface PhaseFields {
 
 /** Read all per-phase fields for the given phase. */
 export function getPhaseFields(item: PlanLineItem, phase: BuildPhase): PhaseFields {
-  if (phase === 'build-up') {
+  if (phase === 'assembly') {
     return {
-      rate: item.buildUpRate,
-      crew: item.buildUpCrew,
-      timeHours: item.buildUpTimeHours,
-      rateSource: item.buildUpRateSource,
-      scheduledStart: item.buildUpScheduledStart,
-      scheduledEnd: item.buildUpScheduledEnd,
-      originalScheduledStart: item.buildUpOriginalScheduledStart,
-      originalScheduledEnd: item.buildUpOriginalScheduledEnd,
-      crewByDate: item.buildUpCrewByDate,
-      executionStatus: item.buildUpExecutionStatus,
-      blockReason: item.buildUpBlockReason,
-      blockCategory: item.buildUpBlockCategory,
-      executorNote: item.buildUpExecutorNote,
-      deferredNote: item.buildUpDeferredNote,
+      rate: item.assemblyRate,
+      crew: item.assemblyCrew,
+      timeHours: item.assemblyTimeHours,
+      rateSource: item.assemblyRateSource,
+      scheduledStart: item.assemblyScheduledStart,
+      scheduledEnd: item.assemblyScheduledEnd,
+      originalScheduledStart: item.assemblyOriginalScheduledStart,
+      originalScheduledEnd: item.assemblyOriginalScheduledEnd,
+      crewByDate: item.assemblyCrewByDate,
+      executionStatus: item.assemblyExecutionStatus,
+      blockReason: item.assemblyBlockReason,
+      blockCategory: item.assemblyBlockCategory,
+      executorNote: item.assemblyExecutorNote,
+      deferredNote: item.assemblyDeferredNote,
     };
   }
   return {
-    rate: item.tearDownRate,
-    crew: item.tearDownCrew,
-    timeHours: item.tearDownTimeHours,
-    rateSource: item.tearDownRateSource,
-    scheduledStart: item.tearDownScheduledStart,
-    scheduledEnd: item.tearDownScheduledEnd,
-    originalScheduledStart: item.tearDownOriginalScheduledStart,
-    originalScheduledEnd: item.tearDownOriginalScheduledEnd,
-    crewByDate: item.tearDownCrewByDate,
-    executionStatus: item.tearDownExecutionStatus,
-    blockReason: item.tearDownBlockReason,
-    blockCategory: item.tearDownBlockCategory,
-    executorNote: item.tearDownExecutorNote,
-    deferredNote: item.tearDownDeferredNote,
+    rate: item.dismantleRate,
+    crew: item.dismantleCrew,
+    timeHours: item.dismantleTimeHours,
+    rateSource: item.dismantleRateSource,
+    scheduledStart: item.dismantleScheduledStart,
+    scheduledEnd: item.dismantleScheduledEnd,
+    originalScheduledStart: item.dismantleOriginalScheduledStart,
+    originalScheduledEnd: item.dismantleOriginalScheduledEnd,
+    crewByDate: item.dismantleCrewByDate,
+    executionStatus: item.dismantleExecutionStatus,
+    blockReason: item.dismantleBlockReason,
+    blockCategory: item.dismantleBlockCategory,
+    executorNote: item.dismantleExecutorNote,
+    deferredNote: item.dismantleDeferredNote,
   };
 }
 
@@ -195,10 +195,10 @@ export function isPhaseActive(item: PlanLineItem, phase: BuildPhase): boolean {
   return rate > 0 || crew > 0 || timeHours > 0;
 }
 
-/** Return the effective quantity for a given phase (tear-down may override). */
+/** Return the effective quantity for a given phase (dismantle may override). */
 export function getPhaseQuantity(item: PlanLineItem, phase: BuildPhase): number {
-  if (phase === 'tear-down' && item.tearDownQuantity != null) {
-    return item.tearDownQuantity;
+  if (phase === 'dismantle' && item.dismantleQuantity != null) {
+    return item.dismantleQuantity;
   }
   return item.workQuantity;
 }
@@ -208,7 +208,7 @@ export function phaseFieldUpdates(
   phase: BuildPhase,
   updates: Partial<PhaseFields>,
 ): Partial<PlanLineItem> {
-  const prefix = phase === 'build-up' ? 'buildUp' : 'tearDown';
+  const prefix = phase === 'assembly' ? 'assembly' : 'dismantle';
   const result: Record<string, unknown> = {};
   if (updates.rate !== undefined) result[`${prefix}Rate`] = updates.rate;
   if (updates.crew !== undefined) result[`${prefix}Crew`] = updates.crew;
@@ -242,14 +242,14 @@ export interface Plan {
   eventStartDate: string | null;
   /** Event end date (YYYY-MM-DD). */
   eventEndDate: string | null;
-  /** Build-up start date (YYYY-MM-DD). */
-  buildUpStartDate: string | null;
-  /** Build-up end date (YYYY-MM-DD). */
-  buildUpEndDate: string | null;
-  /** Tear-down start date (YYYY-MM-DD). */
-  tearDownStartDate: string | null;
-  /** Tear-down end date (YYYY-MM-DD). */
-  tearDownEndDate: string | null;
+  /** Assembly start date (YYYY-MM-DD). */
+  assemblyStartDate: string | null;
+  /** Assembly end date (YYYY-MM-DD). */
+  assemblyEndDate: string | null;
+  /** Dismantle start date (YYYY-MM-DD). */
+  dismantleStartDate: string | null;
+  /** Dismantle end date (YYYY-MM-DD). */
+  dismantleEndDate: string | null;
   /** Default crew size for schedule capacity math. */
   defaultCrewSize: number | null;
   /** Per-day work calendar across event period. */
@@ -269,12 +269,12 @@ export interface Plan {
 export type PlanDateSpan = DateSpan;
 
 export function hasPhaseDates(
-  plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
-): plan is Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'> & {
-  buildUpStartDate: string;
-  buildUpEndDate: string;
-  tearDownStartDate: string;
-  tearDownEndDate: string;
+  plan: Pick<Plan, 'assemblyStartDate' | 'assemblyEndDate' | 'dismantleStartDate' | 'dismantleEndDate'>,
+): plan is Pick<Plan, 'assemblyStartDate' | 'assemblyEndDate' | 'dismantleStartDate' | 'dismantleEndDate'> & {
+  assemblyStartDate: string;
+  assemblyEndDate: string;
+  dismantleStartDate: string;
+  dismantleEndDate: string;
 } {
   return hasPhaseDatesInternal(plan);
 }
@@ -284,17 +284,17 @@ export function getPlanEffectiveSpan(
     Plan,
     | 'eventStartDate'
     | 'eventEndDate'
-    | 'buildUpStartDate'
-    | 'buildUpEndDate'
-    | 'tearDownStartDate'
-    | 'tearDownEndDate'
+    | 'assemblyStartDate'
+    | 'assemblyEndDate'
+    | 'dismantleStartDate'
+    | 'dismantleEndDate'
   >,
 ): PlanDateSpan | null {
   return getPlanEffectiveSpanInternal(plan);
 }
 
 export function getPhaseSpan(
-  plan: Pick<Plan, 'buildUpStartDate' | 'buildUpEndDate' | 'tearDownStartDate' | 'tearDownEndDate'>,
+  plan: Pick<Plan, 'assemblyStartDate' | 'assemblyEndDate' | 'dismantleStartDate' | 'dismantleEndDate'>,
   phase: BuildPhase,
 ): PlanDateSpan | null {
   return getPhaseSpanInternal(plan, phase);
@@ -363,8 +363,8 @@ export function lineItemEffectiveCrew(item: PlanLineItem, phase: BuildPhase): nu
 /** Compute total person-hours for a plan (summing both phases). */
 export function planTotalPersonHours(plan: Plan): number {
   return plan.lineItems.reduce((sum, item) => {
-    const bu = item.buildUpTimeHours * item.buildUpCrew;
-    const td = item.tearDownTimeHours * item.tearDownCrew;
+    const bu = item.assemblyTimeHours * item.assemblyCrew;
+    const td = item.dismantleTimeHours * item.dismantleCrew;
     return sum + bu + td;
   }, 0);
 }
@@ -401,10 +401,10 @@ export function createPlan(title: string): Plan {
     projectId: null,
     eventStartDate: null,
     eventEndDate: null,
-    buildUpStartDate: null,
-    buildUpEndDate: null,
-    tearDownStartDate: null,
-    tearDownEndDate: null,
+    assemblyStartDate: null,
+    assemblyEndDate: null,
+    dismantleStartDate: null,
+    dismantleEndDate: null,
     defaultCrewSize: null,
     workCalendar: [],
     createdAt: now,
@@ -422,13 +422,13 @@ export function createLineItem(
   workTypeTitle: string,
   workUnit: WorkUnit,
   workQuantity: number,
-  buildUpRate: number,
-  tearDownRate: number,
+  assemblyRate: number,
+  dismantleRate: number,
   rateSource: RateSource = 'manual',
   workTypeId: string | null = null,
 ): PlanLineItem {
-  const buildUpTimeHours = buildUpRate > 0 ? workQuantity / buildUpRate : 0;
-  const tearDownTimeHours = tearDownRate > 0 ? workQuantity / tearDownRate : 0;
+  const assemblyTimeHours = assemblyRate > 0 ? workQuantity / assemblyRate : 0;
+  const dismantleTimeHours = dismantleRate > 0 ? workQuantity / dismantleRate : 0;
   return {
     id: generateId(),
     title,
@@ -436,41 +436,41 @@ export function createLineItem(
     workUnit,
     workTypeId,
     workQuantity,
-    tearDownQuantity: null,
+    dismantleQuantity: null,
 
-    buildUpRate,
-    buildUpCrew: buildUpRate > 0 ? 1 : 0,
-    buildUpTimeHours,
-    buildUpRateSource: rateSource,
+    assemblyRate,
+    assemblyCrew: assemblyRate > 0 ? 1 : 0,
+    assemblyTimeHours,
+    assemblyRateSource: rateSource,
 
-    tearDownRate,
-    tearDownCrew: tearDownRate > 0 ? 1 : 0,
-    tearDownTimeHours,
-    tearDownRateSource: rateSource,
+    dismantleRate,
+    dismantleCrew: dismantleRate > 0 ? 1 : 0,
+    dismantleTimeHours,
+    dismantleRateSource: rateSource,
 
-    buildUpScheduledStart: null,
-    buildUpScheduledEnd: null,
-    buildUpOriginalScheduledStart: null,
-    buildUpOriginalScheduledEnd: null,
-    buildUpCrewByDate: undefined,
+    assemblyScheduledStart: null,
+    assemblyScheduledEnd: null,
+    assemblyOriginalScheduledStart: null,
+    assemblyOriginalScheduledEnd: null,
+    assemblyCrewByDate: undefined,
 
-    tearDownScheduledStart: null,
-    tearDownScheduledEnd: null,
-    tearDownOriginalScheduledStart: null,
-    tearDownOriginalScheduledEnd: null,
-    tearDownCrewByDate: undefined,
+    dismantleScheduledStart: null,
+    dismantleScheduledEnd: null,
+    dismantleOriginalScheduledStart: null,
+    dismantleOriginalScheduledEnd: null,
+    dismantleCrewByDate: undefined,
 
-    buildUpExecutionStatus: 'pending',
-    buildUpBlockReason: null,
-    buildUpBlockCategory: null,
-    buildUpExecutorNote: null,
-    buildUpDeferredNote: null,
+    assemblyExecutionStatus: 'pending',
+    assemblyBlockReason: null,
+    assemblyBlockCategory: null,
+    assemblyExecutorNote: null,
+    assemblyDeferredNote: null,
 
-    tearDownExecutionStatus: 'pending',
-    tearDownBlockReason: null,
-    tearDownBlockCategory: null,
-    tearDownExecutorNote: null,
-    tearDownDeferredNote: null,
+    dismantleExecutionStatus: 'pending',
+    dismantleBlockReason: null,
+    dismantleBlockCategory: null,
+    dismantleExecutorNote: null,
+    dismantleDeferredNote: null,
 
     rationale: null,
     reviewNote: null,
@@ -493,41 +493,41 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     workUnit: item.workUnit,
     workTypeId: item.workTypeId,
     workQuantity: item.workQuantity,
-    tearDownQuantity: item.tearDownQuantity,
+    dismantleQuantity: item.dismantleQuantity,
 
-    buildUpRate: item.buildUpRate,
-    buildUpCrew: item.buildUpCrew,
-    buildUpTimeHours: item.buildUpTimeHours,
-    buildUpRateSource: item.buildUpRateSource,
+    assemblyRate: item.assemblyRate,
+    assemblyCrew: item.assemblyCrew,
+    assemblyTimeHours: item.assemblyTimeHours,
+    assemblyRateSource: item.assemblyRateSource,
 
-    tearDownRate: item.tearDownRate,
-    tearDownCrew: item.tearDownCrew,
-    tearDownTimeHours: item.tearDownTimeHours,
-    tearDownRateSource: item.tearDownRateSource,
+    dismantleRate: item.dismantleRate,
+    dismantleCrew: item.dismantleCrew,
+    dismantleTimeHours: item.dismantleTimeHours,
+    dismantleRateSource: item.dismantleRateSource,
 
-    buildUpScheduledStart: item.buildUpScheduledStart,
-    buildUpScheduledEnd: item.buildUpScheduledEnd,
-    buildUpOriginalScheduledStart: item.buildUpOriginalScheduledStart,
-    buildUpOriginalScheduledEnd: item.buildUpOriginalScheduledEnd,
-    buildUpCrewByDate: item.buildUpCrewByDate ? { ...item.buildUpCrewByDate } : undefined,
+    assemblyScheduledStart: item.assemblyScheduledStart,
+    assemblyScheduledEnd: item.assemblyScheduledEnd,
+    assemblyOriginalScheduledStart: item.assemblyOriginalScheduledStart,
+    assemblyOriginalScheduledEnd: item.assemblyOriginalScheduledEnd,
+    assemblyCrewByDate: item.assemblyCrewByDate ? { ...item.assemblyCrewByDate } : undefined,
 
-    tearDownScheduledStart: item.tearDownScheduledStart,
-    tearDownScheduledEnd: item.tearDownScheduledEnd,
-    tearDownOriginalScheduledStart: item.tearDownOriginalScheduledStart,
-    tearDownOriginalScheduledEnd: item.tearDownOriginalScheduledEnd,
-    tearDownCrewByDate: item.tearDownCrewByDate ? { ...item.tearDownCrewByDate } : undefined,
+    dismantleScheduledStart: item.dismantleScheduledStart,
+    dismantleScheduledEnd: item.dismantleScheduledEnd,
+    dismantleOriginalScheduledStart: item.dismantleOriginalScheduledStart,
+    dismantleOriginalScheduledEnd: item.dismantleOriginalScheduledEnd,
+    dismantleCrewByDate: item.dismantleCrewByDate ? { ...item.dismantleCrewByDate } : undefined,
 
-    buildUpExecutionStatus: item.buildUpExecutionStatus,
-    buildUpBlockReason: null,
-    buildUpBlockCategory: null,
-    buildUpExecutorNote: null,
-    buildUpDeferredNote: null,
+    assemblyExecutionStatus: item.assemblyExecutionStatus,
+    assemblyBlockReason: null,
+    assemblyBlockCategory: null,
+    assemblyExecutorNote: null,
+    assemblyDeferredNote: null,
 
-    tearDownExecutionStatus: item.tearDownExecutionStatus,
-    tearDownBlockReason: null,
-    tearDownBlockCategory: null,
-    tearDownExecutorNote: null,
-    tearDownDeferredNote: null,
+    dismantleExecutionStatus: item.dismantleExecutionStatus,
+    dismantleBlockReason: null,
+    dismantleBlockCategory: null,
+    dismantleExecutorNote: null,
+    dismantleDeferredNote: null,
 
     rationale: null,
     reviewNote: null,
@@ -604,13 +604,16 @@ export function removeLineItemFromPlan(plan: Plan, lineItemId: string): Plan {
 
 /** Detect and migrate old single-phase PlanLineItem format to dual-phase. */
 export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLineItem {
-  // Already migrated: has buildUpRate field
-  if ('buildUpRate' in raw && typeof raw.buildUpRate === 'number') {
+  // Already migrated: has assemblyRate field
+  if ('assemblyRate' in raw && typeof raw.assemblyRate === 'number') {
     return raw as unknown as PlanLineItem;
   }
 
   // Old format detection: has buildPhase + productivityRate
-  const oldPhase = (raw.buildPhase as string) ?? 'build-up';
+  const oldPhaseRaw = raw.buildPhase;
+  const oldPhase = oldPhaseRaw === 'dismantle' || oldPhaseRaw === 'tear-down'
+    ? 'dismantle'
+    : 'assembly';
   const oldRate = (raw.productivityRate as number) ?? 0;
   const oldCrew = (raw.crew as number) ?? 1;
   const oldTimeHours = (raw.timeHours as number) ?? 0;
@@ -626,7 +629,7 @@ export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLi
   const oldExecutorNote = (raw.executorNote as string | null) ?? null;
   const oldDeferredNote = (raw.deferredNote as string | null) ?? null;
 
-  const isBuildUp = oldPhase === 'build-up';
+  const isAssembly = oldPhase === 'assembly';
 
   return {
     id: raw.id as string,
@@ -635,41 +638,41 @@ export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLi
     workUnit: raw.workUnit as WorkUnit,
     workTypeId: (raw.workTypeId as string | null) ?? null,
     workQuantity: (raw.workQuantity as number) ?? 0,
-    tearDownQuantity: null,
+    dismantleQuantity: null,
 
-    buildUpRate: isBuildUp ? oldRate : 0,
-    buildUpCrew: isBuildUp ? oldCrew : 0,
-    buildUpTimeHours: isBuildUp ? oldTimeHours : 0,
-    buildUpRateSource: isBuildUp ? oldRateSource : 'manual',
+    assemblyRate: isAssembly ? oldRate : 0,
+    assemblyCrew: isAssembly ? oldCrew : 0,
+    assemblyTimeHours: isAssembly ? oldTimeHours : 0,
+    assemblyRateSource: isAssembly ? oldRateSource : 'manual',
 
-    tearDownRate: !isBuildUp ? oldRate : 0,
-    tearDownCrew: !isBuildUp ? oldCrew : 0,
-    tearDownTimeHours: !isBuildUp ? oldTimeHours : 0,
-    tearDownRateSource: !isBuildUp ? oldRateSource : 'manual',
+    dismantleRate: !isAssembly ? oldRate : 0,
+    dismantleCrew: !isAssembly ? oldCrew : 0,
+    dismantleTimeHours: !isAssembly ? oldTimeHours : 0,
+    dismantleRateSource: !isAssembly ? oldRateSource : 'manual',
 
-    buildUpScheduledStart: isBuildUp ? oldScheduledStart : null,
-    buildUpScheduledEnd: isBuildUp ? oldScheduledEnd : null,
-    buildUpOriginalScheduledStart: isBuildUp ? oldOriginalScheduledStart : null,
-    buildUpOriginalScheduledEnd: isBuildUp ? oldOriginalScheduledEnd : null,
-    buildUpCrewByDate: isBuildUp ? oldCrewByDate : undefined,
+    assemblyScheduledStart: isAssembly ? oldScheduledStart : null,
+    assemblyScheduledEnd: isAssembly ? oldScheduledEnd : null,
+    assemblyOriginalScheduledStart: isAssembly ? oldOriginalScheduledStart : null,
+    assemblyOriginalScheduledEnd: isAssembly ? oldOriginalScheduledEnd : null,
+    assemblyCrewByDate: isAssembly ? oldCrewByDate : undefined,
 
-    tearDownScheduledStart: !isBuildUp ? oldScheduledStart : null,
-    tearDownScheduledEnd: !isBuildUp ? oldScheduledEnd : null,
-    tearDownOriginalScheduledStart: !isBuildUp ? oldOriginalScheduledStart : null,
-    tearDownOriginalScheduledEnd: !isBuildUp ? oldOriginalScheduledEnd : null,
-    tearDownCrewByDate: !isBuildUp ? oldCrewByDate : undefined,
+    dismantleScheduledStart: !isAssembly ? oldScheduledStart : null,
+    dismantleScheduledEnd: !isAssembly ? oldScheduledEnd : null,
+    dismantleOriginalScheduledStart: !isAssembly ? oldOriginalScheduledStart : null,
+    dismantleOriginalScheduledEnd: !isAssembly ? oldOriginalScheduledEnd : null,
+    dismantleCrewByDate: !isAssembly ? oldCrewByDate : undefined,
 
-    buildUpExecutionStatus: isBuildUp ? oldExecStatus : 'pending',
-    buildUpBlockReason: isBuildUp ? oldBlockReason : null,
-    buildUpBlockCategory: isBuildUp ? oldBlockCategory : null,
-    buildUpExecutorNote: isBuildUp ? oldExecutorNote : null,
-    buildUpDeferredNote: isBuildUp ? oldDeferredNote : null,
+    assemblyExecutionStatus: isAssembly ? oldExecStatus : 'pending',
+    assemblyBlockReason: isAssembly ? oldBlockReason : null,
+    assemblyBlockCategory: isAssembly ? oldBlockCategory : null,
+    assemblyExecutorNote: isAssembly ? oldExecutorNote : null,
+    assemblyDeferredNote: isAssembly ? oldDeferredNote : null,
 
-    tearDownExecutionStatus: !isBuildUp ? oldExecStatus : 'pending',
-    tearDownBlockReason: !isBuildUp ? oldBlockReason : null,
-    tearDownBlockCategory: !isBuildUp ? oldBlockCategory : null,
-    tearDownExecutorNote: !isBuildUp ? oldExecutorNote : null,
-    tearDownDeferredNote: !isBuildUp ? oldDeferredNote : null,
+    dismantleExecutionStatus: !isAssembly ? oldExecStatus : 'pending',
+    dismantleBlockReason: !isAssembly ? oldBlockReason : null,
+    dismantleBlockCategory: !isAssembly ? oldBlockCategory : null,
+    dismantleExecutorNote: !isAssembly ? oldExecutorNote : null,
+    dismantleDeferredNote: !isAssembly ? oldDeferredNote : null,
 
     rationale: (raw.rationale as string | null) ?? null,
     reviewNote: (raw.reviewNote as string | null) ?? null,
@@ -683,7 +686,7 @@ export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLi
 export function migratePlanLineItems(plan: Plan): Plan {
   const rawItems = plan.lineItems as unknown as Record<string, unknown>[];
   const needsMigration = rawItems.some(
-    (raw) => 'buildPhase' in raw && !('buildUpRate' in raw),
+    (raw) => 'buildPhase' in raw && !('assemblyRate' in raw),
   );
   if (!needsMigration) return plan;
 

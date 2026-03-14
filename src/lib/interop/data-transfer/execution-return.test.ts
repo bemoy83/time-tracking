@@ -16,8 +16,8 @@ function makePlan(): Plan {
   const lineItem = {
     ...createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0),
     id: 'line-1',
-    buildUpExecutionStatus: 'pending' as const,
-    buildUpBlockReason: null,
+    assemblyExecutionStatus: 'pending' as const,
+    assemblyBlockReason: null,
   };
   return {
     ...base,
@@ -63,14 +63,14 @@ describe('buildExecutionReturnEnvelope', () => {
   it('derives blocked line-item status and block reason from linked blocked tasks', async () => {
     const envelope = await buildExecutionReturnEnvelope(
       makePlan(),
-      [makeTask({ status: 'blocked', blockReason: 'Access restricted', buildPhase: 'build-up' })],
+      [makeTask({ status: 'blocked', blockReason: 'Access restricted', buildPhase: 'assembly' })],
       [],
     );
 
     expect(envelope.payload.summary.blocked).toBe(1);
     expect(envelope.payload.lineItems[0]).toMatchObject({
       lineItemId: 'line-1',
-      phase: 'build-up',
+      phase: 'assembly',
       executionStatus: 'blocked',
       blockReason: 'Access restricted',
     });
@@ -78,11 +78,11 @@ describe('buildExecutionReturnEnvelope', () => {
 
   it('preserves line-item block reason when explicitly set on plan item', async () => {
     const plan = makePlan();
-    plan.lineItems[0].buildUpBlockReason = 'From plan item';
+    plan.lineItems[0].assemblyBlockReason = 'From plan item';
 
     const envelope = await buildExecutionReturnEnvelope(
       plan,
-      [makeTask({ status: 'blocked', blockReason: 'From task', buildPhase: 'build-up' })],
+      [makeTask({ status: 'blocked', blockReason: 'From task', buildPhase: 'assembly' })],
       [],
     );
 

@@ -21,7 +21,7 @@ function createPayload(overrides: Partial<ScheduleIssuePanelPayload['state']> = 
       },
       assistantInsights: [
         'Shared bottlenecks should be cleared before row-by-row adjustments.',
-        'Most unresolved build-up rows are short on capacity, not dates.',
+        'Most unresolved assembly rows are short on capacity, not dates.',
       ],
       issues: [
         {
@@ -38,20 +38,20 @@ function createPayload(overrides: Partial<ScheduleIssuePanelPayload['state']> = 
           id: 'assistant-1',
           kind: 'assistant-unresolved',
           severity: 'warning',
-          label: 'WP-1 · build-up · Missing required hours',
+          label: 'WP-1 · assembly · Missing required hours',
           scope: 'item',
           category: 'adjustment',
-          detail: '8.0h missing of 16.0h required for build-up.',
+          detail: '8.0h missing of 16.0h required for assembly.',
           facts: ['8.0h currently scheduled of 16.0h needed.'],
-          issueKey: 'line-1:build-up',
+          issueKey: 'line-1:assembly',
           lineItemId: 'line-1',
-          phase: 'build-up',
+          phase: 'assembly',
           unresolvedReason: 'missing_required_hours',
           requiredPH: 16,
           assignedPH: 8,
         },
       ],
-      activeIssueKey: 'line-1:build-up',
+      activeIssueKey: 'line-1:assembly',
       canRunAssistant: true,
       canClearAll: true,
       ...overrides,
@@ -84,12 +84,12 @@ describe('SidebarIssuesPanel', () => {
     expect(within(container).getByText('Blocking activation')).toBeTruthy();
     expect(within(container).getByText('Needs schedule adjustment')).toBeTruthy();
     expect(within(container).getByText('1 day has too much work for available crew')).toBeTruthy();
-    expect(within(container).getByText('WP-1 · build-up · Missing required hours')).toBeTruthy();
+    expect(within(container).getByText('WP-1 · assembly · Missing required hours')).toBeTruthy();
     expect(within(container).getAllByText('What\'s happening').length).toBeGreaterThan(0);
     expect(within(container).getAllByText('Why it matters').length).toBeGreaterThan(0);
     expect(within(container).getAllByText('What I\'d try').length).toBeGreaterThan(0);
     expect(within(container).getAllByText('Assigned work exceeds available day capacity.').length).toBeGreaterThan(0);
-    expect(within(container).getByText('8.0h missing of 16.0h required for build-up.')).toBeTruthy();
+    expect(within(container).getByText('8.0h missing of 16.0h required for assembly.')).toBeTruthy();
     expect(within(container).getAllByText('Add 2 crew on Tue Mar 12.').length).toBeGreaterThan(0);
     expect(within(container).getByText('8.0h currently scheduled of 16.0h needed.')).toBeTruthy();
     expect(within(container).getByText('8.0h / 16.0h')).toBeTruthy();
@@ -138,11 +138,11 @@ describe('SidebarIssuesPanel', () => {
           id: 'assistant-1',
           kind: 'assistant-unresolved',
           severity: 'warning',
-          label: 'WP-1 · build-up · Missing required hours',
+          label: 'WP-1 · assembly · Missing required hours',
           scope: 'item',
           category: 'adjustment',
-          detail: '8.0h missing of 16.0h required for build-up.',
-          issueKey: 'line-1:build-up',
+          detail: '8.0h missing of 16.0h required for assembly.',
+          issueKey: 'line-1:assembly',
         },
       ],
       unresolvedCount: 0,
@@ -153,7 +153,7 @@ describe('SidebarIssuesPanel', () => {
     expect(within(container).getByText('Best next move')).toBeTruthy();
     expect(within(container).getByText('Re-run the assistant')).toBeTruthy();
     expect(within(container).getByText('Schedule changed after assistant run. Re-run assistant to refresh unresolved findings.')).toBeTruthy();
-    expect(within(container).queryByText('WP-1 · build-up · Missing required hours')).toBeNull();
+    expect(within(container).queryByText('WP-1 · assembly · Missing required hours')).toBeNull();
   });
 
   it('shows empty-context state outside schedule tab', () => {

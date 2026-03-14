@@ -108,7 +108,7 @@ describe('ScheduleView top-band layout', () => {
     const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
     expect(inputsColumn).toBeTruthy();
     expect((inputsColumn as HTMLElement).querySelector('.schedule-view__block-toggle')).toBeNull();
-    expect(within(inputsColumn as HTMLElement).getByText('Build-up')).toBeTruthy();
+    expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
   });
 
   it('keeps schedule inputs collapsible on non-desktop', () => {
@@ -120,11 +120,11 @@ describe('ScheduleView top-band layout', () => {
       name: /Schedule Inputs/i,
     });
     expect(toggle).toBeTruthy();
-    expect(within(inputsColumn as HTMLElement).getByText('Build-up')).toBeTruthy();
+    expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
 
     fireEvent.click(toggle);
 
-    expect(within(inputsColumn as HTMLElement).queryByText('Build-up')).toBeNull();
+    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
   });
 
   it('shows only hand-off action in read-only mode', () => {
@@ -140,8 +140,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('clears assistant unresolved warning after manual schedule edits', async () => {
     const plan = createPlan('Needs Scheduling');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 0;
     plan.workCalendar = [
       {
@@ -175,8 +175,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('marks assistant findings stale after crew edits instead of showing ready state', async () => {
     const plan = createPlan('Crew Edit Stale');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 1;
     plan.workCalendar = [
       {
@@ -189,9 +189,9 @@ describe('ScheduleView top-band layout', () => {
     ];
 
     const scheduled = createLineItem('Scheduled', 'Scheduled', 'm2', 8, 1, 0);
-    scheduled.buildUpScheduledStart = '2026-03-02';
-    scheduled.buildUpScheduledEnd = '2026-03-02';
-    scheduled.buildUpCrewByDate = { '2026-03-02': 1 };
+    scheduled.assemblyScheduledStart = '2026-03-02';
+    scheduled.assemblyScheduledEnd = '2026-03-02';
+    scheduled.assemblyCrewByDate = { '2026-03-02': 1 };
 
     const unresolved = createLineItem('Unresolved', 'Unresolved', 'm2', 16, 1, 0);
     plan.lineItems = [scheduled, unresolved];
@@ -233,8 +233,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('review assistant issues highlights unresolved rows and supports navigation', async () => {
     const plan = createPlan('Multiple Unresolved');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 0;
     plan.workCalendar = [
       {
@@ -280,8 +280,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('clears a scheduled row from the row face clear action', async () => {
     const plan = createPlan('Clear Row');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 1;
     plan.workCalendar = [
       {
@@ -294,9 +294,9 @@ describe('ScheduleView top-band layout', () => {
     ];
 
     const item = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-02';
-    item.buildUpCrewByDate = { '2026-03-02': 1 };
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyCrewByDate = { '2026-03-02': 1 };
     plan.lineItems = [item];
 
     const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
@@ -315,8 +315,8 @@ describe('ScheduleView top-band layout', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     try {
       const plan = createPlan('Clear All');
-      plan.buildUpStartDate = '2026-03-02';
-      plan.buildUpEndDate = '2026-03-02';
+      plan.assemblyStartDate = '2026-03-02';
+      plan.assemblyEndDate = '2026-03-02';
       plan.defaultCrewSize = 1;
       plan.workCalendar = [
         {
@@ -329,13 +329,13 @@ describe('ScheduleView top-band layout', () => {
       ];
 
       const a = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
-      a.buildUpScheduledStart = '2026-03-02';
-      a.buildUpScheduledEnd = '2026-03-02';
-      a.buildUpCrewByDate = { '2026-03-02': 1 };
+      a.assemblyScheduledStart = '2026-03-02';
+      a.assemblyScheduledEnd = '2026-03-02';
+      a.assemblyCrewByDate = { '2026-03-02': 1 };
       const b = createLineItem('WP-2', 'WP-2', 'm2', 8, 1, 0);
-      b.buildUpScheduledStart = '2026-03-02';
-      b.buildUpScheduledEnd = '2026-03-02';
-      b.buildUpCrewByDate = { '2026-03-02': 1 };
+      b.assemblyScheduledStart = '2026-03-02';
+      b.assemblyScheduledEnd = '2026-03-02';
+      b.assemblyCrewByDate = { '2026-03-02': 1 };
       plan.lineItems = [a, b];
 
       const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
@@ -358,8 +358,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('publishes issue panel payload and allows sidebar issue selection in workspace mode', async () => {
     const plan = createPlan('Issue Payload');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 0;
     plan.workCalendar = [
       {
@@ -433,8 +433,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('keeps plan overview block and review strip unchanged in workspace mode', async () => {
     const plan = createPlan('Workspace De-dupe');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 0;
     plan.workCalendar = [
       {
@@ -477,8 +477,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('publishes capacity help facts for blocking plan-level issues', async () => {
     const plan = createPlan('Capacity Payload');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 1;
     plan.workCalendar = [
       {
@@ -491,9 +491,9 @@ describe('ScheduleView top-band layout', () => {
     ];
 
     const item = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
-    item.buildUpScheduledStart = '2026-03-02';
-    item.buildUpScheduledEnd = '2026-03-02';
-    item.buildUpCrewByDate = { '2026-03-02': 2 };
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyCrewByDate = { '2026-03-02': 2 };
     plan.lineItems = [item];
 
     let latestPayload: any = null;
@@ -524,8 +524,8 @@ describe('ScheduleView top-band layout', () => {
 
   it('publishes stale assistant guidance instead of detailed unresolved synthesis after schedule edits', async () => {
     const plan = createPlan('Stale Assistant Payload');
-    plan.buildUpStartDate = '2026-03-02';
-    plan.buildUpEndDate = '2026-03-02';
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
     plan.defaultCrewSize = 1;
     plan.workCalendar = [
       {
@@ -538,9 +538,9 @@ describe('ScheduleView top-band layout', () => {
     ];
 
     const scheduled = createLineItem('Scheduled', 'Scheduled', 'm2', 8, 1, 0);
-    scheduled.buildUpScheduledStart = '2026-03-02';
-    scheduled.buildUpScheduledEnd = '2026-03-02';
-    scheduled.buildUpCrewByDate = { '2026-03-02': 1 };
+    scheduled.assemblyScheduledStart = '2026-03-02';
+    scheduled.assemblyScheduledEnd = '2026-03-02';
+    scheduled.assemblyCrewByDate = { '2026-03-02': 1 };
     const unresolved = createLineItem('Unresolved', 'Unresolved', 'm2', 16, 1, 0);
     plan.lineItems = [scheduled, unresolved];
 

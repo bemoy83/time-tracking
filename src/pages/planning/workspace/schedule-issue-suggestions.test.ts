@@ -20,10 +20,10 @@ function createItem(overrides: Partial<ScheduleIssueItem>): ScheduleIssueItem {
     id: 'issue-1',
     kind: 'assistant-unresolved',
     severity: 'warning',
-    label: 'WP-1 · build-up · Missing required hours',
+    label: 'WP-1 · assembly · Missing required hours',
     scope: 'item',
     category: 'adjustment',
-    issueKey: 'line-1:build-up',
+    issueKey: 'line-1:assembly',
     ...overrides,
   };
 }

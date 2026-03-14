@@ -68,7 +68,7 @@ describe('buildAttributedRollup', () => {
       workQuantity: 100,
       workUnit: 'm2',
       workTypeId: 'wt-parent',
-      buildPhase: 'build-up',
+      buildPhase: 'assembly',
     });
     const child = makeTask({
       id: 'child-1',

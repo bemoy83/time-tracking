@@ -20,10 +20,10 @@ interface PlanScheduleInputsPanelProps extends PhaseDateValues {
 }
 
 export function PlanScheduleInputsPanel({
-  buildUpStartDate,
-  buildUpEndDate,
-  tearDownStartDate,
-  tearDownEndDate,
+  assemblyStartDate,
+  assemblyEndDate,
+  dismantleStartDate,
+  dismantleEndDate,
   eventStartDate,
   eventEndDate,
   defaultCrewSize,
@@ -53,10 +53,10 @@ export function PlanScheduleInputsPanel({
       totalAvailable={totalAvailable}
     >
       <PlanScheduleInputs
-        buildUpStartDate={buildUpStartDate}
-        buildUpEndDate={buildUpEndDate}
-        tearDownStartDate={tearDownStartDate}
-        tearDownEndDate={tearDownEndDate}
+        assemblyStartDate={assemblyStartDate}
+        assemblyEndDate={assemblyEndDate}
+        dismantleStartDate={dismantleStartDate}
+        dismantleEndDate={dismantleEndDate}
         eventStartDate={eventStartDate}
         eventEndDate={eventEndDate}
         defaultCrewSize={defaultCrewSize}

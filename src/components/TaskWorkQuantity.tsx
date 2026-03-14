@@ -68,7 +68,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       const wt = getWorkTypeById(selectedWorkTypeId);
       if (!wt) return;
       patch.workTypeId = wt.id;
-      patch.targetProductivity = wt.buildUpRate || wt.tearDownRate;
+      patch.targetProductivity = wt.assemblyRate || wt.dismantleRate;
       patch.workUnit = wt.workUnit;
     } else {
       patch.workTypeId = null;

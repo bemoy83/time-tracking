@@ -18,10 +18,10 @@ function formatDate(date: string): string {
 }
 
 export function EventContextBar({
-  buildUpStartDate,
-  buildUpEndDate,
-  tearDownStartDate,
-  tearDownEndDate,
+  assemblyStartDate,
+  assemblyEndDate,
+  dismantleStartDate,
+  dismantleEndDate,
   eventStartDate,
   eventEndDate,
   calendarDayCount,
@@ -31,10 +31,10 @@ export function EventContextBar({
 }: EventContextBarProps) {
   const primaryRange = getPrimaryScheduleRange(
     {
-      buildUpStartDate,
-      buildUpEndDate,
-      tearDownStartDate,
-      tearDownEndDate,
+      assemblyStartDate,
+      assemblyEndDate,
+      dismantleStartDate,
+      dismantleEndDate,
     },
     eventStartDate,
     eventEndDate,

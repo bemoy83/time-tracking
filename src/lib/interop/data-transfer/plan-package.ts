@@ -72,7 +72,7 @@ function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string
   if (idx <= 0) return null;
   const sourceWorkPackageId = lineItemId.slice(0, idx);
   const phaseRaw = lineItemId.slice(idx + PHASE_LINE_ITEM_ID_SEPARATOR.length);
-  if (phaseRaw !== 'build-up' && phaseRaw !== 'tear-down') return null;
+  if (phaseRaw !== 'assembly' && phaseRaw !== 'dismantle') return null;
   return {
     sourceWorkPackageId,
     phase: phaseRaw,
@@ -85,8 +85,8 @@ function isLegacySinglePhaseLineItem(raw: unknown): raw is LegacyPlanPackageLine
   return (
     typeof raw.id === 'string'
     && typeof raw.title === 'string'
-    && (buildPhase === 'build-up' || buildPhase === 'tear-down')
-    && !('buildUpRate' in raw)
+    && (buildPhase === 'assembly' || buildPhase === 'dismantle')
+    && !('assemblyRate' in raw)
   );
 }
 
@@ -129,69 +129,69 @@ function serializeLineItemToLegacyPhaseRecords(item: PlanLineItem): LegacyPlanPa
 
 function mergeLegacyPhaseItems(
   sourceWorkPackageId: string,
-  buildUpItem: PlanLineItem | null,
-  tearDownItem: PlanLineItem | null,
+  assemblyItem: PlanLineItem | null,
+  dismantleItem: PlanLineItem | null,
 ): PlanLineItem {
-  const base = buildUpItem ?? tearDownItem;
+  const base = assemblyItem ?? dismantleItem;
   if (!base) {
     throw new Error('Cannot merge empty legacy work package group.');
   }
 
-  const workQuantity = buildUpItem?.workQuantity ?? tearDownItem?.workQuantity ?? base.workQuantity;
-  let tearDownQuantity: number | null = null;
-  if (buildUpItem && tearDownItem && tearDownItem.workQuantity !== workQuantity) {
-    tearDownQuantity = tearDownItem.workQuantity;
+  const workQuantity = assemblyItem?.workQuantity ?? dismantleItem?.workQuantity ?? base.workQuantity;
+  let dismantleQuantity: number | null = null;
+  if (assemblyItem && dismantleItem && dismantleItem.workQuantity !== workQuantity) {
+    dismantleQuantity = dismantleItem.workQuantity;
   }
 
   return {
     ...base,
     id: sourceWorkPackageId,
     workQuantity,
-    tearDownQuantity,
+    dismantleQuantity,
 
-    buildUpRate: buildUpItem?.buildUpRate ?? 0,
-    buildUpCrew: buildUpItem?.buildUpCrew ?? 0,
-    buildUpTimeHours: buildUpItem?.buildUpTimeHours ?? 0,
-    buildUpRateSource: buildUpItem?.buildUpRateSource ?? 'manual',
-    buildUpScheduledStart: buildUpItem?.buildUpScheduledStart ?? null,
-    buildUpScheduledEnd: buildUpItem?.buildUpScheduledEnd ?? null,
-    buildUpOriginalScheduledStart: buildUpItem?.buildUpOriginalScheduledStart ?? null,
-    buildUpOriginalScheduledEnd: buildUpItem?.buildUpOriginalScheduledEnd ?? null,
-    buildUpCrewByDate: buildUpItem?.buildUpCrewByDate,
-    buildUpExecutionStatus: buildUpItem?.buildUpExecutionStatus ?? 'pending',
-    buildUpBlockReason: buildUpItem?.buildUpBlockReason ?? null,
-    buildUpBlockCategory: buildUpItem?.buildUpBlockCategory ?? null,
-    buildUpExecutorNote: buildUpItem?.buildUpExecutorNote ?? null,
-    buildUpDeferredNote: buildUpItem?.buildUpDeferredNote ?? null,
+    assemblyRate: assemblyItem?.assemblyRate ?? 0,
+    assemblyCrew: assemblyItem?.assemblyCrew ?? 0,
+    assemblyTimeHours: assemblyItem?.assemblyTimeHours ?? 0,
+    assemblyRateSource: assemblyItem?.assemblyRateSource ?? 'manual',
+    assemblyScheduledStart: assemblyItem?.assemblyScheduledStart ?? null,
+    assemblyScheduledEnd: assemblyItem?.assemblyScheduledEnd ?? null,
+    assemblyOriginalScheduledStart: assemblyItem?.assemblyOriginalScheduledStart ?? null,
+    assemblyOriginalScheduledEnd: assemblyItem?.assemblyOriginalScheduledEnd ?? null,
+    assemblyCrewByDate: assemblyItem?.assemblyCrewByDate,
+    assemblyExecutionStatus: assemblyItem?.assemblyExecutionStatus ?? 'pending',
+    assemblyBlockReason: assemblyItem?.assemblyBlockReason ?? null,
+    assemblyBlockCategory: assemblyItem?.assemblyBlockCategory ?? null,
+    assemblyExecutorNote: assemblyItem?.assemblyExecutorNote ?? null,
+    assemblyDeferredNote: assemblyItem?.assemblyDeferredNote ?? null,
 
-    tearDownRate: tearDownItem?.tearDownRate ?? 0,
-    tearDownCrew: tearDownItem?.tearDownCrew ?? 0,
-    tearDownTimeHours: tearDownItem?.tearDownTimeHours ?? 0,
-    tearDownRateSource: tearDownItem?.tearDownRateSource ?? 'manual',
-    tearDownScheduledStart: tearDownItem?.tearDownScheduledStart ?? null,
-    tearDownScheduledEnd: tearDownItem?.tearDownScheduledEnd ?? null,
-    tearDownOriginalScheduledStart: tearDownItem?.tearDownOriginalScheduledStart ?? null,
-    tearDownOriginalScheduledEnd: tearDownItem?.tearDownOriginalScheduledEnd ?? null,
-    tearDownCrewByDate: tearDownItem?.tearDownCrewByDate,
-    tearDownExecutionStatus: tearDownItem?.tearDownExecutionStatus ?? 'pending',
-    tearDownBlockReason: tearDownItem?.tearDownBlockReason ?? null,
-    tearDownBlockCategory: tearDownItem?.tearDownBlockCategory ?? null,
-    tearDownExecutorNote: tearDownItem?.tearDownExecutorNote ?? null,
-    tearDownDeferredNote: tearDownItem?.tearDownDeferredNote ?? null,
+    dismantleRate: dismantleItem?.dismantleRate ?? 0,
+    dismantleCrew: dismantleItem?.dismantleCrew ?? 0,
+    dismantleTimeHours: dismantleItem?.dismantleTimeHours ?? 0,
+    dismantleRateSource: dismantleItem?.dismantleRateSource ?? 'manual',
+    dismantleScheduledStart: dismantleItem?.dismantleScheduledStart ?? null,
+    dismantleScheduledEnd: dismantleItem?.dismantleScheduledEnd ?? null,
+    dismantleOriginalScheduledStart: dismantleItem?.dismantleOriginalScheduledStart ?? null,
+    dismantleOriginalScheduledEnd: dismantleItem?.dismantleOriginalScheduledEnd ?? null,
+    dismantleCrewByDate: dismantleItem?.dismantleCrewByDate,
+    dismantleExecutionStatus: dismantleItem?.dismantleExecutionStatus ?? 'pending',
+    dismantleBlockReason: dismantleItem?.dismantleBlockReason ?? null,
+    dismantleBlockCategory: dismantleItem?.dismantleBlockCategory ?? null,
+    dismantleExecutorNote: dismantleItem?.dismantleExecutorNote ?? null,
+    dismantleDeferredNote: dismantleItem?.dismantleDeferredNote ?? null,
 
-    rationale: buildUpItem?.rationale ?? tearDownItem?.rationale ?? null,
-    reviewNote: buildUpItem?.reviewNote ?? tearDownItem?.reviewNote ?? null,
-    removedFromSource: Boolean(buildUpItem?.removedFromSource || tearDownItem?.removedFromSource),
-    amendmentNote: buildUpItem?.amendmentNote ?? tearDownItem?.amendmentNote ?? null,
-    amendedAt: buildUpItem?.amendedAt ?? tearDownItem?.amendedAt ?? null,
+    rationale: assemblyItem?.rationale ?? dismantleItem?.rationale ?? null,
+    reviewNote: assemblyItem?.reviewNote ?? dismantleItem?.reviewNote ?? null,
+    removedFromSource: Boolean(assemblyItem?.removedFromSource || dismantleItem?.removedFromSource),
+    amendmentNote: assemblyItem?.amendmentNote ?? dismantleItem?.amendmentNote ?? null,
+    amendedAt: assemblyItem?.amendedAt ?? dismantleItem?.amendedAt ?? null,
   };
 }
 
 function normalizeSerializedLineItems(lineItems: PlanPackageSerializedLineItem[]): PlanLineItem[] {
   const mergedBySourceId = new Map<string, {
     order: number;
-    buildUp: PlanLineItem | null;
-    tearDown: PlanLineItem | null;
+    assembly: PlanLineItem | null;
+    dismantle: PlanLineItem | null;
   }>();
   const standalone: Array<{ order: number; item: PlanLineItem }> = [];
   let order = 0;
@@ -216,27 +216,27 @@ function normalizeSerializedLineItems(lineItems: PlanPackageSerializedLineItem[]
       if (!mergedBySourceId.has(sourceWorkPackageId)) {
         mergedBySourceId.set(sourceWorkPackageId, {
           order,
-          buildUp: null,
-          tearDown: null,
+          assembly: null,
+          dismantle: null,
         });
         order += 1;
       }
 
       const bucket = mergedBySourceId.get(sourceWorkPackageId)!;
       const phase =
-        rawLineItem.buildPhase === 'tear-down'
-          ? 'tear-down'
-          : (parsedPhaseId?.phase ?? 'build-up');
+        rawLineItem.buildPhase === 'dismantle'
+          ? 'dismantle'
+          : (parsedPhaseId?.phase ?? 'assembly');
 
-      if (phase === 'build-up') {
-        bucket.buildUp = migrated;
+      if (phase === 'assembly') {
+        bucket.assembly = migrated;
       } else {
-        bucket.tearDown = migrated;
+        bucket.dismantle = migrated;
       }
       continue;
     }
 
-    if ('buildUpRate' in rawLineItem && typeof rawLineItem.buildUpRate === 'number') {
+    if ('assemblyRate' in rawLineItem && typeof rawLineItem.assemblyRate === 'number') {
       standalone.push({ order, item: rawLineItem as unknown as PlanLineItem });
       order += 1;
     }
@@ -244,7 +244,7 @@ function normalizeSerializedLineItems(lineItems: PlanPackageSerializedLineItem[]
 
   const merged = [...mergedBySourceId.entries()].map(([sourceWorkPackageId, bucket]) => ({
     order: bucket.order,
-    item: mergeLegacyPhaseItems(sourceWorkPackageId, bucket.buildUp, bucket.tearDown),
+    item: mergeLegacyPhaseItems(sourceWorkPackageId, bucket.assembly, bucket.dismantle),
   }));
 
   return [...standalone, ...merged]
@@ -255,27 +255,27 @@ function normalizeSerializedLineItems(lineItems: PlanPackageSerializedLineItem[]
 function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
   return {
     ...raw,
-    buildUpExecutionStatus: coerceExecutionStatus(raw.buildUpExecutionStatus),
-    buildUpBlockReason: raw.buildUpBlockReason ?? null,
-    buildUpBlockCategory: raw.buildUpBlockCategory ?? null,
-    buildUpExecutorNote: raw.buildUpExecutorNote ?? null,
-    buildUpDeferredNote: raw.buildUpDeferredNote ?? null,
-    tearDownExecutionStatus: coerceExecutionStatus(raw.tearDownExecutionStatus),
-    tearDownBlockReason: raw.tearDownBlockReason ?? null,
-    tearDownBlockCategory: raw.tearDownBlockCategory ?? null,
-    tearDownExecutorNote: raw.tearDownExecutorNote ?? null,
-    tearDownDeferredNote: raw.tearDownDeferredNote ?? null,
+    assemblyExecutionStatus: coerceExecutionStatus(raw.assemblyExecutionStatus),
+    assemblyBlockReason: raw.assemblyBlockReason ?? null,
+    assemblyBlockCategory: raw.assemblyBlockCategory ?? null,
+    assemblyExecutorNote: raw.assemblyExecutorNote ?? null,
+    assemblyDeferredNote: raw.assemblyDeferredNote ?? null,
+    dismantleExecutionStatus: coerceExecutionStatus(raw.dismantleExecutionStatus),
+    dismantleBlockReason: raw.dismantleBlockReason ?? null,
+    dismantleBlockCategory: raw.dismantleBlockCategory ?? null,
+    dismantleExecutorNote: raw.dismantleExecutorNote ?? null,
+    dismantleDeferredNote: raw.dismantleDeferredNote ?? null,
     removedFromSource: raw.removedFromSource ?? false,
-    buildUpCrewByDate: normalizeCrewByDate(raw.buildUpCrewByDate),
-    buildUpScheduledStart: raw.buildUpScheduledStart ?? null,
-    buildUpScheduledEnd: raw.buildUpScheduledEnd ?? null,
-    buildUpOriginalScheduledStart: raw.buildUpOriginalScheduledStart ?? null,
-    buildUpOriginalScheduledEnd: raw.buildUpOriginalScheduledEnd ?? null,
-    tearDownCrewByDate: normalizeCrewByDate(raw.tearDownCrewByDate),
-    tearDownScheduledStart: raw.tearDownScheduledStart ?? null,
-    tearDownScheduledEnd: raw.tearDownScheduledEnd ?? null,
-    tearDownOriginalScheduledStart: raw.tearDownOriginalScheduledStart ?? null,
-    tearDownOriginalScheduledEnd: raw.tearDownOriginalScheduledEnd ?? null,
+    assemblyCrewByDate: normalizeCrewByDate(raw.assemblyCrewByDate),
+    assemblyScheduledStart: raw.assemblyScheduledStart ?? null,
+    assemblyScheduledEnd: raw.assemblyScheduledEnd ?? null,
+    assemblyOriginalScheduledStart: raw.assemblyOriginalScheduledStart ?? null,
+    assemblyOriginalScheduledEnd: raw.assemblyOriginalScheduledEnd ?? null,
+    dismantleCrewByDate: normalizeCrewByDate(raw.dismantleCrewByDate),
+    dismantleScheduledStart: raw.dismantleScheduledStart ?? null,
+    dismantleScheduledEnd: raw.dismantleScheduledEnd ?? null,
+    dismantleOriginalScheduledStart: raw.dismantleOriginalScheduledStart ?? null,
+    dismantleOriginalScheduledEnd: raw.dismantleOriginalScheduledEnd ?? null,
     amendmentNote: raw.amendmentNote ?? null,
     amendedAt: raw.amendedAt ?? null,
   };
@@ -283,16 +283,16 @@ function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
 
 function resetPhaseExecutionState(): Partial<PlanLineItem> {
   return {
-    buildUpExecutionStatus: 'pending',
-    buildUpBlockReason: null,
-    buildUpBlockCategory: null,
-    buildUpExecutorNote: null,
-    buildUpDeferredNote: null,
-    tearDownExecutionStatus: 'pending',
-    tearDownBlockReason: null,
-    tearDownBlockCategory: null,
-    tearDownExecutorNote: null,
-    tearDownDeferredNote: null,
+    assemblyExecutionStatus: 'pending',
+    assemblyBlockReason: null,
+    assemblyBlockCategory: null,
+    assemblyExecutorNote: null,
+    assemblyDeferredNote: null,
+    dismantleExecutionStatus: 'pending',
+    dismantleBlockReason: null,
+    dismantleBlockCategory: null,
+    dismantleExecutorNote: null,
+    dismantleDeferredNote: null,
   };
 }
 
@@ -303,10 +303,10 @@ function normalizeIncomingPlan(plan: PlanPackagePayload['plan']): Plan {
     ...(plan as Plan),
     eventStartDate: plan.eventStartDate ?? null,
     eventEndDate: plan.eventEndDate ?? null,
-    buildUpStartDate: plan.buildUpStartDate ?? null,
-    buildUpEndDate: plan.buildUpEndDate ?? null,
-    tearDownStartDate: plan.tearDownStartDate ?? null,
-    tearDownEndDate: plan.tearDownEndDate ?? null,
+    assemblyStartDate: plan.assemblyStartDate ?? null,
+    assemblyEndDate: plan.assemblyEndDate ?? null,
+    dismantleStartDate: plan.dismantleStartDate ?? null,
+    dismantleEndDate: plan.dismantleEndDate ?? null,
   };
   const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(normalizedDates));
   const normalizedCalendar = reconcileWorkCalendarForSpans(
@@ -453,8 +453,8 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
         id: syntheticId,
         title: item.workTypeTitle,
         workUnit: item.workUnit,
-        buildUpRate: item.buildUpRate,
-        tearDownRate: item.tearDownRate,
+        assemblyRate: item.assemblyRate,
+        dismantleRate: item.dismantleRate,
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
@@ -509,8 +509,8 @@ export async function resolveImportedWorkTypeIds(
     const created = await createWorkType({
       title: imported.title,
       workUnit: imported.workUnit,
-      buildUpRate: imported.buildUpRate ?? 0,
-      tearDownRate: imported.tearDownRate ?? 0,
+      assemblyRate: imported.assemblyRate ?? 0,
+      dismantleRate: imported.dismantleRate ?? 0,
       readOnly: true,
       importedForPlanId: planId,
     });
@@ -562,16 +562,16 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     }
     return normalizeImportedLineItem({
       ...incomingItem,
-      buildUpExecutionStatus: existingItem.buildUpExecutionStatus,
-      buildUpBlockReason: existingItem.buildUpBlockReason,
-      buildUpBlockCategory: existingItem.buildUpBlockCategory,
-      buildUpExecutorNote: existingItem.buildUpExecutorNote,
-      buildUpDeferredNote: existingItem.buildUpDeferredNote,
-      tearDownExecutionStatus: existingItem.tearDownExecutionStatus,
-      tearDownBlockReason: existingItem.tearDownBlockReason,
-      tearDownBlockCategory: existingItem.tearDownBlockCategory,
-      tearDownExecutorNote: existingItem.tearDownExecutorNote,
-      tearDownDeferredNote: existingItem.tearDownDeferredNote,
+      assemblyExecutionStatus: existingItem.assemblyExecutionStatus,
+      assemblyBlockReason: existingItem.assemblyBlockReason,
+      assemblyBlockCategory: existingItem.assemblyBlockCategory,
+      assemblyExecutorNote: existingItem.assemblyExecutorNote,
+      assemblyDeferredNote: existingItem.assemblyDeferredNote,
+      dismantleExecutionStatus: existingItem.dismantleExecutionStatus,
+      dismantleBlockReason: existingItem.dismantleBlockReason,
+      dismantleBlockCategory: existingItem.dismantleBlockCategory,
+      dismantleExecutorNote: existingItem.dismantleExecutorNote,
+      dismantleDeferredNote: existingItem.dismantleDeferredNote,
       removedFromSource: false,
     });
   });
@@ -588,10 +588,10 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     ...incoming,
     eventStartDate: incoming.eventStartDate ?? null,
     eventEndDate: incoming.eventEndDate ?? null,
-    buildUpStartDate: incoming.buildUpStartDate ?? null,
-    buildUpEndDate: incoming.buildUpEndDate ?? null,
-    tearDownStartDate: incoming.tearDownStartDate ?? null,
-    tearDownEndDate: incoming.tearDownEndDate ?? null,
+    assemblyStartDate: incoming.assemblyStartDate ?? null,
+    assemblyEndDate: incoming.assemblyEndDate ?? null,
+    dismantleStartDate: incoming.dismantleStartDate ?? null,
+    dismantleEndDate: incoming.dismantleEndDate ?? null,
   };
   const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(normalizedIncoming));
 
@@ -613,15 +613,15 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
 const DIFF_FIELDS = [
   'title',
   'workQuantity',
-  'tearDownQuantity',
-  'buildUpRate', 'buildUpCrew', 'buildUpTimeHours',
-  'buildUpRateSource',
-  'tearDownRate', 'tearDownCrew', 'tearDownTimeHours',
-  'tearDownRateSource',
-  'buildUpScheduledStart', 'buildUpScheduledEnd',
-  'buildUpOriginalScheduledStart', 'buildUpOriginalScheduledEnd',
-  'tearDownScheduledStart', 'tearDownScheduledEnd',
-  'tearDownOriginalScheduledStart', 'tearDownOriginalScheduledEnd',
+  'dismantleQuantity',
+  'assemblyRate', 'assemblyCrew', 'assemblyTimeHours',
+  'assemblyRateSource',
+  'dismantleRate', 'dismantleCrew', 'dismantleTimeHours',
+  'dismantleRateSource',
+  'assemblyScheduledStart', 'assemblyScheduledEnd',
+  'assemblyOriginalScheduledStart', 'assemblyOriginalScheduledEnd',
+  'dismantleScheduledStart', 'dismantleScheduledEnd',
+  'dismantleOriginalScheduledStart', 'dismantleOriginalScheduledEnd',
 ] as const;
 
 function shallowEqualCrewByDate(
@@ -657,11 +657,11 @@ export function diffPlanPackageLineItems(
         changedFields.push(field);
       }
     }
-    if (!shallowEqualCrewByDate(incomingItem.buildUpCrewByDate, existingItem.buildUpCrewByDate)) {
-      changedFields.push('buildUpCrewByDate');
+    if (!shallowEqualCrewByDate(incomingItem.assemblyCrewByDate, existingItem.assemblyCrewByDate)) {
+      changedFields.push('assemblyCrewByDate');
     }
-    if (!shallowEqualCrewByDate(incomingItem.tearDownCrewByDate, existingItem.tearDownCrewByDate)) {
-      changedFields.push('tearDownCrewByDate');
+    if (!shallowEqualCrewByDate(incomingItem.dismantleCrewByDate, existingItem.dismantleCrewByDate)) {
+      changedFields.push('dismantleCrewByDate');
     }
     diffs.push({
       lineItemId: incomingItem.id,

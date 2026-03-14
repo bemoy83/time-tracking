@@ -68,8 +68,8 @@ export function RemediationWorkTypeAssignSheet({
     setReason('');
     setCreateTitle(task?.title ?? '');
     setCreateWorkUnit(task?.workUnit ?? 'm2');
-    setCreateBuildUpRate(String(task?.buildPhase !== 'tear-down' ? defaultRate : 0));
-    setCreateTearDownRate(String(task?.buildPhase === 'tear-down' ? defaultRate : 0));
+    setCreateBuildUpRate(String(task?.buildPhase !== 'dismantle' ? defaultRate : 0));
+    setCreateTearDownRate(String(task?.buildPhase === 'dismantle' ? defaultRate : 0));
     setError(null);
     setConflictWorkTypeId(null);
     setIsSubmitting(false);
@@ -133,8 +133,8 @@ export function RemediationWorkTypeAssignSheet({
         {
           title: createTitle.trim(),
           workUnit: createWorkUnit,
-          buildUpRate: parsedBuildUpRate,
-          tearDownRate: parsedTearDownRate,
+          assemblyRate: parsedBuildUpRate,
+          dismantleRate: parsedTearDownRate,
         },
         reason.trim(),
       );
@@ -211,7 +211,7 @@ export function RemediationWorkTypeAssignSheet({
             </select>
             {selectedWorkType && (
               <p className="settings-view__helper">
-                BU: {selectedWorkType.buildUpRate} · TD: {selectedWorkType.tearDownRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+                Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
               </p>
             )}
           </div>
@@ -247,7 +247,7 @@ export function RemediationWorkTypeAssignSheet({
             </div>
 
             <div className="create-task-sheet__section">
-              <label className="entry-modal__label">Build-up Rate</label>
+              <label className="entry-modal__label">Assembly Rate</label>
               <div className="task-work-quantity__input-wrap">
                 <input
                   inputMode="decimal"
@@ -264,7 +264,7 @@ export function RemediationWorkTypeAssignSheet({
             </div>
 
             <div className="create-task-sheet__section">
-              <label className="entry-modal__label">Tear-down Rate</label>
+              <label className="entry-modal__label">Dismantle Rate</label>
               <div className="task-work-quantity__input-wrap">
                 <input
                   inputMode="decimal"

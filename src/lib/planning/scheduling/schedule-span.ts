@@ -1,16 +1,16 @@
 import type { BuildPhase } from '../../types';
 
 export type PhaseDateField =
-  | 'buildUpStartDate'
-  | 'buildUpEndDate'
-  | 'tearDownStartDate'
-  | 'tearDownEndDate';
+  | 'assemblyStartDate'
+  | 'assemblyEndDate'
+  | 'dismantleStartDate'
+  | 'dismantleEndDate';
 
 export interface PhaseDateValues {
-  buildUpStartDate: string | null;
-  buildUpEndDate: string | null;
-  tearDownStartDate: string | null;
-  tearDownEndDate: string | null;
+  assemblyStartDate: string | null;
+  assemblyEndDate: string | null;
+  dismantleStartDate: string | null;
+  dismantleEndDate: string | null;
 }
 
 type CompletePhaseDateValues = {
@@ -27,10 +27,10 @@ export interface PrimaryScheduleRange extends DateSpan {
 }
 
 const PHASE_FIELDS: PhaseDateField[] = [
-  'buildUpStartDate',
-  'buildUpEndDate',
-  'tearDownStartDate',
-  'tearDownEndDate',
+  'assemblyStartDate',
+  'assemblyEndDate',
+  'dismantleStartDate',
+  'dismantleEndDate',
 ];
 
 interface EventDateValues {
@@ -44,10 +44,10 @@ function isFilledDate(value: string | null | undefined): value is string {
 
 export function readPhaseDateValues(source: Partial<PhaseDateValues> | null | undefined): PhaseDateValues {
   return {
-    buildUpStartDate: source?.buildUpStartDate ?? null,
-    buildUpEndDate: source?.buildUpEndDate ?? null,
-    tearDownStartDate: source?.tearDownStartDate ?? null,
-    tearDownEndDate: source?.tearDownEndDate ?? null,
+    assemblyStartDate: source?.assemblyStartDate ?? null,
+    assemblyEndDate: source?.assemblyEndDate ?? null,
+    dismantleStartDate: source?.dismantleStartDate ?? null,
+    dismantleEndDate: source?.dismantleEndDate ?? null,
   };
 }
 
@@ -72,10 +72,10 @@ export function hasPhaseDatesFor(
   phase: BuildPhase,
 ): boolean {
   const normalized = readPhaseDateValues(values);
-  if (phase === 'build-up') {
-    return isFilledDate(normalized.buildUpStartDate) && isFilledDate(normalized.buildUpEndDate);
+  if (phase === 'assembly') {
+    return isFilledDate(normalized.assemblyStartDate) && isFilledDate(normalized.assemblyEndDate);
   }
-  return isFilledDate(normalized.tearDownStartDate) && isFilledDate(normalized.tearDownEndDate);
+  return isFilledDate(normalized.dismantleStartDate) && isFilledDate(normalized.dismantleEndDate);
 }
 
 export function isDateWithinSpan(date: string, span: DateSpan | null): boolean {
@@ -87,16 +87,16 @@ export function getPhaseSpan(values: Partial<PhaseDateValues> | null | undefined
   const normalized = readPhaseDateValues(values);
   if (!hasPhaseDatesFor(normalized, phase)) return null;
 
-  if (phase === 'build-up') {
+  if (phase === 'assembly') {
     return {
-      start: normalized.buildUpStartDate!,
-      end: normalized.buildUpEndDate!,
+      start: normalized.assemblyStartDate!,
+      end: normalized.assemblyEndDate!,
     };
   }
 
   return {
-    start: normalized.tearDownStartDate!,
-    end: normalized.tearDownEndDate!,
+    start: normalized.dismantleStartDate!,
+    end: normalized.dismantleEndDate!,
   };
 }
 
@@ -107,8 +107,8 @@ export function getPlanEffectiveSpan(
   if (hasPhaseDates(normalizedPhaseDates)) {
     const complete = normalizedPhaseDates as CompletePhaseDateValues;
     return {
-      start: complete.buildUpStartDate,
-      end: complete.tearDownEndDate,
+      start: complete.assemblyStartDate,
+      end: complete.dismantleEndDate,
     };
   }
 
@@ -138,16 +138,16 @@ export function getWorkCalendarPhaseSpans(
   const normalized = readPhaseDateValues(phaseDates);
   const spans: DateSpan[] = [];
 
-  if (hasPhaseDatesFor(normalized, 'build-up')) {
+  if (hasPhaseDatesFor(normalized, 'assembly')) {
     spans.push({
-      start: normalized.buildUpStartDate!,
-      end: normalized.buildUpEndDate!,
+      start: normalized.assemblyStartDate!,
+      end: normalized.assemblyEndDate!,
     });
   }
-  if (hasPhaseDatesFor(normalized, 'tear-down')) {
+  if (hasPhaseDatesFor(normalized, 'dismantle')) {
     spans.push({
-      start: normalized.tearDownStartDate!,
-      end: normalized.tearDownEndDate!,
+      start: normalized.dismantleStartDate!,
+      end: normalized.dismantleEndDate!,
     });
   }
 
@@ -188,8 +188,8 @@ export function getPrimaryScheduleRange(
   if (hasPhaseDates(phaseDates)) {
     const complete = phaseDates as CompletePhaseDateValues;
     return {
-      start: complete.buildUpStartDate,
-      end: complete.tearDownEndDate,
+      start: complete.assemblyStartDate,
+      end: complete.dismantleEndDate,
       source: 'phase',
     };
   }
@@ -216,16 +216,16 @@ export function getScheduleDateValidationErrors(
     ? (phaseDates as CompletePhaseDateValues)
     : null;
 
-  if (completePhaseDates && completePhaseDates.buildUpEndDate >= completePhaseDates.tearDownStartDate) {
-    errors.push('Build-up end must be before tear-down start.');
+  if (completePhaseDates && completePhaseDates.assemblyEndDate >= completePhaseDates.dismantleStartDate) {
+    errors.push('Assembly end must be before dismantle start.');
   }
 
-  if (completePhaseDates && isFilledDate(eventStartDate) && completePhaseDates.buildUpEndDate >= eventStartDate) {
-    errors.push('Event start must be after build-up end.');
+  if (completePhaseDates && isFilledDate(eventStartDate) && completePhaseDates.assemblyEndDate >= eventStartDate) {
+    errors.push('Event start must be after assembly end.');
   }
 
-  if (completePhaseDates && isFilledDate(eventEndDate) && eventEndDate >= completePhaseDates.tearDownStartDate) {
-    errors.push('Event end must be before tear-down start.');
+  if (completePhaseDates && isFilledDate(eventEndDate) && eventEndDate >= completePhaseDates.dismantleStartDate) {
+    errors.push('Event end must be before dismantle start.');
   }
 
   if (isFilledDate(eventStartDate) && isFilledDate(eventEndDate) && eventStartDate > eventEndDate) {

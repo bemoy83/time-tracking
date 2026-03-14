@@ -140,10 +140,10 @@ describe('work-calendar', () => {
       getEffectiveScheduleSpan({
         eventStartDate: null,
         eventEndDate: null,
-        buildUpStartDate: '2026-03-01',
-        buildUpEndDate: '2026-03-03',
-        tearDownStartDate: '2026-03-08',
-        tearDownEndDate: '2026-03-10',
+        assemblyStartDate: '2026-03-01',
+        assemblyEndDate: '2026-03-03',
+        dismantleStartDate: '2026-03-08',
+        dismantleEndDate: '2026-03-10',
       }),
     ).toEqual({
       start: '2026-03-01',
@@ -154,10 +154,10 @@ describe('work-calendar', () => {
       getEffectiveScheduleSpan({
         eventStartDate: '2026-03-04',
         eventEndDate: '2026-03-06',
-        buildUpStartDate: null,
-        buildUpEndDate: null,
-        tearDownStartDate: null,
-        tearDownEndDate: null,
+        assemblyStartDate: null,
+        assemblyEndDate: null,
+        dismantleStartDate: null,
+        dismantleEndDate: null,
       }),
     ).toEqual({
       start: '2026-03-04',

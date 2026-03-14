@@ -25,7 +25,7 @@ export function decodePlanLineItemPhaseSelection(
 ): PlanLineItemPhaseSelection | null {
   const [planId, lineItemId, phase] = token.split(PLAN_SELECTION_SEPARATOR);
   if (!planId || !lineItemId) return null;
-  if (phase !== 'build-up' && phase !== 'tear-down') return null;
+  if (phase !== 'assembly' && phase !== 'dismantle') return null;
   return {
     planId,
     lineItemId,
