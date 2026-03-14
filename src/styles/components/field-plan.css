@@ -10,10 +10,10 @@
   padding-bottom: calc(var(--touch-min) + var(--space-xl) * 2);
 }
 
+/* Title section — matches today-view__header / project-list__header (no extra padding) */
 .field-plan-view__title-section {
   display: flex;
   flex-direction: column;
-  padding-top: var(--space-sm);
 }
 
 .field-plan-view__title {

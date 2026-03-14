@@ -6,7 +6,7 @@
 
 ## 1. What This Is
 
-A planning and execution workspace for exhibition and trade fair build-up/tear-down operations. It serves two distinct users with a structured handoff workflow between them.
+A planning and execution workspace for exhibition and trade fair assembly/dismantle operations. It serves two distinct users with a structured handoff workflow between them.
 
 ### The Two-User Model
 
@@ -28,7 +28,7 @@ The handoff is peer-to-peer via versioned JSON packages — no server required.
 
 ## 2. Background
 
-The company manages build-ups and tear-downs for large-scale exhibitions and events. Each event involves numerous vendor booths requiring delivery and installation of materials: carpet tiles, booth walls, furniture.
+The company manages assembly and dismantle work for large-scale exhibitions and events. Each event involves numerous vendor booths requiring delivery and installation of materials: carpet tiles, booth walls, furniture.
 
 **The core problem:** labor efficiency was tracked manually and inconsistently, making it difficult to:
 - Accurately estimate future staffing needs
@@ -64,13 +64,13 @@ The app introduces quantifiable task tracking integrated with time and personnel
 ```
 WorkType (canonical classification)
 ├── title, workUnit (m²|m|pcs|orders)
-├── buildUpRate, tearDownRate  (units/person-hour)
+├── assemblyRate, dismantleRate  (units/person-hour)
 └── readOnly flag  (for plan-scoped imported types)
 
 Task
 ├── title, status (active|completed|blocked), blockReason
 ├── workQuantity, workUnit, workTypeId → WorkType
-├── crew, estimatedMinutes
+├── crew, estimatedMinutes, phase
 ├── parentId → Task  (one level deep only)
 ├── projectId → Project
 ├── sourcePlanId, sourceLineItemId  (plan lineage)
@@ -85,13 +85,13 @@ TimeEntry
 Plan
 ├── projectId, title, status
 ├── lineItems[]  → PlanLineItem
-└── workCalendarDays[]  (dates, access windows, crew overrides)
+└── workCalendar[]  (dates, access windows, crew overrides)
 
 PlanLineItem
-├── workTypeId, workQuantity, tearDownQuantity
-├── Build-up: rate, crew, hours, scheduled dates, crew by date
-├── Tear-down: rate, crew, hours, scheduled dates, crew by date
-└── executionStatus (pending|in-progress|completed|blocked|deferred)
+├── workTypeId, workQuantity, dismantleQuantity
+├── Assembly: rate, crew, hours, scheduled dates, crew by date, execution state
+├── Dismantle: rate, crew, hours, scheduled dates, crew by date, execution state
+└── shared notes and amendment metadata
 ```
 
 Person-hours = duration (hours) × workers — consistent everywhere.
@@ -122,7 +122,7 @@ Person-hours = duration (hours) × workers — consistent everywhere.
 | Feature | Status |
 |---|---|
 | Work package editor with line items | ✅ Live |
-| Dual-phase support (build-up / tear-down) | ✅ Live |
+| Dual-phase support (assembly / dismantle) | ✅ Live |
 | Work calendar with crew-by-day and access windows | ✅ Live |
 | Plan state machine | ✅ Live |
 | Plan package export | ✅ Live |
@@ -180,7 +180,7 @@ Productivity  =  Quantity ÷ Person-Hours
 Person-Hours  =  Duration (hours) × Workers
 ```
 
-WorkType rates (units/person-hour) are maintained separately for build-up and tear-down phases.
+WorkType rates (units/person-hour) are maintained separately for assembly and dismantle phases.
 
 The KPI engine groups completed, archived tasks by WorkType and computes:
 - Average achieved productivity
@@ -198,7 +198,7 @@ Time entries logged against non-measurable tasks are attributed to measurable ow
 
 **Heuristic ranking (descending priority):**
 1. Exact WorkType ID match
-2. Matching unit + build phase
+2. Matching unit + phase
 3. Nearest measurable task within project scope
 4. Unattributed
 
@@ -217,7 +217,7 @@ Snapshots are cached with `computedAt` timestamp and engine version. Attribution
 The Today view (field operator) must stay fast, glanceable, and one-handed friendly. The planning workspace is designed for wide screens and deliberate work. Neither degrades the other.
 
 **WorkType is the only classification model**
-No categories, no tags. `findWorkTypeByKey(title, unit, phase)` is the canonical lookup. Do not introduce `workCategory` or equivalent.
+No categories, no tags. `findWorkTypeByKey(title, unit)` is the canonical lookup. Do not introduce `workCategory` or equivalent.
 
 **Offline first, server optional**
 The app must function fully without connectivity. Server sync is a future enhancement, not a current dependency.
