@@ -231,7 +231,7 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
 
       <div className="settings-view__card">
         <div className="settings-view__card-header">
-          <h2 className="settings-view__sub-header">Import Execution Return</h2>
+          <h2 className="settings-view__sub-header">Import Progress Report</h2>
           <IconButton
             icon={<ImportIcon className="settings-view__import-icon" />}
             ariaLabel={isLoadingExecutionPreview ? 'Reading...' : 'Choose JSON'}
@@ -240,7 +240,7 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
           />
         </div>
         <p className="settings-view__helper">
-          Import executor execution-return exports for planner wrap-up review.
+          Import progress reports sent by the field manager for planner review.
         </p>
         <input
           ref={executionFileInputRef}

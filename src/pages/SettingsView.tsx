@@ -58,7 +58,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
     ...(featureFlags.fieldPlanExecution || featureFlags.wrapUpReviewV2
-      ? [{ key: 'dataTransfer' as const, label: 'Data Transfer', helper: 'Import plan packages and execution returns' }]
+      ? [{ key: 'dataTransfer' as const, label: 'Data Transfer', helper: 'Import plan packages and progress reports' }]
       : []),
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];

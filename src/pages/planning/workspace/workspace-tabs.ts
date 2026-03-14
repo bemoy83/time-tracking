@@ -67,7 +67,7 @@ const PLAN_TAB_DESCRIPTORS: WorkspaceTabDescriptor[] = [
     id: 'progress',
     scope: 'plan',
     label: 'Progress',
-    isVisible: (context) => context.hasLinkedTasks,
+    isVisible: () => true,
     onSelect: (context) => context.onOpenProgress(),
   },
   {

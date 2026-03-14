@@ -332,6 +332,17 @@ export function PlanningWorkspaceShell({
             onIssuePanelChange={handleScheduleIssuePanelChange}
             planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           />
+        ) : activeTab === 'progress' ? (
+          <div className="planning-workspace__main-inner">
+            <div className="planning-workspace__tab-content" role="tabpanel">
+              <div className="planning-workspace__editor-canvas">
+                <div className="planning-workspace__empty">
+                  <p className="planning-workspace__empty-heading">No active plan</p>
+                  <p className="planning-workspace__empty-desc">Select a plan from the sidebar to view its progress.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : activeTab === 'insights' ? (
           <div className="planning-workspace__main-inner">
             <div className="planning-workspace__tab-content" role="tabpanel">
