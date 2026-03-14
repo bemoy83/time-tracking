@@ -390,6 +390,9 @@ describe('ScheduleView top-band layout', () => {
     await waitFor(() => {
       expect(latestPayload?.state?.planId).toBe(plan.id);
       expect(latestPayload?.state?.canRunAssistant).toBe(true);
+      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
+      expect(typeof latestPayload?.state?.assistantSummary).toBe('string');
+      expect(latestPayload?.state?.assistantBestNextMove).toBeTruthy();
     });
 
     await act(async () => {
@@ -411,6 +414,8 @@ describe('ScheduleView top-band layout', () => {
     expect(unscheduledIssue?.scope).toBe('plan');
     expect(unscheduledIssue?.category).toBe('adjustment');
     expect(unscheduledIssue?.detail).toMatch(/no scheduled span/i);
+    expect(latestPayload.state.assistantBestNextMove.title).toMatch(/valid spans|scheduled span|work days/i);
+    expect(Array.isArray(latestPayload.state.assistantInsights)).toBe(true);
 
     act(() => {
       latestPayload.actions.selectIssue(unresolvedIssue.issueKey);
@@ -511,6 +516,64 @@ describe('ScheduleView top-band layout', () => {
       expect(capacityIssue.detail).toMatch(/assigned crew/i);
       expect(Array.isArray(capacityIssue.facts)).toBe(true);
       expect(capacityIssue.facts.length).toBeGreaterThan(0);
+      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
+      expect(latestPayload?.state?.assistantBestNextMove?.title).toMatch(/Add|Relieve/i);
+      expect(latestPayload?.state?.assistantBestNextMove?.impact).toMatch(/unblock multiple assignments/i);
+    });
+  });
+
+  it('publishes stale assistant guidance instead of detailed unresolved synthesis after schedule edits', async () => {
+    const plan = createPlan('Stale Assistant Payload');
+    plan.buildUpStartDate = '2026-03-02';
+    plan.buildUpEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+
+    const scheduled = createLineItem('Scheduled', 'Scheduled', 'm2', 8, 1, 0);
+    scheduled.buildUpScheduledStart = '2026-03-02';
+    scheduled.buildUpScheduledEnd = '2026-03-02';
+    scheduled.buildUpCrewByDate = { '2026-03-02': 1 };
+    const unresolved = createLineItem('Unresolved', 'Unresolved', 'm2', 16, 1, 0);
+    plan.lineItems = [scheduled, unresolved];
+
+    let latestPayload: any = null;
+    const onIssuePanelChange = vi.fn((payload) => {
+      latestPayload = payload;
+    });
+
+    const { container } = renderScheduleWithPlan(plan, {
+      desktop: true,
+      readOnly: false,
+      isWorkspaceMode: true,
+      onIssuePanelChange,
+    });
+
+    await act(async () => {
+      await latestPayload.actions.runAssistant();
+    });
+
+    await waitFor(() => {
+      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
+      expect(latestPayload?.state?.issues?.some((issue: any) => issue.kind === 'assistant-unresolved')).toBe(true);
+    });
+
+    fireEvent.click(
+      within(container).getByRole('button', { name: /Decrease crew for Scheduled on 2026-03-02/i }),
+    );
+
+    await waitFor(() => {
+      expect(latestPayload?.state?.assistantStatus).toBe('stale');
+      expect(latestPayload?.state?.assistantBestNextMove?.title).toBe('Re-run the assistant');
+      expect(latestPayload?.state?.assistantInsights).toEqual([]);
+      expect(latestPayload?.state?.issues?.some((issue: any) => issue.kind === 'assistant-stale')).toBe(true);
     });
   });
 });

@@ -32,6 +32,7 @@ import type {
   ScheduleIssueItem,
   ScheduleIssuePanelPayload,
 } from './workspace/schedule-issue-panel-types';
+import { synthesizeScheduleAssistant } from './workspace/schedule-assistant-synthesis';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -528,6 +529,9 @@ export function ScheduleView({
         id: 'worker-capacity',
         kind: 'capacity',
         severity: 'critical',
+        assistantPriority: 10,
+        impact: 'Solving the constrained day first is likely to unblock multiple assignments at once.',
+        sharedConstraintKey: 'plan:capacity',
         label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
         scope: 'plan',
         category: 'blocking',
@@ -543,6 +547,9 @@ export function ScheduleView({
         id: 'over-allocated',
         kind: 'capacity',
         severity: 'critical',
+        assistantPriority: 15,
+        impact: 'Relieving the most overloaded day should create immediate placement room for the assistant.',
+        sharedConstraintKey: 'plan:capacity',
         label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
         scope: 'plan',
         category: 'blocking',
@@ -563,6 +570,8 @@ export function ScheduleView({
         id: 'unscheduled',
         kind: 'unscheduled',
         severity: 'warning',
+        assistantPriority: 30,
+        impact: 'Giving these rows valid spans lets the assistant place and optimize the remaining work.',
         label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
         scope: 'plan',
         category: 'adjustment',
@@ -578,6 +587,7 @@ export function ScheduleView({
         id: 'assistant-stale',
         kind: 'assistant-stale',
         severity: 'warning',
+        assistantPriority: 0,
         label: 'Schedule changed — re-run to re-check',
         scope: 'plan',
         category: 'blocking',
@@ -605,6 +615,19 @@ export function ScheduleView({
           id: `assistant-unresolved-${issue.key}`,
           kind: 'assistant-unresolved',
           severity: 'warning',
+          assistantPriority:
+            issue.reason === 'no_work_days'
+              ? 40
+              : issue.reason === 'no_capacity_window'
+                ? 45
+                : 50,
+          impact:
+            issue.reason === 'no_work_days'
+              ? 'Opening work days in this window would give the assistant a place to schedule the row.'
+              : issue.reason === 'no_capacity_window'
+                ? 'Finding capacity in this window may unblock this row without changing its dates.'
+                : `${missingHours.toFixed(1)}h still need placement for this row.`,
+          sharedConstraintKey: `reason:${issue.reason}:${issue.phase}`,
           label: `${issue.lineItemTitle} · ${issue.phase} · ${unresolvedReasonLabel(issue.reason)}`,
           scope: 'item',
           category: 'adjustment',
@@ -625,6 +648,8 @@ export function ScheduleView({
         id: 'overstaffed',
         kind: 'overstaffed',
         severity: 'info',
+        assistantPriority: 90,
+        impact: 'This is an optimization opportunity rather than a blocker.',
         label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day may be' : 'days may be'} overstaffed`,
         scope: 'plan',
         category: 'optimization',
@@ -646,6 +671,16 @@ export function ScheduleView({
     schedulableUnscheduledCount,
   ]);
 
+  const assistantSynthesis = useMemo(
+    () => synthesizeScheduleAssistant({
+      isStale: assistantReportStale,
+      unresolvedCount: assistantUnresolvedCount,
+      issues: panelIssues,
+      canRunAssistant: !readOnly,
+    }),
+    [assistantReportStale, assistantUnresolvedCount, panelIssues, readOnly],
+  );
+
   const runAssistantFromPanel = useCallback(async () => {
     handleAutoSchedule();
   }, [handleAutoSchedule]);
@@ -656,6 +691,10 @@ export function ScheduleView({
       isStale: assistantReportStale,
       unresolvedCount: assistantUnresolvedCount,
       issues: panelIssues,
+      assistantStatus: assistantSynthesis.assistantStatus,
+      assistantSummary: assistantSynthesis.assistantSummary,
+      assistantBestNextMove: assistantSynthesis.assistantBestNextMove,
+      assistantInsights: assistantSynthesis.assistantInsights,
       activeIssueKey: activeAssistantIssue?.key ?? null,
       canRunAssistant: !readOnly,
       canClearAll: !readOnly && scheduledPhaseRowCount > 0,
@@ -673,6 +712,7 @@ export function ScheduleView({
     assistantReportStale,
     assistantUnresolvedCount,
     panelIssues,
+    assistantSynthesis,
     activeAssistantIssue,
     readOnly,
     scheduledPhaseRowCount,

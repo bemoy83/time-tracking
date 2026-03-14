@@ -3,6 +3,7 @@ import {
   buildIssueSuggestions,
 } from './schedule-issue-suggestions';
 import type {
+  ScheduleAssistantStatus,
   ScheduleIssueCategory,
   ScheduleIssueItem,
   ScheduleIssuePanelPayload,
@@ -21,17 +22,17 @@ function categoryHeading(category: ScheduleIssueCategory): string {
   return 'Optimization opportunities';
 }
 
-function statusLabel(payload: ScheduleIssuePanelPayload): string {
-  if (payload.state.isStale) return 'Assistant stale';
-  if (payload.state.unresolvedCount > 0) return 'Needs review';
+function statusLabel(status: ScheduleAssistantStatus | undefined, payload: ScheduleIssuePanelPayload): string {
+  if (status === 'stale' || payload.state.isStale) return 'Assistant stale';
+  if (status === 'needs-review' || payload.state.unresolvedCount > 0) return 'Needs review';
   return 'Ready';
 }
 
-function statusCopy(payload: ScheduleIssuePanelPayload): string {
-  if (payload.state.isStale) {
+function statusCopy(status: ScheduleAssistantStatus | undefined, payload: ScheduleIssuePanelPayload): string {
+  if (status === 'stale' || payload.state.isStale) {
     return 'The schedule changed after the last assistant run. Refresh assistant findings before trusting unresolved issue guidance.';
   }
-  if (payload.state.unresolvedCount > 0) {
+  if (status === 'needs-review' || payload.state.unresolvedCount > 0) {
     return 'Use the guidance below to understand what is blocking the schedule without scanning the full grid row by row.';
   }
   return 'No scheduling blockers are currently detected. This tab will explain conflicts here when the grid becomes too large to scan comfortably.';
@@ -87,7 +88,10 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
   }
 
   const { state } = payload;
-  const status = statusLabel(payload);
+  const status = statusLabel(state.assistantStatus, payload);
+  const summaryBody = state.assistantSummary ?? statusCopy(state.assistantStatus, payload);
+  const bestNextMove = state.assistantBestNextMove;
+  const insights = state.assistantInsights ?? [];
 
   return (
     <div className="planning-workspace__sidebar-issues">
@@ -105,8 +109,32 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
 
       <section className="planning-workspace__sidebar-issues-summary" aria-label="Scheduling help summary">
         <p className="planning-workspace__sidebar-issues-summary-title">{status}</p>
-        <p className="planning-workspace__sidebar-issues-summary-body">{statusCopy(payload)}</p>
+        <p className="planning-workspace__sidebar-issues-summary-body">{summaryBody}</p>
       </section>
+
+      {bestNextMove ? (
+        <section className="planning-workspace__sidebar-assistant-card" aria-label="Best next move">
+          <p className="planning-workspace__sidebar-assistant-card-eyebrow">Best next move</p>
+          <p className="planning-workspace__sidebar-assistant-card-title">{bestNextMove.title}</p>
+          <p className="planning-workspace__sidebar-assistant-card-body">{bestNextMove.rationale}</p>
+          {bestNextMove.impact ? (
+            <p className="planning-workspace__sidebar-assistant-card-impact">{bestNextMove.impact}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {insights.length > 0 ? (
+        <section className="planning-workspace__sidebar-assistant-insights" aria-label="What I’m seeing">
+          <p className="planning-workspace__sidebar-assistant-insights-title">What I&apos;m seeing</p>
+          <ul className="planning-workspace__sidebar-assistant-insights-list">
+            {insights.map((insight) => (
+              <li key={insight} className="planning-workspace__sidebar-assistant-insight">
+                {insight}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {state.isStale && (
         <p className="planning-workspace__sidebar-issues-stale">
@@ -139,36 +167,49 @@ export function SidebarIssuesPanel({ payload, isScheduleContext }: SidebarIssues
                     key={issue.id}
                     className="planning-workspace__sidebar-issue-card"
                   >
-                    <div className="planning-workspace__sidebar-issue-head">
+                    <div className="planning-workspace__sidebar-issue-section">
+                      <p className="planning-workspace__sidebar-issue-section-label">What&apos;s happening</p>
                       <p className="planning-workspace__sidebar-issue-label">{issue.label}</p>
-                      {issue.detail && (
-                        <p className="planning-workspace__sidebar-issue-detail">{issue.detail}</p>
-                      )}
                       {issue.requiredPH != null && issue.assignedPH != null && (
                         <span className="planning-workspace__sidebar-issue-metric">
                           {issue.assignedPH.toFixed(1)}h / {issue.requiredPH.toFixed(1)}h
                         </span>
                       )}
                     </div>
+                    {issue.detail && (
+                      <div className="planning-workspace__sidebar-issue-section">
+                        <p className="planning-workspace__sidebar-issue-section-label">Why it matters</p>
+                        <p className="planning-workspace__sidebar-issue-detail">{issue.detail}</p>
+                      </div>
+                    )}
                     {issue.facts && issue.facts.length > 0 && (
-                      <ul className="planning-workspace__sidebar-issue-facts" aria-label="Issue facts">
-                        {issue.facts.slice(0, 2).map((fact) => (
-                          <li key={fact} className="planning-workspace__sidebar-issue-fact">{fact}</li>
-                        ))}
-                      </ul>
+                      <div className="planning-workspace__sidebar-issue-section">
+                        <p className="planning-workspace__sidebar-issue-section-label">What I&apos;m basing this on</p>
+                        <ul className="planning-workspace__sidebar-issue-facts" aria-label="Issue facts">
+                          {issue.facts.slice(0, 2).map((fact) => (
+                            <li key={fact} className="planning-workspace__sidebar-issue-fact">{fact}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                     {suggestions.length > 0 && (
-                      <ul className="planning-workspace__sidebar-issue-suggestions" aria-label="Suggested ways to resolve this issue">
-                        {suggestions.slice(0, 3).map((suggestion) => (
-                          <li
-                            key={suggestion.id}
-                            className="planning-workspace__sidebar-issue-suggestion"
-                          >
-                            {suggestion.label}
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="planning-workspace__sidebar-issue-section">
+                        <p className="planning-workspace__sidebar-issue-section-label">What I&apos;d try</p>
+                        <ul className="planning-workspace__sidebar-issue-suggestions" aria-label="Suggested ways to resolve this issue">
+                          {suggestions.slice(0, 3).map((suggestion) => (
+                            <li
+                              key={suggestion.id}
+                              className="planning-workspace__sidebar-issue-suggestion"
+                            >
+                              {suggestion.label}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
+                    {issue.impact ? (
+                      <p className="planning-workspace__sidebar-issue-impact">{issue.impact}</p>
+                    ) : null}
                   </article>
                 );
               })}

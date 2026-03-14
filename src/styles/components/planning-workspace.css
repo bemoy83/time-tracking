@@ -303,6 +303,69 @@
   color: var(--color-text-muted);
 }
 
+.planning-workspace__sidebar-assistant-card,
+.planning-workspace__sidebar-assistant-insights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--surface-contained-inset);
+}
+
+.planning-workspace__sidebar-assistant-card {
+  gap: 6px;
+  border: 1px solid var(--surface-contained-border);
+  background:
+    linear-gradient(180deg, var(--surface-contained-bg) 0%, var(--surface-contained-inset) 100%);
+}
+
+.planning-workspace__sidebar-assistant-card-eyebrow,
+.planning-workspace__sidebar-assistant-insights-title,
+.planning-workspace__sidebar-issue-section-label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.planning-workspace__sidebar-assistant-card-title {
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.planning-workspace__sidebar-assistant-card-body,
+.planning-workspace__sidebar-assistant-card-impact {
+  margin: 0;
+  font-size: var(--font-caption);
+  line-height: 1.45;
+}
+
+.planning-workspace__sidebar-assistant-card-body {
+  color: var(--color-text);
+}
+
+.planning-workspace__sidebar-assistant-card-impact {
+  color: var(--color-text-muted);
+}
+
+.planning-workspace__sidebar-assistant-insights-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.planning-workspace__sidebar-assistant-insight {
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
 .planning-workspace__sidebar-issues-stale {
   margin: 0;
   padding: var(--space-sm);
@@ -339,9 +402,10 @@
   padding: var(--space-sm);
   border-radius: var(--radius-lg);
   background: var(--surface-contained-inset);
+  border: 1px solid transparent;
 }
 
-.planning-workspace__sidebar-issue-head {
+.planning-workspace__sidebar-issue-section {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -388,6 +452,13 @@
 .planning-workspace__sidebar-issue-suggestion {
   font-size: var(--font-caption);
   color: var(--color-text);
+}
+
+.planning-workspace__sidebar-issue-impact {
+  margin: 0;
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .planning-workspace__sidebar-issues-empty {

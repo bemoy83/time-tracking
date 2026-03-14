@@ -36,8 +36,9 @@ describe('buildIssueSuggestions', () => {
       assignedPH: 8,
     }), createState());
 
+    expect(suggestions[0]?.label).toContain('Local fix');
     expect(suggestions[0]?.label).toContain('missing 8.0h');
-    expect(suggestions.some((item) => item.label.includes('Extend the phase across more work days'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('Alternative: extend the phase across more work days'))).toBe(true);
   });
 
   it('builds no-work-days guidance', () => {
@@ -45,8 +46,8 @@ describe('buildIssueSuggestions', () => {
       unresolvedReason: 'no_work_days',
     }), createState());
 
-    expect(suggestions.some((item) => item.label.includes('Enable at least one work day'))).toBe(true);
-    expect(suggestions.some((item) => item.label.includes('Shift the phase dates'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('System fix: enable at least one work day'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('Local fix: shift the phase dates'))).toBe(true);
   });
 
   it('builds no-capacity-window guidance', () => {
@@ -54,8 +55,8 @@ describe('buildIssueSuggestions', () => {
       unresolvedReason: 'no_capacity_window',
     }), createState());
 
-    expect(suggestions.some((item) => item.label.includes('Widen or shift the phase window'))).toBe(true);
-    expect(suggestions.some((item) => item.label.includes('Free crew on the constrained days'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('Local fix: widen or shift the phase window'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('System fix: free crew on the constrained days'))).toBe(true);
   });
 
   it('builds day-level capacity guidance', () => {
@@ -67,7 +68,7 @@ describe('buildIssueSuggestions', () => {
       category: 'blocking',
     }), createState());
 
-    expect(suggestions.some((item) => item.label.includes('Work Calendar'))).toBe(true);
-    expect(suggestions.some((item) => item.label.includes('spread the affected work'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('System fix: add crew or extend access hours'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('Fallback: if crew cannot increase'))).toBe(true);
   });
 });
