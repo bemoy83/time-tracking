@@ -151,42 +151,78 @@ export interface PhaseFields {
   deferredNote: string | null;
 }
 
+const PHASE_CONFIG = {
+  assembly: {
+    prefix: 'assembly',
+    quantityOverrideField: null,
+  },
+  dismantle: {
+    prefix: 'dismantle',
+    quantityOverrideField: 'dismantleQuantity',
+  },
+} as const satisfies Record<
+  BuildPhase,
+  {
+    prefix: 'assembly' | 'dismantle';
+    quantityOverrideField: 'dismantleQuantity' | null;
+  }
+>;
+
+const PHASE_FIELD_SUFFIXES = {
+  rate: 'Rate',
+  crew: 'Crew',
+  timeHours: 'TimeHours',
+  rateSource: 'RateSource',
+  scheduledStart: 'ScheduledStart',
+  scheduledEnd: 'ScheduledEnd',
+  originalScheduledStart: 'OriginalScheduledStart',
+  originalScheduledEnd: 'OriginalScheduledEnd',
+  crewByDate: 'CrewByDate',
+  executionStatus: 'ExecutionStatus',
+  blockReason: 'BlockReason',
+  blockCategory: 'BlockCategory',
+  executorNote: 'ExecutorNote',
+  deferredNote: 'DeferredNote',
+} as const satisfies Record<keyof PhaseFields, string>;
+
+const PHASE_FIELD_NAMES = Object.keys(PHASE_FIELD_SUFFIXES) as Array<keyof PhaseFields>;
+type PhasePrefix = (typeof PHASE_CONFIG)[BuildPhase]['prefix'];
+type PhaseSpecificPlanLineItemField =
+  `${PhasePrefix}${(typeof PHASE_FIELD_SUFFIXES)[keyof typeof PHASE_FIELD_SUFFIXES]}`;
+
+function getPhaseFieldKey<FieldName extends keyof PhaseFields>(
+  phase: BuildPhase,
+  fieldName: FieldName,
+): PhaseSpecificPlanLineItemField {
+  const { prefix } = PHASE_CONFIG[phase];
+  const suffix = PHASE_FIELD_SUFFIXES[fieldName];
+  return `${prefix}${suffix}` as PhaseSpecificPlanLineItemField;
+}
+
+function readPhaseField<FieldName extends keyof PhaseFields>(
+  item: PlanLineItem,
+  phase: BuildPhase,
+  fieldName: FieldName,
+): PhaseFields[FieldName] {
+  return item[getPhaseFieldKey(phase, fieldName)] as PhaseFields[FieldName];
+}
+
+function buildPhaseFieldState(
+  phase: BuildPhase,
+  fields: PhaseFields,
+): Pick<PlanLineItem, PhaseSpecificPlanLineItemField> {
+  const result: Record<string, unknown> = {};
+  for (const fieldName of PHASE_FIELD_NAMES) {
+    result[getPhaseFieldKey(phase, fieldName)] = fields[fieldName];
+  }
+  return result as Pick<PlanLineItem, PhaseSpecificPlanLineItemField>;
+}
+
 /** Read all per-phase fields for the given phase. */
 export function getPhaseFields(item: PlanLineItem, phase: BuildPhase): PhaseFields {
-  if (phase === 'assembly') {
-    return {
-      rate: item.assemblyRate,
-      crew: item.assemblyCrew,
-      timeHours: item.assemblyTimeHours,
-      rateSource: item.assemblyRateSource,
-      scheduledStart: item.assemblyScheduledStart,
-      scheduledEnd: item.assemblyScheduledEnd,
-      originalScheduledStart: item.assemblyOriginalScheduledStart,
-      originalScheduledEnd: item.assemblyOriginalScheduledEnd,
-      crewByDate: item.assemblyCrewByDate,
-      executionStatus: item.assemblyExecutionStatus,
-      blockReason: item.assemblyBlockReason,
-      blockCategory: item.assemblyBlockCategory,
-      executorNote: item.assemblyExecutorNote,
-      deferredNote: item.assemblyDeferredNote,
-    };
-  }
-  return {
-    rate: item.dismantleRate,
-    crew: item.dismantleCrew,
-    timeHours: item.dismantleTimeHours,
-    rateSource: item.dismantleRateSource,
-    scheduledStart: item.dismantleScheduledStart,
-    scheduledEnd: item.dismantleScheduledEnd,
-    originalScheduledStart: item.dismantleOriginalScheduledStart,
-    originalScheduledEnd: item.dismantleOriginalScheduledEnd,
-    crewByDate: item.dismantleCrewByDate,
-    executionStatus: item.dismantleExecutionStatus,
-    blockReason: item.dismantleBlockReason,
-    blockCategory: item.dismantleBlockCategory,
-    executorNote: item.dismantleExecutorNote,
-    deferredNote: item.dismantleDeferredNote,
-  };
+  return Object.fromEntries(
+    PHASE_FIELD_NAMES.map((fieldName) => [fieldName, readPhaseField(item, phase, fieldName)]),
+  ) as unknown as PhaseFields;
 }
 
 /** True when a phase has any non-zero rate, crew, or time. */
@@ -197,8 +233,12 @@ export function isPhaseActive(item: PlanLineItem, phase: BuildPhase): boolean {
 
 /** Return the effective quantity for a given phase (dismantle may override). */
 export function getPhaseQuantity(item: PlanLineItem, phase: BuildPhase): number {
-  if (phase === 'dismantle' && item.dismantleQuantity != null) {
-    return item.dismantleQuantity;
+  const quantityOverrideField = PHASE_CONFIG[phase].quantityOverrideField;
+  if (quantityOverrideField) {
+    const quantityOverride = item[quantityOverrideField];
+    if (quantityOverride != null) {
+      return quantityOverride;
+    }
   }
   return item.workQuantity;
 }
@@ -208,22 +248,13 @@ export function phaseFieldUpdates(
   phase: BuildPhase,
   updates: Partial<PhaseFields>,
 ): Partial<PlanLineItem> {
-  const prefix = phase === 'assembly' ? 'assembly' : 'dismantle';
   const result: Record<string, unknown> = {};
-  if (updates.rate !== undefined) result[`${prefix}Rate`] = updates.rate;
-  if (updates.crew !== undefined) result[`${prefix}Crew`] = updates.crew;
-  if (updates.timeHours !== undefined) result[`${prefix}TimeHours`] = updates.timeHours;
-  if (updates.rateSource !== undefined) result[`${prefix}RateSource`] = updates.rateSource;
-  if (updates.scheduledStart !== undefined) result[`${prefix}ScheduledStart`] = updates.scheduledStart;
-  if (updates.scheduledEnd !== undefined) result[`${prefix}ScheduledEnd`] = updates.scheduledEnd;
-  if (updates.originalScheduledStart !== undefined) result[`${prefix}OriginalScheduledStart`] = updates.originalScheduledStart;
-  if (updates.originalScheduledEnd !== undefined) result[`${prefix}OriginalScheduledEnd`] = updates.originalScheduledEnd;
-  if (updates.crewByDate !== undefined) result[`${prefix}CrewByDate`] = updates.crewByDate;
-  if (updates.executionStatus !== undefined) result[`${prefix}ExecutionStatus`] = updates.executionStatus;
-  if (updates.blockReason !== undefined) result[`${prefix}BlockReason`] = updates.blockReason;
-  if (updates.blockCategory !== undefined) result[`${prefix}BlockCategory`] = updates.blockCategory;
-  if (updates.executorNote !== undefined) result[`${prefix}ExecutorNote`] = updates.executorNote;
-  if (updates.deferredNote !== undefined) result[`${prefix}DeferredNote`] = updates.deferredNote;
+  for (const fieldName of PHASE_FIELD_NAMES) {
+    const value = updates[fieldName];
+    if (value !== undefined) {
+      result[getPhaseFieldKey(phase, fieldName)] = value;
+    }
+  }
   return result as Partial<PlanLineItem>;
 }
 
@@ -437,40 +468,38 @@ export function createLineItem(
     workTypeId,
     workQuantity,
     dismantleQuantity: null,
-
-    assemblyRate,
-    assemblyCrew: assemblyRate > 0 ? 1 : 0,
-    assemblyTimeHours,
-    assemblyRateSource: rateSource,
-
-    dismantleRate,
-    dismantleCrew: dismantleRate > 0 ? 1 : 0,
-    dismantleTimeHours,
-    dismantleRateSource: rateSource,
-
-    assemblyScheduledStart: null,
-    assemblyScheduledEnd: null,
-    assemblyOriginalScheduledStart: null,
-    assemblyOriginalScheduledEnd: null,
-    assemblyCrewByDate: undefined,
-
-    dismantleScheduledStart: null,
-    dismantleScheduledEnd: null,
-    dismantleOriginalScheduledStart: null,
-    dismantleOriginalScheduledEnd: null,
-    dismantleCrewByDate: undefined,
-
-    assemblyExecutionStatus: 'pending',
-    assemblyBlockReason: null,
-    assemblyBlockCategory: null,
-    assemblyExecutorNote: null,
-    assemblyDeferredNote: null,
-
-    dismantleExecutionStatus: 'pending',
-    dismantleBlockReason: null,
-    dismantleBlockCategory: null,
-    dismantleExecutorNote: null,
-    dismantleDeferredNote: null,
+    ...buildPhaseFieldState('assembly', {
+      rate: assemblyRate,
+      crew: assemblyRate > 0 ? 1 : 0,
+      timeHours: assemblyTimeHours,
+      rateSource,
+      scheduledStart: null,
+      scheduledEnd: null,
+      originalScheduledStart: null,
+      originalScheduledEnd: null,
+      crewByDate: undefined,
+      executionStatus: 'pending',
+      blockReason: null,
+      blockCategory: null,
+      executorNote: null,
+      deferredNote: null,
+    }),
+    ...buildPhaseFieldState('dismantle', {
+      rate: dismantleRate,
+      crew: dismantleRate > 0 ? 1 : 0,
+      timeHours: dismantleTimeHours,
+      rateSource,
+      scheduledStart: null,
+      scheduledEnd: null,
+      originalScheduledStart: null,
+      originalScheduledEnd: null,
+      crewByDate: undefined,
+      executionStatus: 'pending',
+      blockReason: null,
+      blockCategory: null,
+      executorNote: null,
+      deferredNote: null,
+    }),
 
     rationale: null,
     reviewNote: null,
@@ -494,40 +523,22 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     workTypeId: item.workTypeId,
     workQuantity: item.workQuantity,
     dismantleQuantity: item.dismantleQuantity,
-
-    assemblyRate: item.assemblyRate,
-    assemblyCrew: item.assemblyCrew,
-    assemblyTimeHours: item.assemblyTimeHours,
-    assemblyRateSource: item.assemblyRateSource,
-
-    dismantleRate: item.dismantleRate,
-    dismantleCrew: item.dismantleCrew,
-    dismantleTimeHours: item.dismantleTimeHours,
-    dismantleRateSource: item.dismantleRateSource,
-
-    assemblyScheduledStart: item.assemblyScheduledStart,
-    assemblyScheduledEnd: item.assemblyScheduledEnd,
-    assemblyOriginalScheduledStart: item.assemblyOriginalScheduledStart,
-    assemblyOriginalScheduledEnd: item.assemblyOriginalScheduledEnd,
-    assemblyCrewByDate: item.assemblyCrewByDate ? { ...item.assemblyCrewByDate } : undefined,
-
-    dismantleScheduledStart: item.dismantleScheduledStart,
-    dismantleScheduledEnd: item.dismantleScheduledEnd,
-    dismantleOriginalScheduledStart: item.dismantleOriginalScheduledStart,
-    dismantleOriginalScheduledEnd: item.dismantleOriginalScheduledEnd,
-    dismantleCrewByDate: item.dismantleCrewByDate ? { ...item.dismantleCrewByDate } : undefined,
-
-    assemblyExecutionStatus: item.assemblyExecutionStatus,
-    assemblyBlockReason: null,
-    assemblyBlockCategory: null,
-    assemblyExecutorNote: null,
-    assemblyDeferredNote: null,
-
-    dismantleExecutionStatus: item.dismantleExecutionStatus,
-    dismantleBlockReason: null,
-    dismantleBlockCategory: null,
-    dismantleExecutorNote: null,
-    dismantleDeferredNote: null,
+    ...buildPhaseFieldState('assembly', {
+      ...getPhaseFields(item, 'assembly'),
+      crewByDate: item.assemblyCrewByDate ? { ...item.assemblyCrewByDate } : undefined,
+      blockReason: null,
+      blockCategory: null,
+      executorNote: null,
+      deferredNote: null,
+    }),
+    ...buildPhaseFieldState('dismantle', {
+      ...getPhaseFields(item, 'dismantle'),
+      crewByDate: item.dismantleCrewByDate ? { ...item.dismantleCrewByDate } : undefined,
+      blockReason: null,
+      blockCategory: null,
+      executorNote: null,
+      deferredNote: null,
+    }),
 
     rationale: null,
     reviewNote: null,
@@ -639,40 +650,38 @@ export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLi
     workTypeId: (raw.workTypeId as string | null) ?? null,
     workQuantity: (raw.workQuantity as number) ?? 0,
     dismantleQuantity: null,
-
-    assemblyRate: isAssembly ? oldRate : 0,
-    assemblyCrew: isAssembly ? oldCrew : 0,
-    assemblyTimeHours: isAssembly ? oldTimeHours : 0,
-    assemblyRateSource: isAssembly ? oldRateSource : 'manual',
-
-    dismantleRate: !isAssembly ? oldRate : 0,
-    dismantleCrew: !isAssembly ? oldCrew : 0,
-    dismantleTimeHours: !isAssembly ? oldTimeHours : 0,
-    dismantleRateSource: !isAssembly ? oldRateSource : 'manual',
-
-    assemblyScheduledStart: isAssembly ? oldScheduledStart : null,
-    assemblyScheduledEnd: isAssembly ? oldScheduledEnd : null,
-    assemblyOriginalScheduledStart: isAssembly ? oldOriginalScheduledStart : null,
-    assemblyOriginalScheduledEnd: isAssembly ? oldOriginalScheduledEnd : null,
-    assemblyCrewByDate: isAssembly ? oldCrewByDate : undefined,
-
-    dismantleScheduledStart: !isAssembly ? oldScheduledStart : null,
-    dismantleScheduledEnd: !isAssembly ? oldScheduledEnd : null,
-    dismantleOriginalScheduledStart: !isAssembly ? oldOriginalScheduledStart : null,
-    dismantleOriginalScheduledEnd: !isAssembly ? oldOriginalScheduledEnd : null,
-    dismantleCrewByDate: !isAssembly ? oldCrewByDate : undefined,
-
-    assemblyExecutionStatus: isAssembly ? oldExecStatus : 'pending',
-    assemblyBlockReason: isAssembly ? oldBlockReason : null,
-    assemblyBlockCategory: isAssembly ? oldBlockCategory : null,
-    assemblyExecutorNote: isAssembly ? oldExecutorNote : null,
-    assemblyDeferredNote: isAssembly ? oldDeferredNote : null,
-
-    dismantleExecutionStatus: !isAssembly ? oldExecStatus : 'pending',
-    dismantleBlockReason: !isAssembly ? oldBlockReason : null,
-    dismantleBlockCategory: !isAssembly ? oldBlockCategory : null,
-    dismantleExecutorNote: !isAssembly ? oldExecutorNote : null,
-    dismantleDeferredNote: !isAssembly ? oldDeferredNote : null,
+    ...buildPhaseFieldState('assembly', {
+      rate: isAssembly ? oldRate : 0,
+      crew: isAssembly ? oldCrew : 0,
+      timeHours: isAssembly ? oldTimeHours : 0,
+      rateSource: isAssembly ? oldRateSource : 'manual',
+      scheduledStart: isAssembly ? oldScheduledStart : null,
+      scheduledEnd: isAssembly ? oldScheduledEnd : null,
+      originalScheduledStart: isAssembly ? oldOriginalScheduledStart : null,
+      originalScheduledEnd: isAssembly ? oldOriginalScheduledEnd : null,
+      crewByDate: isAssembly ? oldCrewByDate : undefined,
+      executionStatus: isAssembly ? oldExecStatus : 'pending',
+      blockReason: isAssembly ? oldBlockReason : null,
+      blockCategory: isAssembly ? oldBlockCategory : null,
+      executorNote: isAssembly ? oldExecutorNote : null,
+      deferredNote: isAssembly ? oldDeferredNote : null,
+    }),
+    ...buildPhaseFieldState('dismantle', {
+      rate: !isAssembly ? oldRate : 0,
+      crew: !isAssembly ? oldCrew : 0,
+      timeHours: !isAssembly ? oldTimeHours : 0,
+      rateSource: !isAssembly ? oldRateSource : 'manual',
+      scheduledStart: !isAssembly ? oldScheduledStart : null,
+      scheduledEnd: !isAssembly ? oldScheduledEnd : null,
+      originalScheduledStart: !isAssembly ? oldOriginalScheduledStart : null,
+      originalScheduledEnd: !isAssembly ? oldOriginalScheduledEnd : null,
+      crewByDate: !isAssembly ? oldCrewByDate : undefined,
+      executionStatus: !isAssembly ? oldExecStatus : 'pending',
+      blockReason: !isAssembly ? oldBlockReason : null,
+      blockCategory: !isAssembly ? oldBlockCategory : null,
+      executorNote: !isAssembly ? oldExecutorNote : null,
+      deferredNote: !isAssembly ? oldDeferredNote : null,
+    }),
 
     rationale: (raw.rationale as string | null) ?? null,
     reviewNote: (raw.reviewNote as string | null) ?? null,

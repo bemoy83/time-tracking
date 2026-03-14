@@ -11,6 +11,9 @@ import {
   planTotalsByUnit,
   lineItemWorkTypeKey,
   duplicateLineItem,
+  getPhaseFields,
+  getPhaseQuantity,
+  phaseFieldUpdates,
 } from './plan-model';
 
 describe('createPlan', () => {
@@ -164,5 +167,42 @@ describe('duplicateLineItem', () => {
     const original = createLineItem('Install carpet (copy)', 'Carpet Tiles', 'm2', 100, 10, 0);
     const duplicate = duplicateLineItem(original);
     expect(duplicate.title).toBe('Install carpet (copy)');
+  });
+});
+
+describe('phase field config map', () => {
+  it('reads and writes phase fields through the shared config', () => {
+    const item = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 5);
+    item.dismantleQuantity = 80;
+
+    const assemblyFields = getPhaseFields(item, 'assembly');
+    const dismantleFields = getPhaseFields(item, 'dismantle');
+
+    expect(assemblyFields.rate).toBe(10);
+    expect(dismantleFields.rate).toBe(5);
+    expect(getPhaseQuantity(item, 'assembly')).toBe(100);
+    expect(getPhaseQuantity(item, 'dismantle')).toBe(80);
+
+    expect(
+      phaseFieldUpdates('assembly', {
+        rate: 12,
+        crew: 3,
+        blockReason: 'Waiting on access',
+      }),
+    ).toEqual({
+      assemblyRate: 12,
+      assemblyCrew: 3,
+      assemblyBlockReason: 'Waiting on access',
+    });
+
+    expect(
+      phaseFieldUpdates('dismantle', {
+        timeHours: 7,
+        deferredNote: 'Shifted to final day',
+      }),
+    ).toEqual({
+      dismantleTimeHours: 7,
+      dismantleDeferredNote: 'Shifted to final day',
+    });
   });
 });
