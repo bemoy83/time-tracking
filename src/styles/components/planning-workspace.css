@@ -11,9 +11,9 @@
 /* --- Sidebar --- */
 
 .planning-workspace__sidebar {
-  width: 320px;
-  min-width: 280px;
-  max-width: 360px;
+  width: 256px;
+  min-width: 240px;
+  max-width: 288px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--surface-contained-border);
@@ -886,4 +886,68 @@
   font-size: var(--font-small);
   color: var(--color-text-muted);
   margin-bottom: var(--space-md);
+}
+
+/* --- Mono utility class (DM Mono for dates/numbers) --- */
+
+.mono {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Plan context bar --- */
+
+.planning-workspace__plan-context-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  flex-shrink: 0;
+  min-height: 44px;
+  overflow: hidden;
+}
+
+.planning-workspace__plan-context-title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.planning-workspace__plan-context-phases {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.planning-workspace__plan-context-phase {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.planning-workspace__plan-context-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.planning-workspace__plan-context-phase-dot--assembly {
+  background: var(--phase-assembly-fg);
+}
+
+.planning-workspace__plan-context-phase-dot--dismantle {
+  background: var(--phase-dismantle-fg);
 }

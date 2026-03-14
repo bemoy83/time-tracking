@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planning Workspace — Design Exploration v3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --canvas:          #e8e8ec;
+      --surface:         #ffffff;
+      --surface-soft:    #f3f3f7;
+      --surface-hover:   #ededf2;
+
+      --text:            #13131a;
+      --text-secondary:  #72728a;
+      --text-muted:      #ababc2;
+
+      --green:           #059669;
+      --green-bg:        rgba(5, 150, 105, 0.09);
+      --green-bg-strong: rgba(5, 150, 105, 0.14);
+
+      --amber:           #d97706;
+      --amber-bg:        rgba(217, 119, 6, 0.09);
+      --amber-bg-strong: rgba(217, 119, 6, 0.15);
+
+      --blue:            #2563eb;
+      --blue-bg:         rgba(37, 99, 235, 0.08);
+      --blue-bg-strong:  rgba(37, 99, 235, 0.13);
+
+      --violet:          #7c3aed;
+      --violet-bg:       rgba(124, 58, 237, 0.08);
+      --violet-bg-strong: rgba(124, 58, 237, 0.13);
+
+      --red:             #dc2626;
+      --red-bg:          rgba(220, 38, 38, 0.09);
+
+      /* No border anywhere — shadows only */
+      --shadow-xs: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md: 0 6px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-blue: 0 6px 20px rgba(37, 99, 235, 0.30);
+
+      --r-sm:   8px;
+      --r-md:   12px;
+      --r-lg:   16px;
+      --r-xl:   20px;
+      --r-2xl:  26px;
+      --r-full: 9999px;
+
+      --sidebar-w: 256px;
+      --font-ui:   'Outfit', sans-serif;
+      --font-mono: 'DM Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--canvas);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255,255,255,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0,0,0,0.03) 0%, transparent 60%);
+    }
+
+    /* ─── App shell ─── */
+    .app {
+      width: 100%;
+      max-width: 1320px;
+      height: calc(100vh - 40px);
+      max-height: 860px;
+      display: flex;
+      gap: 12px;
+    }
+
+    /* ─── Sidebar panel — floating white island ─── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-radius: var(--r-2xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .sidebar-top {
+      flex-shrink: 0;
+      padding: 18px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .exit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      margin: 0 -8px;
+      border: none;
+      background: none;
+      border-radius: var(--r-md);
+      font: 500 12px/1 var(--font-ui);
+      color: var(--blue);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .exit-btn:hover { background: var(--blue-bg); }
+    .exit-btn svg { width: 14px; height: 14px; }
+
+    .new-plan-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: var(--r-lg);
+      background: var(--text);
+      color: var(--surface);
+      font: 600 13px/1 var(--font-ui);
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .new-plan-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .new-plan-btn svg { width: 14px; height: 14px; }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-muted) transparent;
+    }
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+    .zone-label {
+      padding: 0 4px;
+      margin-bottom: 3px;
+      font: 600 10px/1 var(--font-ui);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .plan-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* ── Plan row — no border, shadow on selected only ── */
+    .plan-row {
+      position: relative;
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: background 0.12s, box-shadow 0.12s;
+      cursor: pointer;
+    }
+    .plan-row:hover { background: var(--surface-hover); }
+    .plan-row--selected {
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-xs);
+    }
+
+    /* 3px left accent — design element, not a structural border */
+    .plan-row--active::before   { content:''; position:absolute; left:0; inset-block:6px; width:3px; border-radius:0 2px 2px 0; background:var(--green); }
+    .plan-row--draft::before    { content:''; position:absolute; left:0; inset-block:6px; width:3px; border-radius:0 2px 2px 0; background:var(--amber); }
+    .plan-row--reviewed::before { content:''; position:absolute; left:0; inset-block:6px; width:3px; border-radius:0 2px 2px 0; background:var(--text-muted); }
+
+    .plan-row__btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 9px 10px 9px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font-ui);
+      color: var(--text);
+    }
+    .plan-row__info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .plan-row__title {
+      font: 500 13px/1.3 var(--font-ui);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .plan-row__date {
+      font: 400 11px/1 var(--font-mono);
+      color: var(--text-secondary);
+    }
+
+    .sdot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sdot--active   { background: var(--green-bg-strong); color: var(--green); }
+    .sdot--draft    { background: var(--amber-bg-strong); color: var(--amber); }
+    .sdot--reviewed { background: var(--surface-soft); color: var(--text-muted); }
+    .sdot svg { width: 9px; height: 9px; }
+
+    .sidebar-nav {
+      flex-shrink: 0;
+      padding: 8px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: none;
+      background: none;
+      border-radius: var(--r-md);
+      font: 500 12px/1 var(--font-ui);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover { background: var(--surface-soft); color: var(--text); }
+    .nav-item svg { width: 14px; height: 14px; }
+
+    /* ─── Main pane — floating white island ─── */
+    .main-pane {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-radius: var(--r-2xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
+    }
+
+    /* Context bar — white, transition to soft tab-strip below provides separation */
+    .ctx-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 24px;
+      background: var(--surface);
+    }
+    .ctx-title { font: 600 15px/1 var(--font-ui); color: var(--text); }
+
+    .spill {
+      padding: 4px 10px;
+      border-radius: var(--r-full);
+      font: 600 10px/1 var(--font-ui);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .spill--active   { background: var(--green-bg-strong); color: var(--green); }
+    .spill--draft    { background: var(--amber-bg-strong); color: var(--amber); }
+    .spill--reviewed { background: var(--surface-soft); color: var(--text-secondary); }
+
+    .ctx-phases {
+      display: flex; align-items: center; gap: 14px; margin-left: auto;
+    }
+    .phase-tag {
+      display: flex; align-items: center; gap: 5px;
+      font: 400 11.5px/1 var(--font-mono);
+      color: var(--text-secondary);
+    }
+    .pip { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .pip--asm { background: var(--green); }
+    .pip--dis { background: var(--violet); }
+
+    /* Tab strip — soft background, selected = white pill with shadow */
+    .tabs {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 3px;
+      padding: 8px 20px;
+      background: var(--surface-soft);
+    }
+    .tab {
+      padding: 7px 15px;
+      border: none; background: none;
+      border-radius: var(--r-full);
+      font: 500 12.5px/1 var(--font-ui);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .tab:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+    .tab--on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+    /* Content canvas */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--surface-soft);
+      padding: 18px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text-muted) transparent;
+    }
+    .content::-webkit-scrollbar { width: 4px; }
+    .content::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+    /* ─── Stat cards — no borders ─── */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+    .scard {
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      animation: riseUp 0.35s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .scard:nth-child(1) { animation-delay: 0.10s; }
+    .scard:nth-child(2) { animation-delay: 0.15s; }
+    .scard:nth-child(3) { animation-delay: 0.20s; }
+    .scard:nth-child(4) { animation-delay: 0.25s; }
+
+    .scard-ico {
+      width: 30px; height: 30px;
+      border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface-soft);
+    }
+    .scard-ico svg { width: 14px; height: 14px; color: var(--text-secondary); }
+    .scard-val {
+      font: 700 26px/1 var(--font-ui);
+      color: var(--text);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .scard-lbl {
+      font: 400 11px/1 var(--font-ui);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Section cards — no borders ─── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      animation: riseUp 0.35s cubic-bezier(0.22,1,0.36,1) 0.18s both;
+    }
+
+    /* Overview card */
+    .ov-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      padding: 22px;
+    }
+    .plan-title {
+      font: 800 28px/1.1 var(--font-ui);
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+    }
+    .plan-desc {
+      font: 400 13px/1.5 var(--font-ui);
+      color: var(--text-secondary);
+      margin-bottom: 18px;
+    }
+    .flabel {
+      font: 600 10px/1 var(--font-ui);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .flink {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 0; border: none; background: none;
+      font: 500 13px/1 var(--font-ui);
+      color: var(--blue); cursor: pointer;
+    }
+    .flink svg { width: 11px; height: 11px; }
+
+    .ov-right {
+      display: flex; flex-direction: column; gap: 18px;
+      min-width: 220px;
+    }
+    .status-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .status-row-lbl { font: 400 12px/1 var(--font-ui); color: var(--text-secondary); }
+
+    .readiness { display: flex; flex-direction: column; gap: 9px; }
+    .ritem {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .ritem-lhs {
+      display: flex; align-items: center; gap: 7px;
+      font: 400 13px/1 var(--font-ui); color: var(--text);
+    }
+    .cdot {
+      width: 17px; height: 17px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .cdot--ok   { background: var(--green-bg-strong); color: var(--green); }
+    .cdot--warn { background: var(--amber-bg-strong); color: var(--amber); }
+    .cdot svg { width: 9px; height: 9px; }
+    .alink {
+      font: 500 12px/1 var(--font-ui); color: var(--blue);
+      background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
+    }
+
+    /* Schedule inputs */
+    .sch-head {
+      padding: 16px 22px 0;
+      font: 600 10.5px/1 var(--font-ui);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .sch-body {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      padding: 14px 22px 20px;
+    }
+    .phase-grp { display: flex; flex-direction: column; gap: 10px; }
+    .phase-hd {
+      display: flex; align-items: center; gap: 6px;
+      font: 600 11px/1 var(--font-ui);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .dpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dfield { display: flex; flex-direction: column; gap: 4px; }
+    .dlbl {
+      font: 500 10px/1 var(--font-ui);
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+    }
+    /* Input — no border, inset background only */
+    .dinput {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 11px;
+      background: var(--surface-soft);
+      border-radius: var(--r-md);
+      font: 400 12px/1 var(--font-mono);
+      color: var(--text);
+    }
+    .dinput svg { width: 11px; height: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+    .crew-row { display: flex; flex-direction: column; gap: 4px; grid-column: 1/-1; margin-top: 4px; }
+
+    /* Work packages */
+    .wp-top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 22px 0;
+    }
+    .wp-top-title {
+      font: 600 10.5px/1 var(--font-ui);
+      letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-secondary);
+    }
+    .wp-meta { display: flex; align-items: center; gap: 14px; }
+    .wp-meta span { font: 400 12px/1 var(--font-mono); }
+    .wp-meta .ac { color: var(--green); }
+    .wp-meta .dc { color: var(--violet); }
+    .wp-meta .nc { color: var(--text-secondary); }
+
+    /* Work package table: Title | Type | Qty | Asm(Rate·Crew·Hrs) | Dis(Rate·Crew·Hrs) */
+
+    .wp-phase-hdr {
+      display: grid;
+      grid-template-columns: 1fr 106px 46px 54px 44px 54px 54px 44px 54px;
+      padding: 7px 22px 0;
+      background: var(--surface);
+    }
+    .wp-phase-lbl {
+      font: 600 10px/1 var(--font-ui);
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 4px 0 4px 2px;
+      border-radius: 4px 4px 0 0;
+    }
+    .wp-phase-lbl--asm { grid-column: 4 / 7; color: var(--green); background: var(--green-bg); }
+    .wp-phase-lbl--dis { grid-column: 7 / 10; color: var(--violet); background: var(--violet-bg); margin-left: 4px; }
+
+    .wp-hdr {
+      display: grid;
+      grid-template-columns: 1fr 106px 46px 54px 44px 54px 54px 44px 54px;
+      padding: 6px 22px 10px;
+      background: var(--surface);
+      border-bottom: 1px solid #e0e0e8;
+    }
+    .wph { font: 600 10px/1 var(--font-ui); letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
+    .wph--asm { color: color-mix(in srgb, var(--green) 60%, var(--text-muted)); }
+    .wph--dis { color: color-mix(in srgb, var(--violet) 60%, var(--text-muted)); }
+
+    /* Rows — alternating bg, zero borders */
+    .wp-body { display: contents; }
+    .wpr {
+      display: grid;
+      grid-template-columns: 1fr 106px 46px 54px 44px 54px 54px 44px 54px;
+      align-items: center;
+      padding: 11px 22px;
+      transition: background 0.1s;
+    }
+    .wpr:nth-child(odd)  { background: var(--surface); }
+    .wpr:nth-child(even) { background: var(--surface-soft); }
+    .wpr:hover { background: var(--surface-hover) !important; }
+
+    .wpc { font: 400 13px/1 var(--font-ui); color: var(--text); }
+    .wpc--b { font-weight: 500; }
+    .wpc--n { font: 400 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+    .wpc--m { font: 400 12px/1 var(--font-mono); color: var(--text-muted); }
+    .wpc--type { font: 400 12px/1 var(--font-ui); color: var(--text-secondary); }
+
+    .cta-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 22px;
+      background: var(--surface);
+      border-top: 1px solid #e0e0e8;
+    }
+    .cta-info {
+      display: flex; align-items: center; gap: 10px;
+      font: 400 12px/1 var(--font-ui); color: var(--text-muted);
+    }
+    .warn-tag {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      background: var(--amber-bg-strong);
+      border-radius: var(--r-full);
+      font: 500 11.5px/1 var(--font-ui); color: var(--amber);
+    }
+    .warn-tag svg { width: 10px; height: 10px; }
+
+    .build-btn {
+      padding: 10px 22px;
+      border: none; border-radius: var(--r-lg);
+      background: var(--blue); color: #fff;
+      font: 600 13px/1 var(--font-ui);
+      cursor: pointer;
+      box-shadow: var(--shadow-blue);
+      transition: all 0.15s;
+    }
+    .build-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(37,99,235,0.38);
+    }
+
+    .archive-zone { opacity: 0.6; }
+
+    /* Tab panels */
+    .tpanel { display: none; flex-direction: column; gap: 12px; }
+    .tpanel--on { display: flex; }
+
+    /* ─── Keyframes ─── */
+    @keyframes riseUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══ Sidebar ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <button class="exit-btn">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 2L4 7l5 5"/></svg>
+        Exit workspace
+      </button>
+      <button class="new-plan-btn">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>
+        New Plan
+      </button>
+    </div>
+
+    <div class="sidebar-scroll">
+
+      <div>
+        <div class="zone-label">Active</div>
+        <ul class="plan-list">
+
+          <li class="plan-row plan-row--active plan-row--selected" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Spring Expo 2025</span>
+                <span class="plan-row__date">Mar 2 – Mar 7</span>
+              </div>
+              <span class="sdot sdot--active">
+                <svg viewBox="0 0 9 9" fill="currentColor"><polygon points="2,1 8,4.5 2,8"/></svg>
+              </span>
+            </button>
+          </li>
+
+          <li class="plan-row plan-row--draft" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Summer Fair Setup</span>
+                <span class="plan-row__date">Jun 14 – Jun 22</span>
+              </div>
+              <span class="sdot sdot--draft">
+                <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 7l1-3 4-4 2 2-4 4-3 1z"/></svg>
+              </span>
+            </button>
+          </li>
+
+          <li class="plan-row plan-row--active" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Tech Summit AV</span>
+                <span class="plan-row__date">Apr 10 – Apr 12</span>
+              </div>
+              <span class="sdot sdot--active">
+                <svg viewBox="0 0 9 9" fill="currentColor"><polygon points="2,1 8,4.5 2,8"/></svg>
+              </span>
+            </button>
+          </li>
+
+          <li class="plan-row plan-row--draft" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Museum Gala Night</span>
+                <span class="plan-row__date">May 28 – May 31</span>
+              </div>
+              <span class="sdot sdot--draft">
+                <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 7l1-3 4-4 2 2-4 4-3 1z"/></svg>
+              </span>
+            </button>
+          </li>
+
+        </ul>
+      </div>
+
+      <div class="archive-zone">
+        <div class="zone-label">Archive (2)</div>
+        <ul class="plan-list">
+          <li class="plan-row plan-row--reviewed" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Winter Exhibition</span>
+                <span class="plan-row__date">Dec 1 – Dec 5</span>
+              </div>
+              <span class="sdot sdot--reviewed">
+                <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5l2.5 3L7.5 1.5"/></svg>
+              </span>
+            </button>
+          </li>
+          <li class="plan-row plan-row--reviewed" onclick="selectRow(this)">
+            <button class="plan-row__btn">
+              <div class="plan-row__info">
+                <span class="plan-row__title">Autumn Forum</span>
+                <span class="plan-row__date">Oct 3 – Oct 6</span>
+              </div>
+              <span class="sdot sdot--reviewed">
+                <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5l2.5 3L7.5 1.5"/></svg>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        Shared Schedule
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/></svg>
+        Insights
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ══ Main pane ══ -->
+  <main class="main-pane">
+
+    <!-- Context bar — seamless white, no bottom border -->
+    <div class="ctx-bar">
+      <span class="ctx-title">Spring Expo 2025</span>
+      <span class="spill spill--active">Active</span>
+      <div class="ctx-phases">
+        <span class="phase-tag"><span class="pip pip--asm"></span>Mar 2 – Mar 4</span>
+        <span class="phase-tag"><span class="pip pip--dis"></span>Mar 6 – Mar 7</span>
+      </div>
+    </div>
+
+    <!-- Tab strip — soft bg, selected = white pill -->
+    <div class="tabs">
+      <button class="tab tab--on" onclick="switchTab(this,'edit')">Edit</button>
+      <button class="tab" onclick="switchTab(this,'schedule')">Schedule</button>
+      <button class="tab" onclick="switchTab(this,'progress')">Progress</button>
+      <button class="tab" onclick="switchTab(this,'insights')">Insights</button>
+      <button class="tab" onclick="switchTab(this,'review')">Review</button>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Edit panel -->
+      <div class="tpanel tpanel--on" id="p-edit">
+
+        <!-- Stat cards — floating, no borders -->
+        <div class="stats">
+          <div class="scard">
+            <div class="scard-ico">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="5" width="12" height="8" rx="1.5"/><path d="M4.5 5V3.5a2.5 2.5 0 0 1 5 0V5"/></svg>
+            </div>
+            <div class="scard-val">4</div>
+            <div class="scard-lbl">Packages</div>
+          </div>
+          <div class="scard">
+            <div class="scard-ico">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2.5 1.5"/></svg>
+            </div>
+            <div class="scard-val">52</div>
+            <div class="scard-lbl">Person-hrs</div>
+          </div>
+          <div class="scard">
+            <div class="scard-ico">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 10l3.5-4 2.5 3 3.5-6 2.5 3"/></svg>
+            </div>
+            <div class="scard-val">84%</div>
+            <div class="scard-lbl">Utilization</div>
+          </div>
+          <div class="scard">
+            <div class="scard-ico">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 7.5l3.5 4 7.5-9"/></svg>
+            </div>
+            <div class="scard-val">6</div>
+            <div class="scard-lbl">Tasks done</div>
+          </div>
+        </div>
+
+        <!-- Plan overview — no borders on card -->
+        <div class="card">
+          <div class="ov-grid">
+            <div>
+              <h1 class="plan-title">Spring Expo 2025</h1>
+              <p class="plan-desc">Assign the target project so all work packages roll up to real project delivery.</p>
+              <div class="flabel">Project</div>
+              <button class="flink">
+                <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 2H2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6M7 1h3v3M6 5l4-4"/></svg>
+                Van Art Center — Spring Expo
+              </button>
+            </div>
+            <div class="ov-right">
+              <div class="status-row">
+                <span class="status-row-lbl">Status</span>
+                <span class="spill spill--active">Active</span>
+              </div>
+              <div>
+                <div class="flabel" style="margin-bottom:10px">Readiness</div>
+                <div class="readiness">
+                  <div class="ritem">
+                    <span class="ritem-lhs">
+                      <span class="cdot cdot--ok">
+                        <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5l2.5 3L7.5 1.5"/></svg>
+                      </span>
+                      Project linked
+                    </span>
+                  </div>
+                  <div class="ritem">
+                    <span class="ritem-lhs">
+                      <span class="cdot cdot--ok">
+                        <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5l2.5 3L7.5 1.5"/></svg>
+                      </span>
+                      Dates configured
+                    </span>
+                  </div>
+                  <div class="ritem">
+                    <span class="ritem-lhs">
+                      <span class="cdot cdot--warn">
+                        <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4.5 2.5v3M4.5 7v.5"/></svg>
+                      </span>
+                      Work packages added
+                    </span>
+                    <button class="alink">Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule inputs — no borders -->
+        <div class="card">
+          <div class="sch-head">Schedule Inputs</div>
+          <div class="sch-body">
+            <div class="phase-grp">
+              <div class="phase-hd"><span class="pip pip--asm"></span>Assembly</div>
+              <div class="dpair">
+                <div class="dfield">
+                  <span class="dlbl">From</span>
+                  <div class="dinput">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2"/></svg>
+                    Mar 2
+                  </div>
+                </div>
+                <div class="dfield">
+                  <span class="dlbl">To</span>
+                  <div class="dinput">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2"/></svg>
+                    Mar 4
+                  </div>
+                </div>
+              </div>
+              <div class="crew-row">
+                <span class="dlbl">Default Crew</span>
+                <div class="dinput" style="width:50%">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="4" r="2"/><path d="M1 10.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg>
+                  4 crew
+                </div>
+              </div>
+            </div>
+
+            <div class="phase-grp">
+              <div class="phase-hd"><span class="pip pip--dis"></span>Dismantle</div>
+              <div class="dpair">
+                <div class="dfield">
+                  <span class="dlbl">From</span>
+                  <div class="dinput">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2"/></svg>
+                    Mar 6
+                  </div>
+                </div>
+                <div class="dfield">
+                  <span class="dlbl">To</span>
+                  <div class="dinput">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2"/></svg>
+                    Mar 7
+                  </div>
+                </div>
+              </div>
+              <div class="crew-row">
+                <span class="dlbl">Default Crew</span>
+                <div class="dinput" style="width:50%">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="4" r="2"/><path d="M1 10.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg>
+                  2 crew
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work packages — one row per package, assembly + dismantle side by side -->
+        <div class="card">
+          <div class="wp-top">
+            <span class="wp-top-title">Work Packages</span>
+            <div class="wp-meta">
+              <span class="nc">3 packages</span>
+              <span class="ac">Assembly 38.0 ph</span>
+              <span class="dc">Dismantle 26.0 ph</span>
+            </div>
+          </div>
+
+          <!-- Phase group labels spanning their column groups -->
+          <div class="wp-phase-hdr">
+            <div></div><div></div><div></div>
+            <div class="wp-phase-lbl wp-phase-lbl--asm">Assembly</div>
+            <div class="wp-phase-lbl wp-phase-lbl--dis">Dismantle</div>
+          </div>
+
+          <!-- Column headers -->
+          <div class="wp-hdr">
+            <div class="wph">Title</div>
+            <div class="wph">Type</div>
+            <div class="wph">Qty</div>
+            <div class="wph wph--asm">Rate</div>
+            <div class="wph wph--asm">Crew</div>
+            <div class="wph wph--asm">Hrs</div>
+            <div class="wph wph--dis">Rate</div>
+            <div class="wph wph--dis">Crew</div>
+            <div class="wph wph--dis">Hrs</div>
+          </div>
+
+          <!-- Row per work package — both assembly + dismantle on same row -->
+          <div class="wp-body">
+            <div class="wpr">
+              <div class="wpc wpc--b">Stage Flooring</div>
+              <div class="wpc wpc--type">Flooring · m²</div>
+              <div class="wpc wpc--n">450</div>
+              <div class="wpc wpc--n">0.04</div>
+              <div class="wpc wpc--n">2</div>
+              <div class="wpc wpc--n">18.0</div>
+              <div class="wpc wpc--n">0.031</div>
+              <div class="wpc wpc--n">2</div>
+              <div class="wpc wpc--n">14.0</div>
+            </div>
+            <div class="wpr">
+              <div class="wpc wpc--b">Rigging &amp; Lighting</div>
+              <div class="wpc wpc--type">Rigging · unit</div>
+              <div class="wpc wpc--n">1</div>
+              <div class="wpc wpc--n">8.0</div>
+              <div class="wpc wpc--n">1</div>
+              <div class="wpc wpc--n">8.0</div>
+              <div class="wpc wpc--n">4.0</div>
+              <div class="wpc wpc--n">1</div>
+              <div class="wpc wpc--n">4.0</div>
+            </div>
+            <div class="wpr">
+              <div class="wpc wpc--b">Exhibitor Booths</div>
+              <div class="wpc wpc--type">Booth · unit</div>
+              <div class="wpc wpc--n">24</div>
+              <div class="wpc wpc--n">0.50</div>
+              <div class="wpc wpc--n">4</div>
+              <div class="wpc wpc--n">12.0</div>
+              <div class="wpc wpc--n">0.33</div>
+              <div class="wpc wpc--n">3</div>
+              <div class="wpc wpc--n">8.0</div>
+            </div>
+          </div>
+
+          <div class="cta-bar">
+            <div class="cta-info">
+              <span class="warn-tag">
+                <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 1L9.5 9H.5L5 1z"/><path d="M5 4v2.5M5 8v.5"/></svg>
+                3 need attention
+              </span>
+              <span>Autosaved 11:36 PM · 0/3 checks ready</span>
+            </div>
+            <button class="build-btn">Build Schedule</button>
+          </div>
+        </div>
+
+      </div><!-- /p-edit -->
+
+      <div class="tpanel" id="p-schedule">
+        <div class="card" style="padding:48px 24px;text-align:center;color:var(--text-secondary);font:400 14px/1.6 var(--font-ui)">
+          Build the schedule first to see day-by-day assignments.
+        </div>
+      </div>
+
+      <div class="tpanel" id="p-progress">
+        <div class="card" style="padding:48px 24px;text-align:center;color:var(--text-secondary);font:400 14px/1.6 var(--font-ui)">
+          Link tasks to start tracking live execution progress.
+        </div>
+      </div>
+
+      <div class="tpanel" id="p-insights">
+        <div class="card" style="padding:48px 24px;text-align:center;color:var(--text-secondary);font:400 14px/1.6 var(--font-ui)">
+          Insights are available once the plan is active and executing.
+        </div>
+      </div>
+
+      <div class="tpanel" id="p-review">
+        <div class="card" style="padding:48px 24px;text-align:center;color:var(--text-secondary);font:400 14px/1.6 var(--font-ui)">
+          Wrap up this plan to access the post-event review pane.
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+
+</div><!-- /app -->
+
+<script>
+  function selectRow(li) {
+    document.querySelectorAll('.plan-row--selected').forEach(r => r.classList.remove('plan-row--selected'));
+    li.classList.add('plan-row--selected');
+  }
+
+  function switchTab(btn, id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab--on'));
+    btn.classList.add('tab--on');
+    document.querySelectorAll('.tpanel').forEach(p => p.classList.remove('tpanel--on'));
+    document.getElementById('p-' + id).classList.add('tpanel--on');
+  }
+</script>
+
+</body>
+</html>

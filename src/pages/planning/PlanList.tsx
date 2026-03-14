@@ -282,6 +282,20 @@ const STATUS_LABELS: Record<string, string> = {
   reviewed: 'Reviewed',
 };
 
+function formatDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function getPlanDateRange(plan: Plan): string | null {
+  const start = plan.assemblyStartDate ?? plan.eventStartDate;
+  const end = plan.dismantleEndDate ?? plan.eventEndDate;
+  if (!start && !end) return null;
+  if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
+  if (start) return formatDate(start);
+  return formatDate(end!);
+}
+
 function PlanStatusIcon({
   variant,
 }: {
@@ -344,14 +358,22 @@ function PlanListItem({
       ? 'review-ready'
       : plan.status;
 
-  const rowClassName = `planning-view__row${selectedPlanId === plan.id ? ' planning-view__row--selected' : ''}`;
+  const rowClassName = [
+    'planning-view__row',
+    selectedPlanId === plan.id ? 'planning-view__row--selected' : '',
+    compact ? `planning-view__row--status-${plan.status}` : '',
+  ].filter(Boolean).join(' ');
+
+  const dateRange = compact ? getPlanDateRange(plan) : null;
 
   const itemContent = (
     <>
       <button className="planning-view__item-btn" onClick={() => onSelect(plan)}>
         <span className="planning-view__item-content">
           <span className="planning-view__item-title">{plan.title}</span>
-          {!compact && (
+          {compact ? (
+            dateRange && <span className="planning-view__item-date mono">{dateRange}</span>
+          ) : (
             <span className="planning-view__item-meta">
               {plan.lineItems.length} {plan.lineItems.length === 1 ? 'package' : 'packages'}
             </span>

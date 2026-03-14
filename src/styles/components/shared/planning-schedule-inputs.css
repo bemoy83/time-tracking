@@ -62,6 +62,21 @@
   color: var(--color-text-muted);
 }
 
+.planning-view__schedule-group-title--assembly::before,
+.planning-view__schedule-group-title--dismantle::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.planning-view__schedule-group-title--assembly::before { background: var(--phase-assembly-fg); }
+.planning-view__schedule-group-title--dismantle::before { background: var(--phase-dismantle-fg); }
+
 .planning-view__schedule-group-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

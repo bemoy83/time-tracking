@@ -248,3 +248,35 @@
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
+
+/* --- Compact sidebar: left color-bar accent on plan rows --- */
+
+.planning-view__list--compact .planning-view__item {
+  position: relative;
+}
+
+.planning-view__list--compact .planning-view__row--status-active .planning-view__item::before,
+.planning-view__list--compact .planning-view__row--status-draft .planning-view__item::before {
+  content: '';
+  position: absolute;
+  inset-block: 4px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  pointer-events: none;
+}
+
+.planning-view__list--compact .planning-view__row--status-active .planning-view__item::before {
+  background: var(--color-ready);
+}
+
+.planning-view__list--compact .planning-view__row--status-draft .planning-view__item::before {
+  background: var(--color-amber);
+}
+
+/* --- Compact sidebar: date range below plan title --- */
+
+.planning-view__item-date {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}

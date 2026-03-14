@@ -20,6 +20,14 @@
   background: var(--wp-summary-badge-bg);
 }
 
+.planning-view__items-summary-asm {
+  color: var(--phase-assembly-fg);
+}
+
+.planning-view__items-summary-dis {
+  color: var(--phase-dismantle-fg);
+}
+
 .planning-view__work-packages-section {
   display: flex;
   flex-direction: column;
@@ -156,10 +164,12 @@
 
 .planning-view__wp-group-heading--assembly {
   background: var(--wp-phase-assembly-header-bg);
+  color: var(--phase-assembly-fg);
 }
 
 .planning-view__wp-group-heading--dismantle {
   background: var(--wp-phase-dismantle-header-bg);
+  color: var(--phase-dismantle-fg);
 }
 
 .planning-view__wp-phase-col {

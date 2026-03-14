@@ -44,7 +44,7 @@ export function PlanScheduleInputs({
     <>
       <div className="planning-view__schedule-inputs planning-view__schedule-inputs--phase">
         <fieldset className="planning-view__schedule-group" disabled={readOnly}>
-          <legend className="planning-view__schedule-group-title">Assembly</legend>
+          <legend className="planning-view__schedule-group-title planning-view__schedule-group-title--assembly">Assembly</legend>
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
@@ -68,7 +68,7 @@ export function PlanScheduleInputs({
         </fieldset>
 
         <fieldset className="planning-view__schedule-group" disabled={readOnly}>
-          <legend className="planning-view__schedule-group-title">Dismantle</legend>
+          <legend className="planning-view__schedule-group-title planning-view__schedule-group-title--dismantle">Dismantle</legend>
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>

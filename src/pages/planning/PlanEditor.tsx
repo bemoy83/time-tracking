@@ -611,8 +611,8 @@ export function PlanEditor({
             <h2 id="work-packages-heading" className="planning-view__items-title">Work Packages</h2>
             <div className="planning-view__items-summary">
               <span>{currentPlan.lineItems.length} packages</span>
-              <span>Assembly {assemblyPersonHours.toFixed(1)} ph</span>
-              <span>Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
+              <span className="planning-view__items-summary-asm">Assembly {assemblyPersonHours.toFixed(1)} ph</span>
+              <span className="planning-view__items-summary-dis">Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
             </div>
           </div>
 

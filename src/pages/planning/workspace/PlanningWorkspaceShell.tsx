@@ -49,6 +49,7 @@ import type {
   ScheduleIssuePanelPayload,
 } from './schedule-issue-panel-types';
 import { WrapUpReviewPane } from '../WrapUpReviewPane';
+import { StatusBadge } from '../../../components/StatusBadge';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -489,6 +490,17 @@ function SharedScheduleMainPane({
 
 // --- Main pane with tab strip ---
 
+function formatContextDateRange(start: string | null | undefined, end: string | null | undefined): string | null {
+  if (!start && !end) return null;
+  const fmt = (d: string) => {
+    const [y, m, day] = d.split('-').map(Number);
+    return new Date(y, m - 1, day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
+  if (start) return fmt(start);
+  return fmt(end!);
+}
+
 interface WorkspaceMainPaneProps {
   plan: Plan;
   activeTab: WorkspaceTab;
@@ -559,8 +571,32 @@ function WorkspaceMainPane({
     ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}`
     : '';
 
+  const assemblyDateRange = formatContextDateRange(plan.assemblyStartDate, plan.assemblyEndDate);
+  const dismantleDateRange = formatContextDateRange(plan.dismantleStartDate, plan.dismantleEndDate);
+
   return (
     <div className="planning-workspace__main-inner">
+      {/* Plan context bar */}
+      <div className="planning-workspace__plan-context-bar">
+        <span className="planning-workspace__plan-context-title">{plan.title}</span>
+        <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status} />
+        {(assemblyDateRange || dismantleDateRange) && (
+          <span className="planning-workspace__plan-context-phases">
+            {assemblyDateRange && (
+              <span className="planning-workspace__plan-context-phase">
+                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--assembly" />
+                <span className="mono">{assemblyDateRange}</span>
+              </span>
+            )}
+            {dismantleDateRange && (
+              <span className="planning-workspace__plan-context-phase">
+                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--dismantle" />
+                <span className="mono">{dismantleDateRange}</span>
+              </span>
+            )}
+          </span>
+        )}
+      </div>
       {/* Context-aware tab strip */}
       <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
         {tabs.map((tab) => (
