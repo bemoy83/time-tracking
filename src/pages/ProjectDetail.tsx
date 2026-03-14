@@ -10,6 +10,7 @@ import {
   TaskTemplate,
   WORK_UNIT_LABELS,
   formatDurationShort,
+  getProjectDisplayColor,
 } from '../lib/types';
 import { TrashIcon, WarningIcon, CheckIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../components/icons';
 import { Fab } from '../components/Fab';
@@ -190,7 +191,7 @@ export function ProjectDetail({
     });
   };
 
-  const resolveProjectColor = () => project.color;
+  const resolveProjectColor = () => getProjectDisplayColor(project.color);
 
   return (
     <div className="project-detail">
@@ -369,7 +370,7 @@ export function ProjectDetail({
               <SwipeableTaskRow
                 key={task.id}
                 task={task}
-                projectColor={project.color}
+                projectColor={getProjectDisplayColor(project.color)}
                 totalMs={durationByTask.get(task.id)}
                 onSelect={onSelectTask}
                 onComplete={() => handleComplete(task)}
@@ -384,7 +385,7 @@ export function ProjectDetail({
         <CompletedSection
           tasks={completedTasks}
           getTotalMs={(t) => durationByTask.get(t.id)}
-          getProjectColor={() => project.color}
+          getProjectColor={() => getProjectDisplayColor(project.color)}
           onSelectTask={onSelectTask}
           sectionClassName="project-detail__section project-detail__section--completed section--completed"
           contentId="project-detail__completed-list"

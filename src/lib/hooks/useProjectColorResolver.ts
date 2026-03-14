@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Project, Task } from '../types';
+import { Project, Task, getProjectDisplayColor } from '../types';
 
 /**
  * Resolve a task's project color from the current project list.
@@ -8,7 +8,7 @@ export function useProjectColorResolver(projects: Project[]) {
   const colorByProjectId = useMemo(() => {
     const byId = new Map<string, string>();
     projects.forEach((project) => {
-      byId.set(project.id, project.color);
+      byId.set(project.id, getProjectDisplayColor(project.color));
     });
     return byId;
   }, [projects]);

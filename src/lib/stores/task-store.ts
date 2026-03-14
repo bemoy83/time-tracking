@@ -16,12 +16,28 @@ import {
   deleteTask as dbDeleteTask,
   getAllActiveTimers,
   getTask as dbGetTask,
+  getAllPlans,
+  updatePlan,
 } from '../db';
-import { Task, Project, PROJECT_COLORS, generateId, nowUtc, durationMs, elapsedMs } from '../types';
+import {
+  Task,
+  Project,
+  PROJECT_COLORS,
+  PROJECT_COLOR_UNASSIGNED,
+  isProjectColorUnassigned,
+  generateId,
+  nowUtc,
+  durationMs,
+  elapsedMs,
+  normalizeProjectName,
+  type ProjectPhaseDates,
+} from '../types';
 import type { WorkUnit, BuildPhase } from '../types';
 import { stopTimer } from './timer-store';
 import { archiveTask } from '../archive/archive-action';
 import { syncTaskBlockToPlan, syncTaskUnblockToPlan } from '../planning/task-plan-block-sync';
+import { hasPhaseDatesFor } from '../planning/scheduling/schedule-span';
+import { normalizeProjectPhaseDates } from '../projects/project-phase-dates';
 
 // ============================================================
 // Store State
@@ -440,20 +456,35 @@ export { getDeletePreview, deleteTaskWithEntries } from './task-store-delete';
 // Project Actions
 // ============================================================
 
+export function hasProjectPhaseDates(project: Project): boolean {
+  return (
+    hasPhaseDatesFor(project, 'assembly') ||
+    hasPhaseDatesFor(project, 'dismantle')
+  );
+}
+
+interface CreateProjectOptions {
+  color?: string;
+  phaseDates?: Partial<ProjectPhaseDates> | null;
+}
+
 /**
  * Create a new project.
  */
-export async function createProject(name: string, color?: string): Promise<Project> {
+export async function createProject(
+  name: string,
+  options?: CreateProjectOptions,
+): Promise<Project> {
   const now = nowUtc();
-  const usedColors = new Set(state.projects.map((p) => p.color));
-  const defaultColor = PROJECT_COLORS.find((c) => !usedColors.has(c)) ?? PROJECT_COLORS[0];
+  const phaseDates = normalizeProjectPhaseDates(options?.phaseDates);
 
   const project: Project = {
     id: generateId(),
     name,
-    color: color ?? defaultColor,
+    color: options?.color ?? PROJECT_COLOR_UNASSIGNED,
     createdAt: now,
     updatedAt: now,
+    ...phaseDates,
   };
 
   await dbAddProject(project);
@@ -475,6 +506,27 @@ export async function updateProjectName(id: string, name: string): Promise<void>
   });
 }
 
+export async function updateProjectPhaseDates(
+  id: string,
+  phaseDates: Partial<ProjectPhaseDates>,
+): Promise<void> {
+  const project = state.projects.find((p) => p.id === id);
+  if (!project) return;
+
+  const updated: Project = {
+    ...project,
+    ...normalizeProjectPhaseDates({
+      ...project,
+      ...phaseDates,
+    }),
+    updatedAt: nowUtc(),
+  };
+  await dbUpdateProject(updated);
+  setState({
+    projects: state.projects.map((p) => (p.id === id ? updated : p)),
+  });
+}
+
 /**
  * Update a project's color.
  */
@@ -487,6 +539,28 @@ export async function updateProjectColor(id: string, color: string): Promise<voi
   setState({
     projects: state.projects.map((p) => (p.id === id ? updated : p)),
   });
+}
+
+export function findProjectByName(name: string): Project | undefined {
+  const normalized = normalizeProjectName(name);
+  return state.projects.find((project) => normalizeProjectName(project.name) === normalized);
+}
+
+export async function ensureProjectColorAssigned(projectId: string): Promise<void> {
+  const project = state.projects.find((p) => p.id === projectId);
+  if (!project || !isProjectColorUnassigned(project.color)) {
+    return;
+  }
+
+  const usedColors = new Set(
+    state.projects
+      .filter((candidate) => candidate.id !== projectId && !isProjectColorUnassigned(candidate.color))
+      .map((candidate) => candidate.color),
+  );
+  const nextColor = PROJECT_COLORS.find((color) => !usedColors.has(color)) ?? PROJECT_COLORS[0];
+  const updated: Project = { ...project, color: nextColor, updatedAt: nowUtc() };
+  await dbUpdateProject(updated);
+  await refreshProjects();
 }
 
 /**
@@ -528,6 +602,8 @@ export async function deleteProjectWithMode(
   mode: 'unassign' | 'delete_tasks'
 ): Promise<void> {
   const projectTasks = state.tasks.filter((t) => t.projectId === projectId);
+  const allPlans = await getAllPlans();
+  const linkedPlans = allPlans.filter((plan) => plan.projectId === projectId);
 
   // Stop active timers if on any affected task
   const activeTimers2 = await getAllActiveTimers();
@@ -535,6 +611,14 @@ export async function deleteProjectWithMode(
     if (projectTasks.some((t) => t.id === timer.taskId)) {
       await stopTimer(timer.taskId);
     }
+  }
+
+  for (const plan of linkedPlans) {
+    await updatePlan({
+      ...plan,
+      projectId: null,
+      updatedAt: nowUtc(),
+    });
   }
 
   if (mode === 'unassign') {

@@ -371,6 +371,12 @@ async function resolveImportedProjectId(
     color: importedProject.color,
     createdAt: now,
     updatedAt: now,
+    assemblyStartDate: importedProject.assemblyStartDate ?? null,
+    assemblyEndDate: importedProject.assemblyEndDate ?? null,
+    dismantleStartDate: importedProject.dismantleStartDate ?? null,
+    dismantleEndDate: importedProject.dismantleEndDate ?? null,
+    eventStartDate: importedProject.eventStartDate ?? null,
+    eventEndDate: importedProject.eventEndDate ?? null,
   };
   await addProject(newProject);
   return newProject.id;

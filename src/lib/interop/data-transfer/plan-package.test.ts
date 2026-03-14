@@ -281,6 +281,12 @@ describe('plan-package export', () => {
       color: '#2563eb',
       createdAt: '2026-02-01T00:00:00.000Z',
       updatedAt: '2026-02-01T00:00:00.000Z',
+      assemblyStartDate: null,
+      assemblyEndDate: null,
+      dismantleStartDate: null,
+      dismantleEndDate: null,
+      eventStartDate: null,
+      eventEndDate: null,
     };
     mockGetProject.mockResolvedValue(project);
     mockGetAllWorkTypes.mockResolvedValue([]);

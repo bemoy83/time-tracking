@@ -1,6 +1,16 @@
 import type { Project } from '../types';
 import { getDB } from './core';
 
+function normalizeProject(raw: Record<string, unknown>): Project {
+  if (raw.assemblyStartDate === undefined) raw.assemblyStartDate = null;
+  if (raw.assemblyEndDate === undefined) raw.assemblyEndDate = null;
+  if (raw.dismantleStartDate === undefined) raw.dismantleStartDate = null;
+  if (raw.dismantleEndDate === undefined) raw.dismantleEndDate = null;
+  if (raw.eventStartDate === undefined) raw.eventStartDate = null;
+  if (raw.eventEndDate === undefined) raw.eventEndDate = null;
+  return raw as unknown as Project;
+}
+
 /**
  * Add a new project.
  */
@@ -15,7 +25,7 @@ export async function addProject(project: Project): Promise<void> {
 export async function getProject(id: string): Promise<Project | null> {
   const db = await getDB();
   const project = await db.get('projects', id);
-  return project ?? null;
+  return project ? normalizeProject(project as unknown as Record<string, unknown>) : null;
 }
 
 /**
@@ -23,7 +33,8 @@ export async function getProject(id: string): Promise<Project | null> {
  */
 export async function getAllProjects(): Promise<Project[]> {
   const db = await getDB();
-  return db.getAll('projects');
+  const projects = await db.getAll('projects');
+  return projects.map((project) => normalizeProject(project as unknown as Record<string, unknown>));
 }
 
 /**
@@ -32,6 +43,20 @@ export async function getAllProjects(): Promise<Project[]> {
 export async function updateProject(project: Project): Promise<void> {
   const db = await getDB();
   await db.put('projects', project);
+}
+
+export async function findProjectByName(name: string): Promise<Project | null> {
+  const db = await getDB();
+  const projects = await db.getAll('projects');
+  const target = name.trim().toLowerCase().replace(/\s+/g, ' ');
+  const match = projects.find((project) => {
+    const projectName = String((project as unknown as Record<string, unknown>).name ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    return projectName === target;
+  });
+  return match ? normalizeProject(match as unknown as Record<string, unknown>) : null;
 }
 
 /**

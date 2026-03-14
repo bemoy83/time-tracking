@@ -584,4 +584,37 @@ export const applyDbMigrations: DbUpgradeCallback = (
             });
           }
         }
+
+        // Version 31: Backfill project phase/event dates.
+        if (oldVersion < 31 && db.objectStoreNames.contains('projects')) {
+          backfillStore('projects', (project) => {
+            const p = project as unknown as Record<string, unknown>;
+            let changed = false;
+            if (p.assemblyStartDate === undefined) {
+              p.assemblyStartDate = null;
+              changed = true;
+            }
+            if (p.assemblyEndDate === undefined) {
+              p.assemblyEndDate = null;
+              changed = true;
+            }
+            if (p.dismantleStartDate === undefined) {
+              p.dismantleStartDate = null;
+              changed = true;
+            }
+            if (p.dismantleEndDate === undefined) {
+              p.dismantleEndDate = null;
+              changed = true;
+            }
+            if (p.eventStartDate === undefined) {
+              p.eventStartDate = null;
+              changed = true;
+            }
+            if (p.eventEndDate === undefined) {
+              p.eventEndDate = null;
+              changed = true;
+            }
+            return changed;
+          });
+        }
 };

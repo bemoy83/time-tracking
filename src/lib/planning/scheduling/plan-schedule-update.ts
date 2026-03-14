@@ -1,4 +1,4 @@
-import type { BuildPhase } from '../../types';
+import type { BuildPhase, Project } from '../../types';
 import type { PhaseFields, Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
 import type { ScheduleSpan } from './assignment';
@@ -52,6 +52,19 @@ function reconcilePlanCalendar(plan: Plan): Plan {
       plan.defaultCrewSize,
     ),
   };
+}
+
+export function applyProjectPhaseDatesToPlan(plan: Plan, project: Project): Plan {
+  const next: Plan = {
+    ...plan,
+    assemblyStartDate: project.assemblyStartDate ?? null,
+    assemblyEndDate: project.assemblyEndDate ?? null,
+    dismantleStartDate: project.dismantleStartDate ?? null,
+    dismantleEndDate: project.dismantleEndDate ?? null,
+    eventStartDate: project.eventStartDate ?? null,
+    eventEndDate: project.eventEndDate ?? null,
+  };
+  return reconcilePlanCalendar(next);
 }
 
 export function setPlanEventDate(

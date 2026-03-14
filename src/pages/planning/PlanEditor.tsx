@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import {
   WORK_UNIT_LABELS,
+  getProjectDisplayColor,
   type Project,
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
@@ -19,6 +20,7 @@ import {
   planPhasePersonHours,
 } from '../../lib/planning/plan-model';
 import {
+  applyProjectPhaseDatesToPlan,
   setPlanDefaultCrewSize,
   setPlanEventDate,
   setPlanPhaseDate,
@@ -41,6 +43,11 @@ import {
   getWorkCalendarPhaseSpans,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
+import {
+  ensureProjectColorAssigned,
+  getProjectById,
+  hasProjectPhaseDates,
+} from '../../lib/stores/task-store';
 
 interface PlanEditorProps {
   plan: Plan;
@@ -144,6 +151,7 @@ export function PlanEditor({
   const selectedProject = currentPlan.projectId
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
+  const selectedProjectColor = selectedProject ? getProjectDisplayColor(selectedProject.color) : null;
 
   const { workTypes } = useWorkTypeStore();
   const selectableWorkTypes = useMemo(
@@ -236,8 +244,23 @@ export function PlanEditor({
     mutatePlan((prev) => ({ ...prev, title }));
   };
 
-  const handleAssignProject = (projectId: string | null) => {
-    mutatePlan((prev) => ({ ...prev, projectId }));
+  const handleAssignProject = async (projectId: string | null) => {
+    if (projectId == null) {
+      mutatePlan((prev) => ({ ...prev, projectId: null }));
+      return;
+    }
+
+    await ensureProjectColorAssigned(projectId);
+    const project = getProjectById(projectId);
+    if (!project) return;
+
+    mutatePlan((prev) => {
+      const assigned = { ...prev, projectId };
+      if (!hasProjectPhaseDates(project)) {
+        return assigned;
+      }
+      return applyProjectPhaseDatesToPlan(assigned, project);
+    });
   };
 
   const handleSetEventDate = (field: 'eventStartDate' | 'eventEndDate', value: string) => {
@@ -439,7 +462,7 @@ export function PlanEditor({
                     disabled={readOnly || isLocked}
                     style={
                       selectedProject
-                        ? { backgroundColor: selectedProject.color, color: getContrastColor(selectedProject.color) }
+                        ? { backgroundColor: selectedProjectColor!, color: getContrastColor(selectedProjectColor!) }
                         : undefined
                     }
                   >
@@ -701,7 +724,9 @@ export function PlanEditor({
       <ProjectPicker
         isOpen={showProjectPicker}
         onClose={() => setShowProjectPicker(false)}
-        onSelect={(projectId) => handleAssignProject(projectId)}
+        onSelect={(projectId) => {
+          void handleAssignProject(projectId);
+        }}
         currentProjectId={currentPlan.projectId}
       />
     </div>

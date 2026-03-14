@@ -1,4 +1,4 @@
-import { Task, Project } from '../../lib/types';
+import { Task, Project, getProjectDisplayColor } from '../../lib/types';
 import type { TaskTimes } from '../../lib/hooks/useTaskTimes';
 import { TaskCard } from '../../components/TaskCard';
 import { CountBadge } from '../../components/CountBadge';
@@ -81,8 +81,8 @@ export function ActiveSection({
             <span
               className="today-view__project-badge"
               style={{
-                backgroundColor: project.color,
-                color: getContrastColor(project.color),
+                backgroundColor: getProjectDisplayColor(project.color),
+                color: getContrastColor(getProjectDisplayColor(project.color)),
               }}
             >
               {project.name}

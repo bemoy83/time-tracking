@@ -14,6 +14,7 @@ import { pluralize } from '../lib/utils/pluralize';
 import { getFeatureFlags, setFeatureFlag, type FeatureFlagKey } from '../lib/flags/feature-flags';
 
 type SettingsSection =
+  | 'projects'
   | 'workTypes'
   | 'templates'
   | 'productivity'
@@ -52,6 +53,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   };
 
   const drillDownSections: { key: SettingsSection; label: string; helper: string }[] = [
+    { key: 'projects', label: 'Projects / Events', helper: 'Import event schedule and manage project phase dates' },
     { key: 'workTypes', label: 'Work Types', helper: 'Add and manage reusable work-type definitions' },
     { key: 'templates', label: 'Templates', helper: 'Create reusable presets for faster task creation' },
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },

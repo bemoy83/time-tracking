@@ -11,7 +11,7 @@ import {
 } from '../../lib/planning/task-plan-block-sync';
 import { createTask, useTaskStore } from '../../lib/stores/task-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
-import { nowUtc, type TimeEntry, type BuildPhase } from '../../lib/types';
+import { getProjectDisplayColor, nowUtc, type TimeEntry, type BuildPhase } from '../../lib/types';
 import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
 import {
   buildFieldPlanLineItemSummaries,
@@ -113,7 +113,7 @@ export function useFieldPlanModel() {
 
   const projectColor = useMemo(() => {
     if (!selectedPlan?.projectId) return undefined;
-    return projects.find((p) => p.id === selectedPlan.projectId)?.color;
+    return getProjectDisplayColor(projects.find((p) => p.id === selectedPlan.projectId)?.color);
   }, [selectedPlan?.projectId, projects]);
 
   const lineItems = useMemo(() => {

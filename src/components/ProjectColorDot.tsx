@@ -3,10 +3,11 @@
  * Presentational component for project color indicators.
  */
 
+import { getProjectDisplayColor } from '../lib/types';
 import { ColorSwatch } from './ColorSwatch';
 
 interface ProjectColorDotProps {
-  color: string;
+  color?: string | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
@@ -16,5 +17,5 @@ export function ProjectColorDot({
   size = 'md',
   className = '',
 }: ProjectColorDotProps) {
-  return <ColorSwatch color={color} size={size} shape="dot" className={className} />;
+  return <ColorSwatch color={getProjectDisplayColor(color)} size={size} shape="dot" className={className} />;
 }

@@ -14,6 +14,7 @@ import { ProjectList } from './pages/ProjectList';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { SettingsView } from './pages/SettingsView';
 import { PlanningView } from './pages/PlanningView';
+import { SettingsProjectsView } from './pages/settings/SettingsProjectsView';
 import { SettingsWorkTypesView } from './pages/settings/SettingsWorkTypesView';
 import { SettingsTemplatesView } from './pages/settings/SettingsTemplatesView';
 import { SettingsProductivityView } from './pages/settings/SettingsProductivityView';
@@ -27,6 +28,7 @@ import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 
 type Tab = 'today' | 'projects' | 'planning' | 'fieldPlan' | 'settings';
 type SettingsSection =
+  | 'projects'
   | 'workTypes'
   | 'templates'
   | 'productivity'
@@ -215,6 +217,9 @@ function App() {
         )}
         {view.type === 'settingsDetail' && view.section === 'workTypes' && (
           <SettingsWorkTypesView onBack={handleBack} />
+        )}
+        {view.type === 'settingsDetail' && view.section === 'projects' && (
+          <SettingsProjectsView onBack={handleBack} />
         )}
         {view.type === 'settingsDetail' && view.section === 'templates' && (
           <SettingsTemplatesView onBack={handleBack} />

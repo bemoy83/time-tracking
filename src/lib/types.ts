@@ -158,12 +158,43 @@ export interface Task {
  * Project entity.
  * Groups related tasks together.
  */
+export interface ProjectPhaseDates {
+  assemblyStartDate: string | null;
+  assemblyEndDate: string | null;
+  dismantleStartDate: string | null;
+  dismantleEndDate: string | null;
+  eventStartDate: string | null;
+  eventEndDate: string | null;
+}
+
+export const PROJECT_COLOR_UNASSIGNED = '';
+export const PROJECT_COLOR_FALLBACK = '#9ca3af';
+
+export function isProjectColorUnassigned(color: string | null | undefined): boolean {
+  return color == null || color.trim() === PROJECT_COLOR_UNASSIGNED;
+}
+
+export function getProjectDisplayColor(color: string | null | undefined): string {
+  return isProjectColorUnassigned(color) ? PROJECT_COLOR_FALLBACK : color!;
+}
+
+export function normalizeProjectName(name: string | null | undefined): string {
+  if (!name) return '';
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 export interface Project {
   id: string;
   name: string;
   color: string;
   createdAt: string;
   updatedAt: string;
+  assemblyStartDate: string | null;
+  assemblyEndDate: string | null;
+  dismantleStartDate: string | null;
+  dismantleEndDate: string | null;
+  eventStartDate: string | null;
+  eventEndDate: string | null;
 }
 
 /**
