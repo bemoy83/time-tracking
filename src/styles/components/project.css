@@ -21,6 +21,19 @@
   color: var(--color-text);
 }
 
+.project-list__filters {
+  display: flex;
+  align-items: center;
+}
+
+.project-list__filters .task-work-quantity__unit-pills {
+  width: 100%;
+}
+
+.project-list__filters .task-work-quantity__unit-pill {
+  min-width: 0;
+}
+
 /* Card container — elevated surface with rounded corners */
 .project-list__items {
   --_dot-size: 48px;
