@@ -59,8 +59,7 @@ function computeTasksPersonHours(taskIds: string[], timeEntriesByTask: TimeEntri
 }
 
 function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
-  const taskPhase = task.buildPhase ?? 'assembly';
-  return taskPhase === phase;
+  return task.phase === phase;
 }
 
 export async function loadWrapUpV2Projection(
@@ -82,8 +81,7 @@ export async function loadWrapUpV2Projection(
 
   const importedLineItemById = new Map(
     (latestBundle?.lineItems ?? []).map((lineItem) => {
-      const phase = lineItem.phase === 'dismantle' ? 'dismantle' : 'assembly';
-      return [`${lineItem.lineItemId}:${phase}`, lineItem] as const;
+      return [`${lineItem.lineItemId}:${lineItem.phase}`, lineItem] as const;
     }),
   );
 
@@ -147,7 +145,7 @@ export async function loadWrapUpV2Projection(
     isImportedOnly: false,
     workTypeId: task.workTypeId ?? null,
     workUnit: task.workUnit,
-    buildPhase: task.buildPhase,
+    phase: task.phase,
     personHours: Number(computeTaskPersonHours(task.id, timeEntriesByTask).toFixed(2)),
     sourceTask: task,
   }));
@@ -160,7 +158,7 @@ export async function loadWrapUpV2Projection(
       isImportedOnly: true,
       workTypeId: task.workTypeId,
       workUnit: task.workUnit,
-      buildPhase: task.buildPhase,
+      phase: task.phase,
       personHours: task.personHours,
       sourceTask: null,
     }));

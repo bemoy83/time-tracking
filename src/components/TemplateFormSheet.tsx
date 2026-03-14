@@ -81,7 +81,7 @@ export function TemplateFormSheet({
         title: title.trim(),
         workTypeId,
         workUnit: selectedWorkType.workUnit,
-        buildPhase: 'assembly' as const,
+        phase: 'assembly' as const,
         workQuantity: !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : null,
         estimatedMinutes: totalMinutes > 0 ? totalMinutes : null,
         crew: workers > 1 ? workers : null,

@@ -12,7 +12,7 @@ function isSameLineItem(task: Task, planId: string, lineItemId: string): boolean
 }
 
 function resolvePhase(task: Task): BuildPhase {
-  return task.buildPhase === 'dismantle' ? 'dismantle' : 'assembly';
+  return task.phase === 'dismantle' ? 'dismantle' : 'assembly';
 }
 
 export async function syncTaskBlockToPlan(task: Task): Promise<void> {

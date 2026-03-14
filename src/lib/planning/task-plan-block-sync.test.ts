@@ -51,7 +51,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: null,
     crew: null,
     targetProductivity: null,
-    buildPhase: null,
+    phase: null,
     workTypeId: null,
     createdAt: '2026-02-28T08:00:00.000Z',
     updatedAt: '2026-02-28T08:00:00.000Z',

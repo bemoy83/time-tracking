@@ -15,7 +15,7 @@ function makeImportItem(overrides: Partial<ImportedWorkPackage> = {}): ImportedW
     title: 'Install carpet',
     workTypeTitle: 'Carpet Tiles',
     workUnit: 'm2',
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: 'wt-carpet',
     workQuantity: 100,
     estimatedMinutes: 60,
@@ -34,7 +34,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     estimatedMinutes: 60,
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: 'wt-carpet',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
@@ -55,7 +55,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -174,7 +174,7 @@ describe('generateImportPreview', () => {
     const task = makeTask({
       workTypeId: null,
       workUnit: null,
-      buildPhase: null,
+      phase: null,
     });
 
     const preview = generateImportPreview([item], [task], [], WORK_TYPE_TITLE_BY_ID);

@@ -192,7 +192,7 @@ export function useFieldPlanModel() {
         (task) =>
           task.sourcePlanId === lineItem.planId
           && task.sourceLineItemId === lineItem.item.id
-          && (task.buildPhase ?? 'assembly') === lineItem.phase,
+          && task.phase === lineItem.phase,
       );
       if (alreadyReleased) return;
 

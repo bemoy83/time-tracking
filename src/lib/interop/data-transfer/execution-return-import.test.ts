@@ -61,7 +61,7 @@ function makePlanTask(
     workUnit: 'm2',
     crew: null,
     targetProductivity: null,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: null,
     createdAt: '2026-02-27T08:00:00.000Z',
     updatedAt: '2026-02-27T09:00:00.000Z',
@@ -76,7 +76,7 @@ function makePlanTask(
 
 function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
   return {
-    schemaVersion: '1.2',
+    schemaVersion: '2.0',
     exportType: 'execution-return',
     exportedAt: '2026-02-27T00:00:00.000Z',
     appVersion: '0.0.1',
@@ -96,6 +96,8 @@ function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
       lineItems: [
         {
           lineItemId: 'li-1',
+          phase: 'assembly',
+          sourceWorkPackageId: 'li-1',
           title: 'Install carpet',
           executionStatus: 'completed',
           blockReason: null,
@@ -124,7 +126,7 @@ function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
           workUnit: null,
           crew: null,
           targetProductivity: null,
-          buildPhase: null,
+          phase: null,
           workTypeId: null,
           createdAt: '2026-02-27T08:00:00.000Z',
           updatedAt: '2026-02-27T09:00:00.000Z',
@@ -179,7 +181,7 @@ describe('execution-return import', () => {
 
   it('rejects non-execution-return exports', () => {
     const text = JSON.stringify({
-      schemaVersion: '1.2',
+      schemaVersion: '2.0',
       exportType: 'plan-package',
       payload: {},
     });
@@ -187,6 +189,38 @@ describe('execution-return import', () => {
     const parsed = parseExecutionReturnJson(text);
 
     expect(parsed.ok).toBe(false);
+  });
+
+  it('rejects legacy execution-return line items without canonical phase fields', () => {
+    const envelope = makeEnvelope();
+    const parsed = parseExecutionReturnJson(JSON.stringify({
+      ...envelope,
+      payload: {
+        ...envelope.payload,
+        lineItems: [
+          {
+            lineItemId: 'li-1',
+            title: 'Install carpet',
+            executionStatus: 'completed',
+            blockReason: null,
+            blockCategory: null,
+            executorNote: null,
+            deferredNote: null,
+            removedFromSource: false,
+            scheduledStart: null,
+            scheduledEnd: null,
+            actualStartDate: null,
+            actualEndDate: null,
+            deadlineStatusAtClose: null,
+          },
+        ],
+      },
+    }));
+
+    expect(parsed).toEqual({
+      ok: false,
+      error: 'Selected file is not a valid execution return export.',
+    });
   });
 
   it('previews duplicates and date range', async () => {
@@ -268,11 +302,11 @@ describe('execution-return import', () => {
     );
   });
 
-  it('remaps split phase line-item lineage and applies phase execution state to plan', async () => {
+  it('applies phase execution state to canonical line-item lineage', async () => {
     const envelope = makeEnvelope();
     envelope.payload.lineItems = [
       {
-        lineItemId: 'wp-1::phase::dismantle',
+        lineItemId: 'wp-1',
         sourceWorkPackageId: 'wp-1',
         phase: 'dismantle',
         title: 'Install carpet',
@@ -293,9 +327,9 @@ describe('execution-return import', () => {
       makePlanTask({
         id: 'task-td-1',
         status: 'active',
-        sourceLineItemId: 'wp-1::phase::dismantle',
+        sourceLineItemId: 'wp-1',
       }),
-    ].map((task) => ({ ...task, buildPhase: 'dismantle' as const }));
+    ].map((task) => ({ ...task, phase: 'dismantle' as const }));
     envelope.payload.unplannedTasks = [];
     envelope.payload.timeEntries = [];
 
@@ -320,7 +354,7 @@ describe('execution-return import', () => {
       expect.objectContaining({
         id: 'task-td-1',
         sourceLineItemId: 'wp-1',
-        buildPhase: 'dismantle',
+        phase: 'dismantle',
         status: 'completed',
       }),
     );

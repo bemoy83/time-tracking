@@ -11,7 +11,7 @@ export interface WorkPackageCore {
   /** Optional - Task lacks this unless resolved from WorkType lookup. */
   workTypeTitle?: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase;
+  phase: BuildPhase | null;
   workQuantity: number;
   crew: number;
   productivityRate: number;
@@ -69,7 +69,7 @@ export function lineItemPhaseToWorkPackageCore(
     workTypeId: item.workTypeId,
     workTypeTitle: item.workTypeTitle,
     workUnit: item.workUnit,
-    buildPhase: phase,
+    phase: phase,
     workQuantity: quantity,
     crew: pf.crew,
     productivityRate: pf.rate,
@@ -84,7 +84,7 @@ export function taskToWorkPackageCore(task: Task, workType?: WorkType | null): W
     workTypeId: task.workTypeId,
     workTypeTitle: workType?.title,
     workUnit: task.workUnit ?? workType?.workUnit ?? 'm2',
-    buildPhase: task.buildPhase ?? 'assembly',
+    phase: task.phase,
     workQuantity: task.workQuantity ?? 0,
     crew: task.crew ?? 1,
     productivityRate: task.targetProductivity ?? 0,
@@ -111,7 +111,7 @@ export function workPackageCoreToCreateTaskInput(
     workUnit: core.workUnit,
     crew: core.crew,
     targetProductivity: core.productivityRate,
-    buildPhase: core.buildPhase,
+    phase: core.phase,
     estimatedMinutes: core.estimatedMinutes > 0 ? core.estimatedMinutes : undefined,
   };
 }

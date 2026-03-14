@@ -1,9 +1,9 @@
-import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus, RateSource } from '../../planning/plan-model';
-import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnit } from '../../types';
+import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
+import type { BuildPhase, Project, Task, TimeEntry, WorkType } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
-export const DATA_TRANSFER_SCHEMA_VERSION = '1.2';
-export const DATA_TRANSFER_SCHEMA_COMPAT = ['1.2'] as const;
+export const DATA_TRANSFER_SCHEMA_VERSION = '2.0';
+export const DATA_TRANSFER_SCHEMA_COMPAT = ['2.0'] as const;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -26,44 +26,7 @@ export interface PlanPackagePayload {
   lastModifiedAt: string;
 }
 
-/**
- * Legacy single-phase line-item wire format used for plan-package exports.
- * A unified work package can emit up to two records (assembly + dismantle).
- */
-export interface LegacyPlanPackageLineItem {
-  id: string;
-  title: string;
-  workTypeTitle: string;
-  workUnit: WorkUnit;
-  workTypeId: string | null;
-  workQuantity: number;
-  buildPhase: BuildPhase;
-  productivityRate: number;
-  crew: number;
-  timeHours: number;
-  rateSource: RateSource;
-  scheduledStart: string | null;
-  scheduledEnd: string | null;
-  originalScheduledStart: string | null;
-  originalScheduledEnd: string | null;
-  crewByDate?: Record<string, number>;
-  executionStatus: LineItemExecutionStatus;
-  blockReason: string | null;
-  blockCategory: BlockCategory | null;
-  executorNote: string | null;
-  deferredNote: string | null;
-  rationale: string | null;
-  reviewNote?: string | null;
-  removedFromSource: boolean;
-  amendmentNote: string | null;
-  amendedAt: string | null;
-  /** Lineage back to unified planner-side work package id. */
-  sourceWorkPackageId?: string;
-}
-
-export type PlanPackageSerializedLineItem =
-  | PlanLineItem
-  | LegacyPlanPackageLineItem;
+export type PlanPackageSerializedLineItem = PlanLineItem;
 
 export type PlanPackageSerializedPlan = Omit<Plan, 'lineItems'> & {
   lineItems: PlanPackageSerializedLineItem[];
@@ -72,9 +35,9 @@ export type PlanPackageSerializedPlan = Omit<Plan, 'lineItems'> & {
 export interface ExecutionReturnLineItem {
   lineItemId: string;
   /** Phase represented by this execution snapshot row. */
-  phase?: BuildPhase;
+  phase: BuildPhase;
   /** Planner-side unified work package id when available. */
-  sourceWorkPackageId?: string | null;
+  sourceWorkPackageId: string | null;
   title: string;
   executionStatus: LineItemExecutionStatus;
   blockReason: string | null;
@@ -189,7 +152,7 @@ export interface ImportedExecutionReturnUnplannedTaskRecord {
   title: string;
   workTypeId: string | null;
   workUnit: Task['workUnit'];
-  buildPhase: Task['buildPhase'];
+  phase: Task['phase'];
   personHours: number;
 }
 

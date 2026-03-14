@@ -118,7 +118,7 @@ export function TemplatePickerSheet({
               const wt = t.workTypeId ? getWorkTypeById(t.workTypeId) : null;
               const detail = wt
                 ? `${wt.title} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-                : `${BUILD_PHASE_LABELS[t.buildPhase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
+                : `${BUILD_PHASE_LABELS[t.phase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
               return (
                 <button
                   key={t.id}

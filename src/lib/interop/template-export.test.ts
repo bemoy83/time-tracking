@@ -12,7 +12,7 @@ function makeTemplate(overrides: Partial<TaskTemplate> = {}): TaskTemplate {
     estimatedMinutes: 60,
     crew: 2,
     targetProductivity: 10,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -23,7 +23,7 @@ describe('exportTemplatesCsv', () => {
   it('exports work package-compatible headers', () => {
     const csv = exportTemplatesCsv([], new Map());
     expect(csv).toBe(
-      'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'title,workTypeTitle,workUnit,phase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
     );
   });
 

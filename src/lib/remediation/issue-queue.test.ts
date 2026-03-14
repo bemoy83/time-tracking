@@ -15,7 +15,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: null,
     targetProductivity: null,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -331,7 +331,7 @@ describe('buildIssueQueues', () => {
       workTypeId: 'wt-parent',
       workQuantity: 50,
       workUnit: 'm2',
-      buildPhase: 'assembly',
+      phase: 'assembly',
     });
     const child = makeTask({
       id: 'child',
@@ -340,7 +340,7 @@ describe('buildIssueQueues', () => {
       workTypeId: null,
       workQuantity: null,
       workUnit: null,
-      buildPhase: null,
+      phase: null,
     });
     const entry = makeAttributed({
       entryId: 'e1',

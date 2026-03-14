@@ -16,7 +16,7 @@ function makeTask(overrides: Partial<Task>): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: 2,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: 'wt-1',
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T00:00:00.000Z',

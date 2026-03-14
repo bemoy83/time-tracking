@@ -76,7 +76,7 @@ export function findMeasurableOwner(
  * Deterministic heuristic resolver chain for unattributed entries.
  * Ranking:
  * 1) exact workTypeId
- * 2) unit + buildPhase compatibility
+ * 2) unit + phase compatibility
  * 3) nearest measurable in selected pool
  */
 export function resolveWithHeuristics(
@@ -105,11 +105,11 @@ export function resolveWithHeuristics(
   }
 
   // 2) Unit + phase compatibility
-  if (task.workUnit != null && task.buildPhase != null) {
+  if (task.workUnit != null && task.phase != null) {
     const byUnitAndPhase = pool.find(
       (t) =>
         t.workUnit === task.workUnit &&
-        t.buildPhase === task.buildPhase,
+        t.phase === task.phase,
     );
     if (byUnitAndPhase) {
       return { suggestedOwnerTaskId: byUnitAndPhase.id, heuristicUsed: 'unit-phase' };

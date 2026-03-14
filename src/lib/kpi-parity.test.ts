@@ -50,7 +50,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: null,
     crew: null,
     targetProductivity: null,
-    buildPhase: null,
+    phase: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -83,14 +83,14 @@ describe('KPI <-> Calculator parity', () => {
       workQuantity: 100,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'assembly',
+      phase: 'assembly',
     });
     const t2 = makeTask({
       id: 't2',
       workQuantity: 200,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'assembly',
+      phase: 'assembly',
     });
 
     // Entries logged on each task
@@ -141,7 +141,7 @@ describe('KPI <-> Calculator parity', () => {
       workQuantity: 100,
       workUnit: 'm2',
       workTypeId: 'wt-carpet',
-      buildPhase: 'assembly',
+      phase: 'assembly',
     });
     const unmeasurable = makeTask({ id: 'u1' });
 
@@ -174,13 +174,13 @@ describe('KPI <-> Calculator parity', () => {
     expect(kpis[0].totalPersonHours).toBe(2);
   });
 
-  it('Calculator fallback (no buildPhase) matches KPI with null phase', () => {
+  it('Calculator fallback (no phase) matches KPI with null phase', () => {
     const task = makeTask({
       id: 't1',
       workQuantity: 80,
       workUnit: 'pcs',
       workTypeId: 'wt-furniture',
-      buildPhase: null, // no phase
+      phase: null, // no phase
     });
 
     const entries: TimeEntry[] = [
@@ -199,7 +199,7 @@ describe('KPI <-> Calculator parity', () => {
 
     const kpis = computeWorkTypeKpis([task], entriesByTask, { workTypes: WORK_TYPES, archiveOnly: false });
 
-    // Calculator fallback: search without buildPhase
+    // Calculator fallback: search without phase
     const fallbackKey: WorkTypeKey = {
       workTypeId: 'wt-furniture',
       workTypeTitle: 'Furniture',

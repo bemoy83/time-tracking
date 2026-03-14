@@ -40,7 +40,7 @@ function findByTitleUnit(
 function resolveWorkType(
   title: string,
   workUnit: WorkType['workUnit'] | null,
-  _buildPhase: BuildPhase | null,
+  _phase: BuildPhase | null,
   workTypes: WorkType[],
 ): ResolveResult {
   if (!workUnit) return { status: 'missing' };
@@ -56,7 +56,7 @@ function resolveWorkType(
 }
 
 async function applyTaskBackfill(task: Task, workType: WorkType): Promise<void> {
-  const rate = task.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
+  const rate = task.phase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
   await updateTaskFields(task.id, {
     workTypeId: workType.id,
     workUnit: task.workUnit ?? workType.workUnit,
@@ -68,7 +68,7 @@ async function applyTaskBackfill(task: Task, workType: WorkType): Promise<void> 
 }
 
 async function applyTemplateBackfill(template: TaskTemplate, workType: WorkType): Promise<void> {
-  const rate = template.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
+  const rate = template.phase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
   await updateTemplate(template.id, {
     workTypeId: workType.id,
     workUnit: template.workUnit ?? workType.workUnit,
@@ -128,7 +128,7 @@ export async function runWorkTypeLinkBackfill(): Promise<BackfillReport> {
     const resolved = resolveWorkType(
       task.title,
       task.workUnit,
-      task.buildPhase,
+      task.phase,
       workTypes,
     );
     if (resolved.status === 'resolved') {
@@ -148,7 +148,7 @@ export async function runWorkTypeLinkBackfill(): Promise<BackfillReport> {
     const resolved = resolveWorkType(
       template.title,
       template.workUnit,
-      template.buildPhase,
+      template.phase,
       workTypes,
     );
     if (resolved.status === 'resolved') {

@@ -15,7 +15,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: null,
     crew: null,
     targetProductivity: null,
-    buildPhase: null,
+    phase: null,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     archivedAt: null,
@@ -45,7 +45,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     id: 'source',
     projectId: 'p1',
     workUnit: 'm2',
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: null,
   });
   const candidate = makeTask({
@@ -53,7 +53,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     projectId: 'p1',
     workQuantity: 50,
     workUnit: 'm2',
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: 'wt-1',
   });
   const unrelated = makeTask({
@@ -61,7 +61,7 @@ function buildHeuristicScenario(): Map<string, Task> {
     projectId: 'p2',
     workQuantity: 50,
     workUnit: 'pcs',
-    buildPhase: 'dismantle',
+    phase: 'dismantle',
     workTypeId: 'wt-2',
   });
 

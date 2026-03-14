@@ -67,7 +67,7 @@ export async function initializeTemplateStore(): Promise<void> {
 export interface CreateTemplateInput {
   title: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase;
+  phase: BuildPhase;
   workTypeId?: string | null;
   workQuantity?: number | null;
   estimatedMinutes?: number | null;
@@ -86,7 +86,7 @@ export async function createTemplate(input: CreateTemplateInput): Promise<TaskTe
     estimatedMinutes: input.estimatedMinutes ?? null,
     crew: input.crew ?? null,
     targetProductivity: input.targetProductivity ?? null,
-    buildPhase: input.buildPhase,
+    phase: input.phase,
     createdAt: now,
     updatedAt: now,
   };

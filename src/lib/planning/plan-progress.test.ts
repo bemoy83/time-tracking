@@ -29,7 +29,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: 20,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: 'wt-1',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
@@ -196,7 +196,7 @@ describe('computePlanProgress', () => {
     expect(itemB.blockCategory).toBe('materials');
   });
 
-  it('treats legacy linked tasks with null buildPhase as assembly', () => {
+  it('does not match unphased linked tasks to assembly or dismantle progress', () => {
     const plan = makePlan();
     const [lineItemA, lineItemB] = plan.lineItems;
     lineItemA.dismantleRate = 5;
@@ -208,7 +208,7 @@ describe('computePlanProgress', () => {
       id: 'task-legacy',
       sourcePlanId: plan.id,
       sourceLineItemId: lineItemA.id,
-      buildPhase: null,
+      phase: null,
       status: 'completed',
     });
 
@@ -231,8 +231,8 @@ describe('computePlanProgress', () => {
       item.lineItemId === lineItemB.id && item.phase === 'assembly',
     )!;
 
-    expect(assembly.actualHours).toBe(2);
-    expect(assembly.status).toBe('completed');
+    expect(assembly.actualHours).toBe(0);
+    expect(assembly.status).toBe('unreleased');
     expect(dismantle.actualHours).toBe(0);
     expect(dismantle.status).toBe('unreleased');
     expect(untouched.status).toBe('unreleased');

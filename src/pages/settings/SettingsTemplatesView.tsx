@@ -116,7 +116,7 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
                       const workType = template.workTypeId ? workTypeById.get(template.workTypeId) : null;
                       return workType
                         ? `${workType.title} · ${WORK_UNIT_LABELS[workType.workUnit]}`
-                        : `${BUILD_PHASE_LABELS[template.buildPhase]} · ${WORK_UNIT_LABELS[template.workUnit]}`;
+                        : `${BUILD_PHASE_LABELS[template.phase]} · ${WORK_UNIT_LABELS[template.workUnit]}`;
                     })()}
                   </span>
                 </div>

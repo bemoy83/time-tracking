@@ -26,7 +26,7 @@ describe('lineItemToCreateTaskInput', () => {
     expect(input.workUnit).toBe('m2');
     expect(input.crew).toBe(3);
     expect(input.targetProductivity).toBe(10);
-    expect(input.buildPhase).toBe('assembly');
+    expect(input.phase).toBe('assembly');
     expect(input.estimatedMinutes).toBe(600); // 10 hours * 60
   });
 
@@ -78,7 +78,7 @@ describe('lineItemToCreateTaskInput', () => {
     const input = lineItemToCreateTaskInput(item, 'dismantle');
 
     expect(input.title).toBe('Strike carpet — Dismantle');
-    expect(input.buildPhase).toBe('dismantle');
+    expect(input.phase).toBe('dismantle');
     expect(input.workQuantity).toBe(90);
     expect(input.targetProductivity).toBe(5);
   });

@@ -121,7 +121,7 @@ function resolveTaskUpdates(task: Task, workType: WorkType): Pick<Task, 'workTyp
     );
   }
 
-  const rate = task.buildPhase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
+  const rate = task.phase === 'dismantle' ? workType.dismantleRate : workType.assemblyRate;
 
   return {
     workTypeId: workType.id,
@@ -245,8 +245,8 @@ export async function createAndClassifyFromEntry(
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
   const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
-  const assemblyRate = input.assemblyRate ?? (task.buildPhase !== 'dismantle' ? defaultRate : 0);
-  const dismantleRate = input.dismantleRate ?? (task.buildPhase === 'dismantle' ? defaultRate : 0);
+  const assemblyRate = input.assemblyRate ?? (task.phase !== 'dismantle' ? defaultRate : 0);
+  const dismantleRate = input.dismantleRate ?? (task.phase === 'dismantle' ? defaultRate : 0);
   if (assemblyRate <= 0 && dismantleRate <= 0) {
     throw new Error('At least one rate must be greater than 0.');
   }
@@ -288,8 +288,8 @@ export async function createAndClassifyFromTask(
   }
   const workUnit = input.workUnit ?? task.workUnit ?? 'm2';
   const defaultRate = task.targetProductivity != null && task.targetProductivity > 0 ? task.targetProductivity : 10;
-  const assemblyRate = input.assemblyRate ?? (task.buildPhase !== 'dismantle' ? defaultRate : 0);
-  const dismantleRate = input.dismantleRate ?? (task.buildPhase === 'dismantle' ? defaultRate : 0);
+  const assemblyRate = input.assemblyRate ?? (task.phase !== 'dismantle' ? defaultRate : 0);
+  const dismantleRate = input.dismantleRate ?? (task.phase === 'dismantle' ? defaultRate : 0);
   if (assemblyRate <= 0 && dismantleRate <= 0) {
     throw new Error('At least one rate must be greater than 0.');
   }

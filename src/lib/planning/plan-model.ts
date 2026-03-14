@@ -207,7 +207,7 @@ function readPhaseField<FieldName extends keyof PhaseFields>(
   return item[getPhaseFieldKey(phase, fieldName)] as PhaseFields[FieldName];
 }
 
-function buildPhaseFieldState(
+function phaseFieldState(
   phase: BuildPhase,
   fields: PhaseFields,
 ): Pick<PlanLineItem, PhaseSpecificPlanLineItemField> {
@@ -468,7 +468,7 @@ export function createLineItem(
     workTypeId,
     workQuantity,
     dismantleQuantity: null,
-    ...buildPhaseFieldState('assembly', {
+    ...phaseFieldState('assembly', {
       rate: assemblyRate,
       crew: assemblyRate > 0 ? 1 : 0,
       timeHours: assemblyTimeHours,
@@ -484,7 +484,7 @@ export function createLineItem(
       executorNote: null,
       deferredNote: null,
     }),
-    ...buildPhaseFieldState('dismantle', {
+    ...phaseFieldState('dismantle', {
       rate: dismantleRate,
       crew: dismantleRate > 0 ? 1 : 0,
       timeHours: dismantleTimeHours,
@@ -523,7 +523,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     workTypeId: item.workTypeId,
     workQuantity: item.workQuantity,
     dismantleQuantity: item.dismantleQuantity,
-    ...buildPhaseFieldState('assembly', {
+    ...phaseFieldState('assembly', {
       ...getPhaseFields(item, 'assembly'),
       crewByDate: item.assemblyCrewByDate ? { ...item.assemblyCrewByDate } : undefined,
       blockReason: null,
@@ -531,7 +531,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
       executorNote: null,
       deferredNote: null,
     }),
-    ...buildPhaseFieldState('dismantle', {
+    ...phaseFieldState('dismantle', {
       ...getPhaseFields(item, 'dismantle'),
       crewByDate: item.dismantleCrewByDate ? { ...item.dismantleCrewByDate } : undefined,
       blockReason: null,
@@ -606,101 +606,5 @@ export function removeLineItemFromPlan(plan: Plan, lineItemId: string): Plan {
     ...plan,
     lineItems: plan.lineItems.filter((item) => item.id !== lineItemId),
     updatedAt: nowUtc(),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Migration: convert old single-phase line items on plan load
-// ---------------------------------------------------------------------------
-
-/** Detect and migrate old single-phase PlanLineItem format to dual-phase. */
-export function migrateLineItemToDualPhase(raw: Record<string, unknown>): PlanLineItem {
-  // Already migrated: has assemblyRate field
-  if ('assemblyRate' in raw && typeof raw.assemblyRate === 'number') {
-    return raw as unknown as PlanLineItem;
-  }
-
-  // Old format detection: has buildPhase + productivityRate
-  const oldPhaseRaw = raw.buildPhase;
-  const oldPhase = oldPhaseRaw === 'dismantle' || oldPhaseRaw === 'tear-down'
-    ? 'dismantle'
-    : 'assembly';
-  const oldRate = (raw.productivityRate as number) ?? 0;
-  const oldCrew = (raw.crew as number) ?? 1;
-  const oldTimeHours = (raw.timeHours as number) ?? 0;
-  const oldRateSource = (raw.rateSource as RateSource) ?? 'manual';
-  const oldScheduledStart = (raw.scheduledStart as string | null) ?? null;
-  const oldScheduledEnd = (raw.scheduledEnd as string | null) ?? null;
-  const oldOriginalScheduledStart = (raw.originalScheduledStart as string | null) ?? null;
-  const oldOriginalScheduledEnd = (raw.originalScheduledEnd as string | null) ?? null;
-  const oldCrewByDate = (raw.crewByDate as Record<string, number> | undefined) ?? undefined;
-  const oldExecStatus = (raw.executionStatus as LineItemExecutionStatus) ?? 'pending';
-  const oldBlockReason = (raw.blockReason as string | null) ?? null;
-  const oldBlockCategory = (raw.blockCategory as BlockCategory | null) ?? null;
-  const oldExecutorNote = (raw.executorNote as string | null) ?? null;
-  const oldDeferredNote = (raw.deferredNote as string | null) ?? null;
-
-  const isAssembly = oldPhase === 'assembly';
-
-  return {
-    id: raw.id as string,
-    title: raw.title as string,
-    workTypeTitle: (raw.workTypeTitle as string) ?? '',
-    workUnit: raw.workUnit as WorkUnit,
-    workTypeId: (raw.workTypeId as string | null) ?? null,
-    workQuantity: (raw.workQuantity as number) ?? 0,
-    dismantleQuantity: null,
-    ...buildPhaseFieldState('assembly', {
-      rate: isAssembly ? oldRate : 0,
-      crew: isAssembly ? oldCrew : 0,
-      timeHours: isAssembly ? oldTimeHours : 0,
-      rateSource: isAssembly ? oldRateSource : 'manual',
-      scheduledStart: isAssembly ? oldScheduledStart : null,
-      scheduledEnd: isAssembly ? oldScheduledEnd : null,
-      originalScheduledStart: isAssembly ? oldOriginalScheduledStart : null,
-      originalScheduledEnd: isAssembly ? oldOriginalScheduledEnd : null,
-      crewByDate: isAssembly ? oldCrewByDate : undefined,
-      executionStatus: isAssembly ? oldExecStatus : 'pending',
-      blockReason: isAssembly ? oldBlockReason : null,
-      blockCategory: isAssembly ? oldBlockCategory : null,
-      executorNote: isAssembly ? oldExecutorNote : null,
-      deferredNote: isAssembly ? oldDeferredNote : null,
-    }),
-    ...buildPhaseFieldState('dismantle', {
-      rate: !isAssembly ? oldRate : 0,
-      crew: !isAssembly ? oldCrew : 0,
-      timeHours: !isAssembly ? oldTimeHours : 0,
-      rateSource: !isAssembly ? oldRateSource : 'manual',
-      scheduledStart: !isAssembly ? oldScheduledStart : null,
-      scheduledEnd: !isAssembly ? oldScheduledEnd : null,
-      originalScheduledStart: !isAssembly ? oldOriginalScheduledStart : null,
-      originalScheduledEnd: !isAssembly ? oldOriginalScheduledEnd : null,
-      crewByDate: !isAssembly ? oldCrewByDate : undefined,
-      executionStatus: !isAssembly ? oldExecStatus : 'pending',
-      blockReason: !isAssembly ? oldBlockReason : null,
-      blockCategory: !isAssembly ? oldBlockCategory : null,
-      executorNote: !isAssembly ? oldExecutorNote : null,
-      deferredNote: !isAssembly ? oldDeferredNote : null,
-    }),
-
-    rationale: (raw.rationale as string | null) ?? null,
-    reviewNote: (raw.reviewNote as string | null) ?? null,
-    removedFromSource: (raw.removedFromSource as boolean) ?? false,
-    amendmentNote: (raw.amendmentNote as string | null) ?? null,
-    amendedAt: (raw.amendedAt as string | null) ?? null,
-  };
-}
-
-/** Migrate all line items in a plan from old single-phase format if needed. */
-export function migratePlanLineItems(plan: Plan): Plan {
-  const rawItems = plan.lineItems as unknown as Record<string, unknown>[];
-  const needsMigration = rawItems.some(
-    (raw) => 'buildPhase' in raw && !('assemblyRate' in raw),
-  );
-  if (!needsMigration) return plan;
-
-  return {
-    ...plan,
-    lineItems: rawItems.map(migrateLineItemToDualPhase),
   };
 }

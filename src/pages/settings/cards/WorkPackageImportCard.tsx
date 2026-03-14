@@ -37,7 +37,7 @@ export function WorkPackageImportCard({
         />
       </div>
       <p className="settings-view__helper">
-        Choose a CSV file (title, workTypeTitle, workUnit, buildPhase, ...)
+        Choose a CSV file (title, workTypeTitle, workUnit, phase, ...)
       </p>
 
       <input

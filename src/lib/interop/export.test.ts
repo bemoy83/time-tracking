@@ -116,6 +116,6 @@ describe('CSV escaping', () => {
     // Should be valid CSV (no unescaped commas in field values)
     const row = csv.split('\n')[1];
     const fields = row.split(',');
-    expect(fields.length).toBe(8); // exact column count (no buildPhase column)
+    expect(fields.length).toBe(8); // exact column count (no phase column)
   });
 });

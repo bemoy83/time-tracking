@@ -86,7 +86,7 @@ export async function bulkReassignToSuggested(
 export interface WorkContextPatch {
   workUnit: WorkUnit;
   workQuantity: number;
-  buildPhase: BuildPhase | null;
+  phase: BuildPhase | null;
   workTypeId: string | null;
 }
 
@@ -113,7 +113,7 @@ export async function bulkSetWorkContext(
         ...task,
         workUnit: patch.workUnit,
         workQuantity: patch.workQuantity,
-        buildPhase: patch.buildPhase,
+        phase: patch.phase,
         workTypeId: patch.workTypeId,
         updatedAt: now,
       };

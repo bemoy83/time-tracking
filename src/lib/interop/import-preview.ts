@@ -2,7 +2,7 @@
  * Import validation preview — diffs parsed import data against existing
  * tasks and templates. Shows what would be created, updated, or skipped.
  *
- * Matches by mapping key (title::workTypeTitle:workUnit:buildPhase).
+ * Matches by mapping key (title::workTypeTitle:workUnit:phase).
  * Detects duplicates within the import set and conflicts with existing data.
  */
 
@@ -39,10 +39,10 @@ export interface ImportPreview {
 
 /** Build a mapping key for an existing task. */
 function taskMappingKey(task: Task, workTypeTitleById: Map<string, string>): string | null {
-  if (!task.workUnit || !task.buildPhase || !task.workTypeId) return null;
+  if (!task.workUnit || !task.phase || !task.workTypeId) return null;
   const workTypeTitle = workTypeTitleById.get(task.workTypeId);
   if (!workTypeTitle) return null;
-  return workPackageMappingKey(task.title, workTypeTitle, task.workUnit, task.buildPhase);
+  return workPackageMappingKey(task.title, workTypeTitle, task.workUnit, task.phase);
 }
 
 /** Build a mapping key for an existing template. */
@@ -54,7 +54,7 @@ function templateMappingKey(template: TaskTemplate, workTypeTitleById: Map<strin
     template.title,
     workTypeTitle,
     template.workUnit,
-    template.buildPhase,
+    template.phase,
   );
 }
 

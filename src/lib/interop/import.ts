@@ -3,10 +3,10 @@
  * creation inputs with validation.
  *
  * Expected CSV columns:
- *   title, workTypeTitle, workUnit, buildPhase, workQuantity,
+ *   title, workTypeTitle, workUnit, phase, workQuantity,
  *   estimatedMinutes, crew (or legacy defaultWorkers), targetProductivity
  *
- * Stable mapping key for round-trip: title + workTypeTitle + workUnit + buildPhase
+ * Stable mapping key for round-trip: title + workTypeTitle + workUnit + phase
  */
 
 import {
@@ -25,8 +25,8 @@ export interface ImportedWorkPackage {
   title: string;
   workTypeTitle: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase;
-  /** Resolved workTypeId from (title, workUnit, buildPhase). null if no match found. */
+  phase: BuildPhase;
+  /** Resolved workTypeId from (title, workUnit, phase). null if no match found. */
   workTypeId: string | null;
   workQuantity: number | null;
   estimatedMinutes: number | null;
@@ -52,9 +52,9 @@ export function workPackageMappingKey(
   title: string,
   workTypeTitle: string,
   workUnit: string,
-  buildPhase: string,
+  phase: string,
 ): string {
-  return `${title}::${workTypeTitle}:${workUnit}:${buildPhase}`;
+  return `${title}::${workTypeTitle}:${workUnit}:${phase}`;
 }
 
 /**
@@ -69,7 +69,7 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
 
   const delimiter = detectCsvDelimiter(lines[0]);
   const headers = parseCsvLine(lines[0], delimiter).map((h) => h.trim().toLowerCase());
-  const requiredHeaders = ['title', 'worktypetitle', 'workunit', 'buildphase'];
+  const requiredHeaders = ['title', 'worktypetitle', 'workunit', 'phase'];
   const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
   if (missingHeaders.length > 0) {
     return {
@@ -113,11 +113,11 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       rowErrors.push({ row: rowNum, field: 'workUnit', message: `Invalid work unit: "${workUnit}". Valid: ${VALID_WORK_UNITS.join(', ')}` });
     }
 
-    const buildPhase = row['buildphase'];
-    if (!buildPhase) {
-      rowErrors.push({ row: rowNum, field: 'buildPhase', message: 'Build phase is required' });
-    } else if (!VALID_BUILD_PHASES.includes(buildPhase as BuildPhase)) {
-      rowErrors.push({ row: rowNum, field: 'buildPhase', message: `Invalid build phase: "${buildPhase}". Valid: ${VALID_BUILD_PHASES.join(', ')}` });
+    const phase = row['phase'];
+    if (!phase) {
+      rowErrors.push({ row: rowNum, field: 'phase', message: 'Phase is required' });
+    } else if (!VALID_BUILD_PHASES.includes(phase as BuildPhase)) {
+      rowErrors.push({ row: rowNum, field: 'phase', message: `Invalid phase: "${phase}". Valid: ${VALID_BUILD_PHASES.join(', ')}` });
     }
 
     // Validate optional numeric fields
@@ -146,11 +146,11 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
     );
 
     items.push({
-      mappingKey: workPackageMappingKey(title, workTypeTitle, workUnit, buildPhase),
+      mappingKey: workPackageMappingKey(title, workTypeTitle, workUnit, phase),
       title,
       workTypeTitle,
       workUnit: workUnit as WorkUnit,
-      buildPhase: buildPhase as BuildPhase,
+      phase: phase as BuildPhase,
       workTypeId: resolvedWorkType?.id ?? null,
       workQuantity,
       estimatedMinutes,

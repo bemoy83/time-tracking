@@ -45,6 +45,13 @@ function isExecutionReturnEnvelope(
   if (typeof payload.planTitle !== 'string') return false;
   if (typeof payload.closedAt !== 'string') return false;
   if (!Array.isArray(payload.lineItems)) return false;
+  if (!payload.lineItems.every((lineItem) =>
+    isRecord(lineItem)
+    && typeof lineItem.lineItemId === 'string'
+    && (lineItem.phase === 'assembly' || lineItem.phase === 'dismantle')
+    && (lineItem.sourceWorkPackageId == null || typeof lineItem.sourceWorkPackageId === 'string')
+    && typeof lineItem.title === 'string',
+  )) return false;
   if (!Array.isArray(payload.tasks)) return false;
   if (!Array.isArray(payload.unplannedTasks)) return false;
   if (!Array.isArray(payload.timeEntries)) return false;
@@ -70,46 +77,17 @@ function buildDateRange(entries: ExecutionReturnPayload['timeEntries']): {
   return { start, end };
 }
 
-const PHASE_LINE_ITEM_ID_SEPARATOR = '::phase::';
-
 interface NormalizedExecutionReturnLineItem extends ExecutionReturnLineItem {
-  originalLineItemId: string;
   phase: BuildPhase;
-  lineItemId: string;
-}
-
-function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string; phase: BuildPhase } | null {
-  const idx = lineItemId.lastIndexOf(PHASE_LINE_ITEM_ID_SEPARATOR);
-  if (idx <= 0) return null;
-  const sourceWorkPackageId = lineItemId.slice(0, idx);
-  const phaseRaw = lineItemId.slice(idx + PHASE_LINE_ITEM_ID_SEPARATOR.length);
-  if (phaseRaw !== 'assembly' && phaseRaw !== 'dismantle') return null;
-  return {
-    sourceWorkPackageId,
-    phase: phaseRaw,
-  };
-}
-
-function normalizeTaskBuildPhase(phase: Task['buildPhase']): BuildPhase {
-  return phase === 'dismantle' ? 'dismantle' : 'assembly';
 }
 
 function normalizeExecutionReturnLineItems(
   lineItems: ExecutionReturnPayload['lineItems'],
 ): NormalizedExecutionReturnLineItem[] {
-  return lineItems.map((lineItem) => {
-    const parsed = parsePhaseLineItemId(lineItem.lineItemId);
-    const phase = lineItem.phase ?? parsed?.phase ?? 'assembly';
-    const sourceWorkPackageId =
-      lineItem.sourceWorkPackageId ?? parsed?.sourceWorkPackageId ?? lineItem.lineItemId;
-    return {
-      ...lineItem,
-      originalLineItemId: lineItem.lineItemId,
-      lineItemId: sourceWorkPackageId,
-      phase,
-      sourceWorkPackageId,
-    };
-  });
+  return lineItems.map((lineItem) => ({
+    ...lineItem,
+    sourceWorkPackageId: lineItem.sourceWorkPackageId ?? lineItem.lineItemId,
+  }));
 }
 
 function remapTaskSourceLineItemId(
@@ -117,25 +95,17 @@ function remapTaskSourceLineItemId(
   normalizedLineItems: NormalizedExecutionReturnLineItem[],
 ): Task {
   if (task.sourceLineItemId == null) return task;
-  const phase = normalizeTaskBuildPhase(task.buildPhase);
-  const byPhase = normalizedLineItems.find(
+  const matchingLineItem = normalizedLineItems.find(
     (lineItem) =>
-      lineItem.originalLineItemId === task.sourceLineItemId
-      && lineItem.phase === phase,
+      lineItem.lineItemId === task.sourceLineItemId
+      && lineItem.phase === task.phase,
   );
-  const byId = normalizedLineItems.find(
-    (lineItem) => lineItem.originalLineItemId === task.sourceLineItemId,
-  );
-  const parsed = parsePhaseLineItemId(task.sourceLineItemId);
-  const remappedSourceLineItemId =
-    byPhase?.lineItemId
-    ?? byId?.lineItemId
-    ?? parsed?.sourceWorkPackageId
-    ?? task.sourceLineItemId;
+  if (!matchingLineItem) {
+    return task;
+  }
   return {
     ...task,
-    buildPhase: task.buildPhase ?? phase,
-    sourceLineItemId: remappedSourceLineItemId,
+    sourceLineItemId: matchingLineItem.lineItemId,
   };
 }
 
@@ -263,7 +233,7 @@ function buildImportedUnplannedTasks(
     title: task.title,
     workTypeId: task.workTypeId ?? null,
     workUnit: task.workUnit ?? null,
-    buildPhase: task.buildPhase ?? null,
+    phase: task.phase,
     personHours: computeUnplannedTaskPersonHours(task, envelope.payload.timeEntries),
   }));
 }
@@ -300,8 +270,8 @@ function applyImportedLineItemStatusToTasks(
   );
   return planTasks.map((task) => {
     const lineItemId = task.sourceLineItemId;
-    if (lineItemId == null) return task;
-    const phase = normalizeTaskBuildPhase(task.buildPhase);
+    if (lineItemId == null || task.phase == null) return task;
+    const phase = task.phase;
     const importedStatus = statusByLineItemPhase.get(`${lineItemId}:${phase}`);
     if (importedStatus !== 'completed') return task;
     if (task.status === 'completed') return task;

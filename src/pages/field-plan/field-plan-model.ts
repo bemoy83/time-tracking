@@ -90,10 +90,10 @@ export function buildFieldPlanLineItemSummaries(
       if (!isPhaseActive(item, phase)) continue;
       const pf = getPhaseFields(item, phase);
       const phaseTasks = linkedTasks.filter((task) => {
-        if (task.buildPhase == null) {
+        if (task.phase == null) {
           return phase === 'assembly';
         }
-        return task.buildPhase === phase;
+        return task.phase === phase;
       });
       const phaseEntries = phaseTasks.flatMap((task) => entriesByTaskId.get(task.id) ?? []);
       const deadline = evaluateLineItemDeadline(item, phase, phaseTasks, phaseEntries, todayDate);

@@ -153,7 +153,7 @@ export function getPhaseWorkDayCount(plan: Plan | null | undefined, phase: Build
   return workDays.length;
 }
 
-function buildPhaseSuggestion(
+function phaseSuggestion(
   item: PlanLineItem,
   phase: BuildPhase,
   plan: Plan | null | undefined,
@@ -193,8 +193,8 @@ export function generatePlanSuggestions(
     return {
       lineItemId: item.id,
       kpi,
-      assembly: buildPhaseSuggestion(item, 'assembly', plan, suggestedRate),
-      dismantle: buildPhaseSuggestion(item, 'dismantle', plan, suggestedRate),
+      assembly: phaseSuggestion(item, 'assembly', plan, suggestedRate),
+      dismantle: phaseSuggestion(item, 'dismantle', plan, suggestedRate),
       confidence,
       risk,
       riskReasons: reasons,

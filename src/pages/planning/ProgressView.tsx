@@ -199,7 +199,7 @@ export function ProgressView({
                 <div>
                   <h3 className="progress-view__item-title">{item.title}</h3>
                   <p className="progress-view__item-meta">
-                    {item.workTypeTitle} · {BUILD_PHASE_LABELS[item.buildPhase]} · {unitLabel} · {item.taskCount} task
+                    {item.workTypeTitle} · {BUILD_PHASE_LABELS[item.phase]} · {unitLabel} · {item.taskCount} task
                     {item.taskCount === 1 ? '' : 's'}
                   </p>
                   <p className="progress-view__item-meta">

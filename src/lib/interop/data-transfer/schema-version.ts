@@ -13,5 +13,5 @@ export function unsupportedSchemaVersionMessage(
   schemaVersion: string,
   exportType: DataTransferExportType,
 ): string {
-  return `Unsupported ${exportType} schema version: ${schemaVersion} (supported: ${DATA_TRANSFER_SCHEMA_COMPAT.join(', ')}).`;
+  return `Unsupported ${exportType} schema version: ${schemaVersion}. Only schema ${DATA_TRANSFER_SCHEMA_COMPAT.join(', ')} is supported.`;
 }

@@ -20,7 +20,6 @@ export interface LineItemProgress {
   title: string;
   workTypeTitle: string;
   workUnit: WorkUnit;
-  buildPhase: BuildPhase;
   plannedQuantity: number;
   actualQuantity: number;
   blockReason: string | null;
@@ -100,8 +99,7 @@ function resolveLineItemStatus(tasks: Task[], actualPersonHours: number): LineIt
 }
 
 function taskMatchesPhase(task: Task, phase: BuildPhase): boolean {
-  const taskPhase = task.buildPhase ?? 'assembly';
-  return taskPhase === phase;
+  return task.phase === phase;
 }
 
 export function computePlanProgress(
@@ -218,7 +216,6 @@ export function computePlanProgress(
           title: item.title,
           workTypeTitle: item.workTypeTitle && item.workTypeTitle.trim().length > 0 ? item.workTypeTitle : item.title,
           workUnit: item.workUnit,
-          buildPhase: phase,
           plannedQuantity: quantity,
           actualQuantity: totalTaskQuantity,
           blockReason,

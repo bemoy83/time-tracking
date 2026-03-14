@@ -46,7 +46,7 @@ const baseTask = {
   workUnit: null,
   crew: null,
   targetProductivity: null,
-  buildPhase: null,
+  phase: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   archivedAt: null,
@@ -170,7 +170,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['task-old'],
-      { workUnit: 'm2', workQuantity: 100, buildPhase: 'assembly', workTypeId: 'wt-1' },
+      { workUnit: 'm2', workQuantity: 100, phase: 'assembly', workTypeId: 'wt-1' },
     );
 
     expect(result.succeeded).toBe(1);
@@ -190,7 +190,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['missing'],
-      { workUnit: 'm2', workQuantity: 100, buildPhase: null, workTypeId: null },
+      { workUnit: 'm2', workQuantity: 100, phase: null, workTypeId: null },
     );
 
     expect(result.failed).toHaveLength(1);
@@ -204,7 +204,7 @@ describe('bulkSetWorkContext', () => {
 
     const result = await bulkSetWorkContext(
       ['t1', 't2', 't3'],
-      { workUnit: 'pcs', workQuantity: 50, buildPhase: null, workTypeId: 'wt-furniture' },
+      { workUnit: 'pcs', workQuantity: 50, phase: null, workTypeId: 'wt-furniture' },
     );
 
     expect(result.attempted).toBe(3);

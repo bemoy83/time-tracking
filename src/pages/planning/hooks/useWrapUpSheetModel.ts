@@ -47,7 +47,7 @@ function resolveTaskGroups(plan: Plan, projectTasks: Task[]): WrapUpTaskGroup[] 
           item.workTypeId != null &&
           item.workTypeId === task.workTypeId &&
           item.workUnit === task.workUnit &&
-          (task.buildPhase == null || BUILD_PHASES.filter((p: BuildPhase) => isPhaseActive(item, p)).includes(task.buildPhase)),
+          (task.phase == null || BUILD_PHASES.filter((p: BuildPhase) => isPhaseActive(item, p)).includes(task.phase)),
       );
       if (matchedByType) {
         groupId = matchedByType.id;

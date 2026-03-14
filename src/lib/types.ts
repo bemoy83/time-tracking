@@ -25,7 +25,7 @@ export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
   orders: 'orders',
 };
 
-// Build phases for task templates
+// Phases for task templates
 export type BuildPhase = 'assembly' | 'dismantle';
 
 export const BUILD_PHASE_LABELS: Record<BuildPhase, string> = {
@@ -66,7 +66,7 @@ export interface TaskTemplate {
   estimatedMinutes: number | null;
   crew: number | null;
   targetProductivity: number | null; // units/person-hr (legacy, sourced from WorkType)
-  buildPhase: BuildPhase;
+  phase: BuildPhase;
   createdAt: string;
   updatedAt: string;
 }
@@ -138,7 +138,7 @@ export interface Task {
   workUnit: WorkUnit | null; // e.g. 'm2'
   crew: number | null; // Expected crew count; null = use 1
   targetProductivity: number | null; // units/person-hr from template
-  buildPhase: BuildPhase | null; // from template, read-only
+  phase: BuildPhase | null; // from template, read-only
   workTypeId: string | null; // references WorkType
   createdAt: string;
   updatedAt: string;

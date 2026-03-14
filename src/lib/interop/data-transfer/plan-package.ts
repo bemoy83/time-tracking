@@ -4,18 +4,14 @@ import {
   type PlanLineItem,
   type LineItemExecutionStatus,
   getPhaseFields,
-  getPhaseQuantity,
-  isPhaseActive,
-  migrateLineItemToDualPhase,
 } from '../../planning/plan-model';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { nowUtc } from '../../types';
-import type { BuildPhase, Project, WorkType } from '../../types';
+import type { Project, WorkType } from '../../types';
 import { BUILD_PHASES, generateId } from '../../types';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
-  type LegacyPlanPackageLineItem,
   type PlanPackageSerializedLineItem,
   type PlanPackageImportPreview,
   type PlanPackageLineItemDiff,
@@ -61,195 +57,29 @@ function normalizeCrewByDate(value: unknown): Record<string, number> | undefined
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-const PHASE_LINE_ITEM_ID_SEPARATOR = '::phase::';
-
-function toPhaseLineItemId(sourceWorkPackageId: string, phase: BuildPhase): string {
-  return `${sourceWorkPackageId}${PHASE_LINE_ITEM_ID_SEPARATOR}${phase}`;
-}
-
-function parsePhaseLineItemId(lineItemId: string): { sourceWorkPackageId: string; phase: BuildPhase } | null {
-  const idx = lineItemId.lastIndexOf(PHASE_LINE_ITEM_ID_SEPARATOR);
-  if (idx <= 0) return null;
-  const sourceWorkPackageId = lineItemId.slice(0, idx);
-  const phaseRaw = lineItemId.slice(idx + PHASE_LINE_ITEM_ID_SEPARATOR.length);
-  if (phaseRaw !== 'assembly' && phaseRaw !== 'dismantle') return null;
-  return {
-    sourceWorkPackageId,
-    phase: phaseRaw,
-  };
-}
-
-function isLegacySinglePhaseLineItem(raw: unknown): raw is LegacyPlanPackageLineItem {
-  if (!isRecord(raw)) return false;
-  const buildPhase = raw.buildPhase;
+function isCanonicalSerializedLineItem(value: unknown): value is PlanPackageSerializedLineItem {
+  if (!isRecord(value)) return false;
   return (
-    typeof raw.id === 'string'
-    && typeof raw.title === 'string'
-    && (buildPhase === 'assembly' || buildPhase === 'dismantle')
-    && !('assemblyRate' in raw)
+    typeof value.id === 'string'
+    && typeof value.title === 'string'
+    && typeof value.workTypeTitle === 'string'
+    && typeof value.workUnit === 'string'
+    && typeof value.assemblyRate === 'number'
+    && typeof value.dismantleRate === 'number'
+    && typeof value.assemblyCrew === 'number'
+    && typeof value.dismantleCrew === 'number'
+    && typeof value.assemblyTimeHours === 'number'
+    && typeof value.dismantleTimeHours === 'number'
+    && typeof value.assemblyRateSource === 'string'
+    && typeof value.dismantleRateSource === 'string'
+    && typeof value.assemblyExecutionStatus === 'string'
+    && typeof value.dismantleExecutionStatus === 'string'
+    && typeof value.removedFromSource === 'boolean'
   );
 }
 
-function serializeLineItemToLegacyPhaseRecords(item: PlanLineItem): LegacyPlanPackageLineItem[] {
-  return BUILD_PHASES
-    .filter((phase) => isPhaseActive(item, phase))
-    .map((phase) => {
-      const pf = getPhaseFields(item, phase);
-      return {
-        id: toPhaseLineItemId(item.id, phase),
-        sourceWorkPackageId: item.id,
-        title: item.title,
-        workTypeTitle: item.workTypeTitle,
-        workUnit: item.workUnit,
-        workTypeId: item.workTypeId,
-        workQuantity: getPhaseQuantity(item, phase),
-        buildPhase: phase,
-        productivityRate: pf.rate,
-        crew: pf.crew,
-        timeHours: pf.timeHours,
-        rateSource: pf.rateSource,
-        scheduledStart: pf.scheduledStart,
-        scheduledEnd: pf.scheduledEnd,
-        originalScheduledStart: pf.originalScheduledStart,
-        originalScheduledEnd: pf.originalScheduledEnd,
-        crewByDate: pf.crewByDate,
-        executionStatus: pf.executionStatus,
-        blockReason: pf.blockReason,
-        blockCategory: pf.blockCategory,
-        executorNote: pf.executorNote,
-        deferredNote: pf.deferredNote,
-        rationale: item.rationale,
-        reviewNote: item.reviewNote ?? null,
-        removedFromSource: item.removedFromSource,
-        amendmentNote: item.amendmentNote,
-        amendedAt: item.amendedAt,
-      };
-    });
-}
-
-function mergeLegacyPhaseItems(
-  sourceWorkPackageId: string,
-  assemblyItem: PlanLineItem | null,
-  dismantleItem: PlanLineItem | null,
-): PlanLineItem {
-  const base = assemblyItem ?? dismantleItem;
-  if (!base) {
-    throw new Error('Cannot merge empty legacy work package group.');
-  }
-
-  const workQuantity = assemblyItem?.workQuantity ?? dismantleItem?.workQuantity ?? base.workQuantity;
-  let dismantleQuantity: number | null = null;
-  if (assemblyItem && dismantleItem && dismantleItem.workQuantity !== workQuantity) {
-    dismantleQuantity = dismantleItem.workQuantity;
-  }
-
-  return {
-    ...base,
-    id: sourceWorkPackageId,
-    workQuantity,
-    dismantleQuantity,
-
-    assemblyRate: assemblyItem?.assemblyRate ?? 0,
-    assemblyCrew: assemblyItem?.assemblyCrew ?? 0,
-    assemblyTimeHours: assemblyItem?.assemblyTimeHours ?? 0,
-    assemblyRateSource: assemblyItem?.assemblyRateSource ?? 'manual',
-    assemblyScheduledStart: assemblyItem?.assemblyScheduledStart ?? null,
-    assemblyScheduledEnd: assemblyItem?.assemblyScheduledEnd ?? null,
-    assemblyOriginalScheduledStart: assemblyItem?.assemblyOriginalScheduledStart ?? null,
-    assemblyOriginalScheduledEnd: assemblyItem?.assemblyOriginalScheduledEnd ?? null,
-    assemblyCrewByDate: assemblyItem?.assemblyCrewByDate,
-    assemblyExecutionStatus: assemblyItem?.assemblyExecutionStatus ?? 'pending',
-    assemblyBlockReason: assemblyItem?.assemblyBlockReason ?? null,
-    assemblyBlockCategory: assemblyItem?.assemblyBlockCategory ?? null,
-    assemblyExecutorNote: assemblyItem?.assemblyExecutorNote ?? null,
-    assemblyDeferredNote: assemblyItem?.assemblyDeferredNote ?? null,
-
-    dismantleRate: dismantleItem?.dismantleRate ?? 0,
-    dismantleCrew: dismantleItem?.dismantleCrew ?? 0,
-    dismantleTimeHours: dismantleItem?.dismantleTimeHours ?? 0,
-    dismantleRateSource: dismantleItem?.dismantleRateSource ?? 'manual',
-    dismantleScheduledStart: dismantleItem?.dismantleScheduledStart ?? null,
-    dismantleScheduledEnd: dismantleItem?.dismantleScheduledEnd ?? null,
-    dismantleOriginalScheduledStart: dismantleItem?.dismantleOriginalScheduledStart ?? null,
-    dismantleOriginalScheduledEnd: dismantleItem?.dismantleOriginalScheduledEnd ?? null,
-    dismantleCrewByDate: dismantleItem?.dismantleCrewByDate,
-    dismantleExecutionStatus: dismantleItem?.dismantleExecutionStatus ?? 'pending',
-    dismantleBlockReason: dismantleItem?.dismantleBlockReason ?? null,
-    dismantleBlockCategory: dismantleItem?.dismantleBlockCategory ?? null,
-    dismantleExecutorNote: dismantleItem?.dismantleExecutorNote ?? null,
-    dismantleDeferredNote: dismantleItem?.dismantleDeferredNote ?? null,
-
-    rationale: assemblyItem?.rationale ?? dismantleItem?.rationale ?? null,
-    reviewNote: assemblyItem?.reviewNote ?? dismantleItem?.reviewNote ?? null,
-    removedFromSource: Boolean(assemblyItem?.removedFromSource || dismantleItem?.removedFromSource),
-    amendmentNote: assemblyItem?.amendmentNote ?? dismantleItem?.amendmentNote ?? null,
-    amendedAt: assemblyItem?.amendedAt ?? dismantleItem?.amendedAt ?? null,
-  };
-}
-
 function normalizeSerializedLineItems(lineItems: PlanPackageSerializedLineItem[]): PlanLineItem[] {
-  const mergedBySourceId = new Map<string, {
-    order: number;
-    assembly: PlanLineItem | null;
-    dismantle: PlanLineItem | null;
-  }>();
-  const standalone: Array<{ order: number; item: PlanLineItem }> = [];
-  let order = 0;
-
-  for (const rawLineItem of lineItems as unknown[]) {
-    if (!isRecord(rawLineItem)) continue;
-
-    if (isLegacySinglePhaseLineItem(rawLineItem)) {
-      const migrated = migrateLineItemToDualPhase(rawLineItem);
-      const parsedPhaseId = parsePhaseLineItemId(rawLineItem.id);
-      const sourceWorkPackageId =
-        typeof rawLineItem.sourceWorkPackageId === 'string' && rawLineItem.sourceWorkPackageId.trim().length > 0
-          ? rawLineItem.sourceWorkPackageId
-          : parsedPhaseId?.sourceWorkPackageId;
-
-      if (!sourceWorkPackageId) {
-        standalone.push({ order, item: migrated });
-        order += 1;
-        continue;
-      }
-
-      if (!mergedBySourceId.has(sourceWorkPackageId)) {
-        mergedBySourceId.set(sourceWorkPackageId, {
-          order,
-          assembly: null,
-          dismantle: null,
-        });
-        order += 1;
-      }
-
-      const bucket = mergedBySourceId.get(sourceWorkPackageId)!;
-      const phase =
-        rawLineItem.buildPhase === 'dismantle'
-          ? 'dismantle'
-          : (parsedPhaseId?.phase ?? 'assembly');
-
-      if (phase === 'assembly') {
-        bucket.assembly = migrated;
-      } else {
-        bucket.dismantle = migrated;
-      }
-      continue;
-    }
-
-    if ('assemblyRate' in rawLineItem && typeof rawLineItem.assemblyRate === 'number') {
-      standalone.push({ order, item: rawLineItem as unknown as PlanLineItem });
-      order += 1;
-    }
-  }
-
-  const merged = [...mergedBySourceId.entries()].map(([sourceWorkPackageId, bucket]) => ({
-    order: bucket.order,
-    item: mergeLegacyPhaseItems(sourceWorkPackageId, bucket.assembly, bucket.dismantle),
-  }));
-
-  return [...standalone, ...merged]
-    .sort((a, b) => a.order - b.order)
-    .map((entry) => entry.item);
+  return lineItems.map((lineItem) => normalizeImportedLineItem(lineItem));
 }
 
 function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
@@ -323,13 +153,11 @@ function normalizeIncomingPlan(plan: PlanPackagePayload['plan']): Plan {
     updatedAt: now,
     defaultCrewSize: normalizedDates.defaultCrewSize ?? null,
     workCalendar: normalizedCalendar,
-    lineItems: normalizedLineItems.map((item) =>
-      normalizeImportedLineItem({
-        ...item,
-        ...resetPhaseExecutionState(),
-        removedFromSource: false,
-      }),
-    ),
+    lineItems: normalizedLineItems.map((item) => ({
+      ...item,
+      ...resetPhaseExecutionState(),
+      removedFromSource: false,
+    })),
   };
 }
 
@@ -391,6 +219,9 @@ export function parsePlanPackageJson(
     }
     if (!Array.isArray(payload.plan.lineItems)) {
       return { ok: false, error: 'Invalid line item payload' };
+    }
+    if (!payload.plan.lineItems.every(isCanonicalSerializedLineItem)) {
+      return { ok: false, error: 'Invalid line item payload. Only canonical dual-phase line items are supported.' };
     }
     if (!Array.isArray(payload.workTypes)) {
       return { ok: false, error: 'Invalid work type payload' };
@@ -467,8 +298,6 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
     };
   });
 
-  const lineItems = remappedLineItems.flatMap(serializeLineItemToLegacyPhaseRecords);
-
   const projects: Project[] = [];
   if (plan.projectId) {
     const project = await getProject(plan.projectId);
@@ -480,7 +309,7 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
   return {
     plan: {
       ...plan,
-      lineItems,
+      lineItems: remappedLineItems,
     },
     workTypes,
     projects: projects.length > 0 ? projects : undefined,

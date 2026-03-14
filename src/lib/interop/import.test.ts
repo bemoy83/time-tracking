@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseWorkPackageCsv, workPackageMappingKey } from './import';
 
-const VALID_HEADER = 'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,crew,targetProductivity';
+const VALID_HEADER = 'title,workTypeTitle,workUnit,phase,workQuantity,estimatedMinutes,crew,targetProductivity';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -25,7 +25,7 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].title).toBe('Install carpet');
     expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
     expect(result.items[0].workUnit).toBe('m2');
-    expect(result.items[0].buildPhase).toBe('assembly');
+    expect(result.items[0].phase).toBe('assembly');
     expect(result.items[0].workQuantity).toBe(100);
     expect(result.items[0].estimatedMinutes).toBe(60);
     expect(result.items[0].crew).toBe(2);
@@ -54,7 +54,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
-      'title;workTypeTitle;workUnit;buildPhase;workQuantity;estimatedMinutes;crew;targetProductivity',
+      'title;workTypeTitle;workUnit;phase;workQuantity;estimatedMinutes;crew;targetProductivity',
       'Install carpet;Carpet Tiles;m2;assembly;100;60;2;10',
     ].join('\n');
     const result = parseWorkPackageCsv(semicolonCsv);
@@ -64,13 +64,13 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].title).toBe('Install carpet');
     expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
     expect(result.items[0].workUnit).toBe('m2');
-    expect(result.items[0].buildPhase).toBe('assembly');
+    expect(result.items[0].phase).toBe('assembly');
     expect(result.items[0].workQuantity).toBe(100);
   });
 
   it('accepts legacy defaultWorkers header and maps it to crew', () => {
     const legacyHeaderCsv = [
-      'title,workTypeTitle,workUnit,buildPhase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'title,workTypeTitle,workUnit,phase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
       'Install carpet,Carpet Tiles,m2,assembly,100,60,3,10',
     ].join('\n');
     const result = parseWorkPackageCsv(legacyHeaderCsv);
@@ -89,7 +89,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('requires workTypeTitle header', () => {
     const result = parseWorkPackageCsv([
-      'title,workUnit,buildPhase,workQuantity,estimatedMinutes,crew,targetProductivity',
+      'title,workUnit,phase,workQuantity,estimatedMinutes,crew,targetProductivity',
       'Task,m2,assembly,,,,',
     ].join('\n'));
 
@@ -106,13 +106,13 @@ describe('parseWorkPackageCsv', () => {
     expect(result.errors[0].field).toBe('workUnit');
   });
 
-  it('rejects invalid buildPhase', () => {
+  it('rejects invalid phase', () => {
     const result = parseWorkPackageCsv(csv([
       'Task,Carpet Tiles,m2,invalid-phase,,,,',
     ]));
 
     expect(result.valid).toBe(false);
-    expect(result.errors[0].field).toBe('buildPhase');
+    expect(result.errors[0].field).toBe('phase');
   });
 
   it('rejects non-numeric values for numeric fields', () => {

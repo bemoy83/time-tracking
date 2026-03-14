@@ -13,14 +13,6 @@ import {
 } from './contracts';
 import { listDateRange } from '../../planning/scheduling/work-calendar';
 
-const PHASE_LINE_ITEM_ID_SEPARATOR = '::phase::';
-
-function resolveSourceWorkPackageId(lineItemId: string): string | null {
-  const idx = lineItemId.lastIndexOf(PHASE_LINE_ITEM_ID_SEPARATOR);
-  if (idx <= 0) return null;
-  return lineItemId.slice(0, idx);
-}
-
 function deriveStatusFromTasks(
   itemStatus: LineItemExecutionStatus,
   linkedTasks: Task[],
@@ -84,7 +76,7 @@ export async function buildExecutionReturnEnvelope(
       .map((phase) => {
         const pf = getPhaseFields(item, phase);
         // Filter linked tasks to this phase
-        const phaseTasks = linked.filter((task) => task.buildPhase === phase);
+        const phaseTasks = linked.filter((task) => task.phase === phase);
         const status = deriveStatusFromTasks(pf.executionStatus, phaseTasks);
         const blockedTaskReason =
           status === 'blocked' && pf.blockReason == null
@@ -103,7 +95,7 @@ export async function buildExecutionReturnEnvelope(
         return {
           lineItemId: item.id,
           phase,
-          sourceWorkPackageId: resolveSourceWorkPackageId(item.id),
+          sourceWorkPackageId: item.id,
           title: item.title,
           executionStatus: status,
           blockReason: blockedTaskReason ?? pf.blockReason,
@@ -172,7 +164,7 @@ export async function buildExecutionReturnEnvelope(
         updatedAt: syntheticTimestamp,
       });
     } else {
-      const isTearDown = task.buildPhase === 'dismantle';
+      const isTearDown = task.phase === 'dismantle';
       workTypes.push({
         id: syntheticId,
         title: task.title,

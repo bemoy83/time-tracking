@@ -95,7 +95,7 @@ export function TaskProductivity({ taskId, subtaskIds, onAttributedRefresh }: Ta
             <span className="task-productivity__label section-heading">WORK TYPE</span>
             <span className="task-productivity__value">
               {workTypeTitle}
-              {task.buildPhase != null && ` · ${BUILD_PHASE_LABELS[task.buildPhase]}`}
+              {task.phase != null && ` · ${BUILD_PHASE_LABELS[task.phase]}`}
             </span>
           </div>
         )}

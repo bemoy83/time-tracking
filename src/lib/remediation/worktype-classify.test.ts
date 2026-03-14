@@ -59,7 +59,7 @@ const baseTask = {
   workUnit: null,
   crew: null,
   targetProductivity: null,
-  buildPhase: null,
+  phase: null,
   workTypeId: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
@@ -134,7 +134,7 @@ describe('classifyEntryToWorkType', () => {
       ...baseTask,
       workQuantity: null,
       workUnit: 'm2',
-      buildPhase: 'assembly',
+      phase: 'assembly',
     });
     mockGetTaskById.mockReturnValue(undefined);
 
@@ -155,7 +155,7 @@ describe('classifyEntryToWorkType', () => {
       title: 'Parent Scope',
       workQuantity: 80,
       workUnit: 'm2' as const,
-      buildPhase: 'assembly' as const,
+      phase: 'assembly' as const,
     };
     const childTask = {
       ...baseTask,
@@ -164,7 +164,7 @@ describe('classifyEntryToWorkType', () => {
       parentId: 'task-parent',
       workQuantity: null,
       workUnit: null,
-      buildPhase: null,
+      phase: null,
     };
     mockGetTask.mockImplementation(async (id: string) => {
       if (id === 'task-child') return childTask;

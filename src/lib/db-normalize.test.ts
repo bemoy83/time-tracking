@@ -89,7 +89,7 @@ describe('normalizePlan', () => {
           title: 'Install',
           workTypeTitle: 'Carpet',
           workUnit: 'm2',
-          buildPhase: 'assembly',
+          phase: 'assembly',
           workTypeId: null,
           workQuantity: 10,
           crew: 1,

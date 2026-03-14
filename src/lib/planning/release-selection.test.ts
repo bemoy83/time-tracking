@@ -50,7 +50,7 @@ describe('selectedPlanItemsToCreateTaskInputs', () => {
     expect(inputs[0].sourcePlanId).toBe(planA.id);
     expect(inputs[0].sourceLineItemId).toBe(planA.lineItems[0].id);
     expect(inputs[1].title).toBe('A1 — Dismantle');
-    expect(inputs[1].buildPhase).toBe('dismantle');
+    expect(inputs[1].phase).toBe('dismantle');
     expect(inputs[2].title).toBe('B1 — Assembly');
     expect(inputs[2].projectId).toBe('project-b');
     expect(inputs[2].sourcePlanId).toBe(planB.id);

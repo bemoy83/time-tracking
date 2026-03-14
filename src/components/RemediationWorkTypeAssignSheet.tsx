@@ -68,8 +68,8 @@ export function RemediationWorkTypeAssignSheet({
     setReason('');
     setCreateTitle(task?.title ?? '');
     setCreateWorkUnit(task?.workUnit ?? 'm2');
-    setCreateBuildUpRate(String(task?.buildPhase !== 'dismantle' ? defaultRate : 0));
-    setCreateTearDownRate(String(task?.buildPhase === 'dismantle' ? defaultRate : 0));
+    setCreateBuildUpRate(String(task?.phase !== 'dismantle' ? defaultRate : 0));
+    setCreateTearDownRate(String(task?.phase === 'dismantle' ? defaultRate : 0));
     setError(null);
     setConflictWorkTypeId(null);
     setIsSubmitting(false);
@@ -77,7 +77,7 @@ export function RemediationWorkTypeAssignSheet({
     initialMode,
     isOpen,
     recommendedWorkTypeId,
-    task?.buildPhase,
+    task?.phase,
     task?.targetProductivity,
     task?.title,
     task?.workTypeId,
@@ -162,7 +162,7 @@ export function RemediationWorkTypeAssignSheet({
               <span className="settings-view__row-detail">
                 Quantity: {task?.workQuantity != null ? task.workQuantity : 'not set'} ·
                 Unit: {task?.workUnit != null ? WORK_UNIT_LABELS[task.workUnit] : 'not set'} ·
-                Phase: {task?.buildPhase != null ? BUILD_PHASE_LABELS[task.buildPhase] : 'not set'}
+                Phase: {task?.phase != null ? BUILD_PHASE_LABELS[task.phase] : 'not set'}
               </span>
             </div>
           </div>

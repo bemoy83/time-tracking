@@ -23,7 +23,7 @@ export interface WrapUpUnplannedProjection {
   isImportedOnly: boolean;
   workTypeId: string | null;
   workUnit: WorkUnit | null;
-  buildPhase: BuildPhase | null;
+  phase: BuildPhase | null;
   personHours: number;
   sourceTask: Task | null;
 }

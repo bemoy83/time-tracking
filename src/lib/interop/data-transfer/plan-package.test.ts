@@ -4,7 +4,7 @@ import type { WorkType } from '../../types';
 import { getAllWorkTypes, getProject } from '../../db';
 import { nowUtc } from '../../types';
 import { downloadJson } from '../download-json';
-import { buildPlanPackagePayload, exportPlanPackage } from './plan-package';
+import { buildPlanPackagePayload, exportPlanPackage, parsePlanPackageJson } from './plan-package';
 
 vi.mock('../../db', () => ({
   addPlan: vi.fn(),
@@ -143,10 +143,9 @@ describe('plan-package export', () => {
     expect(mockGetAllWorkTypes).toHaveBeenCalledTimes(1);
     expect(payload.workTypes).toEqual([existing]);
     expect(payload.plan.lineItems[0]).toMatchObject({
-      id: 'line-1::phase::assembly',
-      sourceWorkPackageId: 'line-1',
+      id: 'line-1',
       workTypeId: 'wt-1',
-      buildPhase: 'assembly',
+      assemblyRate: 12.5,
     });
     expect(payload.plan.lineItems[1].workTypeId).toBeNull();
     expect(payload.lastModifiedAt).toBe(plan.updatedAt);
@@ -181,16 +180,14 @@ describe('plan-package export', () => {
     const payload = await buildPlanPackagePayload(plan);
 
     expect(payload.plan.lineItems[0]).toMatchObject({
-      id: 'line-1::phase::assembly',
-      sourceWorkPackageId: 'line-1',
+      id: 'line-1',
       workTypeId: 'plan-export-plan-1-line-1',
-      buildPhase: 'assembly',
+      assemblyRate: 5.5,
     });
     expect(payload.plan.lineItems[1]).toMatchObject({
-      id: 'line-2::phase::dismantle',
-      sourceWorkPackageId: 'line-2',
+      id: 'line-2',
       workTypeId: 'plan-export-plan-1-line-2',
-      buildPhase: 'dismantle',
+      dismantleRate: 4.25,
     });
     expect(payload.workTypes).toEqual([
       {
@@ -214,7 +211,7 @@ describe('plan-package export', () => {
     ]);
   });
 
-  it('splits a dual-phase work package into assembly and dismantle legacy records', async () => {
+  it('preserves dual-phase work packages in canonical export format', async () => {
     mockGetAllWorkTypes.mockResolvedValue([]);
     const plan = makePlan([
       makeLineItem({
@@ -231,22 +228,15 @@ describe('plan-package export', () => {
 
     const payload = await buildPlanPackagePayload(plan);
 
-    expect(payload.plan.lineItems).toHaveLength(2);
+    expect(payload.plan.lineItems).toHaveLength(1);
     expect(payload.plan.lineItems[0]).toMatchObject({
-      id: 'line-1::phase::assembly',
-      sourceWorkPackageId: 'line-1',
-      buildPhase: 'assembly',
-      productivityRate: 8,
-      crew: 3,
-      timeHours: 5,
-    });
-    expect(payload.plan.lineItems[1]).toMatchObject({
-      id: 'line-1::phase::dismantle',
-      sourceWorkPackageId: 'line-1',
-      buildPhase: 'dismantle',
-      productivityRate: 6,
-      crew: 2,
-      timeHours: 4,
+      id: 'line-1',
+      assemblyRate: 8,
+      assemblyCrew: 3,
+      assemblyTimeHours: 5,
+      dismantleRate: 6,
+      dismantleCrew: 2,
+      dismantleTimeHours: 4,
     });
   });
 
@@ -310,5 +300,41 @@ describe('plan-package export', () => {
 
     expect(mockGetProject).not.toHaveBeenCalled();
     expect(payload.projects).toBeUndefined();
+  });
+
+  it('rejects legacy single-phase line item payloads', () => {
+    const parsed = parsePlanPackageJson(JSON.stringify({
+      schemaVersion: '2.0',
+      exportType: 'plan-package',
+      exportedAt: '2026-02-28T10:00:00.000Z',
+      appVersion: '0.0.1',
+      payload: {
+        plan: {
+          ...makePlan([]),
+          lineItems: [
+            {
+              id: 'line-1',
+              title: 'Install carpet',
+              workTypeTitle: 'Carpet Tiles',
+              workUnit: 'm2',
+              workTypeId: null,
+              workQuantity: 100,
+              phase: 'assembly',
+              productivityRate: 8,
+              crew: 3,
+              timeHours: 5,
+              rateSource: 'manual',
+            },
+          ],
+        },
+        workTypes: [],
+        lastModifiedAt: '2026-02-20T15:00:00.000Z',
+      },
+    }));
+
+    expect(parsed).toEqual({
+      ok: false,
+      error: 'Invalid line item payload. Only canonical dual-phase line items are supported.',
+    });
   });
 });

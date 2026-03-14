@@ -31,7 +31,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     workUnit: 'm2',
     crew: 1,
     targetProductivity: null,
-    buildPhase: 'assembly',
+    phase: 'assembly',
     workTypeId: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -65,7 +65,7 @@ describe('loadWrapUpV2Projection', () => {
     mockGetLatestExecutionReturnBundleByPlanId.mockResolvedValue(null);
   });
 
-  it('treats legacy linked tasks with null buildPhase as assembly', async () => {
+  it('does not attach unphased linked tasks to assembly or dismantle projections', async () => {
     const plan = makePlan();
     const lineItem = createLineItem('Install carpet', 'Carpet', 'm2', 100, 10, 0);
     lineItem.id = 'line-1';
@@ -74,7 +74,7 @@ describe('loadWrapUpV2Projection', () => {
     const task = makeTask({
       id: 'task-legacy',
       sourceLineItemId: lineItem.id,
-      buildPhase: null,
+      phase: null,
       status: 'completed',
     });
     const entriesByTask: TimeEntriesByTask = new Map([
@@ -84,9 +84,9 @@ describe('loadWrapUpV2Projection', () => {
     const projection = await loadWrapUpV2Projection(plan, [task], entriesByTask);
     const assembly = projection.lineItems.find((item) => item.phase === 'assembly')!;
 
-    expect(assembly.linkedTaskIds).toEqual([task.id]);
-    expect(assembly.executionStatus).toBe('completed');
-    expect(assembly.actualPersonHours).toBe(2);
+    expect(assembly.linkedTaskIds).toEqual([]);
+    expect(assembly.executionStatus).toBe('pending');
+    expect(assembly.actualPersonHours).toBe(0);
   });
 
   it('uses dismantle quantity override when computing dismantle productivity', async () => {
@@ -99,7 +99,7 @@ describe('loadWrapUpV2Projection', () => {
     const task = makeTask({
       id: 'task-dismantle',
       sourceLineItemId: lineItem.id,
-      buildPhase: 'dismantle',
+      phase: 'dismantle',
       status: 'completed',
       workQuantity: 40,
     });
@@ -119,4 +119,3 @@ describe('loadWrapUpV2Projection', () => {
     expect(dismantle.actualProductivity).toBe(10);
   });
 });
-

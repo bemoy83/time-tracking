@@ -103,7 +103,7 @@ export function CreateTaskSheet({
         workUnit: showWork && !isNaN(parsedQty) && parsedQty > 0 ? unit : undefined,
         crew: showWorkers && workers > 1 ? workers : undefined,
         targetProductivity: workType ? (workType.assemblyRate || workType.dismantleRate) : (template?.targetProductivity ?? undefined),
-        buildPhase: template?.buildPhase ?? undefined,
+        phase: template?.phase ?? undefined,
         workTypeId: workType?.id ?? (template?.workTypeId ?? undefined),
       });
       onClose();
