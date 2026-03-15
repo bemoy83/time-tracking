@@ -2,6 +2,10 @@
   gap: var(--space-md);
 }
 
+/* ============================================================
+   Import section (preview card + messages)
+   ============================================================ */
+
 .progress-view__import-section {
   display: flex;
   flex-direction: column;
@@ -44,6 +48,129 @@
   font-size: var(--font-small);
   color: var(--color-text-muted);
 }
+
+/* ============================================================
+   Overview card — replaces old inline summary bar
+   Shows completion ring, plan stats, and action buttons
+   ============================================================ */
+
+.progress-view__overview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.progress-view__overview--risk {
+  border-left: 3px solid var(--state-warning-fg);
+  padding-left: calc(var(--space-md) - 3px);
+}
+
+/* Completion ring — matches the KPI ring pattern */
+.progress-view__overview-ring {
+  --ring-progress: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: conic-gradient(
+    var(--color-primary) calc(var(--ring-progress) * 1turn),
+    var(--surface-contained-border) 0
+  );
+}
+
+.progress-view__overview-ring--complete {
+  background: conic-gradient(
+    var(--color-ready) calc(var(--ring-progress) * 1turn),
+    var(--surface-contained-border) 0
+  );
+}
+
+.progress-view__overview-ring::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 1px var(--surface-contained-border);
+}
+
+.progress-view__ring-label {
+  grid-area: 1 / 1;
+  z-index: 1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stats column */
+.progress-view__overview-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.progress-view__overview-stat-primary {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.progress-view__overview-stat-primary strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.progress-view__overview-stat-secondary {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.progress-view__overview-deadline {
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+}
+
+.progress-view__overview-deadline--on-track {
+  color: var(--color-ready);
+}
+
+.progress-view__overview-deadline--at-risk {
+  color: var(--color-amber);
+}
+
+.progress-view__overview-deadline--behind {
+  color: var(--color-recording);
+}
+
+/* Action buttons */
+.progress-view__overview-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Legacy summary bar styles (kept for safety)
+   ============================================================ */
 
 .progress-view__summary {
   display: flex;
@@ -95,6 +222,10 @@
   color: var(--color-recording);
 }
 
+/* ============================================================
+   Line item list
+   ============================================================ */
+
 .progress-view__list {
   display: flex;
   flex-direction: column;
@@ -106,9 +237,12 @@
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
   padding: var(--space-md);
+  padding-bottom: calc(var(--space-md) + 3px); /* room for progress bar */
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  position: relative;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
@@ -150,6 +284,7 @@
   font-size: var(--font-caption);
   font-weight: 700;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .progress-view__status--completed {
@@ -230,6 +365,32 @@
   color: var(--color-recording);
 }
 
+/* Per-item progress bar — absolute at the card bottom */
+.progress-view__item-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--surface-contained-inset);
+}
+
+.progress-view__item-progress::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--item-progress, 0) * 100%);
+  background: var(--item-color, var(--color-primary));
+  border-radius: 0 1.5px 1.5px 0;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================
+   Block sections (Unplanned Work, Orphan Tasks)
+   ============================================================ */
+
 .progress-view__block {
   background: var(--card-bg);
   border-radius: var(--card-radius);
@@ -269,20 +430,60 @@
   color: var(--color-text-muted);
 }
 
-/* Editor canvas: tighter spacing to match plan editor */
+/* ============================================================
+   Workspace overrides (≥768px, inside planning-workspace canvas)
+   ============================================================ */
+
 @media (min-width: 768px) {
+  /* Tighter layout to match plan editor and schedule view */
   .planning-workspace__editor-canvas .progress-view {
     gap: var(--space-sm);
   }
+
+  /* Overview card — slightly compact + entrance animation */
+  .planning-workspace__editor-canvas .progress-view__overview {
+    padding: 16px 20px;
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  /* Smaller ring in the compact workspace context */
+  .planning-workspace__editor-canvas .progress-view__overview-ring {
+    width: 68px;
+    height: 68px;
+  }
+
+  .planning-workspace__editor-canvas .progress-view__overview-ring::before {
+    width: 52px;
+    height: 52px;
+  }
+
+  /* Item cards — compact padding + progress bar clearance */
   .planning-workspace__editor-canvas .progress-view__item {
     padding: var(--space-sm);
+    padding-bottom: calc(var(--space-sm) + 3px);
     gap: var(--space-sm);
   }
+
+  /* Staggered entrance for item cards */
+  .planning-workspace__editor-canvas .progress-view__item:nth-child(1) {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+  .planning-workspace__editor-canvas .progress-view__item:nth-child(2) {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.20s both;
+  }
+  .planning-workspace__editor-canvas .progress-view__item:nth-child(3) {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+  }
+  .planning-workspace__editor-canvas .progress-view__item:nth-child(4) {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.30s both;
+  }
+  .planning-workspace__editor-canvas .progress-view__item:nth-child(n+5) {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+  }
+
+  /* Import card */
   .planning-workspace__editor-canvas .progress-view__import-card {
     padding: var(--space-sm);
     gap: var(--space-xs);
-  }
-  .planning-workspace__editor-canvas .progress-view__summary {
-    padding: var(--space-xs) var(--space-sm);
   }
 }

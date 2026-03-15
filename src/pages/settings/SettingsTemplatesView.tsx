@@ -13,6 +13,7 @@ import { exportTemplatesCsv } from '../../lib/interop/template-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
 import { WorkPackageImportCard } from './cards/WorkPackageImportCard';
 import { useTemplateImport } from './hooks/useTemplateImport';
+import './settings-styles';
 
 interface SettingsTemplatesViewProps {
   onBack: () => void;

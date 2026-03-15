@@ -12,6 +12,7 @@ import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { ChevronRightIcon } from '../components/icons';
 import { pluralize } from '../lib/utils/pluralize';
 import { getFeatureFlags, setFeatureFlag, type FeatureFlagKey } from '../lib/flags/feature-flags';
+import './settings/settings-styles';
 
 type SettingsSection =
   | 'projects'

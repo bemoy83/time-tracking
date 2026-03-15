@@ -10,6 +10,7 @@ import type { BulkClassifyResult } from '../../lib/remediation/worktype-classify
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { CheckIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
+import './settings-styles';
 
 interface SettingsRemediationViewProps {
   onBack: () => void;

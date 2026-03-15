@@ -17,6 +17,7 @@ import {
 } from '../../lib/interop/project-import';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { ProjectImportCard } from './ProjectImportCard';
+import './settings-styles';
 
 interface SettingsProjectsViewProps {
   onBack: () => void;

@@ -153,9 +153,6 @@ export function computePlanDeadlineSummary(
     return { enabled: false, label: null, status: null };
   }
 
-  const doneLike = statuses.filter((entry) =>
-    entry.status === 'done-on-time' || entry.status === 'done-late',
-  ).length;
   const atRiskLike = statuses.filter((entry) => entry.status === 'at-risk').length;
   const behindLike = statuses.filter((entry) =>
     entry.status === 'overdue' || entry.status === 'needs-replanning',
@@ -172,7 +169,7 @@ export function computePlanDeadlineSummary(
 
   return {
     enabled: true,
-    label: `${dayLabel}${workDays > 0 ? ` of ${workDays}` : ''} - ${doneLike} of ${scheduledCount} work packages complete`,
+    label: `${dayLabel}${workDays > 0 ? ` of ${workDays}` : ''}`,
     status,
   };
 }

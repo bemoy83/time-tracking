@@ -824,18 +824,14 @@
    ============================================================ */
 
 @media (min-width: 768px) {
-  /* Canvas — add padding/gap so cards float, subtle radial gradient for depth;
-     center the duo when viewport exceeds combined max widths */
+  /* Canvas — add padding/gap so cards float; center the duo when viewport exceeds combined max widths */
   .planning-workspace {
     --planning-workspace-sidebar-max: 288px;
     --planning-workspace-main-max: 1600px;
     padding: 12px;
     gap: 10px;
     justify-content: center;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
-      radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0, 0, 0, 0.03) 0%, transparent 100%),
-      var(--surface-base-bg);
+    background: var(--surface-base-bg);
   }
 
   /* Sidebar — floating white card, fixed max width; content top padding removed for tab alignment */
@@ -933,13 +929,7 @@
     font-size: 0.9375rem; /* 15px per mockup */
   }
 
-  /* "New Plan" button — dark fill CTA, pill shape */
-  .planning-sidebar__create-btn {
-    background: var(--color-text);
-    color: #ffffff;
-    border-radius: var(--radius-full);
-  }
-
+  /* "New Plan" button — primary brand (base); lift on hover */
   .planning-sidebar__create-btn:hover {
     opacity: 0.85;
     transform: translateY(-1px);

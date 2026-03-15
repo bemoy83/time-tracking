@@ -95,25 +95,25 @@ export function ProgressView({
     hadRiskRef.current = hasRisk;
   }, [progress.deadline.enabled, progress.deadline.status]);
 
+  const isRisk = progress.deadline.enabled && progress.deadline.status != null && progress.deadline.status !== 'on-track';
+  const isComplete = progress.completionRatio >= 1;
+
   return (
     <div className="planning-view progress-view">
       <PlanKpiRow metrics={progressKpiMetrics} />
-      <header className="planning-view__editor-header">
-        {showBackButton && (
+
+      {/* Mobile back button header — hidden in workspace context via CSS */}
+      {showBackButton && (
+        <header className="planning-view__editor-header">
           <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
             <ChevronLeftIcon className="planning-view__back-icon" />
             Back
           </button>
-        )}
-        <h2 className="planning-view__title" style={{ flex: 1 }}>
-          Progress
-        </h2>
-        {onWrapUp && (
-          <button type="button" className="btn btn--primary" onClick={onWrapUp}>
-            Wrap Up
-          </button>
-        )}
-      </header>
+          <h2 className="planning-view__title" style={{ flex: 1 }}>
+            Progress
+          </h2>
+        </header>
+      )}
 
       <input
         ref={fileInputRef}
@@ -123,17 +123,56 @@ export function ProgressView({
         onChange={(e) => { void handleFileChange(e); }}
       />
 
-      <section className="progress-view__import-section">
-        {!filePreview && (
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Import Progress Report
-          </button>
-        )}
-        {filePreview && (
+      {/* Overview card: completion ring + stats + actions */}
+      <section
+        className={`progress-view__overview${isRisk ? ' progress-view__overview--risk' : ''}`}
+        aria-label="Plan progress summary"
+      >
+        <div
+          className={`progress-view__overview-ring${isComplete ? ' progress-view__overview-ring--complete' : ''}`}
+          style={{ '--ring-progress': progress.completionRatio } as React.CSSProperties}
+          aria-hidden="true"
+        >
+          <span className="progress-view__ring-label">
+            {Math.round(progress.completionRatio * 100)}%
+          </span>
+        </div>
+
+        <div className="progress-view__overview-stats">
+          <p className="progress-view__overview-stat-primary">
+            <strong>{Math.round(progress.completionRatio * 100)}%</strong>{' '}complete
+          </p>
+          <p className="progress-view__overview-stat-secondary">
+            {progress.lineItems.length} planned {progress.lineItems.length === 1 ? 'item' : 'items'}
+          </p>
+          {progress.deadline.enabled && progress.deadline.label && (
+            <p className={`progress-view__overview-deadline progress-view__overview-deadline--${progress.deadline.status ?? 'on-track'}`}>
+              {progress.deadline.label}
+            </p>
+          )}
+        </div>
+
+        <div className="progress-view__overview-actions">
+          {!filePreview && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import Report
+            </button>
+          )}
+          {onWrapUp && (
+            <button type="button" className="btn btn--primary btn--sm" onClick={onWrapUp}>
+              Wrap Up
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* File import preview card */}
+      {filePreview && (
+        <section className="progress-view__import-section">
           <div className="progress-view__import-card">
             <p className="progress-view__import-title">
               <strong>{filePreview.planTitle}</strong> · {filePreview.lineItemCount} items · {filePreview.timeEntryCount} time entries
@@ -167,32 +206,11 @@ export function ProgressView({
               </button>
             </div>
           </div>
-        )}
-        {importMsg && !filePreview && (
-          <p className="progress-view__import-msg">{importMsg}</p>
-        )}
-      </section>
-
-      <section
-        className={`progress-view__summary${progress.deadline.enabled && progress.deadline.status && progress.deadline.status !== 'on-track' ? ' progress-view__summary--risk' : ''}`}
-        aria-label="Plan progress summary"
-      >
-        <span className="progress-view__summary-metric">
-          <strong>{Math.round(progress.completionRatio * 100)}%</strong> complete
-        </span>
-        <span className="progress-view__summary-sep">&middot;</span>
-        <span className="progress-view__summary-metric">
-          <strong>{progress.lineItems.length}</strong> planned {progress.lineItems.length === 1 ? 'item' : 'items'}
-        </span>
-        {progress.deadline.enabled && progress.deadline.label && (
-          <>
-            <span className="progress-view__summary-sep">&middot;</span>
-            <span className={`progress-view__summary-deadline progress-view__summary-deadline--${progress.deadline.status ?? 'on-track'}`}>
-              {progress.deadline.label}
-            </span>
-          </>
-        )}
-      </section>
+        </section>
+      )}
+      {importMsg && !filePreview && (
+        <p className="progress-view__import-msg">{importMsg}</p>
+      )}
 
       <section className="progress-view__list" aria-label="Plan line item progress">
         {progress.lineItems.map((item) => {
@@ -201,6 +219,21 @@ export function ProgressView({
             item.variancePercent == null
               ? '—'
               : `${item.variancePercent > 0 ? '+' : ''}${item.variancePercent.toFixed(0)}%`;
+
+          const completionRatio = item.status === 'completed'
+            ? 1.0
+            : item.plannedQuantity > 0
+              ? Math.min(1, item.actualQuantity / item.plannedQuantity)
+              : item.plannedHours > 0
+                ? Math.min(1, item.actualHours / item.plannedHours)
+                : 0;
+
+          const progressColor = item.status === 'completed'
+            ? 'var(--color-ready)'
+            : item.variancePercent != null && item.variancePercent > 15
+              ? 'var(--color-recording)'
+              : 'var(--color-primary)';
+
           return (
             <article key={`${item.lineItemId}-${item.phase}`} className="progress-view__item">
               <div className="progress-view__item-header">
@@ -261,6 +294,15 @@ export function ProgressView({
                   </span>
                 </div>
               </div>
+
+              <div
+                className="progress-view__item-progress"
+                style={{
+                  '--item-progress': completionRatio,
+                  '--item-color': progressColor,
+                } as React.CSSProperties}
+                aria-hidden="true"
+              />
             </article>
           );
         })}

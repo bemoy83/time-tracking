@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getTelemetrySnapshot, type TelemetryEventName } from '../../lib/telemetry/telemetry';
 import { ClockIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
+import './settings-styles';
 
 interface SettingsTelemetryViewProps {
   onBack: () => void;

@@ -10,6 +10,7 @@ import { KpiExportCard } from './cards/KpiExportCard';
 import { ArchiveMaintenanceCard } from './cards/ArchiveMaintenanceCard';
 import { useKpiExport } from './hooks/useKpiExport';
 import { useArchiveMaintenance } from './hooks/useArchiveMaintenance';
+import './settings-styles';
 
 interface SettingsProductivityViewProps {
   onBack: () => void;

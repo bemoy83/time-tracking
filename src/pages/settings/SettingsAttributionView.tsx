@@ -8,6 +8,7 @@ import {
   loadAttributionDiagnostics,
   type AttributionDiagnostics,
 } from '../../lib/attribution/diagnostics';
+import './settings-styles';
 
 interface SettingsAttributionViewProps {
   onBack: () => void;

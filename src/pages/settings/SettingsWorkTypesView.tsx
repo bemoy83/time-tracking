@@ -15,6 +15,7 @@ import {
   type WorkTypeImportPreview,
 } from '../../lib/interop/work-type-import';
 import { WorkTypeImportCard } from './WorkTypeImportCard';
+import './settings-styles';
 
 interface SettingsWorkTypesViewProps {
   onBack: () => void;

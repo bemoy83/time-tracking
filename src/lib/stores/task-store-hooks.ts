@@ -5,7 +5,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { Task } from '../types';
-import { subscribe, getSnapshot } from './task-store';
+import { subscribe, getSnapshot } from './task-store-state';
 
 /**
  * React hook to access task store state.

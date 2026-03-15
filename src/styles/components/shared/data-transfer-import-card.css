@@ -1,0 +1,61 @@
+.field-plan-import-card {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-plan-import-card__title,
+.field-plan-import-card__meta {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+.field-plan-import-card__diff-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-small);
+}
+
+.field-plan-import-card__diff-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.field-plan-import-card__diff-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.field-plan-import-card__diff-badge--new {
+  background: var(--color-ready-bg-badge);
+  color: var(--color-ready);
+}
+
+.field-plan-import-card__diff-badge--updated {
+  background: var(--color-primary-bg-badge);
+  color: var(--color-primary);
+}
+
+.field-plan-import-card__diff-badge--unchanged {
+  background: var(--color-muted-bg-badge);
+  color: var(--color-text-muted);
+}
+
+.field-plan-import-card__diff-badge--removed {
+  background: var(--color-recording-bg-badge);
+  color: var(--color-recording);
+}
+
+.field-plan-import-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+}

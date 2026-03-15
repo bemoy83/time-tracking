@@ -17,6 +17,7 @@ import type {
   PlanPackageImportPreview,
 } from '../../lib/interop/data-transfer/contracts';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import './settings-styles';
 
 interface SettingsDataTransferViewProps {
   onBack: () => void;

@@ -12,7 +12,7 @@ import {
 } from '../db';
 import { durationMs, elapsedMs } from '../types';
 import { stopTimer } from './timer-store';
-import { getState, setState } from './task-store';
+import { getState, setState } from './task-store-state';
 
 /**
  * Preview of what will be deleted.

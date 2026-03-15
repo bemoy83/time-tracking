@@ -38,39 +38,17 @@ import { archiveTask } from '../archive/archive-action';
 import { syncTaskBlockToPlan, syncTaskUnblockToPlan } from '../planning/task-plan-block-sync';
 import { hasPhaseDatesFor } from '../planning/scheduling/schedule-span';
 import { normalizeProjectPhaseDates } from '../projects/project-phase-dates';
-
-// ============================================================
-// Store State
-// ============================================================
-
-type TaskStoreState = {
-  tasks: Task[];
-  projects: Project[];
-  isLoading: boolean;
-  error: string | null;
-};
-
-let state: TaskStoreState = {
-  tasks: [],
-  projects: [],
-  isLoading: true,
-  error: null,
-};
-
-const listeners = new Set<() => void>();
-
-function notifyListeners() {
-  listeners.forEach((listener) => listener());
-}
-
-export function getState(): TaskStoreState {
-  return state;
-}
-
-export function setState(partial: Partial<TaskStoreState>) {
-  state = { ...state, ...partial };
-  notifyListeners();
-}
+import {
+  state,
+  setState,
+} from './task-store-state';
+import { refreshProjectsInTaskStore } from './task-store-project-sync';
+export {
+  getSnapshot,
+  getState,
+  setState,
+  subscribe,
+} from './task-store-state';
 
 // ============================================================
 // Store Initialization
@@ -123,14 +101,7 @@ export async function refreshTasks(): Promise<void> {
  * Call after adding projects during plan package import.
  */
 export async function refreshProjects(): Promise<void> {
-  try {
-    const projects = await getAllProjects();
-    setState({ projects, error: null });
-  } catch (err) {
-    setState({
-      error: err instanceof Error ? err.message : 'Failed to refresh projects',
-    });
-  }
+  await refreshProjectsInTaskStore();
 }
 
 // ============================================================
@@ -698,19 +669,6 @@ export function getTaskById(id: string): Task | undefined {
  */
 export function getProjectById(id: string): Project | undefined {
   return state.projects.find((p) => p.id === id);
-}
-
-// ============================================================
-// React Hooks (re-exported from task-store-hooks.ts)
-// ============================================================
-
-export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-export function getSnapshot(): TaskStoreState {
-  return state;
 }
 
 export { useTaskStore, useTask, useSubtasks, useProjectTasks, useActiveTasks } from './task-store-hooks';

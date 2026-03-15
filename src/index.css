@@ -14,6 +14,8 @@
 /* Shared components */
 @import './styles/_input.css';
 @import './styles/components/shared/_card.css';
+@import './styles/components/shared/data-transfer-import-card.css';
+@import './styles/components/shared/planning-work-package-add-bar.css';
 @import './styles/components/btn.css';
 @import './styles/components/inline-create-form.css';
 @import './styles/components/color-swatch.css';
@@ -40,7 +42,6 @@
 @import './styles/components/section-heading.css';
 @import './styles/components/collapsible-section.css';
 @import './styles/components/today-view.css';
-@import './styles/components/field-plan.css';
 @import './styles/components/tab-nav.css';
 @import './styles/components/network-status.css';
 @import './styles/components/install-prompt.css';
@@ -58,22 +59,8 @@
 @import './styles/components/project-color-picker.css';
 @import './styles/components/settings.css';
 @import './styles/components/template-picker.css';
-@import './styles/components/new-plan-sheet.css';
-@import './styles/components/plan-picker.css';
 @import './styles/components/calculator.css';
-@import './styles/components/planning.css';
-@import './styles/components/planning-workspace.css';
-@import './styles/components/planning/plan-setup-stepper.css';
-@import './styles/components/schedule-view.css';
-@import './styles/components/progress-view.css';
-@import './styles/components/wrap-up-sheet.css';
-@import './styles/components/wrap-up-review-pane.css';
-@import './styles/components/event-report.css';
-@import './styles/components/insights-view.css';
 @import './styles/components/task-attribution-breakdown.css';
-@import './styles/components/settings-remediation.css';
-@import './styles/components/settings-productivity.css';
-@import './styles/components/settings-attribution.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

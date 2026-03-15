@@ -1,30 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeTemplateStore } from './lib/stores/template-store';
 import { initializeWorkTypeStore } from './lib/stores/work-type-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { runWorkTypeLinkBackfill } from './lib/migrations/backfill-worktype-link';
-import { Task, Project } from './lib/types';
+import type { Project, Task } from './lib/types';
 // import { NetworkStatus } from './components/NetworkStatus';
 import { InstallPrompt } from './components/InstallPrompt';
+import { LoadingBlock } from './components/LoadingBlock';
 import { TodayView } from './pages/TodayView';
-import { TaskDetail } from './pages/TaskDetail';
 import { ProjectList } from './pages/ProjectList';
-import { ProjectDetail } from './pages/ProjectDetail';
-import { SettingsView } from './pages/SettingsView';
-import { PlanningView } from './pages/PlanningView';
-import { SettingsProjectsView } from './pages/settings/SettingsProjectsView';
-import { SettingsWorkTypesView } from './pages/settings/SettingsWorkTypesView';
-import { SettingsTemplatesView } from './pages/settings/SettingsTemplatesView';
-import { SettingsProductivityView } from './pages/settings/SettingsProductivityView';
-import { SettingsAttributionView } from './pages/settings/SettingsAttributionView';
-import { SettingsRemediationView } from './pages/settings/SettingsRemediationView';
-import { SettingsTelemetryView } from './pages/settings/SettingsTelemetryView';
-import { SettingsDataTransferView } from './pages/settings/SettingsDataTransferView';
-import { FieldPlanView } from './pages/field-plan/FieldPlanView';
 import { getFeatureFlag } from './lib/flags/feature-flags';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
+import { lazyNamedExport } from './lib/react/lazy-named-export';
 
 type Tab = 'today' | 'projects' | 'planning' | 'fieldPlan' | 'settings';
 type SettingsSection =
@@ -45,6 +34,20 @@ type View =
   | { type: 'projectDetail'; projectId: string; returnTo: ReturnTo }
   | { type: 'settingsDetail'; section: SettingsSection; returnTab: Tab }
 ;
+
+const TaskDetail = lazyNamedExport(() => import('./pages/TaskDetail'), 'TaskDetail');
+const ProjectDetail = lazyNamedExport(() => import('./pages/ProjectDetail'), 'ProjectDetail');
+const SettingsView = lazyNamedExport(() => import('./pages/SettingsView'), 'SettingsView');
+const PlanningView = lazyNamedExport(() => import('./pages/PlanningView'), 'PlanningView');
+const SettingsProjectsView = lazyNamedExport(() => import('./pages/settings/SettingsProjectsView'), 'SettingsProjectsView');
+const SettingsWorkTypesView = lazyNamedExport(() => import('./pages/settings/SettingsWorkTypesView'), 'SettingsWorkTypesView');
+const SettingsTemplatesView = lazyNamedExport(() => import('./pages/settings/SettingsTemplatesView'), 'SettingsTemplatesView');
+const SettingsProductivityView = lazyNamedExport(() => import('./pages/settings/SettingsProductivityView'), 'SettingsProductivityView');
+const SettingsAttributionView = lazyNamedExport(() => import('./pages/settings/SettingsAttributionView'), 'SettingsAttributionView');
+const SettingsRemediationView = lazyNamedExport(() => import('./pages/settings/SettingsRemediationView'), 'SettingsRemediationView');
+const SettingsTelemetryView = lazyNamedExport(() => import('./pages/settings/SettingsTelemetryView'), 'SettingsTelemetryView');
+const SettingsDataTransferView = lazyNamedExport(() => import('./pages/settings/SettingsDataTransferView'), 'SettingsDataTransferView');
+const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlanView'), 'FieldPlanView');
 
 function App() {
   const [initialized, setInitialized] = useState(false);
@@ -103,7 +106,7 @@ function App() {
   if (isLoading) {
     return (
       <main>
-        <div className="loading-spinner"><span className="loading-spinner__ring" />Loading...</div>
+        <LoadingBlock message="Loading..." />
       </main>
     );
   }
@@ -159,6 +162,83 @@ function App() {
     .filter(Boolean)
     .join(' ');
 
+  const routeContent = (
+    <>
+      {view.type === 'tab' && view.tab === 'today' && (
+        <TodayView
+          onSelectTask={handleSelectTask}
+        />
+      )}
+      {view.type === 'tab' && view.tab === 'projects' && (
+        <ProjectList onSelectProject={handleNavigateToProject} />
+      )}
+      {view.type === 'tab' && view.tab === 'planning' && (
+        <PlanningView
+          initialPlanId={planningLaunch?.planId ?? null}
+          initialSubView={planningLaunch?.subView}
+          onInitialNavigationHandled={() => setPlanningLaunch(null)}
+          onExitWorkspace={handleExitWorkspace}
+        />
+      )}
+      {view.type === 'tab' && view.tab === 'fieldPlan' && (
+        <FieldPlanView />
+      )}
+      {view.type === 'tab' && view.tab === 'settings' && (
+        <SettingsView
+          onNavigateToSection={(section) =>
+            setView({ type: 'settingsDetail', section, returnTab: 'settings' })
+          }
+        />
+      )}
+      {view.type === 'detail' && (
+        <TaskDetail
+          taskId={view.taskId}
+          onBack={handleBack}
+          onSelectTask={handleSelectTask}
+          onNavigateToProject={handleNavigateToProject}
+        />
+      )}
+      {view.type === 'projectDetail' && (
+        <ProjectDetail
+          projectId={view.projectId}
+          onBack={handleBack}
+          onSelectTask={handleSelectTask}
+          onOpenPlanReview={(planId) => {
+            setPlanningLaunch({ planId, subView: 'progress' });
+            setView({ type: 'tab', tab: 'planning' });
+          }}
+        />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'workTypes' && (
+        <SettingsWorkTypesView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'projects' && (
+        <SettingsProjectsView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'templates' && (
+        <SettingsTemplatesView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'productivity' && (
+        <SettingsProductivityView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'attribution' && (
+        <SettingsAttributionView
+          onBack={handleBack}
+          onOpenRemediation={() => setView({ type: 'settingsDetail', section: 'remediation', returnTab: 'settings' })}
+        />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'remediation' && (
+        <SettingsRemediationView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'telemetry' && (
+        <SettingsTelemetryView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
+        <SettingsDataTransferView onBack={handleBack} />
+      )}
+    </>
+  );
+
   return (
     <div className={rootClass || undefined}>
       {/* Network status bar - disabled until sync is implemented */}
@@ -170,78 +250,9 @@ function App() {
         aria-label="Main content"
         className={isPlanningWorkspaceActive ? 'main--workspace' : undefined}
       >
-        {view.type === 'tab' && view.tab === 'today' && (
-          <TodayView
-            onSelectTask={handleSelectTask}
-          />
-        )}
-        {view.type === 'tab' && view.tab === 'projects' && (
-          <ProjectList onSelectProject={handleNavigateToProject} />
-        )}
-        {view.type === 'tab' && view.tab === 'planning' && (
-          <PlanningView
-            initialPlanId={planningLaunch?.planId ?? null}
-            initialSubView={planningLaunch?.subView}
-            onInitialNavigationHandled={() => setPlanningLaunch(null)}
-            onExitWorkspace={handleExitWorkspace}
-          />
-        )}
-        {view.type === 'tab' && view.tab === 'fieldPlan' && (
-          <FieldPlanView />
-        )}
-        {view.type === 'tab' && view.tab === 'settings' && (
-          <SettingsView
-            onNavigateToSection={(section) =>
-              setView({ type: 'settingsDetail', section, returnTab: 'settings' })
-            }
-          />
-        )}
-        {view.type === 'detail' && (
-          <TaskDetail
-            taskId={view.taskId}
-            onBack={handleBack}
-            onSelectTask={handleSelectTask}
-            onNavigateToProject={handleNavigateToProject}
-          />
-        )}
-        {view.type === 'projectDetail' && (
-          <ProjectDetail
-            projectId={view.projectId}
-            onBack={handleBack}
-            onSelectTask={handleSelectTask}
-            onOpenPlanReview={(planId) => {
-              setPlanningLaunch({ planId, subView: 'progress' });
-              setView({ type: 'tab', tab: 'planning' });
-            }}
-          />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'workTypes' && (
-          <SettingsWorkTypesView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'projects' && (
-          <SettingsProjectsView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'templates' && (
-          <SettingsTemplatesView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'productivity' && (
-          <SettingsProductivityView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'attribution' && (
-          <SettingsAttributionView
-            onBack={handleBack}
-            onOpenRemediation={() => setView({ type: 'settingsDetail', section: 'remediation', returnTab: 'settings' })}
-          />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'remediation' && (
-          <SettingsRemediationView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'telemetry' && (
-          <SettingsTelemetryView onBack={handleBack} />
-        )}
-        {view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
-          <SettingsDataTransferView onBack={handleBack} />
-        )}
+        <Suspense fallback={<LoadingBlock message="Loading..." />}>
+          {routeContent}
+        </Suspense>
       </main>
 
       {/* Tab Navigation */}

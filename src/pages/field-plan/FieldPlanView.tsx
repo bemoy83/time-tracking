@@ -7,6 +7,7 @@ import { FieldPlanPhaseView } from './components/FieldPlanPhaseView';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
 import { FieldPlanPlanSelector } from './components/FieldPlanPlanSelector';
 import { useFieldPlanModel } from './useFieldPlanModel';
+import '../../styles/features/field-plan.css';
 
 interface FieldPlanViewProps {
   onBack?: () => void;

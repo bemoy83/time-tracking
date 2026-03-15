@@ -27,6 +27,7 @@ import {
 import { sanitizeFileNameSegment } from '../../utils/sanitize-filename';
 import { downloadJson } from '../download-json';
 import { isPlanInPlannerState } from '../../planning/plan-lifecycle';
+import { refreshProjectsInTaskStore } from '../../stores/task-store-project-sync';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -617,8 +618,7 @@ export async function applyPlanPackageImport(
   if (!existing) {
     await addPlan(mappedPlan);
     if (resolvedProjectId) {
-      const { refreshProjects } = await import('../../stores/task-store');
-      await refreshProjects();
+      await refreshProjectsInTaskStore();
     }
     return {
       applied: true,
@@ -632,8 +632,7 @@ export async function applyPlanPackageImport(
   await updatePlan(next);
 
   if (resolvedProjectId) {
-    const { refreshProjects } = await import('../../stores/task-store');
-    await refreshProjects();
+    await refreshProjectsInTaskStore();
   }
 
   let mergeSummary: PlanPackageMergeSummary | undefined;
