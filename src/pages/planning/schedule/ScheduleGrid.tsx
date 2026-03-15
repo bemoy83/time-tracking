@@ -353,7 +353,7 @@ function SingleScheduleGrid({
                       <div key={group.phase} className="schedule-grid__phase-group">
                         <button
                           type="button"
-                          className="schedule-grid__phase-header"
+                          className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
                           onClick={() => togglePhase(group.phase)}
                           aria-expanded={!isCollapsed}
                         >

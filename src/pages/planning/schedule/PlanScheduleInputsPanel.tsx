@@ -10,6 +10,8 @@ interface PlanScheduleInputsPanelProps extends PhaseDateValues {
   defaultCrewSize: number | null;
   readOnly: boolean;
   showBackButton?: boolean;
+  /** When true (Schedule view), collapse by default when dates are set and show summary. Always collapsible. */
+  collapseWhenConfigured?: boolean;
   primaryRange: { start: string; end: string } | null;
   dayCount: number;
   crewSize: number | null;
@@ -29,6 +31,7 @@ export function PlanScheduleInputsPanel({
   defaultCrewSize,
   readOnly,
   showBackButton = false,
+  collapseWhenConfigured = false,
   primaryRange,
   dayCount,
   crewSize,
@@ -39,14 +42,15 @@ export function PlanScheduleInputsPanel({
 }: PlanScheduleInputsPanelProps) {
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
-  const isDesktopControlBand = useMediaQuery('(min-width: 1200px)') && !showBackButton;
+  const isBigScreen = useMediaQuery('(min-width: 1200px)');
+  const isDesktopControlBand = !collapseWhenConfigured && isBigScreen && !showBackButton;
   const scheduleInputsExpanded = isDesktopControlBand ? true : inputsExpanded;
 
   return (
     <ScheduleInputsBlock
       expanded={scheduleInputsExpanded}
       onToggle={() => setInputsExpanded((prev) => !prev)}
-      collapsible={!isDesktopControlBand}
+      collapsible={collapseWhenConfigured || !isDesktopControlBand}
       primaryRange={primaryRange}
       dayCount={dayCount}
       crewSize={crewSize}

@@ -1,4 +1,5 @@
 import { ChevronIcon } from '../../../../components/icons';
+import type { SharedSchedulePhaseRow } from '../../../../lib/planning/scheduling/shared-schedule-types';
 import type { GroupRowRenderInput } from './schedule-grid-types';
 
 export function ScheduleGridGroupRow({
@@ -9,11 +10,12 @@ export function ScheduleGridGroupRow({
   isCollapsed,
   onToggle,
 }: GroupRowRenderInput) {
+  const phaseMod = row.type === 'phase' ? ` schedule-grid__phase-header--${(row as SharedSchedulePhaseRow).phase}` : '';
   return (
     <div className={`schedule-grid__${row.type}-group`}>
       <button
         type="button"
-        className={`schedule-grid__phase-header schedule-grid__phase-header--${row.type}`}
+        className={`schedule-grid__phase-header schedule-grid__phase-header--${row.type}${phaseMod}`}
         onClick={onToggle}
         aria-expanded={!isCollapsed}
       >

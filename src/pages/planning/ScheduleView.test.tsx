@@ -102,17 +102,35 @@ describe('ScheduleView top-band layout', () => {
     expect(within(healthColumn as HTMLElement).getAllByRole('button', { name: 'Activate' })).toHaveLength(1);
   });
 
-  it('keeps schedule inputs always visible and non-collapsible on desktop', () => {
-    const { container } = renderSchedule({ desktop: true });
+  it('collapses schedule inputs by default on desktop when dates are set, showing summary', () => {
+    const plan = createPlan('Configured Plan');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-05';
+    plan.workCalendar = [
+      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+      { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+    ];
+    const { container } = renderScheduleWithPlan(plan, { desktop: true });
 
     const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
     expect(inputsColumn).toBeTruthy();
-    expect((inputsColumn as HTMLElement).querySelector('.schedule-view__block-toggle')).toBeNull();
+    const toggle = (inputsColumn as HTMLElement).querySelector('.schedule-view__block-toggle');
+    expect(toggle).toBeTruthy();
+    expect((toggle as HTMLElement).getAttribute('aria-expanded')).toBe('false');
+    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
+
+    fireEvent.click(toggle as HTMLElement);
     expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
   });
 
   it('keeps schedule inputs collapsible on non-desktop', () => {
-    const { container } = renderSchedule({ desktop: false });
+    const plan = createPlan('Configured Plan');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-05';
+    plan.workCalendar = [
+      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+    ];
+    const { container } = renderScheduleWithPlan(plan, { desktop: false });
     const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
     expect(inputsColumn).toBeTruthy();
 
@@ -120,10 +138,12 @@ describe('ScheduleView top-band layout', () => {
       name: /Schedule Inputs/i,
     });
     expect(toggle).toBeTruthy();
+    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
+
+    fireEvent.click(toggle);
     expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
 
     fireEvent.click(toggle);
-
     expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
   });
 
@@ -164,7 +184,14 @@ describe('ScheduleView top-band layout', () => {
       expect(within(healthColumn as HTMLElement).getByText(/1 item still needs review/i)).toBeTruthy();
     });
 
-    const firstDateInput = container.querySelector('input[type="date"]') as HTMLInputElement | null;
+    const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
+    const toggle = (inputsColumn as HTMLElement)?.querySelector('.schedule-view__block-toggle');
+    if (toggle) fireEvent.click(toggle as HTMLElement);
+
+    const firstDateInput = await waitFor(
+      () => container.querySelector('input[type="date"]') as HTMLInputElement | null,
+      { timeout: 500 },
+    );
     expect(firstDateInput).toBeTruthy();
     fireEvent.change(firstDateInput as HTMLInputElement, { target: { value: '2026-03-03' } });
 

@@ -9,6 +9,11 @@ interface SetupStep {
   complete: boolean;
   /** Whether this step acts as the primary CTA when active */
   isCta: boolean;
+  /**
+   * When true, the step remains a clickable CTA even after completion.
+   * Use for repeatable actions (e.g. re-export / hand off).
+   */
+  persistCta?: boolean;
   onClick?: () => void | Promise<void>;
   disabled?: boolean;
   disabledReason?: string | null;
@@ -28,7 +33,7 @@ export function PlanSetupStepper({ steps, readOnly = false }: PlanSetupStepperPr
         const isComplete = step.complete;
         const isActive = idx === activeIdx;
         const isFuture = !isComplete && !isActive;
-        const isCtaActive = isActive && step.isCta && !readOnly;
+        const isCtaActive = (isActive || (step.persistCta && step.complete)) && step.isCta && !readOnly;
         const isLast = idx === steps.length - 1;
         const label = isCtaActive && step.activeLabel ? step.activeLabel : step.label;
 

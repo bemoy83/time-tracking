@@ -35,7 +35,7 @@
   left: 0;
   z-index: 2;
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
-  border-radius: 0;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
 .schedule-grid__phase-label--depth-0 {
@@ -52,6 +52,25 @@
 
 .schedule-grid__phase-label:hover {
   color: var(--color-text);
+}
+
+/* Phase-specific semantic colors (assembly / dismantle) */
+.schedule-grid__phase-header--assembly .schedule-grid__phase-label {
+  background: var(--wp-phase-assembly-header-bg);
+  color: var(--phase-assembly-fg);
+}
+
+.schedule-grid__phase-header--assembly .schedule-grid__phase-label:hover {
+  color: var(--phase-assembly-fg);
+}
+
+.schedule-grid__phase-header--dismantle .schedule-grid__phase-label {
+  background: var(--wp-phase-dismantle-header-bg);
+  color: var(--phase-dismantle-fg);
+}
+
+.schedule-grid__phase-header--dismantle .schedule-grid__phase-label:hover {
+  color: var(--phase-dismantle-fg);
 }
 
 .schedule-grid__group-count {

@@ -289,6 +289,8 @@ export interface Plan {
   updatedAt: string;
   /** ISO timestamp when plan was activated. null if draft. */
   activatedAt: string | null;
+  /** ISO timestamp when plan was handed off to field/floor manager. */
+  handedOffAt?: string | null;
   /** ISO timestamp when plan wrap-up review was finalized. */
   reviewedAt?: string | null;
   /** ISO timestamp when plan was imported onto executor device. */
@@ -578,9 +580,16 @@ export function revertToDraft(plan: Plan): Plan {
     ...plan,
     status: 'draft',
     activatedAt: null,
+    handedOffAt: null,
     reviewedAt: null,
     updatedAt: nowUtc(),
   };
+}
+
+/** Record that the plan was handed off to a field/floor manager. */
+export function handOffPlan(plan: Plan): Plan {
+  const now = nowUtc();
+  return { ...plan, handedOffAt: now, updatedAt: now };
 }
 
 /** Update a line item within a plan. Returns a new plan. */

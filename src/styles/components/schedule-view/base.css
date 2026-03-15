@@ -415,7 +415,7 @@
   color: var(--color-text-muted);
 }
 
-/* Editor canvas: tighter spacing + entrance animations to match plan editor */
+/* Editor canvas: tighter spacing + staggered entrance animations */
 @media (min-width: 768px) {
   .planning-workspace__editor-canvas .schedule-view {
     --schedule-view-section-gap: var(--space-sm);
@@ -423,50 +423,23 @@
     --schedule-view-block-gap: var(--space-xs);
   }
 
-  /* Staggered entrance for schedule section cards */
+  /* Staggered entrance — health → inputs → calendar → grid */
   .planning-workspace__editor-canvas .schedule-view__top-band-health {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
   }
 
   .planning-workspace__editor-canvas .schedule-view__top-band-inputs .schedule-view__block {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
   }
 
-  /* Work Calendar and Schedule Grid cards */
   .planning-workspace__editor-canvas .schedule-view > div:not(.schedule-view__top-band) > .schedule-view__block,
   .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.20s both;
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
   }
 
   /* Subtle block-title font weight bump in workspace */
   .planning-workspace__editor-canvas .schedule-view__block-title {
     font-weight: 600;
     letter-spacing: -0.01em;
-  }
-}
-
-@media (min-width: 1200px) {
-  .planning-workspace__editor-canvas .schedule-view__top-band {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: var(--schedule-view-section-gap);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    padding-bottom: 0;
-  }
-
-  .planning-workspace__editor-canvas .schedule-view__top-band-health {
-    min-width: 0;
-  }
-
-  .planning-workspace__editor-canvas .schedule-view__top-band-inputs {
-    height: 100%;
-    min-width: 0;
-  }
-
-  .planning-workspace__editor-canvas .schedule-view__top-band-inputs .schedule-view__block {
-    height: 100%;
   }
 }

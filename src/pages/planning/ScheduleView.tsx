@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import { PlanKpiRow } from './PlanKpiRow';
 import { getScheduleViewMetrics } from './workspace/workspace-metrics';
-import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
+import { type Plan, type PlanLineItem, activatePlan, revertToDraft, handOffPlan, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
@@ -30,6 +30,7 @@ import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
+import { PlanSetupStepper } from './PlanSetupStepper';
 import type {
   ScheduleIssueItem,
   ScheduleIssuePanelPayload,
@@ -433,6 +434,7 @@ export function ScheduleView({
     try {
       await flushAndWait();
       await exportPlanPackage(currentPlan);
+      mutatePlan((prev) => handOffPlan(prev));
       trackTelemetryEvent('interop_plan_package_export');
     } catch {
       window.alert('Could not export plan. Please try again.');
@@ -441,12 +443,17 @@ export function ScheduleView({
     }
   };
 
-  const handleToggleLock = () => {
-    if (!isLocked && currentPlan.projectId == null && currentPlan.title.trim().length === 0) {
+  const handleActivate = () => {
+    if (currentPlan.projectId == null && currentPlan.title.trim().length === 0) {
       window.alert('Add an event or project name before activating this plan.');
       return;
     }
-    mutatePlan((prev) => (isLocked ? revertToDraft(prev) : activatePlan(prev)));
+    mutatePlan((prev) => activatePlan(prev));
+    trackTelemetryEvent('planning_lock_toggle');
+  };
+
+  const handleRevertToDraft = () => {
+    mutatePlan((prev) => revertToDraft(prev));
     trackTelemetryEvent('planning_lock_toggle');
   };
 
@@ -786,6 +793,46 @@ export function ScheduleView({
   const criticalIssueCount = planningIssues.filter((issue) => issue.severity === 'critical').length;
   const warningIssueCount = planningIssues.filter((issue) => issue.severity === 'warning').length;
 
+  const scheduleBlockReason = criticalIssueCount > 0
+    ? `${criticalIssueCount} critical issue${criticalIssueCount === 1 ? '' : 's'} must be resolved first`
+    : schedulableUnscheduledCount > 0
+      ? `${schedulableUnscheduledCount} assignment${schedulableUnscheduledCount === 1 ? '' : 's'} not yet scheduled`
+      : null;
+
+  const scheduleSteps = [
+    {
+      id: 'plan',
+      label: 'Plan',
+      complete: currentPlan.lineItems.length > 0,
+      isCta: false,
+    },
+    {
+      id: 'crew',
+      label: 'Crew',
+      complete: currentPlan.workCalendar.length > 0 && currentPlan.defaultCrewSize != null,
+      isCta: false,
+    },
+    {
+      id: 'schedule',
+      label: 'Schedule',
+      complete: isLocked,
+      isCta: !readOnly && !isLocked,
+      onClick: handleActivate,
+      disabled: scheduleBlockReason != null,
+      disabledReason: scheduleBlockReason,
+    },
+    {
+      id: 'hand-off',
+      label: 'Hand off',
+      complete: currentPlan.handedOffAt != null,
+      isCta: !readOnly && isLocked,
+      persistCta: true,
+      onClick: handleExport,
+      disabled: isExporting,
+      disabledReason: isExporting ? 'Exporting…' : null,
+    },
+  ];
+
   return (
     <div className="planning-view schedule-view">
       <PlanKpiRow metrics={scheduleKpiMetrics} />
@@ -819,6 +866,8 @@ export function ScheduleView({
               </div>
             </div>
           </header>
+
+          <PlanSetupStepper steps={scheduleSteps} readOnly={readOnly} />
 
           <div className="schedule-view__planning-layout">
             <section className="schedule-view__planning-section" aria-label="Things to check">
@@ -879,21 +928,13 @@ export function ScheduleView({
                   Clear all ({scheduledPhaseRowCount})
                 </button>
               )}
-              <button
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={handleExport}
-                disabled={isExporting}
-              >
-                {isExporting ? 'Handing off...' : 'Hand off'}
-              </button>
-              {!readOnly && (
+              {!readOnly && isLocked && (
                 <button
                   type="button"
-                  className={`btn btn--sm ${isLocked ? 'btn--success' : 'btn--secondary'}`}
-                  onClick={handleToggleLock}
+                  className="btn btn--secondary btn--sm"
+                  onClick={handleRevertToDraft}
                 >
-                  {isLocked ? 'Revert to Draft' : 'Activate'}
+                  Revert to Draft
                 </button>
               )}
             </div>
@@ -911,6 +952,7 @@ export function ScheduleView({
             defaultCrewSize={currentPlan.defaultCrewSize}
             readOnly={readOnly}
             showBackButton={showBackButton}
+            collapseWhenConfigured
             primaryRange={workCalendarRange ?? primaryRange}
             dayCount={currentPlan.workCalendar.length}
             crewSize={currentPlan.defaultCrewSize ?? null}

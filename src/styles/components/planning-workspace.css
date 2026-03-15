@@ -1039,6 +1039,17 @@
     background: var(--surface-contained-bg);
   }
 
+  /* Phase headers keep semantic colors in workspace (override canvas background) */
+  .planning-workspace__editor-canvas .schedule-grid__phase-header--assembly .schedule-grid__phase-label {
+    background: var(--wp-phase-assembly-header-bg);
+    color: var(--phase-assembly-fg);
+  }
+
+  .planning-workspace__editor-canvas .schedule-grid__phase-header--dismantle .schedule-grid__phase-label {
+    background: var(--wp-phase-dismantle-header-bg);
+    color: var(--phase-dismantle-fg);
+  }
+
   /* Slightly tighter grid cells in workspace at wider widths */
   .planning-workspace__editor-canvas .schedule-grid__day-col {
     padding: var(--space-sm) 10px;
