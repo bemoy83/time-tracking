@@ -1,6 +1,6 @@
 import type { Plan, PlanLineItem, LineItemExecutionStatus, PhaseFields } from '../../lib/planning/plan-model';
-import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
-import type { Task, TimeEntry, BuildPhase } from '../../lib/types';
+import { getPhaseFields, getPlanDisplayName, isPhaseActive } from '../../lib/planning/plan-model';
+import type { Project, Task, TimeEntry, BuildPhase } from '../../lib/types';
 import { BUILD_PHASES } from '../../lib/types';
 import {
   evaluateLineItemDeadline,
@@ -57,11 +57,16 @@ export function buildFieldPlanLineItemSummaries(
   plan: Plan,
   tasks: Task[],
   timeEntries: TimeEntry[],
+  projectById?: Map<string, Project>,
 ): FieldPlanLineItemSummary[] {
   const planCanExecute = plan.status === 'received' || plan.status === 'session-closed';
   const linkedByLineItem = new Map<string, Task[]>();
   const entriesByTaskId = new Map<string, TimeEntry[]>();
   const todayDate = new Date().toISOString().slice(0, 10);
+  const planTitle = getPlanDisplayName(
+    plan,
+    plan.projectId && projectById ? projectById.get(plan.projectId) ?? null : null,
+  );
 
   for (const entry of timeEntries) {
     if (!entriesByTaskId.has(entry.taskId)) {
@@ -106,7 +111,7 @@ export function buildFieldPlanLineItemSummaries(
         deadlineStatus: deadline.status,
         dueDate: deadline.dueDate,
         planId: plan.id,
-        planTitle: plan.title,
+        planTitle,
         planProjectId: plan.projectId,
         planCanExecute,
       });

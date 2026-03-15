@@ -90,6 +90,7 @@ export function PlanningView({
       <>
         <PlanningListRoute
           plans={workspace.plans}
+          projects={workspace.projects}
           tasks={workspace.tasks}
           onSelect={workspace.handleSelectPlan}
           onCreate={workspace.handleCreatePlan}
@@ -109,6 +110,7 @@ export function PlanningView({
           tasks={workspace.tasks}
           workTypes={workspace.workTypes}
           plans={workspace.plans}
+          projects={workspace.projects}
           onBack={workspace.handleBack}
         />
         {wrapUpSheet}

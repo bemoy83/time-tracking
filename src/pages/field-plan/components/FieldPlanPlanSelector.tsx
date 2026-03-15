@@ -5,7 +5,8 @@ import {
   ExpandChevronIcon,
   TaskListIcon,
 } from '../../../components/icons';
-import type { Plan } from '../../../lib/planning/plan-model';
+import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
+import { useTaskStore } from '../../../lib/stores/task-store';
 
 interface FieldPlanPlanSelectorProps {
   receivedPlans: Plan[];
@@ -24,6 +25,9 @@ export function FieldPlanPlanSelector({
   onTogglePastEvents,
   onSelectPlan,
 }: FieldPlanPlanSelectorProps) {
+  const { projects } = useTaskStore();
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+
   return (
     <section className="field-plan__plan-selector">
       <h2 className="field-plan__section-title section-heading">
@@ -42,7 +46,9 @@ export function FieldPlanPlanSelector({
             className={`field-plan__plan-btn${selectedPlanId === plan.id ? ' field-plan__plan-btn--active' : ''}`}
             onClick={() => onSelectPlan(plan.id)}
           >
-            <span className="field-plan__plan-name">{plan.title}</span>
+            <span className="field-plan__plan-name">
+              {getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null)}
+            </span>
             <ChevronRightIcon className="field-plan__plan-chevron" />
           </button>
         ))}
@@ -72,7 +78,9 @@ export function FieldPlanPlanSelector({
                   className={`field-plan__plan-btn${selectedPlanId === plan.id ? ' field-plan__plan-btn--active' : ''}`}
                   onClick={() => onSelectPlan(plan.id)}
                 >
-                  <span className="field-plan__plan-name">{plan.title}</span>
+                  <span className="field-plan__plan-name">
+                    {getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null)}
+                  </span>
                   <ChevronRightIcon className="field-plan__plan-chevron" />
                 </button>
               ))}

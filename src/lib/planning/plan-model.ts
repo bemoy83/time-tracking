@@ -10,7 +10,7 @@
  * crew=0 and timeHours=0 is considered inactive.
  */
 
-import type { WorkUnit, BuildPhase } from '../types';
+import type { WorkUnit, BuildPhase, Project } from '../types';
 import { generateId, nowUtc } from '../types';
 import type { WorkTypeKey } from '../kpi';
 import { lineItemWorkTypeKey as toLineItemWorkTypeKey } from '../work-package-core';
@@ -329,6 +329,13 @@ export function getPhaseSpan(
   phase: BuildPhase,
 ): PlanDateSpan | null {
   return getPhaseSpanInternal(plan, phase);
+}
+
+export function getPlanDisplayName(
+  plan: Pick<Plan, 'title'>,
+  project?: Pick<Project, 'name'> | null,
+): string {
+  return project?.name ?? plan.title;
 }
 
 // ---------------------------------------------------------------------------

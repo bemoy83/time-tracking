@@ -8,8 +8,8 @@
 import { useState, useEffect } from 'react';
 import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
-import { getPhaseFields, isPhaseActive } from '../lib/planning/plan-model';
-import { createTask } from '../lib/stores/task-store';
+import { getPhaseFields, getPlanDisplayName, isPhaseActive } from '../lib/planning/plan-model';
+import { createTask, useTaskStore } from '../lib/stores/task-store';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS, BUILD_PHASES, type BuildPhase } from '../lib/types';
 import {
   encodePlanLineItemPhaseSelection,
@@ -28,6 +28,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
   const [expandedPlanIds, setExpandedPlanIds] = useState<Set<string>>(new Set());
   const [selectedSelections, setSelectedSelections] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
+  const { projects } = useTaskStore();
 
   // Load locked plans when sheet opens
   useEffect(() => {
@@ -148,6 +149,12 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
       ) : (
         <div className="plan-picker">
           {plans.map((plan) => {
+            const displayName = getPlanDisplayName(
+              plan,
+              plan.projectId
+                ? projects.find((project) => project.id === plan.projectId) ?? null
+                : null,
+            );
             const isExpanded = expandedPlanIds.has(plan.id);
             const hasItems = plan.lineItems.length > 0;
             const planSelectionTokens = plan.lineItems.flatMap((item) =>
@@ -172,7 +179,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
                         e.stopPropagation();
                         toggleAllInPlan(plan);
                       }}
-                      aria-label={allSelected ? `Deselect all in ${plan.title}` : `Select all in ${plan.title}`}
+                      aria-label={allSelected ? `Deselect all in ${displayName}` : `Select all in ${displayName}`}
                     >
                       <span
                         className={`plan-picker__checkbox${allSelected ? ' plan-picker__checkbox--checked' : ''}${someSelected ? ' plan-picker__checkbox--partial' : ''}`}
@@ -192,7 +199,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
                     <ChevronRightIcon
                       className={`plan-picker__chevron${isExpanded ? ' plan-picker__chevron--open' : ''}`}
                     />
-                    <span className="plan-picker__plan-title">{plan.title}</span>
+                    <span className="plan-picker__plan-title">{displayName}</span>
                     <span className="plan-picker__plan-count">
                       {plan.lineItems.length} item{plan.lineItems.length !== 1 ? 's' : ''}
                       {selectedCount > 0 && ` · ${selectedCount} task${selectedCount !== 1 ? 's' : ''} selected`}

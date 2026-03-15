@@ -8,7 +8,6 @@ import {
   TaskListIcon,
   WarningIcon,
 } from '../../../components/icons';
-import type { Plan } from '../../../lib/planning/plan-model';
 import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
@@ -24,7 +23,7 @@ interface DeadlineSummary {
 }
 
 interface FieldPlanPlanDetailProps {
-  selectedPlan: Plan;
+  planDisplayName: string;
   projectColor?: string;
   progressPercent: number;
   lineItemStatusSummary: LineItemStatusSummary;
@@ -46,7 +45,7 @@ interface FieldPlanPlanDetailProps {
 }
 
 export function FieldPlanPlanDetail({
-  selectedPlan,
+  planDisplayName,
   projectColor,
   progressPercent,
   lineItemStatusSummary,
@@ -73,7 +72,7 @@ export function FieldPlanPlanDetail({
           {projectColor && (
             <ProjectColorDot color={projectColor} size="xl" className="field-plan__header-dot" />
           )}
-          <h3 className="field-plan__plan-title">{selectedPlan.title}</h3>
+          <h3 className="field-plan__plan-title">{planDisplayName}</h3>
         </div>
         <div className="field-plan__progress">
           <div className="field-plan__progress-track" aria-hidden="true">

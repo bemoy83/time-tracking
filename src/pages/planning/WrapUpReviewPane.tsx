@@ -1,11 +1,12 @@
 import { useRef } from 'react';
 import type { Plan } from '../../lib/planning/plan-model';
-import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
+import { getPhaseFields, getPlanDisplayName, isPhaseActive } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
 import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS, BUILD_PHASES } from '../../lib/types';
 import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
 import { LoadingBlock } from '../../components/LoadingBlock';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { useTaskStore } from '../../lib/stores/task-store';
 
 interface WrapUpReviewPaneProps {
   plan: Plan;
@@ -23,7 +24,12 @@ export function WrapUpReviewPane({
   onCompleted,
 }: WrapUpReviewPaneProps) {
   const { workTypes } = useWorkTypeStore();
+  const { projects } = useTaskStore();
   const validationBlockRef = useRef<HTMLDivElement>(null);
+  const selectedProject = plan.projectId
+    ? projects.find((project) => project.id === plan.projectId) ?? null
+    : null;
+  const planDisplayName = getPlanDisplayName(plan, selectedProject);
 
   const model = useWrapUpSheetModelV2({
     isOpen: true,
@@ -39,7 +45,7 @@ export function WrapUpReviewPane({
       <header className="wrap-up-review-pane__header">
         <div className="wrap-up-review-pane__header-text">
           <h2 className="wrap-up-review-pane__title">Wrap Up Review</h2>
-          <span className="wrap-up-review-pane__plan-name">{plan.title}</span>
+          <span className="wrap-up-review-pane__plan-name">{planDisplayName}</span>
         </div>
         <button
           type="button"

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { Plan } from '../../lib/planning/plan-model';
-import type { Task } from '../../lib/types';
+import { getPlanDisplayName, type Plan } from '../../lib/planning/plan-model';
+import type { Project, Task } from '../../lib/types';
 import {
   isPlanWrapUpEligible,
   isPlanArchived,
@@ -24,6 +24,7 @@ import { AddToScheduleButton } from './AddToScheduleButton';
 
 interface PlanListProps {
   plans: Plan[];
+  projects: Project[];
   tasks: Task[];
   onSelect: (plan: Plan) => void;
   onCreate: () => void;
@@ -48,6 +49,7 @@ interface PlanListProps {
 
 export function PlanList({
   plans,
+  projects,
   tasks,
   onSelect,
   onCreate,
@@ -63,6 +65,10 @@ export function PlanList({
   onSelectedPlanIdsChange,
 }: PlanListProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+  const projectById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project])),
+    [projects],
+  );
 
   const { activePlans, archivedPlans } = useMemo(() => {
     const active: Plan[] = [];
@@ -104,6 +110,7 @@ export function PlanList({
           <SidebarZone label="Active">
             <PlanItems
               plans={activePlans}
+              projectById={projectById}
               tasks={tasks}
               selectedPlanId={selectedPlanId}
               onSelect={onSelect}
@@ -128,6 +135,7 @@ export function PlanList({
           >
             <PlanItems
               plans={archivedPlans}
+              projectById={projectById}
               tasks={tasks}
               selectedPlanId={selectedPlanId}
               onSelect={onSelect}
@@ -175,6 +183,7 @@ export function PlanList({
                 <PlanListItem
                   key={plan.id}
                   plan={plan}
+                  projectById={projectById}
                   tasks={tasks}
                   selectedPlanId={selectedPlanId}
                   onSelect={onSelect}
@@ -193,6 +202,7 @@ export function PlanList({
                   <PlanListItem
                     key={plan.id}
                     plan={plan}
+                    projectById={projectById}
                     tasks={tasks}
                     selectedPlanId={selectedPlanId}
                     onSelect={onSelect}
@@ -214,6 +224,7 @@ export function PlanList({
 
 interface PlanItemsProps {
   plans: Plan[];
+  projectById: Map<string, Project>;
   tasks: Task[];
   selectedPlanId?: string | null;
   onSelect: (plan: Plan) => void;
@@ -228,6 +239,7 @@ interface PlanItemsProps {
 
 function PlanItems({
   plans,
+  projectById,
   tasks,
   selectedPlanId,
   onSelect,
@@ -245,6 +257,7 @@ function PlanItems({
         <PlanListItem
           key={plan.id}
           plan={plan}
+          projectById={projectById}
           tasks={tasks}
           selectedPlanId={selectedPlanId}
           onSelect={onSelect}
@@ -263,6 +276,7 @@ function PlanItems({
 
 interface PlanListItemProps {
   plan: Plan;
+  projectById: Map<string, Project>;
   tasks: Task[];
   selectedPlanId?: string | null;
   onSelect: (plan: Plan) => void;
@@ -325,6 +339,7 @@ function PlanStatusIcon({
 
 function PlanListItem({
   plan,
+  projectById,
   tasks,
   selectedPlanId,
   onSelect,
@@ -336,6 +351,10 @@ function PlanListItem({
   selectedPlanIdsForSharedSchedule,
   onSelectedPlanIdsChange,
 }: PlanListItemProps) {
+  const displayName = getPlanDisplayName(
+    plan,
+    plan.projectId ? projectById.get(plan.projectId) ?? null : null,
+  );
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
   const showAddButton =
     showAddToScheduleButton &&
@@ -370,7 +389,7 @@ function PlanListItem({
     <>
       <button className="planning-view__item-btn" onClick={() => onSelect(plan)}>
         <span className="planning-view__item-content">
-          <span className="planning-view__item-title">{plan.title}</span>
+          <span className="planning-view__item-title">{displayName}</span>
           {compact ? (
             dateRange && <span className="planning-view__item-date mono">{dateRange}</span>
           ) : (
@@ -407,7 +426,7 @@ function PlanListItem({
               e.stopPropagation();
               onOpenWrapUp(plan);
             }}
-            aria-label={`Wrap up ${plan.title}`}
+            aria-label={`Wrap up ${displayName}`}
             title="Wrap up"
           >
             <CheckIcon className="planning-view__item-wrap-up-icon" />
@@ -417,7 +436,7 @@ function PlanListItem({
             variant="wrap-up"
             as="button"
             onClick={() => onOpenWrapUp(plan)}
-            aria-label={`Wrap up ${plan.title}`}
+            aria-label={`Wrap up ${displayName}`}
           >
             Wrap Up
           </StatusBadge>
@@ -429,7 +448,7 @@ function PlanListItem({
           e.stopPropagation();
           onDelete(plan.id);
         }}
-        aria-label={`Delete ${plan.title}`}
+        aria-label={`Delete ${displayName}`}
       >
         <TrashIcon className="planning-view__item-delete-icon" />
       </button>
@@ -442,7 +461,7 @@ function PlanListItem({
       {showAddButton && (
         <AddToScheduleButton
           planId={plan.id}
-          planTitle={plan.title}
+          planTitle={displayName}
           isChecked={isChecked}
           onToggle={handleToggleAddToSchedule}
         />

@@ -442,6 +442,10 @@ export function ScheduleView({
   };
 
   const handleToggleLock = () => {
+    if (!isLocked && currentPlan.projectId == null && currentPlan.title.trim().length === 0) {
+      window.alert('Add an event or project name before activating this plan.');
+      return;
+    }
     mutatePlan((prev) => (isLocked ? revertToDraft(prev) : activatePlan(prev)));
     trackTelemetryEvent('planning_lock_toggle');
   };

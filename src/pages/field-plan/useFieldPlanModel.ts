@@ -3,7 +3,7 @@ import { getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
 import { buildExecutionReturnEnvelope } from '../../lib/interop/data-transfer/execution-return';
 import { downloadJson } from '../../lib/interop/download-json';
 import type { BlockCategory, Plan, PlanLineItem } from '../../lib/planning/plan-model';
-import { updatePlanLineItem, phaseFieldUpdates } from '../../lib/planning/plan-model';
+import { getPlanDisplayName, updatePlanLineItem, phaseFieldUpdates } from '../../lib/planning/plan-model';
 import { lineItemToCreateTaskInput } from '../../lib/planning/release-plan';
 import {
   syncLineItemBlockToTasks,
@@ -29,6 +29,10 @@ import { useFieldPlanImport } from './useFieldPlanImport';
 
 export function useFieldPlanModel() {
   const { tasks, projects } = useTaskStore();
+  const projectById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project])),
+    [projects],
+  );
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -118,12 +122,26 @@ export function useFieldPlanModel() {
 
   const lineItems = useMemo(() => {
     if (!selectedPlan) return [];
-    return buildFieldPlanLineItemSummaries(selectedPlan, tasks, timeEntries);
-  }, [selectedPlan, tasks, timeEntries]);
+    return buildFieldPlanLineItemSummaries(selectedPlan, tasks, timeEntries, projectById);
+  }, [selectedPlan, tasks, timeEntries, projectById]);
 
   const allActiveLineItems = useMemo(
-    () => receivedPlans.flatMap((plan) => buildFieldPlanLineItemSummaries(plan, tasks, timeEntries)),
-    [receivedPlans, tasks, timeEntries],
+    () => receivedPlans.flatMap((plan) =>
+      buildFieldPlanLineItemSummaries(plan, tasks, timeEntries, projectById),
+    ),
+    [receivedPlans, tasks, timeEntries, projectById],
+  );
+
+  const selectedPlanDisplayName = useMemo(
+    () => (
+      selectedPlan
+        ? getPlanDisplayName(
+            selectedPlan,
+            selectedPlan.projectId ? projectById.get(selectedPlan.projectId) ?? null : null,
+          )
+        : null
+    ),
+    [selectedPlan, projectById],
   );
 
   const displayLineItems = useMemo(
@@ -321,6 +339,7 @@ export function useFieldPlanModel() {
     receivedPlans,
     closedPlans,
     selectedPlan,
+    selectedPlanDisplayName,
     selectedPlanId,
     projectColor,
     showPastEvents,

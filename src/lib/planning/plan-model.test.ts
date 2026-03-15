@@ -13,6 +13,7 @@ import {
   duplicateLineItem,
   getPhaseFields,
   getPhaseQuantity,
+  getPlanDisplayName,
   phaseFieldUpdates,
 } from './plan-model';
 
@@ -74,6 +75,18 @@ describe('activatePlan / revertToDraft', () => {
     const reverted = revertToDraft(active);
     expect(reverted.status).toBe('draft');
     expect(reverted.activatedAt).toBeNull();
+  });
+});
+
+describe('getPlanDisplayName', () => {
+  it('prefers the linked project name when present', () => {
+    const plan = createPlan('Standalone Work');
+    expect(getPlanDisplayName(plan, { name: 'Main Event' })).toBe('Main Event');
+  });
+
+  it('falls back to the stored plan title when no project is linked', () => {
+    const plan = createPlan('Standalone Work');
+    expect(getPlanDisplayName(plan, null)).toBe('Standalone Work');
   });
 });
 

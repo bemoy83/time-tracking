@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BuildPhase, Project } from '../../lib/types';
-import type { Plan, PlanLineItem, WorkCalendarDay } from '../../lib/planning/plan-model';
+import { getPlanDisplayName, type Plan, type PlanLineItem, type WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import {
@@ -165,24 +165,17 @@ export function SharedScheduleView({
     saveCrewPoolOverride(crewPoolSourceKey, crewPoolCalendar, crewPoolDefaultCrewSize);
   }, [crewPoolSourceKey, crewPoolCalendar, crewPoolDefaultCrewSize, selectedPlans.length]);
 
-  const selectedProjectNamesByPlanId = useMemo(() => {
-    const projectById = new Map(projects.map((project) => [project.id, project.name]));
+  const planDisplayNameByPlanId = useMemo(() => {
+    const projectById = new Map(projects.map((project) => [project.id, project]));
     const names = new Map<string, string>();
     for (const plan of selectedPlans) {
-      if (!plan.projectId) continue;
-      const projectName = projectById.get(plan.projectId);
-      if (projectName) names.set(plan.id, projectName);
+      names.set(
+        plan.id,
+        getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null),
+      );
     }
     return names;
   }, [projects, selectedPlans]);
-
-  const planTitleByPlanId = useMemo(() => {
-    const titles = new Map<string, string>();
-    for (const plan of selectedPlans) {
-      titles.set(plan.id, plan.title);
-    }
-    return titles;
-  }, [selectedPlans]);
 
   const lineItemRefs = useMemo(() => {
     const refs: ScheduledLineItemRef[] = [];
@@ -426,8 +419,7 @@ export function SharedScheduleView({
             calendar={crewPoolCalendar}
             capacity={capacity}
             phaseDatesByPlanId={phaseDatesByPlanId}
-            planTitleByPlanId={planTitleByPlanId}
-            projectNameByPlanId={selectedProjectNamesByPlanId}
+            planDisplayNameByPlanId={planDisplayNameByPlanId}
             itemByCompositeId={itemByCompositeId}
               onAutoSchedule={handleAutoScheduleShared}
             onToggleAssignment={handleToggleAssignment}

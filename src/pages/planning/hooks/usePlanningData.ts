@@ -94,7 +94,7 @@ export function usePlanningData() {
   // --- CRUD actions ---
 
   const handleCreatePlan = useCallback(async (): Promise<Plan> => {
-    const plan = createPlan('New Plan');
+    const plan = createPlan('');
     await addPlan(plan);
     setPlans((prev) => [...prev, plan]);
     return plan;

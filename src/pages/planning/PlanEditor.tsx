@@ -13,6 +13,7 @@ import {
   type PlanLineItem,
   addLineItemToPlan,
   createLineItem,
+  getPlanDisplayName,
   removeLineItemFromPlan,
   updatePlanLineItem,
   duplicateLineItem,
@@ -29,8 +30,7 @@ import {
   generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { getContrastColor } from '../../lib/utils/contrast';
-import { ChevronLeftIcon } from '../../components/icons';
+import { ChevronLeftIcon, ChevronRightIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -71,23 +71,25 @@ export function PlanEditor({
   plan,
   kpis,
   projects,
-  canOpenProgress,
   showBackButton = true,
   readOnly = false,
   onSave,
   onBack,
   onOpenSchedule,
-  onOpenProgress,
-  onOpenReport,
   onRegisterBeforeScheduleSwitch,
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
+  const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
 
   useEffect(() => {
-    setTitle(plan.title);
-  }, [plan.id, plan.updatedAt, plan.title]);
+    setTitle(currentPlan.title);
+  }, [currentPlan.id, currentPlan.title]);
+
+  useEffect(() => {
+    setIdentityError(null);
+  }, [currentPlan.id]);
 
   useEffect(() => {
     setShowProjectPicker(false);
@@ -145,6 +147,11 @@ export function PlanEditor({
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
   const selectedProjectColor = selectedProject ? getProjectDisplayColor(selectedProject.color) : null;
+  const planDisplayName = getPlanDisplayName(currentPlan, selectedProject);
+  const hasIdentity =
+    selectedProject != null
+    || title.trim().length > 0
+    || currentPlan.title.trim().length > 0;
 
   const { workTypes } = useWorkTypeStore();
   const selectableWorkTypes = useMemo(
@@ -206,11 +213,22 @@ export function PlanEditor({
   };
 
   const handleSave = () => {
-    mutatePlan((prev) => ({ ...prev, title }));
+    const trimmedTitle = title.trim();
+    if (trimmedTitle !== title) {
+      setTitle(trimmedTitle);
+    }
+    if (selectedProject == null && trimmedTitle.length === 0) {
+      setIdentityError('Enter an event or project, or link this plan to a project.');
+      return;
+    }
+    setIdentityError(null);
+    if (trimmedTitle === currentPlan.title) return;
+    mutatePlan((prev) => ({ ...prev, title: trimmedTitle }));
   };
 
   const handleAssignProject = async (projectId: string | null) => {
     if (projectId == null) {
+      setIdentityError(null);
       mutatePlan((prev) => ({ ...prev, projectId: null }));
       return;
     }
@@ -219,8 +237,10 @@ export function PlanEditor({
     const project = getProjectById(projectId);
     if (!project) return;
 
+    setIdentityError(null);
+    setTitle(project.name);
     mutatePlan((prev) => {
-      const assigned = { ...prev, projectId };
+      const assigned = { ...prev, projectId, title: project.name };
       if (!hasProjectPhaseDates(project)) {
         return assigned;
       }
@@ -292,11 +312,11 @@ export function PlanEditor({
     : null;
   const overviewHelperText = readOnly
     ? reviewedDateLabel
-      ? `This plan is archived (reviewed ${reviewedDateLabel}) with its project/event linkage preserved.`
-      : 'This plan is archived with its project/event linkage preserved.'
+      ? `This plan is archived (reviewed ${reviewedDateLabel}) with its event or project identity preserved.`
+      : 'This plan is archived with its event or project identity preserved.'
     : isLocked
-      ? 'This plan is tied to a live project/event. Keep work packages aligned with actual execution.'
-      : 'Assign the target project/event first so all work packages roll up to real project delivery.';
+      ? 'This plan is live. Its event or project identity is locked while execution is in progress.'
+      : 'Name the event or work you are planning, or link it to a project if delivery should follow that project.';
   const scheduleActionBlockedReason =
     summaryRange == null
       ? 'Set schedule dates before building schedule.'
@@ -305,9 +325,9 @@ export function PlanEditor({
         : null;
   const setupSteps = [
     {
-      id: 'project',
-      label: 'Project',
-      complete: selectedProject != null,
+      id: 'identity',
+      label: 'Event/Project',
+      complete: hasIdentity,
       isCta: false as const,
     },
     {
@@ -358,49 +378,72 @@ export function PlanEditor({
       <div className="planning-view__sticky-summary">
         <section className="planning-view__overview-block" aria-label="Plan overview">
           <div className="planning-view__overview-identity">
-            <div className="planning-view__overview-title-row">
-              <label className="planning-view__overview-field planning-view__overview-field--title" htmlFor={titleInputId}>
-                <span className="planning-view__overview-label">Plan Title</span>
-                <input
-                  id={titleInputId}
-                  className="planning-view__title-input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onBlur={handleSave}
-                  disabled={readOnly || isLocked}
-                />
-              </label>
-            </div>
+            <label
+              className="planning-view__overview-field planning-view__overview-field--identity"
+              htmlFor={readOnly || isLocked || selectedProject ? undefined : titleInputId}
+            >
+              <span className="planning-view__overview-label">Event/Project</span>
+              {readOnly || isLocked ? (
+                <div className="planning-view__identity-readonly" aria-live="polite">
+                  <span className="planning-view__identity-readonly-value">
+                    {planDisplayName || 'Untitled plan'}
+                  </span>
+                </div>
+              ) : selectedProject ? (
+                <div className="planning-view__identity-assigned-row">
+                  <button
+                    type="button"
+                    className="planning-view__project-button planning-view__project-button--selected"
+                    onClick={() => setShowProjectPicker(true)}
+                    style={{ color: selectedProjectColor! }}
+                  >
+                    <span className="planning-view__project-selected">
+                      <span>{selectedProject.name}</span>
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div className="planning-view__identity-control">
+                  <input
+                    id={titleInputId}
+                    className="input planning-view__identity-input"
+                    value={title}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (identityError) setIdentityError(null);
+                    }}
+                    onBlur={handleSave}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSave();
+                      }
+                    }}
+                    placeholder="What event or project are you planning?"
+                    aria-invalid={identityError ? 'true' : 'false'}
+                    aria-describedby={identityError ? `${titleInputId}-error` : undefined}
+                  />
+                  <button
+                    type="button"
+                    className="planning-view__identity-picker-trigger"
+                    onClick={() => setShowProjectPicker(true)}
+                    aria-label="Browse projects"
+                  >
+                    <ChevronRightIcon className="planning-view__identity-picker-icon" />
+                  </button>
+                </div>
+              )}
+              {identityError && (
+                <span id={`${titleInputId}-error`} className="planning-view__overview-error" role="alert">
+                  {identityError}
+                </span>
+              )}
+            </label>
           </div>
 
           <div className="planning-view__overview-content">
             <div className="planning-view__overview-context">
               <p className="planning-view__overview-helper">{overviewHelperText}</p>
-
-              <div className="planning-view__overview-field planning-view__overview-field--project">
-                <span className="planning-view__overview-label">Project</span>
-                <div className="planning-view__project-row">
-                  <button
-                    type="button"
-                    className={`planning-view__project-button${selectedProject ? ' planning-view__project-button--selected' : ' planning-view__project-button--empty'}`}
-                    onClick={() => setShowProjectPicker(true)}
-                    disabled={readOnly || isLocked}
-                    style={
-                      selectedProject
-                        ? { color: selectedProjectColor! }
-                        : undefined
-                    }
-                  >
-                    {selectedProject ? (
-                      <span className="planning-view__project-selected">
-                        <span>{selectedProject.name}</span>
-                      </span>
-                    ) : (
-                      <span className="planning-view__project-none">+ Add to project</span>
-                    )}
-                  </button>
-                </div>
-              </div>
             </div>
 
           </div>

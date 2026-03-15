@@ -64,8 +64,7 @@ interface SharedScheduleGridProps {
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
-  planTitleByPlanId: Map<string, string>;
-  projectNameByPlanId: Map<string, string>;
+  planDisplayNameByPlanId: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
   onAutoSchedule?: () => void;
   onToggleAssignment: (
@@ -392,8 +391,7 @@ function SharedScheduleGrid({
   calendar,
   capacity,
   phaseDatesByPlanId,
-  planTitleByPlanId,
-  projectNameByPlanId,
+  planDisplayNameByPlanId,
   itemByCompositeId,
   onAutoSchedule,
   onToggleAssignment,
@@ -573,9 +571,7 @@ function SharedScheduleGrid({
                 const hasPhaseWindows = rowPhaseDates ? hasCompletePhaseDates(rowPhaseDates) : false;
                 const assignedDates = getAssignedDatesWithinPhase(item, row.phase, rowPhaseDates);
                 const phaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
-                const projectName = projectNameByPlanId.get(row.planId);
-                const planTitle = planTitleByPlanId.get(row.planId) ?? row.planId;
-                const metaPrefix = `${planTitle}${projectName ? ` (${projectName})` : ''}`;
+                const metaPrefix = planDisplayNameByPlanId.get(row.planId) ?? row.planId;
 
                 return (
                   <ScheduleGridItemRow

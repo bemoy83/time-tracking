@@ -6,8 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
-import type { Plan } from '../../../lib/planning/plan-model';
+import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
 import type { Project, TimeEntry } from '../../../lib/types';
@@ -28,7 +27,6 @@ import {
 } from './workspace-tabs';
 import { SidebarIssuesPanel } from './SidebarIssuesPanel';
 import { SparklesIcon, TaskListIcon } from '../../../components/icons';
-import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 import type { ScheduleIssuePanelPayload } from './schedule-issue-panel-types';
 import { WrapUpReviewPane } from '../WrapUpReviewPane';
 import { StatusBadge } from '../../../components/StatusBadge';
@@ -99,7 +97,6 @@ export function PlanningWorkspaceShell({
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
-  const [sharedScheduleCapacity, setSharedScheduleCapacity] = useState<CapacitySummary | null>(null);
   const [scheduleIssuePanelPayload, setScheduleIssuePanelPayload] = useState<ScheduleIssuePanelPayload | null>(null);
   const isOnIssuesTabRef = useRef(false);
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
@@ -146,6 +143,7 @@ export function PlanningWorkspaceShell({
         <div className="planning-workspace__sidebar-content">
           <PlanList
             plans={plans}
+            projects={projects}
             tasks={tasks}
             onSelect={onSelectPlan}
             onCreate={onCreatePlan}
@@ -210,7 +208,6 @@ export function PlanningWorkspaceShell({
               projects={projects}
               selectedPlanIds={selectedPlanIdsForSharedSchedule}
               onSavePlan={onSavePlan}
-              onCapacityChange={setSharedScheduleCapacity}
             />
           </SharedScheduleMainPane>
         ) : activePlan ? (
@@ -247,7 +244,7 @@ export function PlanningWorkspaceShell({
           <div className="planning-workspace__main-inner">
             <div className="planning-workspace__tab-content" role="tabpanel">
               <div className="planning-workspace__editor-canvas">
-                <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} />
+                <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} projects={projects} />
               </div>
             </div>
           </div>
@@ -438,6 +435,10 @@ function WorkspaceMainPane({
   planIdsWithImportedExecutionReturns,
 }: WorkspaceMainPaneProps) {
   const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
+  const selectedProject = plan.projectId
+    ? projects.find((project) => project.id === plan.projectId) ?? null
+    : null;
+  const planDisplayName = getPlanDisplayName(plan, selectedProject);
 
   const isReviewed = isPlanArchived(plan);
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
@@ -479,7 +480,7 @@ function WorkspaceMainPane({
     <div className="planning-workspace__main-inner">
       {/* Plan context bar */}
       <div className="planning-workspace__plan-context-bar">
-        <span className="planning-workspace__plan-context-title">{plan.title}</span>
+        <span className="planning-workspace__plan-context-title">{planDisplayName}</span>
         <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status} />
         {(assemblyDateRange || dismantleDateRange) && (
           <span className="planning-workspace__plan-context-phases">
@@ -557,7 +558,8 @@ function WorkspaceMainPane({
               tasks={tasks}
               workTypes={workTypes}
               planId={plan.id}
-              planTitle={plan.title}
+              planTitle={planDisplayName}
+              projects={projects}
             />
           </div>
         )}

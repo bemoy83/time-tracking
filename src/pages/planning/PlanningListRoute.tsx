@@ -1,9 +1,10 @@
 import type { Plan } from '../../lib/planning/plan-model';
-import type { Task } from '../../lib/types';
+import type { Project, Task } from '../../lib/types';
 import { PlanList } from './PlanList';
 
 interface PlanningListRouteProps {
   plans: Plan[];
+  projects: Project[];
   tasks: Task[];
   onSelect: (plan: Plan) => void;
   onCreate: () => void;
@@ -14,6 +15,7 @@ interface PlanningListRouteProps {
 
 export function PlanningListRoute({
   plans,
+  projects,
   tasks,
   onSelect,
   onCreate,
@@ -24,6 +26,7 @@ export function PlanningListRoute({
   return (
     <PlanList
       plans={plans}
+      projects={projects}
       tasks={tasks}
       onSelect={onSelect}
       onCreate={onCreate}

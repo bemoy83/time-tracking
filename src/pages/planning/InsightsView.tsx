@@ -9,8 +9,8 @@ import {
   type WorkTypeTrend,
 } from '../../lib/kpi';
 import { LoadingBlock } from '../../components/LoadingBlock';
-import type { Plan } from '../../lib/planning/plan-model';
-import type { Task, WorkType } from '../../lib/types';
+import { getPlanDisplayName, type Plan } from '../../lib/planning/plan-model';
+import type { Project, Task, WorkType } from '../../lib/types';
 import { WORK_UNIT_LABELS } from '../../lib/types';
 
 export type InsightsWindow = 'this-month' | 'last-3-months' | 'last-6-months' | 'all-time';
@@ -93,9 +93,17 @@ interface InsightsViewProps {
   planTitle?: string;
   /** Plans list for scope selector in global view. When provided, user can switch between "All plans" and a specific plan. */
   plans?: Plan[];
+  projects?: Project[];
 }
 
-export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: propPlanTitle, plans = [] }: InsightsViewProps) {
+export function InsightsView({
+  tasks,
+  workTypes,
+  planId: propPlanId,
+  planTitle: propPlanTitle,
+  plans = [],
+  projects = [],
+}: InsightsViewProps) {
   // Per-plan view: default to all-time since plan execution may have occurred in the past
   const [window, setWindow] = useState<InsightsWindow>(() => (propPlanId ? 'all-time' : 'this-month'));
   const [scope, setScope] = useState<InsightsScope>('all');
@@ -105,9 +113,24 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
     highVariance: [],
   });
   const [loading, setLoading] = useState(false);
+  const projectById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project])),
+    [projects],
+  );
 
   const effectivePlanId = propPlanId ?? (scope === 'plan' && selectedPlanId ? selectedPlanId : null);
-  const effectivePlanTitle = propPlanTitle ?? (effectivePlanId ? plans.find((p) => p.id === effectivePlanId)?.title ?? null : null);
+  const effectivePlanTitle = propPlanTitle ?? (
+    effectivePlanId
+      ? (() => {
+          const matchedPlan = plans.find((plan) => plan.id === effectivePlanId);
+          if (!matchedPlan) return null;
+          return getPlanDisplayName(
+            matchedPlan,
+            matchedPlan.projectId ? projectById.get(matchedPlan.projectId) ?? null : null,
+          );
+        })()
+      : null
+  );
   const plansWithTasks = useMemo(
     () => plans.filter((p) => tasks.some((t) => t.sourcePlanId === p.id)),
     [plans, tasks],
@@ -194,7 +217,10 @@ export function InsightsView({ tasks, workTypes, planId: propPlanId, planTitle: 
               <option value="">Select a plan…</option>
               {plansWithTasks.map((plan) => (
                 <option key={plan.id} value={plan.id}>
-                  {plan.title}
+                  {getPlanDisplayName(
+                    plan,
+                    plan.projectId ? projectById.get(plan.projectId) ?? null : null,
+                  )}
                 </option>
               ))}
             </select>

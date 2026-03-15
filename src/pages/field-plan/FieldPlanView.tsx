@@ -17,7 +17,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
   const model = useFieldPlanModel();
 
   const breadcrumbSegments = model.selectedPlan
-    ? [{ label: 'Field Plan' }, { label: model.selectedPlan.title }]
+    ? [{ label: 'Field Plan' }, { label: model.selectedPlanDisplayName ?? 'Plan' }]
     : [{ label: 'Field Plan' }];
 
   return (
@@ -150,7 +150,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
 
                 {model.selectedPlan && (
                   <FieldPlanPlanDetail
-                    selectedPlan={model.selectedPlan}
+                    planDisplayName={model.selectedPlanDisplayName ?? 'Plan'}
                     projectColor={model.projectColor}
                     progressPercent={model.progressPercent}
                     lineItemStatusSummary={model.lineItemStatusSummary}
