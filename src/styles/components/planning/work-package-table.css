@@ -761,6 +761,6 @@
   font-size: var(--font-label);
 }
 .planning-workspace__editor-canvas .planning-view__wp-number-cell .planning-view__wp-static {
-  font-family: ui-monospace, monospace;
+  font-family: 'DM Mono', ui-monospace, monospace;
   font-size: var(--font-label);
 }

@@ -625,6 +625,11 @@
   border-radius: var(--radius-lg);
 }
 
+/* No dividers in compact sidebar — rows are separated by gap + hover bg only */
+.planning-view__list--compact .planning-view__row:not(:last-child) .planning-view__item::after {
+  display: none;
+}
+
 /* First/last item radius to match list container */
 .planning-view__list--compact .planning-view__row:first-child .planning-view__item {
   border-top-left-radius: var(--radius-lg);
@@ -670,7 +675,8 @@
 /* --- Selected plan highlight in sidebar --- */
 
 .planning-view__row.planning-view__row--selected .planning-view__item {
-  background: var(--surface-contained-hover);
+  background: var(--surface-contained-inset);
+  box-shadow: var(--shadow-xs);
 }
 
 .planning-view__row.planning-view__row--selected .planning-view__item-btn {
@@ -987,6 +993,7 @@
   /* Tab content — soft inset canvas so section cards float above it */
   .planning-workspace__tab-content {
     background: var(--surface-contained-inset);
+    padding: 18px 22px 22px;
   }
 
   /* Section cards — lift off the soft canvas */
@@ -996,13 +1003,19 @@
     box-shadow: var(--shadow-sm);
   }
 
+  /* Section header labels — caption size + tight letter-spacing per mockup */
+  .planning-workspace__editor-canvas .planning-view__items-title {
+    font-size: var(--font-caption);
+    letter-spacing: 0.09em;
+  }
+
   /* Tab strip — gray pill container */
   .planning-workspace__tabs {
     background: var(--surface-contained-inset);
     border-bottom: none;
-    min-height: 36px;
-    padding: 7px var(--space-md);
-    gap: 4px;
+    min-height: unset;
+    padding: 8px 20px;
+    gap: 3px;
     align-items: center;
     /* Remove scroll shadow images; simple inset bg is enough */
     background-image: none;
@@ -1014,17 +1027,18 @@
       linear-gradient(to left, rgba(0,0,0,0.05), transparent) right / 24px 100% no-repeat scroll;
   }
 
-  /* Tab items — slim pill (match status-badge proportions) */
+  /* Tab items — pill proportions per mockup; override global a11y min-size (desktop only) */
   .planning-workspace__tab {
     border: none;
     border-bottom: none;
     border-radius: 9999px;
     color: var(--color-text-muted);
-    padding: 0 12px;
-    min-height: 22px;
+    padding: 7px 15px;
+    min-height: unset;
+    min-width: unset;
     line-height: 1;
-    font-size: var(--font-caption);
-    letter-spacing: 0.02em;
+    font-size: var(--font-small);
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1038,9 +1052,15 @@
     color: var(--color-text);
   }
 
-  /* Context bar — no hard border; visual break comes from tab strip bg */
+  /* Context bar — no hard border; breathing room per mockup */
   .planning-workspace__plan-context-bar {
     border-bottom: none;
+    padding: 14px 24px;
+    min-height: unset;
+  }
+
+  .planning-workspace__plan-context-title {
+    font-size: 0.9375rem; /* 15px per mockup */
   }
 
   /* "New Plan" button — dark fill CTA */
