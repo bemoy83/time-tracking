@@ -54,8 +54,9 @@
    ============================================================ */
 
 .settings-view__card {
-  background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: var(--space-md);
 }
 

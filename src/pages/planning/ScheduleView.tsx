@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
+import { PlanKpiRow } from './PlanKpiRow';
+import { getScheduleViewMetrics } from './workspace/workspace-metrics';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft, getPhaseFields } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
@@ -162,6 +164,11 @@ export function ScheduleView({
     currentPlan.workCalendar.length,
     mutatePlan,
   ]);
+
+  const scheduleKpiMetrics = useMemo(
+    () => getScheduleViewMetrics(currentPlan),
+    [currentPlan],
+  );
 
   const capacity = useMemo(
     () => computeCapacitySummary(currentPlan),
@@ -777,6 +784,7 @@ export function ScheduleView({
 
   return (
     <div className="planning-view schedule-view">
+      <PlanKpiRow metrics={scheduleKpiMetrics} />
       <div className="schedule-view__top-band">
         <section className="schedule-view__block schedule-view__top-band-health" aria-label="Schedule health and controls">
           <header className="schedule-view__top-band-header">

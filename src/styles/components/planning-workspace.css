@@ -3,6 +3,7 @@
    ============================================================ */
 
 .planning-workspace {
+  --planning-workspace-header-height: 52px;
   display: flex;
   height: 100dvh;
   overflow: hidden;
@@ -24,8 +25,8 @@
 .planning-workspace__sidebar-header {
   display: flex;
   align-items: center;
-  padding: var(--space-sm) var(--space-md);
-  min-height: 48px;
+  padding: 0 var(--space-md);
+  min-height: var(--planning-workspace-header-height);
   flex-shrink: 0;
 }
 
@@ -56,158 +57,6 @@
 .planning-workspace__exit-icon {
   width: 20px;
   height: 20px;
-}
-
-.planning-workspace__sidebar-pane-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
-  padding: 0 var(--space-md) var(--space-sm);
-  flex-shrink: 0;
-}
-
-.planning-workspace__sidebar-pane-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 32px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--surface-contained-inset);
-  color: var(--color-text-muted);
-  font-size: var(--font-small);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.planning-workspace__sidebar-pane-btn:hover {
-  background: var(--surface-contained-hover);
-  color: var(--color-text);
-}
-
-.planning-workspace__sidebar-pane-btn--active {
-  background: var(--surface-contained-hover);
-  color: var(--color-primary);
-}
-
-.planning-workspace__sidebar-pane-btn:focus-visible {
-  outline-offset: -2px;
-}
-
-.planning-workspace__sidebar-pane-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-}
-
-.planning-workspace__sidebar-metrics {
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.planning-workspace__coverage-card {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  border-radius: var(--radius-xl);
-  background: var(--surface-contained-inset);
-}
-
-.planning-workspace__coverage-card--open .planning-workspace__coverage-ring {
-  --coverage-color: var(--color-primary);
-}
-
-.planning-workspace__coverage-card--complete .planning-workspace__coverage-ring {
-  --coverage-color: var(--color-ready);
-}
-
-.planning-workspace__coverage-ring {
-  --coverage-progress: 0;
-  --coverage-color: var(--color-primary);
-  width: 64px;
-  height: 64px;
-  position: relative;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: conic-gradient(
-    var(--coverage-color) calc(var(--coverage-progress) * 1turn),
-    var(--surface-contained-border) 0
-  );
-}
-
-.planning-workspace__coverage-ring::before {
-  content: '';
-  grid-area: 1 / 1;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--surface-contained-bg);
-  box-shadow: inset 0 0 0 1px var(--surface-contained-border);
-}
-
-.planning-workspace__coverage-ring-value {
-  grid-area: 1 / 1;
-  z-index: 1;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.planning-workspace__coverage-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.planning-workspace__coverage-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-
-.planning-workspace__coverage-value {
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--color-text);
-}
-
-.planning-workspace__coverage-meta {
-  font-size: 0.6875rem;
-  color: var(--color-text-muted);
-}
-
-.planning-workspace__coverage-card--open .planning-workspace__coverage-meta {
-  color: var(--color-recording);
-}
-
-/* Compact metric cards inside the sidebar — inset surface for stacking distinction */
-.planning-workspace__sidebar-metrics .metric-card {
-  padding: var(--space-sm) var(--space-sm) var(--space-md);
-  gap: var(--space-xs);
-  background: var(--surface-contained-inset);
-}
-.planning-workspace__sidebar-metrics .metric-card__value {
-  font-size: 1.25rem;
-}
-.planning-workspace__sidebar-metrics .metric-card__label {
-  font-size: 0.6875rem;
-}
-.planning-workspace__sidebar-metrics .metric-card__icon {
-  width: 18px;
-  height: 18px;
 }
 
 .planning-workspace__sidebar-content {
@@ -552,9 +401,9 @@
   justify-content: center;
   gap: var(--space-xs);
   width: 100%;
-  padding: 10px var(--space-md);
+  padding: 6px var(--space-md);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--state-on-solid);
   font-size: var(--font-small);
@@ -749,7 +598,8 @@
 .planning-workspace__main-inner {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 .planning-workspace__empty {
@@ -846,6 +696,7 @@
 
 .planning-workspace__tab-content {
   flex: 1;
+  min-height: 0;
   padding: var(--space-md);
   overflow-y: auto;
 }
@@ -911,7 +762,7 @@
   border-bottom: 1px solid var(--surface-contained-border);
   background: var(--surface-contained-bg);
   flex-shrink: 0;
-  min-height: 44px;
+  min-height: var(--planning-workspace-header-height);
   overflow: hidden;
 }
 
@@ -959,48 +810,66 @@
 }
 
 /* ============================================================
+   Entrance animation
+   ============================================================ */
+
+@keyframes riseUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
    Desktop floating-card layout (≥768px)
    Mobile layout is fully preserved below this breakpoint.
    ============================================================ */
 
 @media (min-width: 768px) {
-  /* Canvas — add padding/gap so cards float, subtle radial gradient for depth */
+  /* Canvas — add padding/gap so cards float, subtle radial gradient for depth;
+     center the duo when viewport exceeds combined max widths */
   .planning-workspace {
+    --planning-workspace-sidebar-max: 288px;
+    --planning-workspace-main-max: 1600px;
     padding: 12px;
     gap: 10px;
+    justify-content: center;
     background:
       radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
       radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0, 0, 0, 0.03) 0%, transparent 100%),
       var(--surface-base-bg);
   }
 
-  /* Sidebar — floating white card */
+  /* Sidebar — floating white card, fixed max width; content top padding removed for tab alignment */
   .planning-workspace__sidebar {
+    width: var(--planning-workspace-sidebar-max);
+    max-width: var(--planning-workspace-sidebar-max);
+    flex-shrink: 0;
     border-right: none;
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-md);
     overflow: clip;
+    animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Main pane — floating white card */
+  .planning-workspace__sidebar-content {
+    padding-top: 0;
+  }
+
+  /* Main pane — floating white card, fixed max width */
   .planning-workspace__main {
+    flex: 1;
+    min-width: 0;
+    max-width: var(--planning-workspace-main-max);
     background: var(--surface-contained-bg);
     border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-md);
     overflow: clip;
+    animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
   }
 
   /* Tab content — soft inset canvas so section cards float above it */
   .planning-workspace__tab-content {
     background: var(--surface-contained-inset);
     padding: 18px 22px 22px;
-  }
-
-  /* Section cards — lift off the soft canvas */
-  .planning-workspace .planning-view__overview-block,
-  .planning-workspace .schedule-view__block--compact,
-  .planning-workspace .planning-view__wp-surface {
-    box-shadow: var(--shadow-sm);
   }
 
   /* Section header labels — caption size + tight letter-spacing per mockup */
@@ -1052,26 +921,69 @@
     color: var(--color-text);
   }
 
-  /* Context bar — no hard border; breathing room per mockup */
+  /* Context bar — no hard border; keep header height to align with sidebar */
   .planning-workspace__plan-context-bar {
     border-bottom: none;
-    padding: 14px 24px;
-    min-height: unset;
+    padding: 0 24px;
+    min-height: var(--planning-workspace-header-height);
+    align-items: center;
   }
 
   .planning-workspace__plan-context-title {
     font-size: 0.9375rem; /* 15px per mockup */
   }
 
-  /* "New Plan" button — dark fill CTA */
+  /* "New Plan" button — dark fill CTA, pill shape */
   .planning-sidebar__create-btn {
     background: var(--color-text);
     color: #ffffff;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-full);
   }
 
   .planning-sidebar__create-btn:hover {
     opacity: 0.85;
     transform: translateY(-1px);
+  }
+
+  /* Inactive tab hover — subtle fill */
+  .planning-workspace__tab:not(.planning-workspace__tab--active):hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--color-text);
+  }
+
+  /* Build Schedule (primary btn) — lift + shadow glow on hover */
+  .planning-workspace__editor-canvas .btn--primary {
+    transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow-blue);
+  }
+  .planning-workspace__editor-canvas .btn--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(37, 99, 235, 0.38);
+  }
+
+  /* KPI cards — staggered entrance */
+  .planning-workspace__editor-canvas .planning-view__kpi-card {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(1) { animation-delay: 0.10s; }
+  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(2) { animation-delay: 0.15s; }
+  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(3) { animation-delay: 0.20s; }
+  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(4) { animation-delay: 0.25s; }
+
+  /* Section cards — staggered entrance */
+  .planning-workspace__editor-canvas .planning-view__overview-block {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+  }
+  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.23s both;
+  }
+  .planning-workspace__editor-canvas .planning-view__wp-surface {
+    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+  }
+
+  /* Issues tab — constrained width for readability in wide main pane */
+  .planning-workspace__issues-pane {
+    max-width: 680px;
+    padding: 18px 22px;
   }
 }

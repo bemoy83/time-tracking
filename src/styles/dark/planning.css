@@ -79,7 +79,7 @@ select.planning-view__work-type-select {
 
 .planning-view__wp-cell-input:hover {
   border-color: var(--surface-border-hover);
-  background: var(--wp-cell-input-hover-bg);
+  background-color: var(--wp-cell-input-hover-bg);
 }
 
 .planning-view__wp-add-bar .input {

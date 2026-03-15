@@ -30,11 +30,11 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
-import { CheckIcon, ChevronIcon, ChevronLeftIcon, WarningIcon } from '../../components/icons';
+import { ChevronLeftIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
-import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
+import { PlanSetupStepper } from './PlanSetupStepper';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import {
@@ -67,13 +67,6 @@ interface PlanEditorProps {
   onRegisterBeforeScheduleSwitch?: (fn?: () => Promise<void>) => void;
 }
 
-function formatAutosaveLabel(updatedAt: string | null | undefined): string {
-  if (!updatedAt) return 'Autosave on';
-  const parsed = new Date(updatedAt);
-  if (Number.isNaN(parsed.getTime())) return 'Autosave on';
-  return `Autosaved ${parsed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-}
-
 export function PlanEditor({
   plan,
   kpis,
@@ -91,7 +84,6 @@ export function PlanEditor({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [title, setTitle] = useState(plan.title);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
 
   useEffect(() => {
     setTitle(plan.title);
@@ -160,7 +152,6 @@ export function PlanEditor({
     [workTypes],
   );
   const addTitleRef = useRef<HTMLInputElement>(null);
-  const actionMenuRef = useRef<HTMLDivElement>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newWorkTypeId, setNewWorkTypeId] = useState('');
   const [newQuantity, setNewQuantity] = useState('');
@@ -175,33 +166,6 @@ export function PlanEditor({
       setNewWorkTypeId(selectableWorkTypes[0].id);
     }
   }, [newWorkTypeId, selectableWorkTypes]);
-
-  useEffect(() => {
-    setShowActionMenu(false);
-  }, [plan.id]);
-
-  useEffect(() => {
-    if (!showActionMenu) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        actionMenuRef.current &&
-        !actionMenuRef.current.contains(event.target as Node)
-      ) {
-        setShowActionMenu(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowActionMenu(false);
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showActionMenu]);
 
   const newWorkType = newWorkTypeId
     ? selectableWorkTypes.find((wt) => wt.id === newWorkTypeId) ?? null
@@ -315,8 +279,6 @@ export function PlanEditor({
   }, [onRegisterBeforeScheduleSwitch, flushAndWait]);
 
   const canOpenScheduleAction = !readOnly && onOpenSchedule != null;
-  const canOpenProgressAction = !readOnly && isLocked && canOpenProgress;
-  const canOpenEventReportAction = readOnly && currentPlan.reviewedAt != null && onOpenReport != null;
 
   const handleOpenSchedule = async () => {
     if (!onOpenSchedule) return;
@@ -324,31 +286,6 @@ export function PlanEditor({
     onOpenSchedule();
   };
 
-  type HeaderAction = {
-    id: 'schedule' | 'progress' | 'report';
-    label: string;
-    onClick: () => void | Promise<void>;
-  };
-
-  let primaryAction: HeaderAction | null = null;
-  if (canOpenEventReportAction) {
-    primaryAction = { id: 'report', label: 'View Event Report', onClick: onOpenReport! };
-  } else if (canOpenProgressAction) {
-    primaryAction = { id: 'progress', label: 'Open Progress', onClick: onOpenProgress };
-  } else if (canOpenScheduleAction) {
-    primaryAction = { id: 'schedule', label: 'Build Schedule', onClick: handleOpenSchedule };
-  }
-
-  const secondaryActions: HeaderAction[] = [];
-  if (canOpenScheduleAction && primaryAction?.id !== 'schedule') {
-    secondaryActions.push({ id: 'schedule', label: 'Schedule', onClick: handleOpenSchedule });
-  }
-  if (canOpenProgressAction && primaryAction?.id !== 'progress') {
-    secondaryActions.push({ id: 'progress', label: 'Progress', onClick: onOpenProgress });
-  }
-  if (canOpenEventReportAction && primaryAction?.id !== 'report') {
-    secondaryActions.push({ id: 'report', label: 'Event Report', onClick: onOpenReport! });
-  }
   const titleInputId = `plan-title-${currentPlan.id}`;
   const reviewedDateLabel = currentPlan.reviewedAt
     ? new Date(currentPlan.reviewedAt).toLocaleDateString()
@@ -360,65 +297,42 @@ export function PlanEditor({
     : isLocked
       ? 'This plan is tied to a live project/event. Keep work packages aligned with actual execution.'
       : 'Assign the target project/event first so all work packages roll up to real project delivery.';
-  const statusHelperText = (() => {
-    switch (currentPlan.status) {
-      case 'draft':
-        return 'Draft plans are editable and not yet ready for live execution.';
-      case 'active':
-        return 'Active plans are live for execution and should stay aligned with actual progress.';
-      case 'reviewed':
-        return 'Reviewed plans are archived and locked for historical reporting.';
-      case 'received':
-        return 'Received plans come from execution and are read-only in planning mode.';
-      case 'session-closed':
-        return 'Session-closed plans are finalized from execution and kept for reference.';
-      default:
-        return 'This status controls what parts of the plan can still be edited.';
-    }
-  })();
-  const readinessItems = [
-    {
-      id: 'project',
-      label: 'Project linked',
-      complete: selectedProject != null,
-      pendingLabel: 'Select project',
-    },
-    {
-      id: 'dates',
-      label: 'Dates configured',
-      complete: summaryRange != null,
-      pendingLabel: 'Set dates',
-    },
-    {
-      id: 'packages',
-      label: 'Work packages added',
-      complete: currentPlan.lineItems.length > 0,
-      pendingLabel: 'Add packages',
-    },
-  ] as const;
-  const readinessCompleteCount = readinessItems.filter((item) => item.complete).length;
-  const readinessMissingItems = readinessItems.filter((item) => !item.complete);
-  const readinessSummaryLabel = `${readinessCompleteCount}/${readinessItems.length} checks ready`;
-  const readinessWarningLabel = readinessMissingItems.length > 0
-    ? `${readinessMissingItems.length} need attention`
-    : null;
-  const readinessWarningDetail = readinessMissingItems
-    .map((item) => item.pendingLabel)
-    .join(' · ');
-  const autosaveLabel = formatAutosaveLabel(currentPlan.updatedAt);
   const scheduleActionBlockedReason =
     summaryRange == null
       ? 'Set schedule dates before building schedule.'
       : currentPlan.lineItems.length === 0
         ? 'Add at least one work package before building schedule.'
         : null;
-  const getActionDisabledReason = (action: HeaderAction): string | null => {
-    if (action.id === 'schedule') return scheduleActionBlockedReason;
-    return null;
-  };
-  const primaryActionDisabledReason = primaryAction
-    ? getActionDisabledReason(primaryAction)
-    : null;
+  const setupSteps = [
+    {
+      id: 'project',
+      label: 'Project',
+      complete: selectedProject != null,
+      isCta: false as const,
+    },
+    {
+      id: 'dates',
+      label: 'Dates',
+      complete: summaryRange != null,
+      isCta: false as const,
+    },
+    {
+      id: 'work',
+      label: 'Work',
+      complete: currentPlan.lineItems.length > 0,
+      isCta: false as const,
+    },
+    {
+      id: 'schedule',
+      label: 'Schedule',
+      activeLabel: 'Build Schedule',
+      complete: currentPlan.status !== 'draft',
+      isCta: canOpenScheduleAction,
+      onClick: handleOpenSchedule,
+      disabled: scheduleActionBlockedReason != null,
+      disabledReason: scheduleActionBlockedReason,
+    },
+  ];
 
   const utilizationPct = availableScope && availableScope.totalAvailable > 0
     ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
@@ -489,114 +403,9 @@ export function PlanEditor({
               </div>
             </div>
 
-            <div className="planning-view__overview-signals">
-              <div className="planning-view__overview-status-card" aria-label="Plan status">
-                <div className="planning-view__overview-status-card-head">
-                  <span className="planning-view__overview-status-label">Status</span>
-                  <StatusBadge variant={currentPlan.status} />
-                </div>
-                <p className="planning-view__overview-status-helper">{statusHelperText}</p>
-              </div>
-
-              <div className="planning-view__overview-readiness" aria-label="Plan readiness">
-                <h3 className="planning-view__overview-readiness-title">Readiness</h3>
-                <ul className="planning-view__overview-readiness-list">
-                  {readinessItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`planning-view__overview-readiness-item${item.complete ? ' planning-view__overview-readiness-item--complete' : ' planning-view__overview-readiness-item--pending'}`}
-                    >
-                      <span className="planning-view__overview-readiness-lhs">
-                        <span className="planning-view__overview-readiness-dot" aria-hidden="true">
-                          {item.complete ? <CheckIcon /> : <WarningIcon />}
-                        </span>
-                        <span className="planning-view__overview-readiness-label">{item.label}</span>
-                      </span>
-                      {!item.complete && (
-                        <span className="planning-view__overview-readiness-state">{item.pendingLabel}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
           </div>
 
-          <div className="planning-view__workflow-footer" aria-label="Plan actions">
-            <div className="planning-view__workflow-meta" role="status" aria-live="polite">
-              <span className="planning-view__workflow-chip">{autosaveLabel}</span>
-              <span className="planning-view__workflow-chip">{readinessSummaryLabel}</span>
-              {readinessWarningLabel && (
-                <span
-                  className="planning-view__workflow-chip planning-view__workflow-chip--warning"
-                  title={readinessWarningDetail}
-                >
-                  <WarningIcon className="planning-view__workflow-chip-icon" />
-                  <span>{readinessWarningLabel}</span>
-                </span>
-              )}
-            </div>
-
-            {(primaryAction != null || secondaryActions.length > 0) && (
-              <div className="planning-view__workflow-actions">
-                {secondaryActions.length > 0 && (
-                  <div className="planning-view__workflow-menu" ref={actionMenuRef}>
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm planning-view__workflow-more"
-                      aria-haspopup="menu"
-                      aria-expanded={showActionMenu}
-                      onClick={() => setShowActionMenu((prev) => !prev)}
-                    >
-                      More
-                      <ChevronIcon
-                        className={`planning-view__workflow-more-chevron${showActionMenu ? ' planning-view__workflow-more-chevron--open' : ''}`}
-                      />
-                    </button>
-                    {showActionMenu && (
-                      <div className="planning-view__workflow-menu-popover" role="menu" aria-label="More actions">
-                        {secondaryActions.map((action) => {
-                          const disabledReason = getActionDisabledReason(action);
-                          return (
-                            <button
-                              key={action.id}
-                              type="button"
-                              role="menuitem"
-                              className="planning-view__workflow-menu-item"
-                              disabled={disabledReason != null}
-                              title={disabledReason ?? action.label}
-                              onClick={() => {
-                                if (disabledReason != null) return;
-                                setShowActionMenu(false);
-                                void action.onClick();
-                              }}
-                            >
-                              {action.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {primaryAction && (
-                  <button
-                    type="button"
-                    className="btn btn--primary btn--sm"
-                    disabled={primaryActionDisabledReason != null}
-                    title={primaryActionDisabledReason ?? primaryAction.label}
-                    onClick={() => {
-                      if (primaryActionDisabledReason != null) return;
-                      void primaryAction.onClick();
-                    }}
-                  >
-                    {primaryAction.label}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <PlanSetupStepper steps={setupSteps} readOnly={readOnly} />
         </section>
 
         <div className="planning-view__schedule-inputs-wrap">

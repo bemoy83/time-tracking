@@ -57,6 +57,13 @@ const PLAN_TAB_DESCRIPTORS: WorkspaceTabDescriptor[] = [
     onSelect: (context) => context.onSetActiveTab('schedule'),
   },
   {
+    id: 'issues',
+    scope: 'plan',
+    label: 'Issues',
+    isVisible: (context) => context.showScheduleTab,
+    onSelect: (context) => context.onSetActiveTab('issues'),
+  },
+  {
     id: 'shared-schedule',
     scope: 'plan',
     label: 'Shared Schedule',

@@ -364,6 +364,7 @@ export function WorkPackageTable({
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
+                      step="any"
                       value={item.workQuantity}
                       onChange={(e) => onUpdate(item.id, { workQuantity: parseInputNumber(e.target.value) })}
                       aria-label={`Quantity for ${item.title}`}
@@ -385,7 +386,7 @@ export function WorkPackageTable({
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
-                      step={0.1}
+                      step="any"
                       value={roundTo1(assemblyFields.rate)}
                       onChange={(e) =>
                         onUpdate(
@@ -410,7 +411,7 @@ export function WorkPackageTable({
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       min={0}
-                      step={1}
+                      step="any"
                       value={assemblyFields.crew}
                       onChange={(e) =>
                         onUpdate(
@@ -434,7 +435,7 @@ export function WorkPackageTable({
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
-                      step={0.1}
+                      step="any"
                       value={roundTo1(assemblyFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(
@@ -458,7 +459,7 @@ export function WorkPackageTable({
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
-                      step={0.1}
+                      step="any"
                       value={roundTo1(dismantleFields.rate)}
                       onChange={(e) =>
                         onUpdate(
@@ -483,7 +484,7 @@ export function WorkPackageTable({
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
                       min={0}
-                      step={1}
+                      step="any"
                       value={dismantleFields.crew}
                       onChange={(e) =>
                         onUpdate(
@@ -507,7 +508,7 @@ export function WorkPackageTable({
                     <input
                       className="input planning-view__wp-cell-input planning-view__wp-cell-input--number"
                       type="number"
-                      step={0.1}
+                      step="any"
                       value={roundTo1(dismantleFields.timeHours)}
                       onChange={(e) =>
                         onUpdate(

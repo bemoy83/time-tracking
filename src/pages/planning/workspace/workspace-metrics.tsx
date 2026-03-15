@@ -73,6 +73,8 @@ export interface SidebarMetricDescriptor {
   iconVariant?: MetricCardIconVariant;
   meta?: string;
   variant?: 'default' | 'risk';
+  /** Optional progress ring shown in the KPI card (replaces icon). */
+  ring?: { ratio: number; isComplete: boolean };
 }
 
 export interface ScheduleCoverageMetric {
@@ -261,6 +263,7 @@ export function getScheduleViewMetrics(plan: Plan): SidebarMetricDescriptor[] {
       label: 'Scheduled hrs',
       icon: <CheckIcon />,
       iconVariant: 'done',
+      ring: { ratio: coverage.completionRatio, isComplete: coverage.isComplete },
     },
     {
       value: formatHoursMetricValue(coverage.unscheduledHours),

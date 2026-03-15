@@ -13,6 +13,7 @@
 
 /* Shared components */
 @import './styles/_input.css';
+@import './styles/components/shared/_card.css';
 @import './styles/components/btn.css';
 @import './styles/components/inline-create-form.css';
 @import './styles/components/color-swatch.css';
@@ -61,6 +62,7 @@
 @import './styles/components/calculator.css';
 @import './styles/components/planning.css';
 @import './styles/components/planning-workspace.css';
+@import './styles/components/planning/plan-setup-stepper.css';
 @import './styles/components/schedule-view.css';
 @import './styles/components/progress-view.css';
 @import './styles/components/wrap-up-sheet.css';

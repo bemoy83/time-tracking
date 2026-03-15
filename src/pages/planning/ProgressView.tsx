@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
+import { PlanKpiRow } from './PlanKpiRow';
+import { getProgressViewMetrics } from './workspace/workspace-metrics';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS, formatDurationShort } from '../../lib/types';
@@ -78,6 +80,11 @@ export function ProgressView({
     () => computePlanProgress(plan, tasks, timeEntries, importedExecutionStatus),
     [plan, tasks, timeEntries, importedExecutionStatus],
   );
+
+  const progressKpiMetrics = useMemo(
+    () => getProgressViewMetrics(plan, tasks, timeEntries),
+    [plan, tasks, timeEntries],
+  );
   const hadRiskRef = useRef(false);
 
   useEffect(() => {
@@ -90,6 +97,7 @@ export function ProgressView({
 
   return (
     <div className="planning-view progress-view">
+      <PlanKpiRow metrics={progressKpiMetrics} />
       <header className="planning-view__editor-header">
         {showBackButton && (
           <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">

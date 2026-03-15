@@ -28,9 +28,36 @@
   margin: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+/* Full-page list keeps the grouped card appearance */
+.planning-view__list:not(.planning-view__list--compact) {
   gap: 0;
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
+  background: var(--card-bg);
+}
+
+.planning-view__list:not(.planning-view__list--compact) .planning-view__row:not(:last-child) .planning-view__item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--space-md);
+  right: var(--space-md);
+  height: 1px;
+  background: var(--color-border);
+}
+
+.planning-view__list:not(.planning-view__list--compact) .planning-view__row:first-child .planning-view__item {
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+
+.planning-view__list:not(.planning-view__list--compact) .planning-view__row:last-child .planning-view__item {
+  border-bottom-left-radius: var(--radius-xl);
+  border-bottom-right-radius: var(--radius-xl);
 }
 
 .planning-view__row {
@@ -50,29 +77,8 @@
   transition: background-color 0.15s;
 }
 
-/* Divider sits on item so it only spans item width (shrinks when add-to-schedule button is present) */
-.planning-view__row:not(:last-child) .planning-view__item::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: var(--space-md);
-  right: var(--space-md);
-  height: 1px;
-  background: var(--color-border);
-}
-
 .planning-view__row:has(.planning-view__add-to-schedule-btn) .planning-view__item {
   margin-inline-end: var(--space-xs);
-}
-
-.planning-view__list .planning-view__row:first-child .planning-view__item {
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
-}
-
-.planning-view__list .planning-view__row:last-child .planning-view__item {
-  border-bottom-left-radius: var(--radius-xl);
-  border-bottom-right-radius: var(--radius-xl);
 }
 
 .planning-view__row:hover .planning-view__item {
@@ -249,10 +255,18 @@
   flex-shrink: 0;
 }
 
-/* --- Compact sidebar: left color-bar accent on plan rows --- */
+/* --- Compact sidebar: floating rows — each item is independently rounded --- */
 
 .planning-view__list--compact .planning-view__item {
   position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: transparent;
+  transition: background-color 0.12s, box-shadow 0.12s;
+}
+
+.planning-view__list--compact .planning-view__row:hover .planning-view__item {
+  background: var(--surface-contained-hover);
 }
 
 .planning-view__list--compact .planning-view__row--status-active .planning-view__item::before,

@@ -1,0 +1,154 @@
+/* ============================================================
+   Plan Setup Stepper — horizontal progress indicator
+   Steps: Project → Dates → Work → Schedule
+   ============================================================ */
+
+.plan-setup-stepper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--space-xs) 0 2px;
+}
+
+/* ─── Step node + label ────────────────────────────────────── */
+
+.plan-setup-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 64px;
+}
+
+/* CTA step is a button — reset appearance, keep layout */
+button.plan-setup-stepper__step {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.plan-setup-stepper__step:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Node circle ──────────────────────────────────────────── */
+
+.plan-setup-stepper__node {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: box-shadow 0.2s, filter 0.15s;
+}
+
+.plan-setup-stepper__node svg {
+  width: 11px;
+  height: 11px;
+}
+
+.plan-setup-stepper__num {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Complete */
+.plan-setup-stepper__step--complete .plan-setup-stepper__node {
+  background: var(--color-ready);
+  color: #fff;
+}
+
+/* Active (non-CTA) */
+.plan-setup-stepper__step--active .plan-setup-stepper__node {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Future */
+.plan-setup-stepper__step--future .plan-setup-stepper__node {
+  background: var(--surface-contained-inset);
+  color: var(--color-text-muted);
+}
+
+/* CTA — active and clickable */
+.plan-setup-stepper__step--cta .plan-setup-stepper__node {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+button.plan-setup-stepper__step--cta:hover:not(:disabled) .plan-setup-stepper__node {
+  filter: brightness(1.1);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+/* CTA blocked (active but disabled) */
+.plan-setup-stepper__step--cta-blocked .plan-setup-stepper__node {
+  background: var(--surface-contained-inset);
+  color: var(--color-text-muted);
+  box-shadow: none;
+}
+
+button.plan-setup-stepper__step--cta-blocked {
+  cursor: not-allowed;
+}
+
+/* ─── Labels ───────────────────────────────────────────────── */
+
+.plan-setup-stepper__label {
+  font-size: var(--font-caption);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.plan-setup-stepper__step--complete .plan-setup-stepper__label {
+  color: var(--color-text);
+}
+
+.plan-setup-stepper__step--active .plan-setup-stepper__label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.plan-setup-stepper__step--cta .plan-setup-stepper__label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.plan-setup-stepper__step--cta-blocked .plan-setup-stepper__label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.plan-setup-stepper__step--future .plan-setup-stepper__label {
+  opacity: 0.55;
+}
+
+/* ─── Connector line ───────────────────────────────────────── */
+
+.plan-setup-stepper__line {
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--surface-contained-inset);
+  /* Align with vertical center of 28px node */
+  align-self: flex-start;
+  margin-top: 13px;
+  min-width: 20px;
+  transition: background-color 0.25s;
+}
+
+.plan-setup-stepper__line--filled {
+  background: var(--color-ready);
+}

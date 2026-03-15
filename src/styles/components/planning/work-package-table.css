@@ -39,9 +39,10 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   border: none;
-  background: var(--surface-contained-bg);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -155,12 +156,21 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: left;
+  padding-left: calc(var(--space-sm) + 10px);
+}
+
+.planning-view__wp-header-columns th:first-child {
+  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 10px);
 }
 
 .planning-view__wp-group-heading {
   font-weight: 700;
   text-transform: uppercase;
   text-align: left;
+}
+
+.planning-view__wp-header-group th:first-child {
+  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 10px);
 }
 
 .planning-view__wp-group-heading--phase {
@@ -256,7 +266,7 @@
 
 .planning-view__wp-title-col,
 .planning-view__wp-row td:first-child {
-  min-width: 200px;
+  min-width: 280px;
 }
 
 .planning-view__wp-type-col,
@@ -265,20 +275,23 @@
 }
 
 .planning-view__wp-qty-col,
-.planning-view__wp-row td:nth-child(3),
+.planning-view__wp-row td:nth-child(3) {
+  min-width: 72px;
+}
+
 .planning-view__wp-rate-col,
 .planning-view__wp-row td:nth-child(5),
 .planning-view__wp-row td:nth-child(8),
 .planning-view__wp-hours-col,
 .planning-view__wp-row td:nth-child(7),
 .planning-view__wp-row td:nth-child(10) {
-  min-width: 72px;
+  min-width: 48px;
 }
 
 .planning-view__wp-crew-col,
 .planning-view__wp-row td:nth-child(6),
 .planning-view__wp-row td:nth-child(9) {
-  min-width: 60px;
+  min-width: 44px;
 }
 
 .planning-view__wp-unit-col,
@@ -328,8 +341,13 @@
   cursor: not-allowed;
 }
 
-.planning-view__wp-cell-select {
+/* Select: transparent bg like input, keep chevron; override base select.input */
+.planning-view__work-package-table .planning-view__wp-cell-select {
   background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-md) center;
+  background-size: 20px 20px;
 }
 
 .planning-view__wp-cell-input:focus-visible {
@@ -340,7 +358,7 @@
 
 .planning-view__wp-cell-input:hover {
   border-color: var(--surface-border-hover);
-  background: var(--wp-cell-input-hover-bg);
+  background-color: var(--wp-cell-input-hover-bg);
 }
 
 .planning-view__wp-add-bar {
@@ -458,12 +476,19 @@
 }
 
 .planning-view__wp-cell-input--number {
-  text-align: right;
+  text-align: left;
   font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.planning-view__wp-cell-input--number::-webkit-inner-spin-button,
+.planning-view__wp-cell-input--number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .planning-view__wp-number-cell {
-  text-align: right;
+  text-align: left;
 }
 
 .planning-view__wp-unit-cell {
@@ -478,7 +503,7 @@
 }
 
 .planning-view__wp-number-cell .planning-view__wp-static {
-  justify-content: flex-end;
+  justify-content: flex-start;
   width: 100%;
   font-variant-numeric: tabular-nums;
 }
@@ -665,6 +690,15 @@
 }
 
 /* ─── Editor canvas: work packages redesign ─────────────────── */
+
+/* Add bar inputs: match schedule inputs token (inset bg, radius-lg, 1.5px border) */
+.planning-workspace__editor-canvas .planning-view__wp-add-bar .input {
+  background: var(--surface-contained-inset);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 7px 10px;
+  min-height: 34px;
+}
 
 /* 1. Summary badges — plain colored text, no pill background */
 .planning-workspace__editor-canvas .planning-view__items-summary span {

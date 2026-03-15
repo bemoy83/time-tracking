@@ -213,7 +213,16 @@
 
   .planning-view__work-package-table .planning-view__wp-cell-input:hover {
     border-color: var(--surface-border-hover);
-    background: var(--wp-cell-input-hover-bg);
+    background-color: var(--wp-cell-input-hover-bg);
+  }
+
+  /* Select: transparent bg like input, keep chevron; override base select.input */
+  .planning-view__work-package-table .planning-view__wp-cell-select {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-md) center;
+    background-size: 20px 20px;
   }
 
   .planning-view__wp-add-bar .input {
@@ -518,6 +527,13 @@
   .field-plan-import-card__diff-badge--removed {
     background: var(--color-recording-bg-badge);
     color: var(--color-recording);
+  }
+
+  /* --- Planning workspace — solid bg in dark mode (light gradients read wrong) --- */
+  @media (min-width: 768px) {
+    .planning-workspace {
+      background: var(--surface-base-bg);
+    }
   }
 
   /* --- Planning workspace dividers — barely visible in dark mode --- */

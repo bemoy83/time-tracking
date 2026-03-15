@@ -82,8 +82,9 @@
   grid-template-rows: auto 1fr auto;
   gap: var(--space-md);
   padding: var(--space-md);
-  border-radius: var(--radius-xl);
-  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
 }
 
 .planning-view__overview-identity {
@@ -446,61 +447,9 @@
     gap: var(--space-sm);
   }
 
-  .planning-workspace__editor-canvas .planning-view--editor .planning-view__sticky-summary {
-    padding-bottom: 0;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__sticky-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: var(--space-sm);
-    padding-bottom: var(--space-sm);
-  }
-
-  .planning-workspace__editor-canvas .planning-view__overview-block {
-    height: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto 1fr auto;
-    grid-template-areas:
-      'identity signals'
-      'context signals'
-      'actions actions';
-    column-gap: var(--space-sm);
-    row-gap: var(--space-md);
-  }
-
-  .planning-workspace__editor-canvas .planning-view__overview-identity {
-    grid-area: identity;
-    min-width: 0;
-  }
-
+  /* Dissolve the overview-content wrapper so context becomes a direct grid child */
   .planning-workspace__editor-canvas .planning-view__overview-content {
     display: contents;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__overview-context {
-    grid-area: context;
-    min-width: 0;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__overview-signals {
-    grid-area: signals;
-    align-self: start;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__workflow-footer {
-    grid-area: actions;
-    align-self: end;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap {
-    height: 100%;
-    min-width: 0;
-  }
-
-  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap .schedule-view__block {
-    height: 100%;
   }
 }
 

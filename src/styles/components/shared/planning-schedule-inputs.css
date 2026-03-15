@@ -246,6 +246,11 @@
   border-color: var(--color-primary);
 }
 
+/* Hover: display div receives pointer events (input is opacity:0 underneath) — style the display, not .input */
+.planning-workspace__editor-canvas .planning-view__date-display-wrap:hover .planning-view__date-display--interactive {
+  border-color: var(--surface-border-hover);
+}
+
 /* Crew size: same token styling as date inputs */
 .planning-workspace__editor-canvas .planning-view__schedule-value-wrap {
   position: relative;
@@ -258,6 +263,7 @@
   font-size: var(--font-label);
   font-family: ui-monospace, monospace;
   min-height: 34px;
+  border-radius: var(--radius-lg); /* match date display token */
   /* inherits background, border, focus, hover from global .input */
 }
 

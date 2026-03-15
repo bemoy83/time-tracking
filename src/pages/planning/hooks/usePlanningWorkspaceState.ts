@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import { usePlanningData, type PlanningData } from './usePlanningData';
 import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
-import type { SidebarPane } from '../workspace/schedule-issue-panel-types';
 
 /**
  * Navigation mode determines layout and navigation behavior.
@@ -15,7 +14,7 @@ export type NavigationMode = 'stack' | 'workspace';
 export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'progress' | 'insights' | 'report';
 
 /** Tabs available in the workspace main pane. */
-export type WorkspaceTab = 'edit' | 'schedule' | 'shared-schedule' | 'progress' | 'review' | 'insights' | 'report';
+export type WorkspaceTab = 'edit' | 'schedule' | 'issues' | 'shared-schedule' | 'progress' | 'review' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
   /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
@@ -63,10 +62,6 @@ export function usePlanningWorkspaceState({
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     session?.activeTab ?? 'edit',
   );
-  const [sidebarPane, setSidebarPane] = useState<SidebarPane>(
-    session?.sidebarPane ?? 'metrics',
-  );
-
   const initialNavigationAppliedRef = useRef(false);
   const sessionRestoredRef = useRef(false);
 
@@ -94,9 +89,8 @@ export function usePlanningWorkspaceState({
       selectedPlanId: activePlan?.id ?? null,
       activeTab,
       selectedPlanIdsForSharedSchedule: Array.from(selectedPlanIdsForSharedScheduleState),
-      sidebarPane,
     });
-  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState, sidebarPane]);
+  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState]);
 
   // Remove shared-schedule selection entries that no longer exist.
   useEffect(() => {
@@ -275,8 +269,6 @@ export function usePlanningWorkspaceState({
     // Workspace navigation (desktop)
     activeTab,
     setActiveTab,
-    sidebarPane,
-    setSidebarPane,
 
     // Sidebar preferences
     archiveExpanded,

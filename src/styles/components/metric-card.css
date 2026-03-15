@@ -3,8 +3,9 @@
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-md);
-  background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
 }
 
 .metric-card__icon {

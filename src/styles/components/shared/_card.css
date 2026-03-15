@@ -1,0 +1,10 @@
+/* ============================================================
+   Shared Card — lifted surface for consistent card look
+   Use --card-bg, --card-radius, --card-shadow tokens or .card class.
+   ============================================================ */
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}

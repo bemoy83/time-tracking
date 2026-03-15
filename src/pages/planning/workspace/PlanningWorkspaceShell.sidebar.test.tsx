@@ -3,7 +3,7 @@
  */
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, within } from '@testing-library/react';
+import { render, within } from '@testing-library/react';
 import { createPlan } from '../../../lib/planning/plan-model';
 import { PlanningWorkspaceShell } from './PlanningWorkspaceShell';
 
@@ -25,7 +25,6 @@ function createProps(
     timeEntriesByTask: new Map(),
     activePlan: null,
     activeTab: 'shared-schedule' as const,
-    sidebarPane: 'metrics' as const,
     hasLinkedTasks: false,
     wrapUpPlan: null,
     selectedPlanIdsForSharedSchedule: new Set<string>(),
@@ -36,7 +35,6 @@ function createProps(
     onDeletePlan: vi.fn(),
     onSavePlan: vi.fn(),
     onSetActiveTab: vi.fn(),
-    onSetSidebarPane: vi.fn(),
     onSetSelectedPlanIdsForSharedSchedule: vi.fn(),
     onOpenInsights: vi.fn(),
     onOpenProgress: vi.fn(),
@@ -48,23 +46,10 @@ function createProps(
   };
 }
 
-describe('PlanningWorkspaceShell sidebar panes', () => {
-  it('switches sidebar pane from metrics to issues', () => {
+describe('PlanningWorkspaceShell sidebar', () => {
+  it('renders plan list in sidebar', () => {
     const props = createProps();
     const { container } = render(<PlanningWorkspaceShell {...props} />);
-
-    fireEvent.click(within(container).getByRole('tab', { name: 'Issues' }));
-    expect(props.onSetSidebarPane).toHaveBeenCalledWith('issues');
-  });
-
-  it('renders issues empty state when issues pane is active outside schedule context', () => {
-    const props = createProps({
-      sidebarPane: 'issues',
-      activeTab: 'shared-schedule',
-      activePlan: null,
-    });
-
-    const { container } = render(<PlanningWorkspaceShell {...props} />);
-    expect(within(container).getByText('Issues available in Schedule tab')).toBeTruthy();
+    expect(within(container).getByText('Plan A')).toBeTruthy();
   });
 });

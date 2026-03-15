@@ -6,12 +6,13 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-sm);
+  container-type: inline-size;
 }
 
 .planning-view__kpi-card {
-  background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -50,6 +51,81 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
+}
+
+/* Risk variant — value turns danger color */
+.planning-view__kpi-card--risk .planning-view__kpi-card-val {
+  color: var(--state-danger-fg);
+}
+
+/* ============================================================
+   Coverage ring (schedule tab — scheduled hrs card)
+   ============================================================ */
+
+.planning-view__kpi-card--has-ring {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, auto);
+  column-gap: 8px;
+}
+
+.planning-view__kpi-card--has-ring .planning-view__kpi-card-ico,
+.planning-view__kpi-card--has-ring .planning-view__kpi-card-val,
+.planning-view__kpi-card--has-ring .planning-view__kpi-card-lbl {
+  grid-column: 1;
+}
+
+.planning-view__kpi-ring {
+  --kpi-ring-progress: 0;
+  --kpi-ring-color: var(--color-primary);
+  grid-column: 2;
+  grid-row: 1 / -1;
+  justify-self: center;
+  align-self: center;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(
+    var(--kpi-ring-color) calc(var(--kpi-ring-progress) * 1turn),
+    var(--surface-contained-border) 0
+  );
+}
+
+.planning-view__kpi-ring--complete {
+  --kpi-ring-color: var(--color-ready);
+}
+
+.planning-view__kpi-ring::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 1px var(--surface-contained-border);
+}
+
+.planning-view__kpi-ring-value {
+  grid-area: 1 / 1;
+  z-index: 1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+/* Collapse ring card to 1-col when the row is too narrow to fit both columns */
+@container (max-width: 680px) {
+  .planning-view__kpi-card--has-ring {
+    display: flex;
+    flex-direction: column;
+  }
+  .planning-view__kpi-ring {
+    display: none;
+  }
 }
 
 /* Collapse to 2×2 on narrower widths */

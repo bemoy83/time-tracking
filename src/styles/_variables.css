@@ -148,6 +148,11 @@
   --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-blue: 0 6px 20px rgba(37, 99, 235, 0.30);
 
+  /* Shared card / lifted surface — use for consistent card look app-wide */
+  --card-bg: var(--surface-contained-bg);
+  --card-radius: var(--radius-xl);
+  --card-shadow: var(--shadow-sm);
+
   /* Budget status colors */
   --color-budget-under: var(--state-success-fg);
   --color-budget-under-bg: var(--state-success-bg);

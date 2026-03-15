@@ -5,7 +5,7 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
@@ -26,28 +26,10 @@ import {
   getVisiblePlanWorkspaceTabs,
   type WorkspaceRenderContext,
 } from './workspace-tabs';
-import {
-  getGlobalFallbackMetrics,
-  resolveSidebarMetrics,
-  getPlanEditorMetrics,
-  getPlanScheduleCoverageMetric,
-  getScheduleViewMetrics,
-  getProgressViewMetrics,
-  getSharedScheduleCoverageMetric,
-  getSharedScheduleMetrics,
-  getInsightsViewMetrics,
-  getEventReportMetrics,
-  type ScheduleCoverageMetric,
-  type SidebarMetricDescriptor,
-} from './workspace-metrics';
-import { SidebarMetrics } from './SidebarMetrics';
 import { SidebarIssuesPanel } from './SidebarIssuesPanel';
-import { SparklesIcon, TaskListIcon, WarningIcon } from '../../../components/icons';
+import { SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
-import type {
-  SidebarPane,
-  ScheduleIssuePanelPayload,
-} from './schedule-issue-panel-types';
+import type { ScheduleIssuePanelPayload } from './schedule-issue-panel-types';
 import { WrapUpReviewPane } from '../WrapUpReviewPane';
 import { StatusBadge } from '../../../components/StatusBadge';
 
@@ -64,7 +46,6 @@ interface PlanningWorkspaceShellProps {
   // Selection
   activePlan: Plan | null;
   activeTab: WorkspaceTab;
-  sidebarPane: SidebarPane;
   hasLinkedTasks: boolean;
   wrapUpPlan: Plan | null;
   selectedPlanIdsForSharedSchedule: Set<string>;
@@ -79,7 +60,6 @@ interface PlanningWorkspaceShellProps {
   onDeletePlan: (id: string) => void;
   onSavePlan: (plan: Plan) => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
-  onSetSidebarPane: (pane: SidebarPane) => void;
   onSetSelectedPlanIdsForSharedSchedule: (planIds: Set<string>) => void;
   onOpenInsights: () => void;
   onOpenProgress: () => void;
@@ -101,7 +81,6 @@ export function PlanningWorkspaceShell({
   timeEntriesByTask,
   activePlan,
   activeTab,
-  sidebarPane,
   hasLinkedTasks,
   wrapUpPlan,
   selectedPlanIdsForSharedSchedule,
@@ -112,7 +91,6 @@ export function PlanningWorkspaceShell({
   onDeletePlan,
   onSavePlan,
   onSetActiveTab,
-  onSetSidebarPane,
   onSetSelectedPlanIdsForSharedSchedule,
   onOpenInsights,
   onOpenProgress,
@@ -123,6 +101,7 @@ export function PlanningWorkspaceShell({
 }: PlanningWorkspaceShellProps) {
   const [sharedScheduleCapacity, setSharedScheduleCapacity] = useState<CapacitySummary | null>(null);
   const [scheduleIssuePanelPayload, setScheduleIssuePanelPayload] = useState<ScheduleIssuePanelPayload | null>(null);
+  const isOnIssuesTabRef = useRef(false);
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
@@ -135,67 +114,18 @@ export function PlanningWorkspaceShell({
   };
   const sidebarTabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
 
-  const resolvedMetrics = useMemo(() => {
-    const computeViewMetrics = (): SidebarMetricDescriptor[] => {
-      if (activeTab === 'shared-schedule') {
-        const cap = sharedScheduleCapacity
-          ? {
-              totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours,
-              totalAvailablePersonHours: sharedScheduleCapacity.totalAvailablePersonHours,
-              unscheduledLineItemCount: sharedScheduleCapacity.unscheduledLineItemCount,
-            }
-          : undefined;
-        return getSharedScheduleMetrics(plans, selectedPlanIdsForSharedSchedule, cap);
-      }
-      if (activeTab === 'insights' && !activePlan) {
-        return getInsightsViewMetrics(kpis);
-      }
-      if (!activePlan) return [];
-      switch (activeTab) {
-        case 'edit': return getPlanEditorMetrics(activePlan);
-        case 'schedule': return getScheduleViewMetrics(activePlan);
-        case 'progress': return getProgressViewMetrics(activePlan, tasks, timeEntries);
-        case 'insights': return getInsightsViewMetrics(kpis);
-        case 'report': return getEventReportMetrics(activePlan);
-        case 'review': return [];
-        default: return [];
-      }
-    };
-    const viewMetrics = computeViewMetrics();
-    const fallbacks = getGlobalFallbackMetrics(plans, tasks);
-    return resolveSidebarMetrics(viewMetrics, fallbacks);
-  }, [activeTab, activePlan, plans, tasks, timeEntries, kpis, selectedPlanIdsForSharedSchedule, sharedScheduleCapacity]);
-
-  const scheduleCoverageMetric = useMemo<ScheduleCoverageMetric | null>(() => {
-    if (activeTab === 'shared-schedule') {
-      const sharedRequiredHours = sharedScheduleCapacity
-        ? { totalRequiredPersonHours: sharedScheduleCapacity.totalRequiredPersonHours }
-        : undefined;
-      return getSharedScheduleCoverageMetric(
-        plans,
-        selectedPlanIdsForSharedSchedule,
-        sharedRequiredHours,
-      );
-    }
-    if (activeTab === 'schedule' && activePlan) {
-      return getPlanScheduleCoverageMetric(activePlan);
-    }
-    return null;
-  }, [activeTab, activePlan, plans, selectedPlanIdsForSharedSchedule, sharedScheduleCapacity]);
+  isOnIssuesTabRef.current = activeTab === 'issues';
 
   useEffect(() => {
-    if (activeTab !== 'schedule' || !activePlan) {
+    if ((activeTab !== 'schedule' && activeTab !== 'issues') || !activePlan) {
       setScheduleIssuePanelPayload(null);
     }
   }, [activePlan, activeTab]);
 
-  const handleSidebarPaneChange = useCallback((pane: SidebarPane) => {
-    if (pane === sidebarPane) return;
-    onSetSidebarPane(pane);
-    trackTelemetryEvent('planning_sidebar_pane_changed', { pane });
-  }, [onSetSidebarPane, sidebarPane]);
-
   const handleScheduleIssuePanelChange = useCallback((payload: ScheduleIssuePanelPayload | null) => {
+    // ScheduleView fires null on unmount (cleanup effect). Don't clear payload when
+    // the user has switched to the Issues tab — we want to preserve it there.
+    if (payload === null && isOnIssuesTabRef.current) return;
     setScheduleIssuePanelPayload(payload);
   }, []);
 
@@ -213,55 +143,23 @@ export function PlanningWorkspaceShell({
             <span>Exit workspace</span>
           </button>
         </div>
-        <div className="planning-workspace__sidebar-pane-switch" role="tablist" aria-label="Sidebar panes">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sidebarPane === 'metrics'}
-            className={`planning-workspace__sidebar-pane-btn${sidebarPane === 'metrics' ? ' planning-workspace__sidebar-pane-btn--active' : ''}`}
-            onClick={() => handleSidebarPaneChange('metrics')}
-          >
-            <SparklesIcon className="planning-workspace__sidebar-pane-icon" />
-            Metrics
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sidebarPane === 'issues'}
-            className={`planning-workspace__sidebar-pane-btn${sidebarPane === 'issues' ? ' planning-workspace__sidebar-pane-btn--active' : ''}`}
-            onClick={() => handleSidebarPaneChange('issues')}
-          >
-            <WarningIcon className="planning-workspace__sidebar-pane-icon" />
-            Issues
-          </button>
-        </div>
-        {sidebarPane === 'metrics' && (
-          <SidebarMetrics metrics={resolvedMetrics} scheduleCoverage={scheduleCoverageMetric} />
-        )}
         <div className="planning-workspace__sidebar-content">
-          {sidebarPane === 'metrics' ? (
-            <PlanList
-              plans={plans}
-              tasks={tasks}
-              onSelect={onSelectPlan}
-              onCreate={onCreatePlan}
-              onDelete={onDeletePlan}
-              onOpenWrapUp={onOpenWrapUp}
-              onOpenInsights={onOpenInsights}
-              selectedPlanId={activePlan?.id ?? null}
-              sidebarMode
-              archiveExpanded={archiveExpanded}
-              onToggleArchive={onToggleArchive}
-              showAddToScheduleButton={activeTab === 'shared-schedule'}
-              selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
-              onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
-            />
-          ) : (
-            <SidebarIssuesPanel
-              payload={scheduleIssuePanelPayload}
-              isScheduleContext={activeTab === 'schedule' && activePlan != null}
-            />
-          )}
+          <PlanList
+            plans={plans}
+            tasks={tasks}
+            onSelect={onSelectPlan}
+            onCreate={onCreatePlan}
+            onDelete={onDeletePlan}
+            onOpenWrapUp={onOpenWrapUp}
+            onOpenInsights={onOpenInsights}
+            selectedPlanId={activePlan?.id ?? null}
+            sidebarMode
+            archiveExpanded={archiveExpanded}
+            onToggleArchive={onToggleArchive}
+            showAddToScheduleButton={activeTab === 'shared-schedule'}
+            selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+            onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
+          />
         </div>
         <div className="planning-workspace__sidebar-footer">
           {sidebarTabs.map((tab) => (
@@ -331,6 +229,7 @@ export function PlanningWorkspaceShell({
             onOpenProgress={onOpenProgress}
             onOpenWrapUp={onOpenWrapUp}
             onIssuePanelChange={handleScheduleIssuePanelChange}
+            scheduleIssuePanelPayload={scheduleIssuePanelPayload}
             planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           />
         ) : activeTab === 'progress' ? (
@@ -516,6 +415,7 @@ interface WorkspaceMainPaneProps {
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
   onIssuePanelChange: (payload: ScheduleIssuePanelPayload | null) => void;
+  scheduleIssuePanelPayload: ScheduleIssuePanelPayload | null;
   planIdsWithImportedExecutionReturns: Set<string>;
 }
 
@@ -534,6 +434,7 @@ function WorkspaceMainPane({
   onOpenProgress,
   onOpenWrapUp,
   onIssuePanelChange,
+  scheduleIssuePanelPayload,
   planIdsWithImportedExecutionReturns,
 }: WorkspaceMainPaneProps) {
   const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
@@ -671,6 +572,16 @@ function WorkspaceMainPane({
               isWorkspaceMode
               onIssuePanelChange={onIssuePanelChange}
             />
+          </div>
+        )}
+        {effectiveActiveTab === 'issues' && showScheduleTab && (
+          <div className="planning-workspace__tab-content planning-workspace__tab-content--issues">
+            <div className="planning-workspace__issues-pane">
+              <SidebarIssuesPanel
+                payload={scheduleIssuePanelPayload}
+                isScheduleContext={true}
+              />
+            </div>
           </div>
         )}
         {effectiveActiveTab === 'review' && (

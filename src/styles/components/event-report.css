@@ -20,6 +20,16 @@
   font-size: var(--font-small);
 }
 
+/* Editor canvas: tighter spacing to match plan editor */
+@media (min-width: 768px) {
+  .planning-workspace__editor-canvas .event-report {
+    gap: var(--space-sm);
+  }
+  .planning-workspace__editor-canvas .event-report__section {
+    padding: var(--space-sm);
+  }
+}
+
 @media print {
   .event-report__header-print-hidden,
   .tab-nav {

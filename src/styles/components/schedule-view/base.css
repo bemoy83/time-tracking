@@ -246,8 +246,9 @@
 }
 
 .schedule-view__block {
-  background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: var(--schedule-view-block-padding);
   display: flex;
   flex-direction: column;
@@ -361,6 +362,15 @@
   color: var(--color-text-muted);
 }
 
+/* Editor canvas: tighter spacing to match plan editor */
+@media (min-width: 768px) {
+  .planning-workspace__editor-canvas .schedule-view {
+    --schedule-view-section-gap: var(--space-sm);
+    --schedule-view-block-padding: var(--space-sm);
+    --schedule-view-block-gap: var(--space-xs);
+  }
+}
+
 @media (min-width: 1200px) {
   .planning-workspace__editor-canvas .schedule-view__top-band {
     display: grid;
@@ -370,7 +380,6 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: var(--color-bg);
     padding-bottom: 0;
   }
 

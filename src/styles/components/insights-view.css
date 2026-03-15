@@ -162,3 +162,13 @@
   color: var(--color-text-muted);
   font-style: italic;
 }
+
+/* Editor canvas: tighter spacing to match plan editor */
+@media (min-width: 768px) {
+  .planning-workspace__editor-canvas .insights-view {
+    gap: var(--space-sm);
+  }
+  .planning-workspace__editor-canvas .insights-view__row {
+    padding: var(--space-sm);
+  }
+}
