@@ -116,12 +116,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 3px;
   padding: var(--space-sm) var(--space-md);
 }
 
 .schedule-grid__day-col--off {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .schedule-grid__day-col--over {
@@ -142,24 +142,28 @@
   font-weight: 500;
   line-height: 1.3;
   color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .schedule-grid__day-crew--over {
   color: var(--state-warning-fg);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .schedule-grid__day-label {
   display: block;
   font-size: var(--font-caption);
   line-height: 1.4;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 .schedule-grid__day-bar {
   display: block;
   width: 100%;
-  height: 5px;
-  background: var(--color-border);
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -169,7 +173,7 @@
   height: 100%;
   border-radius: 2px;
   background: var(--color-primary);
-  transition: width 0.2s;
+  transition: width 0.25s ease;
 }
 
 .schedule-grid__day-bar-fill--over {
@@ -178,25 +182,27 @@
 
 .schedule-grid__day-util {
   display: block;
-  font-size: var(--font-caption);
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   line-height: 1.3;
   color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .schedule-grid__day-util--over {
   color: var(--color-recording);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .schedule-grid__day-util--over-worker {
   color: var(--color-recording);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .schedule-grid__day-util--over-staffed {
   color: var(--color-amber);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 
@@ -204,6 +210,7 @@
   display: block;
   font-weight: 600;
   color: var(--color-text);
+  letter-spacing: -0.01em;
 }
 
 .schedule-grid__line-item-heading {

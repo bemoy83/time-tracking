@@ -18,13 +18,13 @@
 
 /* Column headers */
 .wc-col-head {
-  padding: 2px 4px 6px;
+  padding: 2px 4px 8px;
   text-align: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
 }
 
 .wc-col-head--label {
@@ -38,41 +38,42 @@
   align-items: flex-start;
   justify-content: center;
   padding-top: 8px;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
 /* Day cells */
 .wc-cell {
   border-radius: var(--radius-md);
-  padding: 5px 7px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   position: relative;
 }
 
 .wc-cell--work {
   background: var(--state-info-bg);
-  border: 1px solid var(--state-info-border);
+  box-shadow: inset 0 0 0 1px var(--state-info-border);
 }
 
 .wc-cell--off {
   background: var(--state-neutral-bg);
-  border: 1px solid var(--state-neutral-border);
+  box-shadow: inset 0 0 0 1px var(--state-neutral-border);
   opacity: 0.55;
 }
 
 .wc-cell--out-of-range {
   background: none;
-  border: 1px dashed var(--state-neutral-border);
-  opacity: 0.25;
+  box-shadow: inset 0 0 0 1px var(--state-neutral-border);
+  border-style: dashed;
+  opacity: 0.22;
   display: flex;
   align-items: flex-start;
-  padding: 6px 7px;
+  padding: 6px 8px;
 }
 
 .wc-cell__header {
@@ -87,6 +88,8 @@
   font-weight: 700;
   color: var(--color-text);
   line-height: 1;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .wc-cell__day-num--toggle {
@@ -128,8 +131,8 @@
 }
 
 .wc-cell__crew-icon {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   flex-shrink: 0;
   color: var(--color-text-muted);
 }
@@ -142,13 +145,14 @@
   border-radius: 3px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  font-family: 'DM Mono', ui-monospace, monospace;
   color: var(--color-text);
   transition: background 0.1s;
   line-height: 1.4;
 }
 
 .wc-cell__value:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.07);
 }
 
 .wc-cell__value:disabled {
@@ -163,12 +167,13 @@
   width: 100%;
   font-size: 11px;
   border: 1px solid var(--color-border);
-  border-radius: 3px;
-  padding: 1px 4px;
-  background: var(--color-surface);
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--surface-contained-bg);
   color: var(--color-text);
   min-height: 0;
   line-height: 1.4;
+  font-family: 'DM Mono', ui-monospace, monospace;
 }
 
 .wc-cell__input--crew {

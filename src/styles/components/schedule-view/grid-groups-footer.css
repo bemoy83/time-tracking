@@ -22,13 +22,13 @@
 .schedule-grid__phase-label {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: var(--space-xs) var(--space-sm);
+  gap: 5px;
+  padding: 6px var(--space-sm);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: var(--font-small);
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--color-text-muted);
   background: var(--color-surface-subtle);
   position: sticky;
@@ -39,9 +39,11 @@
 }
 
 .schedule-grid__phase-label--depth-0 {
-  font-size: var(--font-body);
+  font-size: var(--font-small);
   font-weight: 700;
   color: var(--color-text);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .schedule-grid__phase-label--depth-1 {
@@ -55,6 +57,7 @@
 .schedule-grid__group-count {
   color: var(--color-text-muted);
   font-weight: 500;
+  font-size: var(--font-caption);
 }
 
 .schedule-grid__readonly-badge {
@@ -140,8 +143,8 @@
 
 .schedule-grid__util-bar {
   width: 100%;
-  height: 5px;
-  background: var(--color-border);
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -150,7 +153,7 @@
   height: 100%;
   border-radius: 2px;
   background: var(--color-primary);
-  transition: width 0.2s;
+  transition: width 0.25s ease;
 }
 
 .schedule-grid__util-bar-fill--over {

@@ -986,4 +986,66 @@
     max-width: 680px;
     padding: 18px 22px;
   }
+
+  /* ── Schedule tab — section card polish ── */
+
+  /* Main "Schedule" h2 — tighten tracking to match plan editor title aesthetic */
+  .planning-workspace__editor-canvas .schedule-view .planning-view__title {
+    letter-spacing: -0.02em;
+  }
+
+  /* Work Calendar block toggle title */
+  .planning-workspace__editor-canvas .schedule-view .schedule-view__block-toggle .schedule-view__block-title {
+    font-size: 0.875rem; /* 14px — matches plan editor section heads */
+  }
+
+  /* Grid "Schedule Grid" heading */
+  .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block > .schedule-view__block-header .schedule-view__block-title {
+    font-size: 0.875rem;
+  }
+
+  /* Activate / Hand off / Clear buttons in schedule view footer */
+  .planning-workspace__editor-canvas .schedule-view .btn--success {
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
+    transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .planning-workspace__editor-canvas .schedule-view .btn--success:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.36);
+  }
+
+  /* Danger (Clear all) button */
+  .planning-workspace__editor-canvas .schedule-view .btn--danger {
+    transition: background-color 0.15s, transform 0.15s;
+  }
+  .planning-workspace__editor-canvas .schedule-view .btn--danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  /* Auto-schedule button in grid header */
+  .planning-workspace__editor-canvas .schedule-grid__auto-schedule-btn {
+    transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+  .planning-workspace__editor-canvas .schedule-grid__auto-schedule-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  /* Grid header sticky background matches canvas inset */
+  .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__line-item-col,
+  .planning-workspace__editor-canvas .schedule-grid__line-item-col,
+  .planning-workspace__editor-canvas .schedule-grid__line-item,
+  .planning-workspace__editor-canvas .schedule-grid__phase-label,
+  .planning-workspace__editor-canvas .schedule-grid__footer .schedule-grid__line-item-col {
+    background: var(--surface-contained-bg);
+  }
+
+  /* Slightly tighter grid cells in workspace at wider widths */
+  .planning-workspace__editor-canvas .schedule-grid__day-col {
+    padding: var(--space-sm) 10px;
+  }
+
+  /* Work calendar cell — slightly crisper in workspace */
+  .planning-workspace__editor-canvas .wc-cell {
+    border-radius: 10px;
+  }
 }
