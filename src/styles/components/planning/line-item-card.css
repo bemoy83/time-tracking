@@ -4,7 +4,7 @@
 
 .planning-view__line-item {
   background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  border-radius: 0;
   padding: var(--space-md);
   display: flex;
   flex-direction: column;

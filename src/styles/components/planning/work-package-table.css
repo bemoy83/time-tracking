@@ -248,13 +248,7 @@
   right: var(--wp-card-padding, var(--space-md));
 }
 
-.planning-view__work-package-table tbody tr:last-child td:first-child {
-  border-bottom-left-radius: var(--radius-xl);
-}
-
-.planning-view__work-package-table tbody tr:last-child td:last-child {
-  border-bottom-right-radius: var(--radius-xl);
-}
+/* Rounded corners only on main card (wp-surface); table cells stay square */
 
 .planning-view__wp-row:focus-within .planning-view__wp-cell {
   background: var(--surface-contained-hover);
