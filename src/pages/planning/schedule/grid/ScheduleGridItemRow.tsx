@@ -1,4 +1,4 @@
-import { PeopleIcon, WarningIcon } from '../../../../components/icons';
+import { PeopleIcon, UndoIcon, WarningIcon } from '../../../../components/icons';
 import { getPhaseFields } from '../../../../lib/planning/plan-model';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../../lib/types';
 import {
@@ -86,7 +86,7 @@ export function ScheduleGridItemRow({
                 aria-label={`Clear schedule for ${item.title} (${BUILD_PHASE_LABELS[phase]})`}
                 title="Clear this row schedule"
               >
-                Clear
+                <UndoIcon className="schedule-grid__row-clear-icon" aria-hidden />
               </button>
             )}
           </span>

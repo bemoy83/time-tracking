@@ -30,6 +30,7 @@ import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
+import { ScheduleAssistantPanel } from './schedule/ScheduleAssistantPanel';
 import { PlanSetupStepper } from './PlanSetupStepper';
 import type {
   ScheduleIssueItem,
@@ -68,16 +69,6 @@ interface PlanningIssue {
   id: string;
   severity: PlanningIssueSeverity;
   label: string;
-}
-
-interface RecommendationCta {
-  id: 'calendar' | 'grid' | 'assistant';
-  label: string;
-  onClick: () => void;
-}
-
-function toPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 function unresolvedReasonLabel(reason: AutoScheduleUnresolvedReason): string {
@@ -120,6 +111,7 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
   const workCalendarRef = useRef<HTMLDivElement>(null);
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const phaseDates = readPhaseDateValues(currentPlan);
@@ -199,12 +191,10 @@ export function ScheduleView({
   }, [currentPlan.lineItems]);
 
   const {
-    assistantReport,
     assistantReportStale,
     assistantUnresolvedCount,
     assistantReviewIssues,
     activeAssistantIssue,
-    activeAssistantIssueIndex,
     unresolvedIssueKeys,
     markAssistantFindingsStale,
     applyAssistantRunReport,
@@ -471,13 +461,6 @@ export function ScheduleView({
     }
   }, []);
 
-  const handleReviewAssistantIssues = () => {
-    if (!focusNextReviewIssue()) {
-      handleOpenScheduleGrid();
-      return;
-    }
-    handleOpenScheduleGrid();
-  };
 
   const handlePrevAssistantIssue = useCallback(() => {
     if (!focusPrevReviewIssue()) return;
@@ -755,41 +738,6 @@ export function ScheduleView({
     onIssuePanelChange?.(null);
   }, [onIssuePanelChange]);
 
-  const recommendationText = (() => {
-    if (readOnly) return 'Read-only plan. Review issue queue and hand off when ready.';
-    if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
-      return 'Critical conflicts on some days — fix crew or calendar before continuing.';
-    }
-    if (assistantReportStale) {
-      return 'You changed the schedule. Re-run the assistant to re-check before activating.';
-    }
-    if (assistantUnresolvedCount > 0) {
-      return 'Some items still need review — check the grid and finalize assignments.';
-    }
-    if (schedulableUnscheduledCount > 0) {
-      return 'Some work isn\'t scheduled yet — run the assistant or add assignments manually.';
-    }
-    if (!isLocked) return 'Nothing blocking — you can activate when ready.';
-    return 'Plan is active. Keep assignments aligned with live execution changes.';
-  })();
-
-  const recommendationCta: RecommendationCta | null = (() => {
-    if (readOnly) return null;
-    if (capacity.overWorkerCapacityDayCount > 0 || capacity.overAllocatedDayCount > 0) {
-      return { id: 'calendar', label: 'Review calendar fixes', onClick: handleOpenWorkCalendar };
-    }
-    if (assistantReportStale) {
-      return { id: 'assistant', label: 'Re-run assistant', onClick: handleAutoSchedule };
-    }
-    if (assistantUnresolvedCount > 0) {
-      return { id: 'grid', label: 'Review issues', onClick: handleReviewAssistantIssues };
-    }
-    if (schedulableUnscheduledCount > 0) {
-      return { id: 'assistant', label: 'Run assistant', onClick: handleAutoSchedule };
-    }
-    return null;
-  })();
-
   const criticalIssueCount = planningIssues.filter((issue) => issue.severity === 'critical').length;
   const warningIssueCount = planningIssues.filter((issue) => issue.severity === 'warning').length;
 
@@ -869,65 +817,19 @@ export function ScheduleView({
 
           <PlanSetupStepper steps={scheduleSteps} readOnly={readOnly} />
 
-          <div className="schedule-view__planning-layout">
-            <section className="schedule-view__planning-section" aria-label="Things to check">
-              <h3 className="schedule-view__planning-title">Things to check</h3>
-              {planningIssues.length === 0 ? (
-                <p className="schedule-view__muted">Nothing blocking — you can activate when ready.</p>
-              ) : (
-                <ul className="schedule-view__planning-issues">
-                  {planningIssues.map((issue) => (
-                    <li
-                      key={issue.id}
-                      className={`schedule-view__planning-issue schedule-view__planning-issue--${issue.severity}`}
-                    >
-                      <span className="schedule-view__planning-issue-severity">
-                        {issue.severity}
-                      </span>
-                      <span className="schedule-view__planning-issue-label">{issue.label}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            <section className="schedule-view__planning-section" aria-label="What to do next">
-              <h3 className="schedule-view__planning-title">What to do next</h3>
-              <p className="schedule-view__planning-focus">{recommendationText}</p>
-              {assistantReportStale ? null : assistantReport ? (
-                <div className="schedule-view__assistant-details">
-                  <h3 className="schedule-view__planning-title">Assistant run details</h3>
-                  <p className="schedule-view__muted">
-                    {assistantReport.changed.length} updated · {assistantReport.unresolved.length} unresolved
-                  </p>
-                  <p className="schedule-view__muted">
-                    Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-                    {' · '}
-                    Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-                  </p>
-                </div>
-              ) : (
-                <p className="schedule-view__muted">Assistant has not been run in this session.</p>
-              )}
-            </section>
-          </div>
-
           <div className="schedule-view__planning-footer">
             <div className="schedule-view__planning-actions">
-              {recommendationCta && (
-                <button type="button" className="btn btn--primary btn--sm" onClick={recommendationCta.onClick}>
-                  {recommendationCta.label}
-                </button>
-              )}
-              {!readOnly && scheduledPhaseRowCount > 0 && (
-                <button
-                  type="button"
-                  className="btn btn--danger btn--sm"
-                  onClick={handleClearAllSchedules}
-                >
-                  Clear all ({scheduledPhaseRowCount})
-                </button>
-              )}
+              <button
+                type="button"
+                className={`btn btn--secondary btn--sm${planningIssues.length > 0 ? ' schedule-view__assistant-btn--has-issues' : ''}`}
+                onClick={() => setIsAssistantPanelOpen(true)}
+                aria-haspopup="dialog"
+              >
+                Schedule Assistant
+                {planningIssues.length > 0 && (
+                  <span className="schedule-view__assistant-btn-count">{planningIssues.length}</span>
+                )}
+              </button>
               {!readOnly && isLocked && (
                 <button
                   type="button"
@@ -974,36 +876,6 @@ export function ScheduleView({
       </div>
 
       <div ref={scheduleGridRef} className="schedule-view__grid-stack">
-        {assistantReviewIssues.length > 0 && (
-          <section className="schedule-view__block schedule-view__assistant-review" aria-live="polite">
-            <div className="schedule-view__assistant-review-summary">
-              <span className="schedule-view__assistant-review-chip">
-                {assistantReviewIssues.length} unresolved {assistantReviewIssues.length === 1 ? 'issue' : 'issues'}
-              </span>
-              {activeAssistantIssue && (
-                <>
-                  <span className="schedule-view__assistant-review-chip schedule-view__assistant-review-chip--active">
-                    Issue {activeAssistantIssueIndex! + 1} of {assistantReviewIssues.length}
-                  </span>
-                  <span className="schedule-view__assistant-review-text">
-                    {activeAssistantIssue.lineItemTitle} · {activeAssistantIssue.phase} · {unresolvedReasonLabel(activeAssistantIssue.reason)}
-                  </span>
-                  <span className="schedule-view__assistant-review-text">
-                    {activeAssistantIssue.assignedPH.toFixed(1)}h / {activeAssistantIssue.requiredPH.toFixed(1)}h
-                  </span>
-                </>
-              )}
-            </div>
-            <div className="schedule-view__assistant-review-actions">
-              <button type="button" className="btn btn--secondary btn--sm" onClick={handlePrevAssistantIssue}>
-                Prev
-              </button>
-              <button type="button" className="btn btn--secondary btn--sm" onClick={handleNextAssistantIssue}>
-                Next
-              </button>
-            </div>
-          </section>
-        )}
         <ScheduleGrid
           lineItems={currentPlan.lineItems}
           calendar={currentPlan.workCalendar}
@@ -1029,6 +901,12 @@ export function ScheduleView({
           onCancel={handleAmendmentCancel}
         />
       )}
+
+      <ScheduleAssistantPanel
+        payload={issuePanelPayload}
+        isOpen={isAssistantPanelOpen}
+        onClose={() => setIsAssistantPanelOpen(false)}
+      />
     </div>
   );
 }

@@ -1,0 +1,414 @@
+/* ============================================================
+   Schedule Assistant Panel — right-edge slide-over
+   ============================================================ */
+
+/* ─── Trigger button badge ─── */
+.schedule-view__assistant-btn-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: var(--radius-full);
+  background: var(--state-warning-bg-soft);
+  color: var(--state-warning-fg-strong);
+  font-size: var(--font-caption);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.schedule-assistant-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 92vw);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12), -1px 0 0 rgba(0, 0, 0, 0.06);
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+
+.schedule-assistant-panel--open {
+  transform: translateX(0);
+}
+
+/* ─── Backdrop ─── */
+.schedule-assistant-panel__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 299;
+  background: rgba(0, 0, 0, 0.18);
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Header ─── */
+.schedule-assistant-panel__header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0,0,0,0.08));
+}
+
+.schedule-assistant-panel__header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.schedule-assistant-panel__title {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.schedule-assistant-panel__close {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.schedule-assistant-panel__close:hover {
+  background: var(--surface-contained-inset);
+  color: var(--color-text);
+}
+
+.schedule-assistant-panel__header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.schedule-assistant-panel__status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  background: var(--surface-contained-inset);
+  color: var(--color-text-muted);
+}
+
+.schedule-assistant-panel__status-chip--stale {
+  background: var(--state-warning-bg-soft);
+  color: var(--state-warning-fg-strong);
+}
+
+.schedule-assistant-panel__status-chip--needs-review {
+  background: var(--state-warning-bg-soft);
+  color: var(--state-warning-fg-strong);
+}
+
+.schedule-assistant-panel__status-chip--ready {
+  background: var(--state-success-bg, color-mix(in srgb, var(--color-ready) 12%, transparent));
+  color: var(--color-ready);
+}
+
+.schedule-assistant-panel__header-count {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+/* ─── Body (scrollable) ─── */
+.schedule-assistant-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+/* ─── Run section ─── */
+.schedule-assistant-panel__run-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.schedule-assistant-panel__run-btn {
+  align-self: flex-start;
+}
+
+.schedule-assistant-panel__stale-notice {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--state-warning-fg, var(--color-text-muted));
+  line-height: 1.4;
+}
+
+/* ─── Sections ─── */
+.schedule-assistant-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.schedule-assistant-panel__section-label {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.schedule-assistant-panel__summary-body {
+  margin: 0;
+  font-size: var(--font-small);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+/* ─── Best next move card ─── */
+.schedule-assistant-panel__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--surface-contained-inset);
+  border-left: 3px solid var(--color-primary);
+}
+
+.schedule-assistant-panel__card-eyebrow {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+}
+
+.schedule-assistant-panel__card-title {
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.schedule-assistant-panel__card-body {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.schedule-assistant-panel__card-impact {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* ─── Insights ─── */
+.schedule-assistant-panel__insights-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-assistant-panel__insight {
+  font-size: var(--font-small);
+  color: var(--color-text);
+  line-height: 1.4;
+  padding-left: var(--space-sm);
+  position: relative;
+}
+
+.schedule-assistant-panel__insight::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--color-text-muted);
+}
+
+/* ─── Nav bar ─── */
+.schedule-assistant-panel__nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--surface-contained-inset);
+}
+
+.schedule-assistant-panel__nav-label {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.schedule-assistant-panel__nav-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* ─── Issue groups ─── */
+.schedule-assistant-panel__issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.schedule-assistant-panel__issue-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.schedule-assistant-panel__issue-group-title {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* ─── Issue cards ─── */
+.schedule-assistant-panel__issue-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--surface-contained-inset);
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.schedule-assistant-panel__issue-card--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--surface-contained-inset));
+}
+
+.schedule-assistant-panel__issue-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.schedule-assistant-panel__issue-section-label {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.schedule-assistant-panel__issue-label {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text);
+  line-height: 1.35;
+}
+
+.schedule-assistant-panel__issue-metric {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+.schedule-assistant-panel__issue-detail {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.schedule-assistant-panel__issue-facts,
+.schedule-assistant-panel__issue-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.schedule-assistant-panel__issue-fact,
+.schedule-assistant-panel__issue-suggestion {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  padding-left: var(--space-sm);
+  position: relative;
+}
+
+.schedule-assistant-panel__issue-fact::before,
+.schedule-assistant-panel__issue-suggestion::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+}
+
+.schedule-assistant-panel__issue-impact {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* ─── Footer ─── */
+.schedule-assistant-panel__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-subtle, rgba(0,0,0,0.08));
+  margin-top: auto;
+}
+
+/* ─── Empty state ─── */
+.schedule-assistant-panel__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md) 0;
+}
+
+.schedule-assistant-panel__empty-title {
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.schedule-assistant-panel__empty-body {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}

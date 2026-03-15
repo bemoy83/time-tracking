@@ -5,7 +5,7 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -25,9 +25,7 @@ import {
   getVisiblePlanWorkspaceTabs,
   type WorkspaceRenderContext,
 } from './workspace-tabs';
-import { SidebarIssuesPanel } from './SidebarIssuesPanel';
 import { SparklesIcon, TaskListIcon } from '../../../components/icons';
-import type { ScheduleIssuePanelPayload } from './schedule-issue-panel-types';
 import { WrapUpReviewPane } from '../WrapUpReviewPane';
 import { StatusBadge } from '../../../components/StatusBadge';
 
@@ -97,8 +95,6 @@ export function PlanningWorkspaceShell({
   onWrapUpCompleted,
   onExit,
 }: PlanningWorkspaceShellProps) {
-  const [scheduleIssuePanelPayload, setScheduleIssuePanelPayload] = useState<ScheduleIssuePanelPayload | null>(null);
-  const isOnIssuesTabRef = useRef(false);
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
@@ -110,21 +106,6 @@ export function PlanningWorkspaceShell({
     onSetActiveTab,
   };
   const sidebarTabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
-
-  isOnIssuesTabRef.current = activeTab === 'issues';
-
-  useEffect(() => {
-    if ((activeTab !== 'schedule' && activeTab !== 'issues') || !activePlan) {
-      setScheduleIssuePanelPayload(null);
-    }
-  }, [activePlan, activeTab]);
-
-  const handleScheduleIssuePanelChange = useCallback((payload: ScheduleIssuePanelPayload | null) => {
-    // ScheduleView fires null on unmount (cleanup effect). Don't clear payload when
-    // the user has switched to the Issues tab — we want to preserve it there.
-    if (payload === null && isOnIssuesTabRef.current) return;
-    setScheduleIssuePanelPayload(payload);
-  }, []);
 
   return (
     <div className="planning-workspace">
@@ -225,8 +206,6 @@ export function PlanningWorkspaceShell({
             onSetActiveTab={onSetActiveTab}
             onOpenProgress={onOpenProgress}
             onOpenWrapUp={onOpenWrapUp}
-            onIssuePanelChange={handleScheduleIssuePanelChange}
-            scheduleIssuePanelPayload={scheduleIssuePanelPayload}
             planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
           />
         ) : activeTab === 'progress' ? (
@@ -411,8 +390,6 @@ interface WorkspaceMainPaneProps {
   onSetActiveTab: (tab: WorkspaceTab) => void;
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
-  onIssuePanelChange: (payload: ScheduleIssuePanelPayload | null) => void;
-  scheduleIssuePanelPayload: ScheduleIssuePanelPayload | null;
   planIdsWithImportedExecutionReturns: Set<string>;
 }
 
@@ -430,8 +407,6 @@ function WorkspaceMainPane({
   onSetActiveTab,
   onOpenProgress,
   onOpenWrapUp,
-  onIssuePanelChange,
-  scheduleIssuePanelPayload,
   planIdsWithImportedExecutionReturns,
 }: WorkspaceMainPaneProps) {
   const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
@@ -572,18 +547,7 @@ function WorkspaceMainPane({
               onBack={() => onSetActiveTab('edit')}
               readOnly={isReviewed}
               isWorkspaceMode
-              onIssuePanelChange={onIssuePanelChange}
             />
-          </div>
-        )}
-        {effectiveActiveTab === 'issues' && showScheduleTab && (
-          <div className="planning-workspace__tab-content planning-workspace__tab-content--issues">
-            <div className="planning-workspace__issues-pane">
-              <SidebarIssuesPanel
-                payload={scheduleIssuePanelPayload}
-                isScheduleContext={true}
-              />
-            </div>
           </div>
         )}
         {effectiveActiveTab === 'review' && (

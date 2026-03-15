@@ -8,7 +8,7 @@
 /* ─── Health card title ─── */
 .schedule-view__planning-view-title {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--font-body);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--color-text);
@@ -146,7 +146,7 @@
   min-height: 18px;
   padding: 0 6px;
   border-radius: var(--radius-full);
-  font-size: 9px;
+  font-size: var(--font-caption);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -437,9 +437,12 @@
     animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
   }
 
-  /* Subtle block-title font weight bump in workspace */
+  /* Block titles — align with PlanEditor section headers (caption + uppercase + letter-spacing) */
   .planning-workspace__editor-canvas .schedule-view__block-title {
+    font-size: var(--font-caption);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
 }

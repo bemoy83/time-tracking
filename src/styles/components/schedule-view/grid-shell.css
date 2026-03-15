@@ -182,7 +182,7 @@
 
 .schedule-grid__day-util {
   display: block;
-  font-size: 10px;
+  font-size: var(--font-caption);
   font-weight: 600;
   line-height: 1.3;
   color: var(--color-text-muted);
@@ -248,21 +248,29 @@
 
 .schedule-grid__row-clear-btn {
   appearance: none;
-  border: 1px solid var(--color-border);
-  background: var(--surface-contained-bg);
+  border: none;
+  background: none;
   color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-caption);
-  line-height: 1;
-  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  width: 32px;
+  height: 32px;
+  padding: 0;
   cursor: pointer;
-  white-space: nowrap;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .schedule-grid__row-clear-btn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+  background: var(--state-warning-bg);
+  color: var(--color-amber);
+}
+
+.schedule-grid__row-clear-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .schedule-grid__row-clear-btn:focus-visible {

@@ -107,7 +107,7 @@
 }
 
 .schedule-grid__group-day-crew {
-  font-size: 10px;
+  font-size: var(--font-caption);
 }
 
 .schedule-grid__line-item--shared {

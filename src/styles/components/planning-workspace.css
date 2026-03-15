@@ -989,19 +989,13 @@
 
   /* ── Schedule tab — section card polish ── */
 
-  /* Main "Schedule" h2 — tighten tracking to match plan editor title aesthetic */
+  /* Main "Schedule" h2 — align with PlanEditor section header (caption + uppercase) */
   .planning-workspace__editor-canvas .schedule-view .planning-view__title {
-    letter-spacing: -0.02em;
-  }
-
-  /* Work Calendar block toggle title */
-  .planning-workspace__editor-canvas .schedule-view .schedule-view__block-toggle .schedule-view__block-title {
-    font-size: 0.875rem; /* 14px — matches plan editor section heads */
-  }
-
-  /* Grid "Schedule Grid" heading */
-  .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block > .schedule-view__block-header .schedule-view__block-title {
-    font-size: 0.875rem;
+    font-size: var(--font-caption);
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
 
   /* Activate / Hand off / Clear buttons in schedule view footer */
