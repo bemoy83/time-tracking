@@ -42,6 +42,32 @@ function buildArchiveTaskIds(lineItemDecisions: WrapUpReviewLineItemDecision[]):
   );
 }
 
+export interface UseWrapUpSheetModelV2Result {
+  projection: WrapUpV2Projection | null;
+  projectionLoadError: string | null;
+  lineItemDecisions: Map<string, WrapUpReviewLineItemDecision>;
+  unplannedDecisions: Map<string, WrapUpReviewUnplannedDecision>;
+  lineItemDecisionList: WrapUpReviewLineItemDecision[];
+  unplannedDecisionList: WrapUpReviewUnplannedDecision[];
+  isLoadingProjection: boolean;
+  isSubmitting: boolean;
+  submitError: string | null;
+  validationErrors: string[];
+  lineItemIdsWithErrors: Set<string>;
+  unplannedTaskIdsWithErrors: Set<string>;
+  canSubmit: boolean;
+  setLineItemIncludeInKpi: (lineItemId: string, includeInKpi: boolean) => void;
+  setLineItemReviewNote: (lineItemId: string, reviewNote: string) => void;
+  setLineItemExecutionStatus: (
+    lineItemId: string,
+    executionStatus: import('../../../lib/planning/plan-model').LineItemExecutionStatus,
+  ) => void;
+  setDeferredDispositionConfirmed: (lineItemId: string, confirmed: boolean) => void;
+  setUnplannedIncludeInKpi: (taskId: string, includeInKpi: boolean) => void;
+  setUnplannedAssignedWorkType: (taskId: string, assignedWorkTypeId: string | null) => void;
+  runWrapUp: (mode: WrapUpMode) => Promise<void>;
+}
+
 export function useWrapUpSheetModelV2({
   isOpen,
   plan,
@@ -49,7 +75,7 @@ export function useWrapUpSheetModelV2({
   timeEntriesByTask,
   onClose,
   onCompleted,
-}: UseWrapUpSheetModelV2Params) {
+}: UseWrapUpSheetModelV2Params): UseWrapUpSheetModelV2Result {
   const [projection, setProjection] = useState<WrapUpV2Projection | null>(null);
   const [projectionLoadError, setProjectionLoadError] = useState<string | null>(null);
   const [lineItemDecisions, setLineItemDecisions] = useState<Map<string, WrapUpReviewLineItemDecision>>(new Map());

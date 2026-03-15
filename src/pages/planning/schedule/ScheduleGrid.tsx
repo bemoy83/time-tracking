@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronIcon } from '../../../components/icons';
 import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
 import { getPhaseFields, isPhaseActive } from '../../../lib/planning/plan-model';
@@ -22,6 +22,10 @@ import {
 import { ScheduleGridGroupRow } from './grid/ScheduleGridGroupRow';
 import { ScheduleGridHeader } from './grid/ScheduleGridHeader';
 import { ScheduleGridItemRow } from './grid/ScheduleGridItemRow';
+import {
+  ScheduleGridShell,
+  useScheduleGridKeyboardNavigation,
+} from './grid/ScheduleGridShell';
 import { getAssignedDatesWithinPhase } from './grid/schedule-grid-metrics';
 
 interface PhaseGroup {
@@ -87,6 +91,13 @@ type ScheduleGridProps = SingleScheduleGridProps | SharedScheduleGridProps;
 
 function mapKey(planId: string, lineItemId: string): string {
   return `${planId}:${lineItemId}`;
+}
+
+function toggleSetValue<T>(prev: Set<T>, value: T): Set<T> {
+  const next = new Set(prev);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
 }
 
 interface PhaseRowCandidate {
@@ -203,6 +214,7 @@ function SingleScheduleGrid({
 
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(220px, 1.3fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
+  const handleGridKeyboard = useScheduleGridKeyboardNavigation(calendar.length);
 
   useEffect(() => {
     if (!activeIssueKey) return;
@@ -225,54 +237,8 @@ function SingleScheduleGrid({
     return () => cancelAnimationFrame(frame);
   }, [activeIssueKey]);
 
-  const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.classList.contains('schedule-grid__cell')) return;
-    const allCells = gridRef.current?.querySelectorAll<HTMLElement>('.schedule-grid__cell');
-    const cells = allCells ? Array.from(allCells).filter((cell) => cell.tabIndex >= 0) : null;
-    if (!cells) return;
-
-    const currentIndex = cells.indexOf(target);
-    if (currentIndex === -1) return;
-
-    const colCount = calendar.length;
-    let nextIndex = -1;
-
-    switch (e.key) {
-      case 'ArrowRight':
-        nextIndex = currentIndex + 1;
-        break;
-      case 'ArrowLeft':
-        nextIndex = currentIndex - 1;
-        break;
-      case 'ArrowDown':
-        nextIndex = currentIndex + colCount;
-        break;
-      case 'ArrowUp':
-        nextIndex = currentIndex - colCount;
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        target.click();
-        return;
-      default:
-        return;
-    }
-
-    if (nextIndex >= 0 && nextIndex < cells.length) {
-      e.preventDefault();
-      cells[nextIndex].focus();
-    }
-  }, [calendar.length]);
-
   const togglePhase = (phase: BuildPhase) => {
-    setCollapsedPhases((prev) => {
-      const next = new Set(prev);
-      if (next.has(phase)) next.delete(phase);
-      else next.add(phase);
-      return next;
-    });
+    setCollapsedPhases((prev) => toggleSetValue(prev, phase));
   };
 
   const renderRow = (item: PlanLineItem, phase: BuildPhase, rowIndex: number) => {
@@ -306,83 +272,62 @@ function SingleScheduleGrid({
   };
 
   return (
-    <section className="schedule-view__block" aria-labelledby="schedule-grid-title">
-      <header className="schedule-view__block-header" id="schedule-grid-title">
-        <h3 className="schedule-view__block-title">
-          Schedule Grid
-          {unscheduledCount > 0 && (
-            <span className="schedule-grid__unscheduled-badge">
-              {unscheduledCount} unscheduled
-            </span>
-          )}
-        </h3>
-      </header>
-
-      {calendar.length === 0 ? (
-        <p className="schedule-view__muted">Set schedule dates to open the schedule grid.</p>
-      ) : (
-        <div className="schedule-grid__scroll-wrap">
-          <div
-            className="schedule-grid"
-            ref={gridRef}
-            onKeyDown={handleGridKeyDown}
-            role="grid"
-            aria-label="Schedule grid"
-            style={{ '--schedule-day-count': calendar.length, gridTemplateColumns: gridColumns } as React.CSSProperties}
-          >
-          <ScheduleGridHeader
-            calendar={calendar}
-            dayByDate={dayByDate}
-            gridColumns={gridColumns}
-            label="Work package"
-            onAutoSchedule={onAutoSchedule}
-            unscheduledCount={schedulableUnscheduledCount}
-            readOnly={readOnly}
-            hasWorkDays={workDays.length > 0}
-          />
-
-          <div className="schedule-grid__body">
-            {phaseGroups.length > 1
-              ? (() => {
-                  let globalRowIdx = 0;
-                  return phaseGroups.map((group) => {
-                    const isCollapsed = collapsedPhases.has(group.phase);
-                    const startIdx = globalRowIdx;
-                    globalRowIdx += group.rows.length;
-                    return (
-                      <div key={group.phase} className="schedule-grid__phase-group">
-                        <button
-                          type="button"
-                          className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
-                          onClick={() => togglePhase(group.phase)}
-                          aria-expanded={!isCollapsed}
-                        >
-                          <span className="schedule-grid__phase-label">
-                            <ChevronIcon className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`} />
-                            {group.label} ({group.rows.length})
-                          </span>
-                          {calendar.map((day) => (
-                            <span key={day.date} className="schedule-grid__phase-spacer" aria-hidden="true" />
-                          ))}
-                        </button>
-                        {!isCollapsed && group.rows.map(({ item, phase }, i) => renderRow(item, phase, startIdx + i))}
-                      </div>
-                    );
-                  });
-                })()
-              : phaseGroups.length === 1
-                ? phaseGroups[0].rows.map(({ item, phase }, i) => renderRow(item, phase, i))
-                : lineItems.map((item, i) => {
-                    // Fallback: render for each active phase
-                    const activePhase = BUILD_PHASES.find((p) => isPhaseActive(item, p)) ?? 'assembly';
-                    return renderRow(item, activePhase, i);
-                  })
-            }
-          </div>
-        </div>
-        </div>
+    <ScheduleGridShell
+      title="Schedule Grid"
+      unscheduledCount={unscheduledCount}
+      emptyMessage="Set schedule dates to open the schedule grid."
+      ariaLabel="Schedule grid"
+      calendarLength={calendar.length}
+      gridColumns={gridColumns}
+      gridRef={gridRef}
+      onGridKeyDown={(e) => handleGridKeyboard(gridRef, e)}
+      header={(
+        <ScheduleGridHeader
+          calendar={calendar}
+          dayByDate={dayByDate}
+          gridColumns={gridColumns}
+          label="Work package"
+          onAutoSchedule={onAutoSchedule}
+          unscheduledCount={schedulableUnscheduledCount}
+          readOnly={readOnly}
+          hasWorkDays={workDays.length > 0}
+        />
       )}
-    </section>
+      body={phaseGroups.length > 1
+        ? (() => {
+            let globalRowIdx = 0;
+            return phaseGroups.map((group) => {
+              const isCollapsed = collapsedPhases.has(group.phase);
+              const startIdx = globalRowIdx;
+              globalRowIdx += group.rows.length;
+              return (
+                <div key={group.phase} className="schedule-grid__phase-group">
+                  <button
+                    type="button"
+                    className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
+                    onClick={() => togglePhase(group.phase)}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className="schedule-grid__phase-label">
+                      <ChevronIcon className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`} />
+                      {group.label} ({group.rows.length})
+                    </span>
+                    {calendar.map((day) => (
+                      <span key={day.date} className="schedule-grid__phase-spacer" aria-hidden="true" />
+                    ))}
+                  </button>
+                  {!isCollapsed && group.rows.map(({ item, phase }, i) => renderRow(item, phase, startIdx + i))}
+                </div>
+              );
+            });
+          })()
+        : phaseGroups.length === 1
+          ? phaseGroups[0].rows.map(({ item, phase }, i) => renderRow(item, phase, i))
+          : lineItems.map((item, i) => {
+              const activePhase = BUILD_PHASES.find((phase) => isPhaseActive(item, phase)) ?? 'assembly';
+              return renderRow(item, activePhase, i);
+            })}
+    />
   );
 }
 
@@ -406,6 +351,7 @@ function SharedScheduleGrid({
   const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
+  const handleGridKeyboard = useScheduleGridKeyboardNavigation(calendar.length);
 
   const schedulableUnscheduledCount = useMemo(
     () => getSharedSchedulableUnscheduledCount(rows, calendar, phaseDatesByPlanId, itemByCompositeId),
@@ -455,13 +401,7 @@ function SharedScheduleGrid({
 
   const toggleProject = (projectRowId: string) => {
     setCollapsedProjects((prev) => {
-      const next = new Set(prev);
-      if (next.has(projectRowId)) {
-        next.delete(projectRowId);
-      } else {
-        next.add(projectRowId);
-      }
-      return next;
+      return toggleSetValue(prev, projectRowId);
     });
 
     setCollapsedPhases((prev) => {
@@ -478,149 +418,84 @@ function SharedScheduleGrid({
   };
 
   const togglePhase = (phaseRowId: string) => {
-    setCollapsedPhases((prev) => {
-      const next = new Set(prev);
-      if (next.has(phaseRowId)) next.delete(phaseRowId);
-      else next.add(phaseRowId);
-      return next;
-    });
+    setCollapsedPhases((prev) => toggleSetValue(prev, phaseRowId));
   };
 
-  const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.classList.contains('schedule-grid__cell')) return;
-    const allCells = gridRef.current?.querySelectorAll<HTMLElement>('.schedule-grid__cell');
-    const cells = allCells ? Array.from(allCells).filter((cell) => cell.tabIndex >= 0) : null;
-    if (!cells) return;
-
-    const currentIndex = cells.indexOf(target);
-    if (currentIndex === -1) return;
-
-    const colCount = calendar.length;
-    let nextIndex = -1;
-
-    switch (e.key) {
-      case 'ArrowRight':
-        nextIndex = currentIndex + 1;
-        break;
-      case 'ArrowLeft':
-        nextIndex = currentIndex - 1;
-        break;
-      case 'ArrowDown':
-        nextIndex = currentIndex + colCount;
-        break;
-      case 'ArrowUp':
-        nextIndex = currentIndex - colCount;
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        target.click();
-        return;
-      default:
-        return;
-    }
-
-    if (nextIndex >= 0 && nextIndex < cells.length) {
-      e.preventDefault();
-      cells[nextIndex].focus();
-    }
-  }, [calendar.length]);
-
   return (
-    <section className="schedule-view__block" aria-labelledby="schedule-grid-title">
-      <header className="schedule-view__block-header" id="schedule-grid-title">
-        <h3 className="schedule-view__block-title">
-          Shared Schedule Grid
-          {unscheduledCount > 0 && (
-            <span className="schedule-grid__unscheduled-badge">
-              {unscheduledCount} unscheduled
-            </span>
-          )}
-        </h3>
-      </header>
-
-      {calendar.length === 0 ? (
-        <p className="schedule-view__muted">Configure crew pool dates to open the shared schedule grid.</p>
-      ) : (
-        <div className="schedule-grid__scroll-wrap">
-          <div
-            className="schedule-grid"
-            ref={gridRef}
-            onKeyDown={handleGridKeyDown}
-            role="grid"
-            aria-label="Shared schedule grid"
-            style={{ '--schedule-day-count': calendar.length, gridTemplateColumns: gridColumns } as React.CSSProperties}
-          >
-          <ScheduleGridHeader
-            calendar={calendar}
-            dayByDate={dayByDate}
-            gridColumns={gridColumns}
-            label="Shared crew pool"
-              onAutoSchedule={onAutoSchedule}
-              unscheduledCount={schedulableUnscheduledCount}
-              hasWorkDays={workDays.length > 0}
-          />
-
-          <div className="schedule-grid__body">
-            {visibleRows.map((row, idx) => {
-              if (row.type === 'item') {
-                const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
-                if (!item) return null;
-                const rowPhaseDates = phaseDatesByPlanId.get(row.planId);
-                const hasPhaseWindows = rowPhaseDates ? hasCompletePhaseDates(rowPhaseDates) : false;
-                const assignedDates = getAssignedDatesWithinPhase(item, row.phase, rowPhaseDates);
-                const phaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
-                const metaPrefix = planDisplayNameByPlanId.get(row.planId) ?? row.planId;
-
-                return (
-                  <ScheduleGridItemRow
-                    key={row.id}
-                    rowKey={row.id}
-                    rowIndex={idx}
-                    item={item}
-                    phase={row.phase}
-                    assignedDates={assignedDates}
-                    calendar={calendar}
-                    dayByDate={dayByDate}
-                    gridColumns={gridColumns}
-                    phaseRange={phaseRange}
-                    hasPhaseWindows={hasPhaseWindows}
-                    readOnly={row.readOnly}
-                    metaPrefix={metaPrefix}
-                    onToggleAssignment={(date, cellElement) => onToggleAssignment(row.planId, row.lineItemId, row.phase, date, cellElement)}
-                    onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(row.planId, row.lineItemId, row.phase, date, crew) : undefined}
-                    outOfPhaseAriaUsesLabel={false}
-                    readOnlyTitle="Read-only (reviewed plan)"
-                  />
-                );
-              }
-
-              const isProject = row.type === 'project';
-              const isCollapsed = isProject
-                ? collapsedProjects.has(row.id)
-                : collapsedPhases.has(row.phaseRowId);
-
-              return (
-                <ScheduleGridGroupRow
-                  key={row.id}
-                  row={row}
-                  calendar={calendar}
-                  gridColumns={gridColumns}
-                  aggregateByDate={rowAggregatesByDate.get(row.id)}
-                  isCollapsed={isCollapsed}
-                  onToggle={() => {
-                    if (isProject) toggleProject(row.id);
-                    else togglePhase(row.phaseRowId);
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-        </div>
+    <ScheduleGridShell
+      title="Shared Schedule Grid"
+      unscheduledCount={unscheduledCount}
+      emptyMessage="Configure crew pool dates to open the shared schedule grid."
+      ariaLabel="Shared schedule grid"
+      calendarLength={calendar.length}
+      gridColumns={gridColumns}
+      gridRef={gridRef}
+      onGridKeyDown={(e) => handleGridKeyboard(gridRef, e)}
+      header={(
+        <ScheduleGridHeader
+          calendar={calendar}
+          dayByDate={dayByDate}
+          gridColumns={gridColumns}
+          label="Shared crew pool"
+          onAutoSchedule={onAutoSchedule}
+          unscheduledCount={schedulableUnscheduledCount}
+          hasWorkDays={workDays.length > 0}
+        />
       )}
-    </section>
+      body={visibleRows.map((row, idx) => {
+        if (row.type === 'item') {
+          const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
+          if (!item) return null;
+          const rowPhaseDates = phaseDatesByPlanId.get(row.planId);
+          const hasPhaseWindows = rowPhaseDates ? hasCompletePhaseDates(rowPhaseDates) : false;
+          const assignedDates = getAssignedDatesWithinPhase(item, row.phase, rowPhaseDates);
+          const phaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
+          const metaPrefix = planDisplayNameByPlanId.get(row.planId) ?? row.planId;
+
+          return (
+            <ScheduleGridItemRow
+              key={row.id}
+              rowKey={row.id}
+              rowIndex={idx}
+              item={item}
+              phase={row.phase}
+              assignedDates={assignedDates}
+              calendar={calendar}
+              dayByDate={dayByDate}
+              gridColumns={gridColumns}
+              phaseRange={phaseRange}
+              hasPhaseWindows={hasPhaseWindows}
+              readOnly={row.readOnly}
+              metaPrefix={metaPrefix}
+              onToggleAssignment={(date, cellElement) => onToggleAssignment(row.planId, row.lineItemId, row.phase, date, cellElement)}
+              onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(row.planId, row.lineItemId, row.phase, date, crew) : undefined}
+              outOfPhaseAriaUsesLabel={false}
+              readOnlyTitle="Read-only (reviewed plan)"
+            />
+          );
+        }
+
+        const isProject = row.type === 'project';
+        const isCollapsed = isProject
+          ? collapsedProjects.has(row.id)
+          : collapsedPhases.has(row.phaseRowId);
+
+        return (
+          <ScheduleGridGroupRow
+            key={row.id}
+            row={row}
+            calendar={calendar}
+            gridColumns={gridColumns}
+            aggregateByDate={rowAggregatesByDate.get(row.id)}
+            isCollapsed={isCollapsed}
+            onToggle={() => {
+              if (isProject) toggleProject(row.id);
+              else togglePhase(row.phaseRowId);
+            }}
+          />
+        );
+      })}
+    />
   );
 }
 

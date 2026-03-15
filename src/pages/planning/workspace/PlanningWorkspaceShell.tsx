@@ -546,7 +546,6 @@ function WorkspaceMainPane({
               showBackButton={false}
               onBack={() => onSetActiveTab('edit')}
               readOnly={isReviewed}
-              isWorkspaceMode
             />
           </div>
         )}

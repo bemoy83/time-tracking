@@ -182,7 +182,7 @@ function formatHoursMetricValue(hours: number): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-function createScheduleCoverageMetric(
+export function buildScheduleCoverageMetric(
   totalRequiredPersonHours: number,
   scheduledRequiredPersonHours: number,
 ): ScheduleCoverageMetric {
@@ -211,7 +211,7 @@ function createScheduleCoverageMetric(
 export function getPlanScheduleCoverageMetric(plan: Plan): ScheduleCoverageMetric {
   const totalRequiredPersonHours = planTotalPersonHours(plan);
   const capacity = computeCapacitySummary(plan);
-  return createScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
+  return buildScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
 }
 
 export function getSharedScheduleCoverageMetric(
@@ -229,7 +229,7 @@ export function getSharedScheduleCoverageMetric(
   );
 
   if (capacityFromView) {
-    return createScheduleCoverageMetric(
+    return buildScheduleCoverageMetric(
       totalRequiredPersonHours,
       capacityFromView.totalRequiredPersonHours,
     );
@@ -251,12 +251,24 @@ export function getSharedScheduleCoverageMetric(
     defaultCrewSize,
     lineItems,
   });
-  return createScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
+  return buildScheduleCoverageMetric(totalRequiredPersonHours, capacity.totalRequiredPersonHours);
 }
 
-export function getScheduleViewMetrics(plan: Plan): SidebarMetricDescriptor[] {
-  const cap = computeCapacitySummary(plan);
-  const coverage = getPlanScheduleCoverageMetric(plan);
+interface ScheduleMetricsOptions {
+  capacity?: CapacitySummary;
+  coverage?: ScheduleCoverageMetric;
+}
+
+export function getScheduleViewMetrics(
+  plan: Plan,
+  options: ScheduleMetricsOptions = {},
+): SidebarMetricDescriptor[] {
+  const cap = options.capacity ?? computeCapacitySummary(plan);
+  const totalRequiredPersonHours = planTotalPersonHours(plan);
+  const coverage = options.coverage ?? buildScheduleCoverageMetric(
+    totalRequiredPersonHours,
+    cap.totalRequiredPersonHours,
+  );
   return [
     {
       value: formatHoursMetricValue(coverage.scheduledHours),
@@ -288,12 +300,17 @@ export function getScheduleViewMetrics(plan: Plan): SidebarMetricDescriptor[] {
   ];
 }
 
+interface ProgressMetricsOptions {
+  progress?: ReturnType<typeof computePlanProgress>;
+}
+
 export function getProgressViewMetrics(
   plan: Plan,
   tasks: Task[],
   timeEntries: TimeEntry[],
+  options: ProgressMetricsOptions = {},
 ): SidebarMetricDescriptor[] {
-  const progress = computePlanProgress(plan, tasks, timeEntries);
+  const progress = options.progress ?? computePlanProgress(plan, tasks, timeEntries);
   const pct = Math.round(progress.completionRatio * 100);
   const deadlineRisk = progress.deadline.status != null && progress.deadline.status !== 'on-track';
   return [

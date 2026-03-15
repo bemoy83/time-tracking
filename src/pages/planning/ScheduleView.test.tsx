@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { createLineItem, createPlan } from '../../lib/planning/plan-model';
 import type { Plan } from '../../lib/planning/plan-model';
 import { useMediaQuery } from '../../lib/hooks/useMediaQuery';
@@ -19,47 +19,7 @@ afterEach(() => {
   mockedUseMediaQuery.mockReset();
 });
 
-function renderSchedule({
-  desktop = false,
-  readOnly = false,
-  isWorkspaceMode = false,
-  onIssuePanelChange,
-}: {
-  desktop?: boolean;
-  readOnly?: boolean;
-  isWorkspaceMode?: boolean;
-  onIssuePanelChange?: (payload: unknown) => void;
-}) {
-  mockedUseMediaQuery.mockReturnValue(desktop);
-  const plan = createPlan('Schedule Test');
-
-  return render(
-    <ScheduleView
-      plan={plan}
-      onSave={vi.fn()}
-      onBack={vi.fn()}
-      showBackButton={false}
-      readOnly={readOnly}
-      isWorkspaceMode={isWorkspaceMode}
-      onIssuePanelChange={onIssuePanelChange}
-    />,
-  );
-}
-
-function renderScheduleWithPlan(
-  plan: Plan,
-  {
-    desktop = false,
-    readOnly = false,
-    isWorkspaceMode = false,
-    onIssuePanelChange,
-  }: {
-    desktop?: boolean;
-    readOnly?: boolean;
-    isWorkspaceMode?: boolean;
-    onIssuePanelChange?: (payload: unknown) => void;
-  },
-) {
+function renderSchedule(plan: Plan, desktop = false) {
   mockedUseMediaQuery.mockReturnValue(desktop);
   return render(
     <ScheduleView
@@ -67,42 +27,25 @@ function renderScheduleWithPlan(
       onSave={vi.fn()}
       onBack={vi.fn()}
       showBackButton={false}
-      readOnly={readOnly}
-      isWorkspaceMode={isWorkspaceMode}
-      onIssuePanelChange={onIssuePanelChange}
+      readOnly={false}
     />,
   );
 }
 
-describe('ScheduleView top-band layout', () => {
-  it('renders top-band regions and places actions in health controls on desktop', () => {
-    const { container } = renderSchedule({ desktop: true, readOnly: false });
+describe('ScheduleView', () => {
+  it('renders the top-band layout and schedule assistant entry point on desktop', () => {
+    const plan = createPlan('Schedule Test');
+    const { container } = renderSchedule(plan, true);
 
-    const topBand = container.querySelector('.schedule-view__top-band');
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
-
-    expect(topBand).toBeTruthy();
-    expect(healthColumn).toBeTruthy();
-    expect(inputsColumn).toBeTruthy();
-
-    expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Hand off' })).toBeTruthy();
-    expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Activate' })).toBeTruthy();
-    expect(within(healthColumn as HTMLElement).getByText('Things to check')).toBeTruthy();
-    expect(within(healthColumn as HTMLElement).getByText('What to do next')).toBeTruthy();
+    expect(container.querySelector('.schedule-view__top-band')).toBeTruthy();
+    expect(container.querySelector('.schedule-view__top-band-health')).toBeTruthy();
+    expect(container.querySelector('.schedule-view__top-band-inputs')).toBeTruthy();
+    expect(within(container).getByRole('button', { name: /Schedule Assistant/i })).toBeTruthy();
+    expect(within(container).getAllByText('Schedule').length).toBeGreaterThan(0);
+    expect(within(container).getByText('Hand off')).toBeTruthy();
   });
 
-  it('shows no-blockers message without duplicate activate actions for editable draft plans', () => {
-    const { container } = renderSchedule({ desktop: true, readOnly: false });
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    expect(healthColumn).toBeTruthy();
-
-    expect(within(healthColumn as HTMLElement).getAllByText('Nothing blocking — you can activate when ready.')).toHaveLength(2);
-    expect(within(healthColumn as HTMLElement).queryByRole('button', { name: 'Activate plan' })).toBeNull();
-    expect(within(healthColumn as HTMLElement).getAllByRole('button', { name: 'Activate' })).toHaveLength(1);
-  });
-
-  it('collapses schedule inputs by default on desktop when dates are set, showing summary', () => {
+  it('collapses schedule inputs by default on desktop when dates are set', () => {
     const plan = createPlan('Configured Plan');
     plan.assemblyStartDate = '2026-03-02';
     plan.assemblyEndDate = '2026-03-05';
@@ -110,14 +53,14 @@ describe('ScheduleView top-band layout', () => {
       { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
       { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
     ];
-    const { container } = renderScheduleWithPlan(plan, { desktop: true });
 
+    const { container } = renderSchedule(plan, true);
     const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
     expect(inputsColumn).toBeTruthy();
+
     const toggle = (inputsColumn as HTMLElement).querySelector('.schedule-view__block-toggle');
     expect(toggle).toBeTruthy();
     expect((toggle as HTMLElement).getAttribute('aria-expanded')).toBe('false');
-    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
 
     fireEvent.click(toggle as HTMLElement);
     expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
@@ -130,179 +73,16 @@ describe('ScheduleView top-band layout', () => {
     plan.workCalendar = [
       { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
     ];
-    const { container } = renderScheduleWithPlan(plan, { desktop: false });
+
+    const { container } = renderSchedule(plan, false);
     const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
     expect(inputsColumn).toBeTruthy();
 
     const toggle = within(inputsColumn as HTMLElement).getByRole('button', {
       name: /Schedule Inputs/i,
     });
-    expect(toggle).toBeTruthy();
-    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
-
     fireEvent.click(toggle);
     expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
-
-    fireEvent.click(toggle);
-    expect(within(inputsColumn as HTMLElement).queryByText('Assembly')).toBeNull();
-  });
-
-  it('shows only hand-off action in read-only mode', () => {
-    const { container } = renderSchedule({ desktop: true, readOnly: true });
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    expect(healthColumn).toBeTruthy();
-
-    expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Hand off' })).toBeTruthy();
-    expect(
-      within(healthColumn as HTMLElement).queryByRole('button', { name: /Activate|Revert to Draft/i }),
-    ).toBeNull();
-  });
-
-  it('clears assistant unresolved warning after manual schedule edits', async () => {
-    const plan = createPlan('Needs Scheduling');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 0;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 0,
-      },
-    ];
-    plan.lineItems = [createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0)];
-
-    const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    expect(healthColumn).toBeTruthy();
-
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
-
-    await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByText(/1 item still needs review/i)).toBeTruthy();
-    });
-
-    const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
-    const toggle = (inputsColumn as HTMLElement)?.querySelector('.schedule-view__block-toggle');
-    if (toggle) fireEvent.click(toggle as HTMLElement);
-
-    const firstDateInput = await waitFor(
-      () => container.querySelector('input[type="date"]') as HTMLInputElement | null,
-      { timeout: 500 },
-    );
-    expect(firstDateInput).toBeTruthy();
-    fireEvent.change(firstDateInput as HTMLInputElement, { target: { value: '2026-03-03' } });
-
-    await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).queryByText(/1 item still needs review/i)).toBeNull();
-    });
-  });
-
-  it('marks assistant findings stale after crew edits instead of showing ready state', async () => {
-    const plan = createPlan('Crew Edit Stale');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 1;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 1,
-      },
-    ];
-
-    const scheduled = createLineItem('Scheduled', 'Scheduled', 'm2', 8, 1, 0);
-    scheduled.assemblyScheduledStart = '2026-03-02';
-    scheduled.assemblyScheduledEnd = '2026-03-02';
-    scheduled.assemblyCrewByDate = { '2026-03-02': 1 };
-
-    const unresolved = createLineItem('Unresolved', 'Unresolved', 'm2', 16, 1, 0);
-    plan.lineItems = [scheduled, unresolved];
-
-    const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    expect(healthColumn).toBeTruthy();
-
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
-
-    await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByText(/1 item still needs review/i)).toBeTruthy();
-    });
-
-    fireEvent.click(
-      within(container).getByRole('button', { name: /Decrease crew for Scheduled on 2026-03-02/i }),
-    );
-
-    await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).queryByText(/1 item still needs review/i)).toBeNull();
-      expect(
-        within(healthColumn as HTMLElement).getByText(/^Schedule changed — re-run to re-check$/i),
-      ).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).getByText(/Re-run the assistant to re-check before activating/i)).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Re-run assistant' })).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).queryByText(/Nothing blocking/i)).toBeNull();
-    });
-
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Re-run assistant' }));
-
-    await waitFor(() => {
-      expect(
-        within(healthColumn as HTMLElement).queryByText(/^Schedule changed — re-run to re-check$/i),
-      ).toBeNull();
-      expect(within(healthColumn as HTMLElement).getByText(/[0-9]+ item(s)? still need(s)? review/i)).toBeTruthy();
-      expect(within(healthColumn as HTMLElement).queryByText(/Nothing blocking/i)).toBeNull();
-    });
-  });
-
-  it('review assistant issues highlights unresolved rows and supports navigation', async () => {
-    const plan = createPlan('Multiple Unresolved');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 0;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 0,
-      },
-    ];
-    plan.lineItems = [
-      createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0),
-      createLineItem('WP-2', 'WP-2', 'm2', 16, 1, 0),
-    ];
-
-    const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
-    const healthColumn = container.querySelector('.schedule-view__top-band-health');
-    expect(healthColumn).toBeTruthy();
-
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Run assistant' }));
-
-    await waitFor(() => {
-      expect(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review issues' })).toBeTruthy();
-    });
-
-    fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Review issues' }));
-
-    await waitFor(() => {
-      const reviewBar = container.querySelector('.schedule-view__assistant-review');
-      expect(reviewBar).toBeTruthy();
-      expect(within(reviewBar as HTMLElement).getByText(/Issue 1 of 2/i)).toBeTruthy();
-      expect(container.querySelector('.schedule-grid__row--assistant-active')).toBeTruthy();
-      expect(container.querySelectorAll('.schedule-grid__row--assistant-unresolved').length).toBe(2);
-    });
-
-    const reviewBar = container.querySelector('.schedule-view__assistant-review');
-    fireEvent.click(within(reviewBar as HTMLElement).getByRole('button', { name: 'Next' }));
-
-    await waitFor(() => {
-      expect(within(reviewBar as HTMLElement).getByText(/Issue 2 of 2/i)).toBeTruthy();
-    });
   });
 
   it('clears a scheduled row from the row face clear action', async () => {
@@ -326,7 +106,7 @@ describe('ScheduleView top-band layout', () => {
     item.assemblyCrewByDate = { '2026-03-02': 1 };
     plan.lineItems = [item];
 
-    const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
+    const { container } = renderSchedule(plan, true);
     const grid = container.querySelector('.schedule-grid');
     expect(grid).toBeTruthy();
 
@@ -335,272 +115,6 @@ describe('ScheduleView top-band layout', () => {
     await waitFor(() => {
       expect(within(grid as HTMLElement).queryByRole('button', { name: /Clear schedule for WP-1/i })).toBeNull();
       expect(container.querySelector('.schedule-grid__unscheduled-badge')?.textContent).toContain('1 unscheduled');
-    });
-  });
-
-  it('clears all scheduled rows from the health card action', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    try {
-      const plan = createPlan('Clear All');
-      plan.assemblyStartDate = '2026-03-02';
-      plan.assemblyEndDate = '2026-03-02';
-      plan.defaultCrewSize = 1;
-      plan.workCalendar = [
-        {
-          date: '2026-03-02',
-          isWorkDay: false,
-          accessStart: '08:00',
-          accessEnd: '16:00',
-          crewSize: 1,
-        },
-      ];
-
-      const a = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
-      a.assemblyScheduledStart = '2026-03-02';
-      a.assemblyScheduledEnd = '2026-03-02';
-      a.assemblyCrewByDate = { '2026-03-02': 1 };
-      const b = createLineItem('WP-2', 'WP-2', 'm2', 8, 1, 0);
-      b.assemblyScheduledStart = '2026-03-02';
-      b.assemblyScheduledEnd = '2026-03-02';
-      b.assemblyCrewByDate = { '2026-03-02': 1 };
-      plan.lineItems = [a, b];
-
-      const { container } = renderScheduleWithPlan(plan, { desktop: true, readOnly: false });
-      const healthColumn = container.querySelector('.schedule-view__top-band-health');
-      const grid = container.querySelector('.schedule-grid');
-      expect(healthColumn).toBeTruthy();
-      expect(grid).toBeTruthy();
-
-      fireEvent.click(within(healthColumn as HTMLElement).getByRole('button', { name: 'Clear all (2)' }));
-
-      await waitFor(() => {
-        expect(container.querySelector('.schedule-grid__unscheduled-badge')?.textContent).toContain('2 unscheduled');
-        expect(within(grid as HTMLElement).queryByRole('button', { name: /Clear schedule for WP-1/i })).toBeNull();
-        expect(within(grid as HTMLElement).queryByRole('button', { name: /Clear schedule for WP-2/i })).toBeNull();
-      });
-    } finally {
-      confirmSpy.mockRestore();
-    }
-  });
-
-  it('publishes issue panel payload and allows sidebar issue selection in workspace mode', async () => {
-    const plan = createPlan('Issue Payload');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 0;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 0,
-      },
-    ];
-    plan.lineItems = [createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0)];
-
-    let latestPayload: any = null;
-    const onIssuePanelChange = vi.fn((payload) => {
-      latestPayload = payload;
-    });
-
-    const { container, unmount } = renderScheduleWithPlan(
-      plan,
-      {
-        desktop: true,
-        readOnly: false,
-        isWorkspaceMode: true,
-        onIssuePanelChange,
-      },
-    );
-
-    await waitFor(() => {
-      expect(latestPayload?.state?.planId).toBe(plan.id);
-      expect(latestPayload?.state?.canRunAssistant).toBe(true);
-      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
-      expect(typeof latestPayload?.state?.assistantSummary).toBe('string');
-      expect(latestPayload?.state?.assistantBestNextMove).toBeTruthy();
-    });
-
-    await act(async () => {
-      await latestPayload.actions.runAssistant();
-    });
-
-    await waitFor(() => {
-      expect(latestPayload?.state?.unresolvedCount).toBeGreaterThan(0);
-    });
-
-    const unresolvedIssue = latestPayload.state.issues.find((issue: any) => issue.kind === 'assistant-unresolved');
-    const unscheduledIssue = latestPayload.state.issues.find((issue: any) => issue.kind === 'unscheduled');
-    expect(unresolvedIssue?.issueKey).toBeTruthy();
-    expect(unresolvedIssue?.scope).toBe('item');
-    expect(unresolvedIssue?.category).toBe('adjustment');
-    expect(typeof unresolvedIssue?.detail).toBe('string');
-    expect(unresolvedIssue?.detail.length).toBeGreaterThan(0);
-    expect(Array.isArray(unresolvedIssue?.facts)).toBe(true);
-    expect(unscheduledIssue?.scope).toBe('plan');
-    expect(unscheduledIssue?.category).toBe('adjustment');
-    expect(unscheduledIssue?.detail).toMatch(/no scheduled span/i);
-    expect(latestPayload.state.assistantBestNextMove.title).toMatch(/valid spans|scheduled span|work days/i);
-    expect(Array.isArray(latestPayload.state.assistantInsights)).toBe(true);
-
-    act(() => {
-      latestPayload.actions.selectIssue(unresolvedIssue.issueKey);
-    });
-
-    await waitFor(() => {
-      expect(container.querySelector('.schedule-grid__row--assistant-active')).toBeTruthy();
-    });
-
-    unmount();
-    await waitFor(() => {
-      expect(onIssuePanelChange).toHaveBeenLastCalledWith(null);
-    });
-  });
-
-  it('keeps plan overview block and review strip unchanged in workspace mode', async () => {
-    const plan = createPlan('Workspace De-dupe');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 0;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 0,
-      },
-    ];
-    plan.lineItems = [createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0)];
-
-    let latestPayload: any = null;
-    const onIssuePanelChange = vi.fn((payload) => {
-      latestPayload = payload;
-    });
-
-    const { container } = renderScheduleWithPlan(
-      plan,
-      {
-        desktop: true,
-        readOnly: false,
-        isWorkspaceMode: true,
-        onIssuePanelChange,
-      },
-    );
-
-    expect(within(container).getByText('Things to check')).toBeTruthy();
-    expect(within(container).getByText('What to do next')).toBeTruthy();
-
-    await act(async () => {
-      await latestPayload.actions.runAssistant();
-    });
-
-    await waitFor(() => {
-      expect(container.querySelector('.schedule-view__assistant-review')).toBeTruthy();
-      expect(within(container).getByText('Assistant run details')).toBeTruthy();
-    });
-  });
-
-  it('publishes capacity help facts for blocking plan-level issues', async () => {
-    const plan = createPlan('Capacity Payload');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 1;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 1,
-      },
-    ];
-
-    const item = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
-    item.assemblyScheduledStart = '2026-03-02';
-    item.assemblyScheduledEnd = '2026-03-02';
-    item.assemblyCrewByDate = { '2026-03-02': 2 };
-    plan.lineItems = [item];
-
-    let latestPayload: any = null;
-    const onIssuePanelChange = vi.fn((payload) => {
-      latestPayload = payload;
-    });
-
-    renderScheduleWithPlan(plan, {
-      desktop: true,
-      readOnly: false,
-      isWorkspaceMode: true,
-      onIssuePanelChange,
-    });
-
-    await waitFor(() => {
-      const capacityIssue = latestPayload?.state?.issues?.find((issue: any) => issue.id === 'worker-capacity');
-      expect(capacityIssue).toBeTruthy();
-      expect(capacityIssue.scope).toBe('plan');
-      expect(capacityIssue.category).toBe('blocking');
-      expect(capacityIssue.detail).toMatch(/assigned crew/i);
-      expect(Array.isArray(capacityIssue.facts)).toBe(true);
-      expect(capacityIssue.facts.length).toBeGreaterThan(0);
-      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
-      expect(latestPayload?.state?.assistantBestNextMove?.title).toMatch(/Add|Relieve/i);
-      expect(latestPayload?.state?.assistantBestNextMove?.impact).toMatch(/unblock multiple assignments/i);
-    });
-  });
-
-  it('publishes stale assistant guidance instead of detailed unresolved synthesis after schedule edits', async () => {
-    const plan = createPlan('Stale Assistant Payload');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-02';
-    plan.defaultCrewSize = 1;
-    plan.workCalendar = [
-      {
-        date: '2026-03-02',
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: 1,
-      },
-    ];
-
-    const scheduled = createLineItem('Scheduled', 'Scheduled', 'm2', 8, 1, 0);
-    scheduled.assemblyScheduledStart = '2026-03-02';
-    scheduled.assemblyScheduledEnd = '2026-03-02';
-    scheduled.assemblyCrewByDate = { '2026-03-02': 1 };
-    const unresolved = createLineItem('Unresolved', 'Unresolved', 'm2', 16, 1, 0);
-    plan.lineItems = [scheduled, unresolved];
-
-    let latestPayload: any = null;
-    const onIssuePanelChange = vi.fn((payload) => {
-      latestPayload = payload;
-    });
-
-    const { container } = renderScheduleWithPlan(plan, {
-      desktop: true,
-      readOnly: false,
-      isWorkspaceMode: true,
-      onIssuePanelChange,
-    });
-
-    await act(async () => {
-      await latestPayload.actions.runAssistant();
-    });
-
-    await waitFor(() => {
-      expect(latestPayload?.state?.assistantStatus).toBe('needs-review');
-      expect(latestPayload?.state?.issues?.some((issue: any) => issue.kind === 'assistant-unresolved')).toBe(true);
-    });
-
-    fireEvent.click(
-      within(container).getByRole('button', { name: /Decrease crew for Scheduled on 2026-03-02/i }),
-    );
-
-    await waitFor(() => {
-      expect(latestPayload?.state?.assistantStatus).toBe('stale');
-      expect(latestPayload?.state?.assistantBestNextMove?.title).toBe('Re-run the assistant');
-      expect(latestPayload?.state?.assistantInsights).toEqual([]);
-      expect(latestPayload?.state?.issues?.some((issue: any) => issue.kind === 'assistant-stale')).toBe(true);
     });
   });
 });

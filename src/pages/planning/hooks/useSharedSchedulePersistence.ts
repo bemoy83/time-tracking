@@ -10,7 +10,6 @@ export interface UseSharedSchedulePersistenceParams {
 export interface UseSharedSchedulePersistenceResult {
   effectivePlansById: Map<string, Plan>;
   applyPlanMutation: (planId: string, mutateFn: (plan: Plan) => Plan) => boolean;
-  flushAllPending: () => Promise<void>;
 }
 
 /**
@@ -87,19 +86,6 @@ export function useSharedSchedulePersistence({
     [autosaveDelay],
   );
 
-  const flushAllPending = useCallback(async () => {
-    const pending = new Map(pendingSavesByIdRef.current);
-    for (const timer of timersByPlanIdRef.current.values()) {
-      clearTimeout(timer);
-    }
-    timersByPlanIdRef.current.clear();
-    pendingSavesByIdRef.current.clear();
-
-    for (const plan of pending.values()) {
-      await onSavePlanRef.current(plan);
-    }
-  }, []);
-
   const applyPlanMutation = useCallback(
     (planId: string, mutateFn: (plan: Plan) => Plan): boolean => {
       const currentPlan = effectivePlansById.get(planId);
@@ -142,6 +128,5 @@ export function useSharedSchedulePersistence({
   return {
     effectivePlansById,
     applyPlanMutation,
-    flushAllPending,
   };
 }

@@ -82,8 +82,8 @@ export function ProgressView({
   );
 
   const progressKpiMetrics = useMemo(
-    () => getProgressViewMetrics(plan, tasks, timeEntries),
-    [plan, tasks, timeEntries],
+    () => getProgressViewMetrics(plan, tasks, timeEntries, { progress }),
+    [plan, progress, tasks, timeEntries],
   );
   const hadRiskRef = useRef(false);
 

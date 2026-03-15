@@ -70,12 +70,4 @@ describe('feature flags', () => {
     expect(getFeatureFlag('planningScheduleV1')).toBe(false);
   });
 
-  it('defaults wrapUpReviewV2 to true', () => {
-    expect(getFeatureFlag('wrapUpReviewV2')).toBe(true);
-  });
-
-  it('disables wrapUpReviewV2 when toggled off', () => {
-    setFeatureFlag('wrapUpReviewV2', false);
-    expect(getFeatureFlag('wrapUpReviewV2')).toBe(false);
-  });
 });

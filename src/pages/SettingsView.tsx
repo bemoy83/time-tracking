@@ -59,9 +59,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
-    ...(featureFlags.fieldPlanExecution || featureFlags.wrapUpReviewV2
-      ? [{ key: 'dataTransfer' as const, label: 'Data Transfer', helper: 'Import plan packages and progress reports' }]
-      : []),
+    { key: 'dataTransfer', label: 'Data Transfer', helper: 'Import plan packages and progress reports' },
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
 
@@ -145,17 +143,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
               checked={featureFlags.planningScheduleV1}
               onChange={(e) => {
                 handleToggleFeatureFlag('planningScheduleV1', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Wrap-up review v2</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.wrapUpReviewV2}
-              onChange={(e) => {
-                handleToggleFeatureFlag('wrapUpReviewV2', e.target.checked);
               }}
             />
           </label>

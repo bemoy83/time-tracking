@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import { PlanKpiRow } from './PlanKpiRow';
-import { getScheduleViewMetrics } from './workspace/workspace-metrics';
-import { type Plan, type PlanLineItem, activatePlan, revertToDraft, handOffPlan, getPhaseFields } from '../../lib/planning/plan-model';
+import { buildScheduleCoverageMetric, getScheduleViewMetrics } from './workspace/workspace-metrics';
+import { type Plan, type PlanLineItem, activatePlan, revertToDraft, handOffPlan, getPhaseFields, planTotalPersonHours } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
@@ -24,7 +24,6 @@ import {
 import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import {
   runAutoSchedule,
-  type AutoScheduleUnresolvedReason,
 } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
@@ -33,10 +32,10 @@ import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import { ScheduleAssistantPanel } from './schedule/ScheduleAssistantPanel';
 import { PlanSetupStepper } from './PlanSetupStepper';
 import type {
-  ScheduleIssueItem,
   ScheduleIssuePanelPayload,
 } from './workspace/schedule-issue-panel-types';
 import { synthesizeScheduleAssistant } from './workspace/schedule-assistant-synthesis';
+import { buildScheduleViewIssues } from './workspace/schedule-view-issues';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -51,8 +50,6 @@ interface ScheduleViewProps {
   onBack: () => void;
   showBackButton?: boolean;
   readOnly: boolean;
-  isWorkspaceMode?: boolean;
-  onIssuePanelChange?: (payload: ScheduleIssuePanelPayload | null) => void;
 }
 
 interface AmendmentState {
@@ -63,50 +60,12 @@ interface AmendmentState {
   anchor: HTMLElement;
 }
 
-type PlanningIssueSeverity = 'critical' | 'warning' | 'info';
-
-interface PlanningIssue {
-  id: string;
-  severity: PlanningIssueSeverity;
-  label: string;
-}
-
-function unresolvedReasonLabel(reason: AutoScheduleUnresolvedReason): string {
-  switch (reason) {
-    case 'missing_required_hours':
-      return 'Missing required hours';
-    case 'no_work_days':
-      return 'No work days';
-    case 'no_capacity_window':
-      return 'No capacity window';
-    default:
-      return 'Unresolved';
-  }
-}
-
-function formatShortDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function formatMinutesAsDuration(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
-
 export function ScheduleView({
   plan,
   onSave,
   onBack,
   showBackButton = true,
   readOnly,
-  isWorkspaceMode = false,
-  onIssuePanelChange,
 }: ScheduleViewProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
@@ -158,14 +117,20 @@ export function ScheduleView({
     mutatePlan,
   ]);
 
-  const scheduleKpiMetrics = useMemo(
-    () => getScheduleViewMetrics(currentPlan),
-    [currentPlan],
-  );
-
   const capacity = useMemo(
     () => computeCapacitySummary(currentPlan),
     [currentPlan],
+  );
+  const scheduleCoverage = useMemo(
+    () => buildScheduleCoverageMetric(
+      planTotalPersonHours(currentPlan),
+      capacity.totalRequiredPersonHours,
+    ),
+    [capacity.totalRequiredPersonHours, currentPlan.lineItems],
+  );
+  const scheduleKpiMetrics = useMemo(
+    () => getScheduleViewMetrics(currentPlan, { capacity, coverage: scheduleCoverage }),
+    [capacity, currentPlan, scheduleCoverage],
   );
   const conflictSuggestions = useMemo(
     () => generateConflictSuggestions(capacity),
@@ -477,199 +442,20 @@ export function ScheduleView({
     handleOpenScheduleGrid();
   }, [focusReviewIssueByKey, handleOpenScheduleGrid]);
 
-  const planningIssues: PlanningIssue[] = [];
-  if (capacity.overWorkerCapacityDayCount > 0) {
-    planningIssues.push({
-      id: 'worker-capacity',
-      severity: 'critical',
-      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
-    });
-  }
-  if (capacity.overAllocatedDayCount > 0) {
-    planningIssues.push({
-      id: 'over-allocated',
-      severity: 'critical',
-      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
-    });
-  }
-  if (schedulableUnscheduledCount > 0) {
-    planningIssues.push({
-      id: 'unscheduled',
-      severity: 'warning',
-      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
-    });
-  }
-  if (assistantReportStale) {
-    planningIssues.push({
-      id: 'assistant-stale',
-      severity: 'warning',
-      label: 'Schedule changed — re-run to re-check',
-    });
-  }
-  if (assistantUnresolvedCount > 0) {
-    const unresolvedCount = assistantUnresolvedCount;
-    planningIssues.push({
-      id: 'assistant-unresolved',
-      severity: 'warning',
-      label: `${unresolvedCount} ${unresolvedCount === 1 ? 'item' : 'items'} still ${unresolvedCount === 1 ? 'needs' : 'need'} review`,
-    });
-  }
-  if (capacity.overStaffedDayCount > 0) {
-    planningIssues.push({
-      id: 'over-staffed',
-      severity: 'info',
-      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed`,
-    });
-  }
-
-  const panelIssues = useMemo<ScheduleIssueItem[]>(() => {
-    const issues: ScheduleIssueItem[] = [];
-
-    if (capacity.overWorkerCapacityDayCount > 0) {
-      issues.push({
-        id: 'worker-capacity',
-        kind: 'capacity',
-        severity: 'critical',
-        assistantPriority: 10,
-        impact: 'Solving the constrained day first is likely to unblock multiple assignments at once.',
-        sharedConstraintKey: 'plan:capacity',
-        label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
-        scope: 'plan',
-        category: 'blocking',
-        detail: 'Some scheduled days require more person-hours than the assigned crew can physically deliver.',
-        facts: conflictSuggestions.workerCapacitySuggestions
-          .slice(0, 2)
-          .map((suggestion) => suggestion.message),
-      });
-    }
-
-    if (capacity.overAllocatedDayCount > 0) {
-      issues.push({
-        id: 'over-allocated',
-        kind: 'capacity',
-        severity: 'critical',
-        assistantPriority: 15,
-        impact: 'Relieving the most overloaded day should create immediate placement room for the assistant.',
-        sharedConstraintKey: 'plan:capacity',
-        label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
-        scope: 'plan',
-        category: 'blocking',
-        detail: 'Assigned work currently exceeds the available crew capacity on some scheduled days.',
-        facts: [
-          ...conflictSuggestions.crewSuggestions
-            .slice(0, 1)
-            .map((suggestion) => `Add ${suggestion.additionalCrew} crew on ${formatShortDate(suggestion.date)}.`),
-          ...conflictSuggestions.overtimeSuggestions
-            .slice(0, 1)
-            .map((suggestion) => `Extend ${formatShortDate(suggestion.date)} by ${formatMinutesAsDuration(suggestion.extendMinutes)}.`),
-        ],
-      });
-    }
-
-    if (schedulableUnscheduledCount > 0) {
-      issues.push({
-        id: 'unscheduled',
-        kind: 'unscheduled',
-        severity: 'warning',
-        assistantPriority: 30,
-        impact: 'Giving these rows valid spans lets the assistant place and optimize the remaining work.',
-        label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
-        scope: 'plan',
-        category: 'adjustment',
-        detail: 'These rows still have no scheduled span, so the work has nowhere to be placed in the grid yet.',
-        facts: [
-          `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'row is' : 'rows are'} still missing scheduled dates.`,
-        ],
-      });
-    }
-
-    if (assistantReportStale) {
-      issues.push({
-        id: 'assistant-stale',
-        kind: 'assistant-stale',
-        severity: 'warning',
-        assistantPriority: 0,
-        label: 'Schedule changed — re-run to re-check',
-        scope: 'plan',
-        category: 'blocking',
-        detail: 'Assistant findings are out of date because the schedule changed after the last run.',
-      });
-    }
-
-    if (!assistantReportStale) {
-      for (const issue of assistantReviewIssues) {
-        const missingHours = Math.max(0, issue.requiredPH - issue.assignedPH);
-        const detail =
-          issue.reason === 'missing_required_hours'
-            ? `${missingHours.toFixed(1)}h missing of ${issue.requiredPH.toFixed(1)}h required for ${issue.phase}.`
-            : issue.reason === 'no_work_days'
-              ? `The current ${issue.phase} window contains no work days the assistant can use.`
-              : `The current ${issue.phase} window has no remaining crew capacity the assistant can use.`;
-        const facts: string[] = [];
-        if (issue.reason === 'missing_required_hours') {
-          facts.push(`${issue.assignedPH.toFixed(1)}h currently scheduled of ${issue.requiredPH.toFixed(1)}h needed.`);
-        }
-        if (issue.phase != null) {
-          facts.push(`${issue.lineItemTitle} is blocked in ${issue.phase}.`);
-        }
-        issues.push({
-          id: `assistant-unresolved-${issue.key}`,
-          kind: 'assistant-unresolved',
-          severity: 'warning',
-          assistantPriority:
-            issue.reason === 'no_work_days'
-              ? 40
-              : issue.reason === 'no_capacity_window'
-                ? 45
-                : 50,
-          impact:
-            issue.reason === 'no_work_days'
-              ? 'Opening work days in this window would give the assistant a place to schedule the row.'
-              : issue.reason === 'no_capacity_window'
-                ? 'Finding capacity in this window may unblock this row without changing its dates.'
-                : `${missingHours.toFixed(1)}h still need placement for this row.`,
-          sharedConstraintKey: `reason:${issue.reason}:${issue.phase}`,
-          label: `${issue.lineItemTitle} · ${issue.phase} · ${unresolvedReasonLabel(issue.reason)}`,
-          scope: 'item',
-          category: 'adjustment',
-          detail,
-          facts: facts.slice(0, 2),
-          lineItemId: issue.lineItemId,
-          phase: issue.phase,
-          issueKey: issue.key,
-          unresolvedReason: issue.reason,
-          requiredPH: issue.requiredPH,
-          assignedPH: issue.assignedPH,
-        });
-      }
-    }
-
-    if (capacity.overStaffedDayCount > 0) {
-      issues.push({
-        id: 'overstaffed',
-        kind: 'overstaffed',
-        severity: 'info',
-        assistantPriority: 90,
-        impact: 'This is an optimization opportunity rather than a blocker.',
-        label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day may be' : 'days may be'} overstaffed`,
-        scope: 'plan',
-        category: 'optimization',
-        detail: 'Some days appear to carry more crew than the planned work currently needs.',
-        facts: [`${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day has' : 'days have'} spare crew capacity.`],
-      });
-    }
-
-    return issues;
-  }, [
+  const { planningIssues, panelIssues } = useMemo(() => buildScheduleViewIssues({
+    capacity,
+    conflictSuggestions,
+    schedulableUnscheduledCount,
+    assistantReportStale,
+    assistantUnresolvedCount,
+    assistantReviewIssues,
+  }), [
+    capacity,
+    conflictSuggestions,
+    schedulableUnscheduledCount,
     assistantReportStale,
     assistantReviewIssues,
-    conflictSuggestions.crewSuggestions,
-    conflictSuggestions.overtimeSuggestions,
-    conflictSuggestions.workerCapacitySuggestions,
-    capacity.overAllocatedDayCount,
-    capacity.overStaffedDayCount,
-    capacity.overWorkerCapacityDayCount,
-    schedulableUnscheduledCount,
+    assistantUnresolvedCount,
   ]);
 
   const assistantSynthesis = useMemo(
@@ -724,19 +510,6 @@ export function ScheduleView({
     handleClearAllSchedules,
     handleOpenWorkCalendar,
   ]);
-
-  useEffect(() => {
-    if (onIssuePanelChange == null) return;
-    if (!isWorkspaceMode) {
-      onIssuePanelChange(null);
-      return;
-    }
-    onIssuePanelChange(issuePanelPayload);
-  }, [isWorkspaceMode, issuePanelPayload, onIssuePanelChange]);
-
-  useEffect(() => () => {
-    onIssuePanelChange?.(null);
-  }, [onIssuePanelChange]);
 
   const criticalIssueCount = planningIssues.filter((issue) => issue.severity === 'critical').length;
   const warningIssueCount = planningIssues.filter((issue) => issue.severity === 'warning').length;

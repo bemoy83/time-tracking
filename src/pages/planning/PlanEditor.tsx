@@ -117,7 +117,19 @@ export function PlanEditor({
   );
   const summaryRange = workCalendarRange ?? primaryRange;
 
-  const suggestions = generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan);
+  const suggestions = useMemo(
+    () => generatePlanSuggestions(currentPlan.lineItems, kpis, currentPlan),
+    [
+      currentPlan.lineItems,
+      currentPlan.workCalendar,
+      currentPlan.defaultCrewSize,
+      currentPlan.assemblyStartDate,
+      currentPlan.assemblyEndDate,
+      currentPlan.dismantleStartDate,
+      currentPlan.dismantleEndDate,
+      kpis,
+    ],
+  );
   const suggestionsByLineItemId = useMemo(
     () => new Map(suggestions.items.map((item) => [item.lineItemId, item])),
     [suggestions.items],

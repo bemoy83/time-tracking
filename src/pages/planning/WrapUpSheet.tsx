@@ -1,14 +1,10 @@
 import { useRef } from 'react';
 import { ActionSheet } from '../../components/ActionSheet';
 import type { Plan } from '../../lib/planning/plan-model';
-import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS, BUILD_PHASES } from '../../lib/types';
-import { useWrapUpSheetModel } from './hooks/useWrapUpSheetModel';
-import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
-import { getFeatureFlag } from '../../lib/flags/feature-flags';
-import { LoadingBlock } from '../../components/LoadingBlock';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { WrapUpReviewContent } from './WrapUpReviewContent';
+import { useWrapUpSheetModelV2 } from './hooks/useWrapUpSheetModelV2';
 
 interface WrapUpSheetProps {
   isOpen: boolean;
@@ -19,12 +15,6 @@ interface WrapUpSheetProps {
   onCompleted: (updatedPlan: Plan, success: boolean) => void | Promise<void>;
 }
 
-function toRateLabel(rate: number | null, task: Task): string {
-  if (rate == null || task.workUnit == null) return 'No measurable productivity yet';
-  const unit = WORK_UNIT_LABELS[task.workUnit] ?? task.workUnit;
-  return `${rate.toFixed(1)} ${unit}/person-hr`;
-}
-
 export function WrapUpSheet({
   isOpen,
   plan,
@@ -33,377 +23,26 @@ export function WrapUpSheet({
   onClose,
   onCompleted,
 }: WrapUpSheetProps) {
-  const wrapUpV2Enabled = getFeatureFlag('wrapUpReviewV2');
   const { workTypes } = useWorkTypeStore();
   const validationBlockRef = useRef<HTMLDivElement>(null);
-
-  const model = useWrapUpSheetModel({
-    isOpen: isOpen && !wrapUpV2Enabled,
+  const model = useWrapUpSheetModelV2({
+    isOpen,
     plan,
     tasks,
     timeEntriesByTask,
     onClose,
     onCompleted,
   });
-
-  const modelV2 = useWrapUpSheetModelV2({
-    isOpen: isOpen && wrapUpV2Enabled,
-    plan,
-    tasks,
-    timeEntriesByTask,
-    onClose,
-    onCompleted,
-  });
-
-  if (!wrapUpV2Enabled) {
-    return (
-      <ActionSheet isOpen={isOpen} onClose={onClose} title="Wrap Up Review">
-        {model.projectTasks.length === 0 ? (
-          <p className="wrap-up-sheet__empty">No project tasks found for this plan.</p>
-        ) : (
-          <div className="wrap-up-sheet">
-            {model.groups.map((group) => (
-              <section key={group.id} className="wrap-up-sheet__group">
-                <h3 className="wrap-up-sheet__group-title">{group.title}</h3>
-                <div className="wrap-up-sheet__list">
-                  {group.tasks.map((task) => {
-                    const selected = model.selectedTaskIds.has(task.id);
-                    const rate = model.rateByTaskId.get(task.id) ?? null;
-                    const isOutlier = model.outlierTaskIds.has(task.id);
-                    return (
-                      <label key={task.id} className="wrap-up-sheet__row">
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() => model.toggleSelected(task.id)}
-                          disabled={model.isSubmitting}
-                        />
-                        <span className="wrap-up-sheet__row-content">
-                          <span className="wrap-up-sheet__row-title">
-                            {task.title}
-                            {isOutlier && <span className="wrap-up-sheet__outlier">Outlier</span>}
-                          </span>
-                          <span className="wrap-up-sheet__row-meta">{toRateLabel(rate, task)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-
-        {model.submitError && (
-          <p className="wrap-up-sheet__error" role="alert">
-            {model.submitError}
-          </p>
-        )}
-
-        <div className="action-sheet__actions">
-          <div className="action-sheet__actions-right">
-            <button type="button" className="btn btn--secondary btn--lg" onClick={onClose} disabled={model.isSubmitting}>
-              Cancel
-            </button>
-            {!model.reviewReady && (
-              <button
-                type="button"
-                className="btn btn--secondary btn--lg"
-                onClick={() => model.runWrapUp('save-review-only')}
-                disabled={model.isSubmitting}
-              >
-                Save Review Only
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn btn--primary btn--lg"
-              onClick={() => model.runWrapUp('archive-and-complete')}
-              disabled={model.isSubmitting || model.projectTasks.length === 0}
-            >
-              Archive and Complete
-            </button>
-          </div>
-        </div>
-      </ActionSheet>
-    );
-  }
 
   return (
-    <ActionSheet isOpen={isOpen} onClose={onClose} title="Wrap Up Review v2">
-      {modelV2.isLoadingProjection && (
-        <LoadingBlock message="Loading execution return data…" />
-      )}
-
-      {!modelV2.isLoadingProjection && modelV2.projectionLoadError && (
-        <p className="wrap-up-sheet__error wrap-up-sheet__error--block" role="alert">
-          {modelV2.projectionLoadError}. Try closing and reopening the wrap-up sheet.
-        </p>
-      )}
-
-      {!modelV2.isLoadingProjection && !modelV2.projection && !modelV2.projectionLoadError && (
-        <p className="wrap-up-sheet__empty">No execution data available for this plan.</p>
-      )}
-
-      {!modelV2.isLoadingProjection && modelV2.projection && (
-        <div className="wrap-up-sheet wrap-up-sheet--v2">
-          <section className="wrap-up-sheet__meta-block">
-            <p className="wrap-up-sheet__row-meta">
-              Execution return imported: {modelV2.projection.importedAt ? new Date(modelV2.projection.importedAt).toLocaleString() : 'Not imported'}
-            </p>
-            <p className="wrap-up-sheet__row-meta">
-              Session closed: {modelV2.projection.closedAt ? new Date(modelV2.projection.closedAt).toLocaleString() : 'Unknown'}
-            </p>
-          </section>
-
-          <section className="wrap-up-sheet__group">
-            <h3 className="wrap-up-sheet__group-title">Line Item Review</h3>
-            <div className="wrap-up-sheet__list wrap-up-sheet__list--v2">
-              {modelV2.projection.lineItems.map((item) => {
-                const decision = modelV2.lineItemDecisions.get(item.lineItem.id);
-                if (!decision) return null;
-
-                const hasError = modelV2.lineItemIdsWithErrors.has(item.lineItem.id);
-                const activePhases = BUILD_PHASES.filter((p) => isPhaseActive(item.lineItem, p));
-                const phaseLabels = activePhases.map((p) => BUILD_PHASE_LABELS[p]).join(', ');
-
-                return (
-                  <article key={item.lineItem.id} className={`wrap-up-sheet__card-v2${hasError ? ' wrap-up-sheet__card-v2--error' : ''}`}>
-                    <div className="wrap-up-sheet__card-header">
-                      <div>
-                        <h4 className="wrap-up-sheet__row-title">{item.lineItem.title}</h4>
-                        <p className="wrap-up-sheet__row-meta">
-                          Work type: {item.lineItem.workTypeTitle} · {WORK_UNIT_LABELS[item.lineItem.workUnit] ?? item.lineItem.workUnit} · {phaseLabels}
-                        </p>
-                        <p className="wrap-up-sheet__row-meta">
-                          Status: {decision.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
-                        </p>
-                        {activePhases.map((phase) => {
-                          const pf = getPhaseFields(item.lineItem, phase);
-                          if (!pf.scheduledStart && !pf.scheduledEnd) return null;
-                          return (
-                            <p key={phase} className="wrap-up-sheet__row-meta">
-                              {BUILD_PHASE_LABELS[phase]} scheduled: {pf.scheduledStart ?? '\u2014'} → {pf.scheduledEnd ?? pf.scheduledStart ?? '\u2014'}
-                              {pf.originalScheduledStart || pf.originalScheduledEnd
-                                ? ` (original ${pf.originalScheduledStart ?? '\u2014'} → ${pf.originalScheduledEnd ?? pf.originalScheduledStart ?? '\u2014'})`
-                                : ''}
-                            </p>
-                          );
-                        })}
-                        {item.lineItem.amendmentNote && (
-                          <p className="wrap-up-sheet__row-meta">
-                            Amendment: {item.lineItem.amendmentNote}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {(item.executorNote || item.blockReason || item.deferredNote) && (
-                      <div className="wrap-up-sheet__executor-notes">
-                        {item.executorNote && <p className="wrap-up-sheet__row-meta"><strong>Executor note:</strong> {item.executorNote}</p>}
-                        {item.blockReason && (
-                          <p className="wrap-up-sheet__row-meta">
-                            <strong>Block:</strong> {item.blockReason}{item.blockCategory ? ` (${item.blockCategory})` : ''}
-                          </p>
-                        )}
-                        {item.deferredNote && <p className="wrap-up-sheet__row-meta"><strong>Deferred:</strong> {item.deferredNote}</p>}
-                      </div>
-                    )}
-
-                    <label className="wrap-up-sheet__decision-row">
-                      <input
-                        type="checkbox"
-                        checked={decision.includeInKpi}
-                        onChange={(e) => modelV2.setLineItemIncludeInKpi(item.lineItem.id, e.target.checked)}
-                      />
-                      <span>Include in KPI</span>
-                    </label>
-
-                    {decision.executionStatus === 'blocked' && (
-                      <div className="wrap-up-sheet__resolve-block">
-                        <span className="wrap-up-sheet__row-meta">Resolve block:</span>
-                        <div className="wrap-up-sheet__resolve-block-actions">
-                          <button
-                            type="button"
-                            className="btn btn--secondary btn--sm"
-                            onClick={() => modelV2.setLineItemExecutionStatus(item.lineItem.id, 'completed')}
-                          >
-                            Mark completed
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--secondary btn--sm"
-                            onClick={() => modelV2.setLineItemExecutionStatus(item.lineItem.id, 'deferred')}
-                          >
-                            Mark deferred
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {decision.executionStatus === 'deferred' && (
-                      <label className="wrap-up-sheet__decision-row">
-                        <input
-                          type="checkbox"
-                          checked={decision.deferredDispositionConfirmed}
-                          onChange={(e) => modelV2.setDeferredDispositionConfirmed(item.lineItem.id, e.target.checked)}
-                        />
-                        <span>Confirm "Not Delivered" disposition</span>
-                        {hasError && !decision.deferredDispositionConfirmed && (
-                          <span className="wrap-up-sheet__card-hint" role="status">Required to complete</span>
-                        )}
-                      </label>
-                    )}
-
-                    <label className="wrap-up-sheet__review-note">
-                      <span className="wrap-up-sheet__row-meta">Planner review note</span>
-                      <textarea
-                        className="input"
-                        rows={2}
-                        defaultValue={decision.reviewNote ?? ''}
-                        onBlur={(e) => modelV2.setLineItemReviewNote(item.lineItem.id, e.target.value)}
-                      />
-                    </label>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="wrap-up-sheet__group">
-            <h3 className="wrap-up-sheet__group-title">Unplanned Work</h3>
-            <p className="wrap-up-sheet__row-meta wrap-up-sheet__unplanned-note">
-              Unplanned tasks are not archived during wrap-up. KPI and work type settings are still applied.
-            </p>
-            <div className="wrap-up-sheet__list wrap-up-sheet__list--v2">
-              {modelV2.projection.unplanned.length === 0 && (
-                <p className="wrap-up-sheet__empty">No unplanned tasks found.</p>
-              )}
-              {modelV2.projection.unplanned.map((item) => {
-                const decision = modelV2.unplannedDecisions.get(item.taskId);
-                if (!decision) return null;
-                const hasUnplannedError = modelV2.unplannedTaskIdsWithErrors.has(item.taskId);
-
-                return (
-                  <article key={item.taskId} className={`wrap-up-sheet__card-v2${hasUnplannedError ? ' wrap-up-sheet__card-v2--error' : ''}`}>
-                    <h4 className="wrap-up-sheet__row-title">{item.title}</h4>
-                    <p className="wrap-up-sheet__row-meta">
-                      {item.personHours.toFixed(2)} person-hrs {item.isImportedOnly ? '· Imported-only' : ''}
-                    </p>
-
-                    <label className="wrap-up-sheet__decision-row">
-                      <input
-                        type="checkbox"
-                        checked={decision.includeInKpi}
-                        onChange={(e) => modelV2.setUnplannedIncludeInKpi(item.taskId, e.target.checked)}
-                        disabled={item.isImportedOnly && !decision.includeInKpi}
-                      />
-                      <span>Include in KPI</span>
-                      {hasUnplannedError && item.isImportedOnly && decision.includeInKpi && (
-                        <span className="wrap-up-sheet__card-hint" role="status">Imported-only cannot be in KPI</span>
-                      )}
-                    </label>
-
-                    <label className="wrap-up-sheet__review-note">
-                      <span className="wrap-up-sheet__row-meta">Assign work type</span>
-                      <select
-                        className="input"
-                        value={decision.assignedWorkTypeId ?? ''}
-                        onChange={(e) => modelV2.setUnplannedAssignedWorkType(item.taskId, e.target.value || null)}
-                        disabled={item.isImportedOnly}
-                      >
-                        <option value="">Unassigned</option>
-                        {workTypes
-                          .filter((workType) => workType.readOnly !== true)
-                          .map((workType) => (
-                            <option key={workType.id} value={workType.id}>
-                              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]}
-                            </option>
-                          ))}
-                      </select>
-                      {hasUnplannedError && decision.includeInKpi && (decision.assignedWorkTypeId == null || item.isImportedOnly) && (
-                        <span className="wrap-up-sheet__card-hint" role="status">
-                          {item.isImportedOnly ? 'Uncheck "Include in KPI" or assign work type' : 'Required when including in KPI'}
-                        </span>
-                      )}
-                    </label>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-      )}
-
-      <div
-        className={`action-sheet__actions wrap-up-sheet__actions-bar${modelV2.validationErrors.length > 0 ? ' action-sheet__actions--stacked' : ''}`}
-      >
-        {modelV2.validationErrors.length > 0 && (
-          <div ref={validationBlockRef} className="wrap-up-sheet__validation-block" role="alert">
-            <p className="wrap-up-sheet__validation-title">Complete wrap-up requires:</p>
-            <ul className="wrap-up-sheet__validation-list">
-              {modelV2.validationErrors.map((err, i) => (
-                <li key={i}>{err}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {modelV2.submitError && (
-          <p className="wrap-up-sheet__error wrap-up-sheet__error--block" role="alert">
-            {modelV2.submitError}
-          </p>
-        )}
-        <div className="action-sheet__actions-right">
-          <button type="button" className="btn btn--secondary btn--lg" onClick={onClose} disabled={modelV2.isSubmitting}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn--secondary btn--lg"
-            onClick={() => {
-              if (!modelV2.canSubmit) {
-                validationBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                return;
-              }
-              void modelV2.runWrapUp('save-review-only');
-            }}
-            disabled={modelV2.isSubmitting}
-          >
-            Save Review Only
-          </button>
-          <button
-            type="button"
-            className="btn btn--primary btn--lg"
-            onClick={() => {
-              if (!modelV2.canSubmit) {
-                validationBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                return;
-              }
-              void modelV2.runWrapUp('archive-and-complete');
-            }}
-            disabled={modelV2.isSubmitting || modelV2.isLoadingProjection || !modelV2.projection}
-            title={
-              !modelV2.projection
-                ? 'Execution data must load first'
-                : !modelV2.canSubmit && modelV2.validationErrors.length > 0
-                  ? modelV2.validationErrors.join('. ')
-                  : undefined
-            }
-            aria-describedby={
-              !modelV2.canSubmit && modelV2.validationErrors.length > 0
-                ? 'wrapup-validation-errors'
-                : undefined
-            }
-          >
-            Complete Wrap-up
-          </button>
-        </div>
-      </div>
-      {modelV2.validationErrors.length > 0 && (
-        <div id="wrapup-validation-errors" className="sr-only" aria-live="polite">
-          {modelV2.validationErrors.join('. ')}
-        </div>
-      )}
+    <ActionSheet isOpen={isOpen} onClose={onClose} title="Wrap Up Review">
+      <WrapUpReviewContent
+        model={model}
+        workTypes={workTypes}
+        onClose={onClose}
+        validationBlockRef={validationBlockRef}
+        layout="sheet"
+      />
     </ActionSheet>
   );
 }
