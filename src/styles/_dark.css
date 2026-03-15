@@ -188,13 +188,17 @@
 
   /* --- Shared Input --- */
   .input {
-    background: var(--surface-contained-hover);
-    border-color: var(--surface-elevated-border);
+    background: var(--surface-contained-inset);
+    border-color: transparent;
     color: var(--color-text);
   }
 
+  .input:hover {
+    border-color: var(--surface-border-hover);
+  }
+
   select.input {
-    background-color: var(--surface-contained-hover);
+    background-color: var(--surface-contained-inset);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right var(--space-md) center;
@@ -521,11 +525,11 @@
     border-right-color: var(--surface-base-border);
   }
 
-  /* --- Workspace tab scroll shadows --- */
+  /* --- Workspace tabs: match tab-content background (--surface-contained-inset) --- */
   .planning-workspace__tabs {
     border-bottom-color: var(--surface-base-border);
-    background-color: var(--surface-contained-bg);
-    --_scroll-shadow-color: var(--surface-contained-bg);
+    background-color: var(--surface-contained-inset);
+    --_scroll-shadow-color: var(--surface-contained-inset);
     background-image:
       linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / 24px 100% no-repeat local,
       linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,

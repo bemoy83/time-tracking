@@ -1000,8 +1000,10 @@
   .planning-workspace__tabs {
     background: var(--surface-contained-inset);
     border-bottom: none;
-    padding: 6px var(--space-md);
-    gap: 3px;
+    min-height: 36px;
+    padding: 7px var(--space-md);
+    gap: 4px;
+    align-items: center;
     /* Remove scroll shadow images; simple inset bg is enough */
     background-image: none;
     --_scroll-shadow-color: var(--surface-contained-inset);
@@ -1012,12 +1014,21 @@
       linear-gradient(to left, rgba(0,0,0,0.05), transparent) right / 24px 100% no-repeat scroll;
   }
 
-  /* Tab items — pill shape */
+  /* Tab items — slim pill (match status-badge proportions) */
   .planning-workspace__tab {
-    border-bottom: 3px solid transparent;
-    border-radius: var(--radius-full);
+    border: none;
+    border-bottom: none;
+    border-radius: 9999px;
     color: var(--color-text-muted);
-    padding: 7px 15px;
+    padding: 0 12px;
+    min-height: 22px;
+    line-height: 1;
+    font-size: var(--font-caption);
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
   }
 
   /* Active tab — white pill with shadow */
@@ -1025,7 +1036,6 @@
     background: var(--surface-contained-bg);
     box-shadow: var(--shadow-sm);
     color: var(--color-text);
-    border-bottom-color: transparent;
   }
 
   /* Context bar — no hard border; visual break comes from tab strip bg */

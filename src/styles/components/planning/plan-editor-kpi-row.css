@@ -5,7 +5,7 @@
 .planning-view__kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .planning-view__kpi-card {

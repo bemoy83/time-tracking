@@ -12,6 +12,15 @@ function formatShortDate(dateStr: string | null): string {
   return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function openDatePicker(e: React.MouseEvent | React.KeyboardEvent) {
+  const input = (e.currentTarget.parentElement?.querySelector('input[type="date"]') as HTMLInputElement | null);
+  try {
+    input?.showPicker?.();
+  } catch {
+    /* showPicker requires user gesture; fallback: input receives click if not disabled */
+  }
+}
+
 interface PlanScheduleInputsProps extends PhaseDateValues {
   eventStartDate: string | null;
   eventEndDate: string | null;
@@ -56,7 +65,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(assemblyStartDate)}</span>
                 </div>
                 <input
@@ -70,7 +93,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(assemblyEndDate)}</span>
                 </div>
                 <input
@@ -90,7 +127,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(dismantleStartDate)}</span>
                 </div>
                 <input
@@ -104,7 +155,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(dismantleEndDate)}</span>
                 </div>
                 <input
@@ -123,14 +188,16 @@ export function PlanScheduleInputs({
           <div className="planning-view__schedule-group-grid planning-view__schedule-group-grid--single">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">Crew size</span>
-              <input
-                className="input"
-                type="number"
-                min={0}
-                step={1}
-                value={defaultCrewSize ?? ''}
-                onChange={(event) => onDefaultCrewSizeChange(event.target.value)}
-              />
+              <div className="planning-view__schedule-value-wrap">
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={defaultCrewSize ?? ''}
+                  onChange={(event) => onDefaultCrewSizeChange(event.target.value)}
+                />
+              </div>
             </label>
           </div>
         </fieldset>
@@ -141,7 +208,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(eventStartDate)}</span>
                 </div>
                 <input
@@ -155,7 +236,21 @@ export function PlanScheduleInputs({
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
               <div className="planning-view__date-display-wrap">
-                <div className="planning-view__date-display" aria-hidden="true">
+                <div
+                  className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
+                  aria-hidden="true"
+                  onClick={!readOnly ? openDatePicker : undefined}
+                  onKeyDown={
+                    !readOnly
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            openDatePicker(e);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   <CalendarIcon /><span>{formatShortDate(eventEndDate)}</span>
                 </div>
                 <input

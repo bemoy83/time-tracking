@@ -20,6 +20,7 @@
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
   margin: 0;
+  text-align: left;
 }
 
 .planning-view__items {

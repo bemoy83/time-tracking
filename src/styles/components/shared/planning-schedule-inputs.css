@@ -104,13 +104,11 @@
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input .input {
-  border: 1px solid transparent;
   border-radius: var(--radius-md);
   min-height: 34px;
   padding: 0 10px;
   font-size: var(--font-small);
-  background: var(--color-bg);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  /* inherits background, border from global .input */
 }
 
 :is(.planning-view__sticky-summary, .schedule-view) .planning-view__schedule-input .input:focus-visible {
@@ -195,6 +193,7 @@
 /* Custom date display — visible label with icon + short date */
 .planning-workspace__editor-canvas .planning-view__date-display-wrap {
   position: relative;
+  overflow: visible; /* Let native date picker escape ancestor overflow */
 }
 
 .planning-workspace__editor-canvas .planning-view__date-display {
@@ -210,7 +209,15 @@
   color: var(--color-text);
   min-height: 34px;
   transition: border-color 0.15s ease;
-  pointer-events: none;
+  pointer-events: none; /* Non-interactive: clicks pass through to overlay input */
+}
+
+/* Interactive: click opens native picker via showPicker() — avoids opacity:0 click issues */
+.planning-workspace__editor-canvas .planning-view__date-display-wrap .planning-view__date-display--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  z-index: 1; /* Above overlay input so clicks hit display, not opacity:0 input */
 }
 
 .planning-workspace__editor-canvas .planning-view__date-display svg {
@@ -241,4 +248,30 @@
 
 .planning-workspace__editor-canvas .planning-view__date-display-wrap:hover .planning-view__date-display {
   border-color: var(--surface-border-hover);
+}
+
+/* Crew size: same token styling as date inputs */
+.planning-workspace__editor-canvas .planning-view__schedule-value-wrap {
+  position: relative;
+}
+
+.planning-workspace__editor-canvas .planning-view__schedule-value-wrap .input {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--font-label);
+  font-family: ui-monospace, monospace;
+  min-height: 34px;
+  /* inherits background, border, focus, hover from global .input */
+}
+
+/* Hide number input spinners for cleaner token look */
+.planning-workspace__editor-canvas .planning-view__schedule-value-wrap input[type="number"]::-webkit-inner-spin-button,
+.planning-workspace__editor-canvas .planning-view__schedule-value-wrap input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.planning-workspace__editor-canvas .planning-view__schedule-value-wrap input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

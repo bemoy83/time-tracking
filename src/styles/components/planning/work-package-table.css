@@ -145,6 +145,7 @@
   font-size: var(--font-caption);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  text-align: left;
 }
 
 .planning-view__wp-header-columns th {
@@ -152,10 +153,14 @@
   height: 36px;
   font-size: var(--font-caption);
   letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: left;
 }
 
 .planning-view__wp-group-heading {
   font-weight: 700;
+  text-transform: uppercase;
+  text-align: left;
 }
 
 .planning-view__wp-group-heading--phase {
@@ -203,6 +208,11 @@
   display: inline-flex;
   align-items: center;
   min-height: 18px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: left;
 }
 
 .planning-view__wp-batch-apply {
@@ -384,6 +394,7 @@
   color: var(--color-text-muted);
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  text-align: left;
 }
 
 .planning-view__wp-add-bar-label--sr-only {
@@ -657,4 +668,97 @@
   .planning-view__wp-actions {
     transition: none;
   }
+}
+
+/* ─── Editor canvas: work packages redesign ─────────────────── */
+
+/* 1. Summary badges — plain colored text, no pill background */
+.planning-workspace__editor-canvas .planning-view__items-summary span {
+  background: none;
+  padding: 0;
+  min-height: unset;
+}
+
+/* 2. Thead pinned to card surface — stays distinct from zebra rows */
+.planning-workspace__editor-canvas .planning-view__work-package-table thead th {
+  background: var(--surface-contained-bg);
+}
+
+/* Work Package group: round top-right so it meets Assembly’s rounded top-left */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-header-group th:first-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+/* 3. Alternating body rows — zebra instead of cell-level phase tinting */
+.planning-workspace__editor-canvas .planning-view__work-package-table tbody tr:nth-child(odd) .planning-view__wp-cell {
+  background: var(--surface-contained-bg);
+}
+.planning-workspace__editor-canvas .planning-view__work-package-table tbody tr:nth-child(even) .planning-view__wp-cell {
+  background: var(--surface-contained-inset);
+}
+.planning-workspace__editor-canvas .planning-view__wp-row:focus-within .planning-view__wp-cell {
+  background: var(--surface-contained-hover) !important;
+}
+
+/* 4. Neutralize per-cell phase bg on body rows — let zebra carry the rhythm */
+.planning-workspace__editor-canvas .planning-view__wp-phase-cell--assembly,
+.planning-workspace__editor-canvas .planning-view__wp-phase-cell--dismantle {
+  background: inherit;
+}
+.planning-workspace__editor-canvas .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--assembly,
+.planning-workspace__editor-canvas .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--dismantle {
+  background: var(--surface-contained-hover) !important;
+}
+
+/* 5. Phase group header — colored chip on spanning label, column headers with muted phase text */
+/* Assembly chip — rounded top corners; left border = separator from base columns */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly {
+  background: var(--wp-phase-assembly-header-bg);
+  color: var(--phase-assembly-fg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-left: 4px solid var(--surface-contained-bg);
+}
+/* Dismantle chip */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle {
+  background: var(--wp-phase-dismantle-header-bg);
+  color: var(--phase-dismantle-fg);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-left: 4px solid var(--surface-contained-bg);
+}
+/* Column sub-headers: chip bg continues + muted phase color */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly {
+  background: var(--wp-phase-assembly-header-bg);
+  color: color-mix(in srgb, var(--phase-assembly-fg) 60%, var(--color-text-muted));
+}
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--dismantle {
+  background: var(--wp-phase-dismantle-header-bg);
+  color: color-mix(in srgb, var(--phase-dismantle-fg) 60%, var(--color-text-muted));
+}
+/* Assembly phase columns: align green tint with Assembly group heading (it has 4px left border) */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--assembly {
+  border-left: none;
+  padding-left: calc(var(--space-sm) + 4px);
+  background: linear-gradient(to right, var(--surface-contained-bg) 0 4px, var(--wp-phase-assembly-header-bg) 4px 100%);
+}
+
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--dismantle {
+  border-left: 4px solid var(--surface-contained-bg);
+}
+
+/* 6. Remove row dividers — zebra makes them redundant */
+.planning-workspace__editor-canvas .planning-view__work-package-table tbody tr:not(:last-child) .planning-view__wp-cell::after {
+  display: none;
+}
+
+/* 7. Row typography — title weight, type muted, numbers mono */
+.planning-workspace__editor-canvas .planning-view__wp-row td:first-child .planning-view__wp-static {
+  font-weight: 500;
+}
+.planning-workspace__editor-canvas .planning-view__wp-row td:nth-child(2) .planning-view__wp-static {
+  color: var(--color-text-muted);
+  font-size: var(--font-label);
+}
+.planning-workspace__editor-canvas .planning-view__wp-number-cell .planning-view__wp-static {
+  font-family: ui-monospace, monospace;
+  font-size: var(--font-label);
 }

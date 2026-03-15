@@ -22,17 +22,15 @@
 }
 
 .planning-view__field .input,
-.planning-view__rationale .input,
-.planning-view__sticky-summary .planning-view__schedule-input .input {
-  background: var(--surface-contained-hover);
+.planning-view__rationale .input {
+  background: var(--surface-contained-inset);
   border-color: transparent;
   color: var(--color-text);
 }
 
 .planning-view__field .input:hover,
 select.planning-view__work-type-select:hover,
-.planning-view__rationale .input:hover,
-.planning-view__sticky-summary .planning-view__schedule-input .input:hover {
+.planning-view__rationale .input:hover {
   border-color: var(--surface-border-hover);
 }
 

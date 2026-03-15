@@ -3,7 +3,7 @@
    ============================================================ */
 
 .planning-view--editor {
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .planning-view--editor .planning-view__sticky-summary {
@@ -443,7 +443,7 @@
 
 @media (min-width: 1200px) {
   .planning-workspace__editor-canvas .planning-view--editor {
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
   .planning-workspace__editor-canvas .planning-view--editor .planning-view__sticky-summary {
@@ -454,8 +454,8 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
-    gap: var(--space-md);
-    padding-bottom: var(--space-md);
+    gap: var(--space-sm);
+    padding-bottom: var(--space-sm);
   }
 
   .planning-workspace__editor-canvas .planning-view__overview-block {
@@ -585,7 +585,7 @@
 
   /* Tighter section gap */
   .planning-workspace__editor-canvas .planning-view--editor {
-    gap: 12px;
+    gap: var(--space-sm);
   }
 
   /* Overview card padding */
