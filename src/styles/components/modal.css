@@ -91,17 +91,56 @@
   border: 1px solid var(--surface-elevated-border);
   border-radius: 12px;
   padding: var(--space-lg);
-  max-width: 360px;
+  max-width: 420px;
   width: 100%;
   box-shadow: var(--surface-elevated-shadow);
   animation: slideUp 0.2s ease-out;
 }
 
+.project-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
 .project-picker__title {
   font-size: var(--font-large);
   font-weight: 700;
-  margin: 0 0 var(--space-md);
+  margin: 0;
   color: var(--color-text);
+}
+
+.project-picker__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.project-picker__close:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.project-picker__close-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.project-picker__search {
+  width: 100%;
+  margin-bottom: var(--space-sm);
 }
 
 .project-picker__list {
@@ -142,6 +181,37 @@
   background: var(--surface-brand-subtle-hover);
 }
 
+.project-picker__option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-picker__divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-sm) 0 2px;
+}
+
+.project-picker__option--none {
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  margin-top: 2px;
+}
+
+.project-picker__option--none:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+/* Larger dots inside picker for better color legibility */
+.project-picker__list .color-swatch--md {
+  width: 16px;
+  height: 16px;
+}
+
 .project-picker__add-btn {
   display: flex;
   align-items: center;
@@ -149,7 +219,7 @@
   width: 100%;
   min-height: var(--touch-min);
   padding: var(--space-sm) var(--space-md);
-  background: none;
+  background: var(--surface-contained-inset);
   border: 1px dashed var(--color-border);
   border-radius: 8px;
   font-size: var(--font-body);

@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTaskStore, createProject } from '../lib/stores/task-store';
 import { useModalFocusTrap } from '../lib/hooks/useModalFocusTrap';
-import { PlusIcon } from './icons';
+import { PlusIcon, XIcon } from './icons';
 import { ProjectColorDot } from './ProjectColorDot';
 import { InlineCreateForm } from './InlineCreateForm';
 
@@ -27,8 +27,17 @@ export function ProjectPicker({
   const { projects } = useTaskStore();
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
   const dialogRef = useModalFocusTrap(isOpen, onClose);
   const createInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus search input on open
+  useEffect(() => {
+    if (isOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   // Focus create input when shown
   useEffect(() => {
@@ -42,8 +51,13 @@ export function ProjectPicker({
     if (!isOpen) {
       setShowCreateInput(false);
       setNewName('');
+      setSearch('');
     }
   }, [isOpen]);
+
+  const filteredProjects = search.trim()
+    ? projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
+    : projects;
 
   if (!isOpen) return null;
 
@@ -75,24 +89,33 @@ export function ProjectPicker({
         className="project-picker"
         role="dialog"
         aria-modal="true"
-        aria-label="Select project"
+        aria-label="Link to project"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="project-picker__title">Project</h2>
+        <div className="project-picker__header">
+          <h2 className="project-picker__title">Link to Project</h2>
+          <button
+            className="project-picker__close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <XIcon className="project-picker__close-icon" />
+          </button>
+        </div>
+
+        <input
+          ref={searchInputRef}
+          className="input project-picker__search"
+          type="search"
+          placeholder="Search projects…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search projects"
+        />
 
         <div className="project-picker__list">
-          {/* None option */}
-          <button
-            className={`project-picker__option ${
-              currentProjectId === null ? 'project-picker__option--selected' : ''
-            }`}
-            onClick={handleSelectNone}
-          >
-            None
-          </button>
-
           {/* Existing projects */}
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <button
               key={project.id}
               className={`project-picker__option ${
@@ -103,7 +126,7 @@ export function ProjectPicker({
               onClick={() => handleSelectProject(project.id)}
             >
               <ProjectColorDot color={project.color} />
-              {project.name}
+              <span className="project-picker__option-name">{project.name}</span>
             </button>
           ))}
         </div>
@@ -128,6 +151,19 @@ export function ProjectPicker({
             <PlusIcon className="project-picker__icon" />
             Create project
           </button>
+        )}
+
+        {/* None / unlink option — separated at bottom, hidden during search */}
+        {currentProjectId !== null && !search.trim() && (
+          <>
+            <hr className="project-picker__divider" />
+            <button
+              className="project-picker__option project-picker__option--none"
+              onClick={handleSelectNone}
+            >
+              Remove project link
+            </button>
+          </>
         )}
       </div>
     </div>

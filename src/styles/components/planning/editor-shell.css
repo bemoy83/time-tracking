@@ -206,17 +206,28 @@
 
 .planning-view__identity-control {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-xs);
   width: 100%;
 }
 
 .planning-view__identity-input {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   font-size: var(--font-large);
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.planning-view__identity-or-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.planning-view__identity-or-divider {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 .planning-view__identity-input::placeholder {
@@ -227,21 +238,25 @@
 .planning-view__identity-picker-trigger {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: var(--touch-min);
+  gap: 6px;
   min-height: var(--touch-min);
-  padding: 0;
-  border: 1.5px solid transparent;
+  padding: 0 var(--space-sm);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--surface-contained-inset);
+  background: transparent;
   color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
   transition: border-color 0.15s, background-color 0.15s, color 0.15s;
 }
 
 .planning-view__identity-picker-trigger:hover {
-  border-color: var(--surface-border-hover);
-  color: var(--color-text);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--surface-brand-subtle);
 }
 
 .planning-view__identity-picker-trigger:focus-visible {
@@ -250,8 +265,13 @@
 }
 
 .planning-view__identity-picker-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.planning-view__identity-picker-label {
+  line-height: 1;
 }
 
 .planning-view__identity-readonly {
@@ -318,6 +338,18 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
+}
+
+.planning-view__project-edit-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.3;
+  transition: opacity 0.15s;
+}
+
+.planning-view__project-button--selected:hover .planning-view__project-edit-icon {
+  opacity: 0.8;
 }
 
 .planning-view__workflow-footer {

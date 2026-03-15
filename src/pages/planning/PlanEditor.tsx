@@ -30,7 +30,7 @@ import {
   generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../components/icons';
+import { ChevronLeftIcon, FolderIcon, PencilIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -396,9 +396,11 @@ export function PlanEditor({
                     className="planning-view__project-button planning-view__project-button--selected"
                     onClick={() => setShowProjectPicker(true)}
                     style={{ color: selectedProjectColor! }}
+                    aria-label={`Change project: ${selectedProject.name}`}
                   >
                     <span className="planning-view__project-selected">
                       <span>{selectedProject.name}</span>
+                      <PencilIcon className="planning-view__project-edit-icon" />
                     </span>
                   </button>
                 </div>
@@ -423,14 +425,18 @@ export function PlanEditor({
                     aria-invalid={identityError ? 'true' : 'false'}
                     aria-describedby={identityError ? `${titleInputId}-error` : undefined}
                   />
-                  <button
-                    type="button"
-                    className="planning-view__identity-picker-trigger"
-                    onClick={() => setShowProjectPicker(true)}
-                    aria-label="Browse projects"
-                  >
-                    <ChevronRightIcon className="planning-view__identity-picker-icon" />
-                  </button>
+                  <div className="planning-view__identity-or-row">
+                    <span className="planning-view__identity-or-divider" aria-hidden="true">or</span>
+                    <button
+                      type="button"
+                      className="planning-view__identity-picker-trigger"
+                      onClick={() => setShowProjectPicker(true)}
+                      aria-label="Link to a project"
+                    >
+                      <FolderIcon className="planning-view__identity-picker-icon" />
+                      <span className="planning-view__identity-picker-label">Link project</span>
+                    </button>
+                  </div>
                 </div>
               )}
               {identityError && (
