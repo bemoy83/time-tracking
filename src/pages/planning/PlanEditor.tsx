@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import {
   WORK_UNIT_LABELS,
-  getProjectDisplayColor,
   type Project,
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
@@ -159,7 +158,6 @@ export function PlanEditor({
   const selectedProject = currentPlan.projectId
     ? projects.find((project) => project.id === currentPlan.projectId) ?? null
     : null;
-  const selectedProjectColor = selectedProject ? getProjectDisplayColor(selectedProject.color) : null;
   const planDisplayName = getPlanDisplayName(currentPlan, selectedProject);
   const hasIdentity =
     selectedProject != null
