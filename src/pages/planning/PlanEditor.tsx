@@ -30,7 +30,8 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { getContrastColor } from '../../lib/utils/contrast';
-import { ChevronIcon, ChevronLeftIcon, WarningIcon } from '../../components/icons';
+import { CheckIcon, ChevronIcon, ChevronLeftIcon, WarningIcon } from '../../components/icons';
+import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { StatusBadge } from '../../components/StatusBadge';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -419,8 +420,18 @@ export function PlanEditor({
     ? getActionDisabledReason(primaryAction)
     : null;
 
+  const utilizationPct = availableScope && availableScope.totalAvailable > 0
+    ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
+    : null;
+
   return (
     <div className="planning-view planning-view--editor">
+      <PlanEditorKpiRow
+        packageCount={currentPlan.lineItems.length}
+        personHours={totalPersonHours}
+        utilizationPct={utilizationPct}
+        workDays={availableScope?.workDayCount ?? null}
+      />
       {showBackButton && (
         <header className="planning-view__editor-header">
           <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
@@ -462,7 +473,7 @@ export function PlanEditor({
                     disabled={readOnly || isLocked}
                     style={
                       selectedProject
-                        ? { backgroundColor: selectedProjectColor!, color: getContrastColor(selectedProjectColor!) }
+                        ? { color: selectedProjectColor! }
                         : undefined
                     }
                   >
@@ -495,10 +506,15 @@ export function PlanEditor({
                       key={item.id}
                       className={`planning-view__overview-readiness-item${item.complete ? ' planning-view__overview-readiness-item--complete' : ' planning-view__overview-readiness-item--pending'}`}
                     >
-                      <span className="planning-view__overview-readiness-label">{item.label}</span>
-                      <span className="planning-view__overview-readiness-state">
-                        {item.complete ? 'Ready' : item.pendingLabel}
+                      <span className="planning-view__overview-readiness-lhs">
+                        <span className="planning-view__overview-readiness-dot" aria-hidden="true">
+                          {item.complete ? <CheckIcon /> : <WarningIcon />}
+                        </span>
+                        <span className="planning-view__overview-readiness-label">{item.label}</span>
                       </span>
+                      {!item.complete && (
+                        <span className="planning-view__overview-readiness-state">{item.pendingLabel}</span>
+                      )}
                     </li>
                   ))}
                 </ul>

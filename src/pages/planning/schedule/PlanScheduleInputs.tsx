@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
+import { CalendarIcon } from '../../../components/icons';
 import {
   type PhaseDateField,
   type PhaseDateValues,
   getScheduleDateValidationErrors,
 } from './schedule-date-ui';
+
+function formatShortDate(dateStr: string | null): string {
+  if (!dateStr) return '—';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 interface PlanScheduleInputsProps extends PhaseDateValues {
   eventStartDate: string | null;
@@ -48,21 +55,31 @@ export function PlanScheduleInputs({
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
-              <input
-                className="input"
-                type="date"
-                value={assemblyStartDate ?? ''}
-                onChange={(event) => onPhaseDateChange('assemblyStartDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(assemblyStartDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={assemblyStartDate ?? ''}
+                  onChange={(event) => onPhaseDateChange('assemblyStartDate', event.target.value)}
+                />
+              </div>
             </label>
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
-              <input
-                className="input"
-                type="date"
-                value={assemblyEndDate ?? ''}
-                onChange={(event) => onPhaseDateChange('assemblyEndDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(assemblyEndDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={assemblyEndDate ?? ''}
+                  onChange={(event) => onPhaseDateChange('assemblyEndDate', event.target.value)}
+                />
+              </div>
             </label>
           </div>
         </fieldset>
@@ -72,21 +89,31 @@ export function PlanScheduleInputs({
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
-              <input
-                className="input"
-                type="date"
-                value={dismantleStartDate ?? ''}
-                onChange={(event) => onPhaseDateChange('dismantleStartDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(dismantleStartDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={dismantleStartDate ?? ''}
+                  onChange={(event) => onPhaseDateChange('dismantleStartDate', event.target.value)}
+                />
+              </div>
             </label>
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
-              <input
-                className="input"
-                type="date"
-                value={dismantleEndDate ?? ''}
-                onChange={(event) => onPhaseDateChange('dismantleEndDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(dismantleEndDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={dismantleEndDate ?? ''}
+                  onChange={(event) => onPhaseDateChange('dismantleEndDate', event.target.value)}
+                />
+              </div>
             </label>
           </div>
         </fieldset>
@@ -113,21 +140,31 @@ export function PlanScheduleInputs({
           <div className="planning-view__schedule-group-grid">
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">From</span>
-              <input
-                className="input"
-                type="date"
-                value={eventStartDate ?? ''}
-                onChange={(event) => onEventDateChange('eventStartDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(eventStartDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={eventStartDate ?? ''}
+                  onChange={(event) => onEventDateChange('eventStartDate', event.target.value)}
+                />
+              </div>
             </label>
             <label className="planning-view__schedule-input">
               <span className="planning-view__schedule-label-text">To</span>
-              <input
-                className="input"
-                type="date"
-                value={eventEndDate ?? ''}
-                onChange={(event) => onEventDateChange('eventEndDate', event.target.value)}
-              />
+              <div className="planning-view__date-display-wrap">
+                <div className="planning-view__date-display" aria-hidden="true">
+                  <CalendarIcon /><span>{formatShortDate(eventEndDate)}</span>
+                </div>
+                <input
+                  className="input"
+                  type="date"
+                  value={eventEndDate ?? ''}
+                  onChange={(event) => onEventDateChange('eventEndDate', event.target.value)}
+                />
+              </div>
             </label>
           </div>
         </fieldset>

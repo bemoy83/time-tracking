@@ -242,6 +242,16 @@ export function ExportIcon({ className, 'aria-hidden': ariaHidden = true }: Icon
   );
 }
 
+/** Calendar icon — used for date input display. */
+export function CalendarIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={className} aria-hidden={ariaHidden}>
+      <rect x="1" y="2" width="10" height="9" rx="1.5" />
+      <path d="M1 5h10M4 1v2M8 1v2" />
+    </svg>
+  );
+}
+
 /** Calculator icon — used for suggest estimate/workers actions. */
 export function CalculatorIcon({ className, 'aria-hidden': ariaHidden = true }: IconProps) {
   return (

@@ -1,6 +1,7 @@
 @import './planning/base.css';
 @import './planning/plan-list.css';
 @import './planning/editor-shell.css';
+@import './planning/plan-editor-kpi-row.css';
 @import './shared/planning-schedule-inputs.css';
 @import './planning/summary.css';
 @import './planning/phase-pills.css';

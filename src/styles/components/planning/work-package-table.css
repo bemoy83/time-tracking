@@ -401,7 +401,6 @@
 .planning-view__wp-add-bar .input {
   min-height: 34px;
   padding: 0 10px;
-  border-radius: var(--radius-md);
   border: 1px solid transparent;
   font-size: var(--font-small);
   background: var(--color-bg);

@@ -1,0 +1,60 @@
+/* ============================================================
+   Plan Editor — KPI stat row
+   ============================================================ */
+
+.planning-view__kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.planning-view__kpi-card {
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planning-view__kpi-card-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-contained-inset);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.planning-view__kpi-card-ico svg {
+  width: 14px;
+  height: 14px;
+}
+
+.planning-view__kpi-card-val {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.planning-view__kpi-card-lbl {
+  font-size: var(--font-caption);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* Collapse to 2×2 on narrower widths */
+@media (max-width: 640px) {
+  .planning-view__kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

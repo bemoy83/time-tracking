@@ -951,3 +951,97 @@
 .planning-workspace__plan-context-phase-dot--dismantle {
   background: var(--phase-dismantle-fg);
 }
+
+/* ============================================================
+   Desktop floating-card layout (≥768px)
+   Mobile layout is fully preserved below this breakpoint.
+   ============================================================ */
+
+@media (min-width: 768px) {
+  /* Canvas — add padding/gap so cards float, subtle radial gradient for depth */
+  .planning-workspace {
+    padding: 12px;
+    gap: 10px;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255, 255, 255, 0.35) 0%, transparent 100%),
+      radial-gradient(ellipse 60% 50% at 80% 90%, rgba(0, 0, 0, 0.03) 0%, transparent 100%),
+      var(--surface-base-bg);
+  }
+
+  /* Sidebar — floating white card */
+  .planning-workspace__sidebar {
+    border-right: none;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+    overflow: clip;
+  }
+
+  /* Main pane — floating white card */
+  .planning-workspace__main {
+    background: var(--surface-contained-bg);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+    overflow: clip;
+  }
+
+  /* Tab content — soft inset canvas so section cards float above it */
+  .planning-workspace__tab-content {
+    background: var(--surface-contained-inset);
+  }
+
+  /* Section cards — lift off the soft canvas */
+  .planning-workspace .planning-view__overview-block,
+  .planning-workspace .schedule-view__block--compact,
+  .planning-workspace .planning-view__wp-surface {
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Tab strip — gray pill container */
+  .planning-workspace__tabs {
+    background: var(--surface-contained-inset);
+    border-bottom: none;
+    padding: 6px var(--space-md);
+    gap: 3px;
+    /* Remove scroll shadow images; simple inset bg is enough */
+    background-image: none;
+    --_scroll-shadow-color: var(--surface-contained-inset);
+    background-image:
+      linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,
+      linear-gradient(to right, rgba(0,0,0,0.05), transparent) left / 24px 100% no-repeat scroll,
+      linear-gradient(to left, rgba(0,0,0,0.05), transparent) right / 24px 100% no-repeat scroll;
+  }
+
+  /* Tab items — pill shape */
+  .planning-workspace__tab {
+    border-bottom: 3px solid transparent;
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    padding: 7px 15px;
+  }
+
+  /* Active tab — white pill with shadow */
+  .planning-workspace__tab--active {
+    background: var(--surface-contained-bg);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text);
+    border-bottom-color: transparent;
+  }
+
+  /* Context bar — no hard border; visual break comes from tab strip bg */
+  .planning-workspace__plan-context-bar {
+    border-bottom: none;
+  }
+
+  /* "New Plan" button — dark fill CTA */
+  .planning-sidebar__create-btn {
+    background: var(--color-text);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+  }
+
+  .planning-sidebar__create-btn:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+}

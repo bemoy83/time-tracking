@@ -522,3 +522,119 @@
     width: 100%;
   }
 }
+
+/* ─── Readiness dot indicators (global) ──────────────────────── */
+
+.planning-view__overview-readiness-lhs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.planning-view__overview-readiness-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.planning-view__overview-readiness-dot svg {
+  width: 9px;
+  height: 9px;
+}
+
+.planning-view__overview-readiness-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.planning-view__overview-readiness-item--complete .planning-view__overview-readiness-dot {
+  background: var(--state-success-bg-strong);
+  color: var(--state-success-fg);
+}
+
+.planning-view__overview-readiness-item--pending .planning-view__overview-readiness-dot {
+  background: var(--state-warning-bg-strong);
+  color: var(--state-warning-fg);
+}
+
+/* ─── Desktop refinements (≥768px) ─────────────────────────────── */
+@media (min-width: 768px) {
+  /* Sticky summary sits inside a white card — canvas bg must not show */
+  .planning-workspace__editor-canvas .planning-view__sticky-summary {
+    background: transparent;
+  }
+
+  /* Larger, tighter-tracked title heading */
+  .planning-workspace__editor-canvas .planning-view__title-input {
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* Hide "Plan Title" eyebrow label — self-evident at this size */
+  .planning-workspace__editor-canvas
+    .planning-view__overview-field--title
+    .planning-view__overview-label {
+    display: none;
+  }
+
+  /* Tighter section gap */
+  .planning-workspace__editor-canvas .planning-view--editor {
+    gap: 12px;
+  }
+
+  /* Overview card padding */
+  .planning-workspace__editor-canvas .planning-view__overview-block {
+    padding: 20px;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-signals {
+    gap: 18px;
+  }
+
+  /* Flat status row — remove inset card bg */
+  .planning-workspace__editor-canvas .planning-view__overview-status-card {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    gap: 4px;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__overview-status-helper {
+    display: none;
+  }
+
+  /* Flat readiness — remove inset card bg */
+  .planning-workspace__editor-canvas .planning-view__overview-readiness {
+    background: none;
+    padding: 0;
+    gap: 9px;
+  }
+
+  /* Project button — link style */
+  .planning-workspace__editor-canvas .planning-view__project-button {
+    background: none !important;
+    border: none;
+    padding: 0;
+    min-height: unset;
+    font-size: var(--font-small);
+    font-weight: 500;
+    gap: 4px;
+    filter: none !important;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__project-button--empty {
+    color: var(--color-primary);
+    opacity: 1;
+  }
+
+  .planning-workspace__editor-canvas .planning-view__project-button:hover:not(:disabled) {
+    background: none !important;
+    text-decoration: underline;
+  }
+}

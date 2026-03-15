@@ -181,3 +181,64 @@
   background: var(--state-danger-bg);
   color: var(--state-danger-fg-strong);
 }
+
+/* ─── Editor canvas: schedule inputs reskin (≥768px) ────────── */
+.planning-workspace__editor-canvas .schedule-view__block-helper {
+  display: none;
+}
+
+.planning-workspace__editor-canvas .planning-view--editor .schedule-view__block-title {
+  font-size: var(--font-caption);
+  letter-spacing: 0.09em;
+}
+
+/* Custom date display — visible label with icon + short date */
+.planning-workspace__editor-canvas .planning-view__date-display-wrap {
+  position: relative;
+}
+
+.planning-workspace__editor-canvas .planning-view__date-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: var(--surface-contained-inset);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid transparent;
+  font-size: var(--font-label);
+  font-family: ui-monospace, monospace;
+  color: var(--color-text);
+  min-height: 34px;
+  transition: border-color 0.15s ease;
+  pointer-events: none;
+}
+
+.planning-workspace__editor-canvas .planning-view__date-display svg {
+  width: 11px;
+  height: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* Native input: invisible overlay — preserves click-to-open-picker */
+.planning-workspace__editor-canvas .planning-view__date-display-wrap .input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  border-color: transparent;
+}
+
+/* Show focus ring on display when native input is focused */
+.planning-workspace__editor-canvas .planning-view__date-display-wrap:has(.input:focus) .planning-view__date-display,
+.planning-workspace__editor-canvas .planning-view__date-display-wrap:has(.input:focus-visible) .planning-view__date-display {
+  border-color: var(--color-primary);
+}
+
+.planning-workspace__editor-canvas .planning-view__date-display-wrap:hover .planning-view__date-display {
+  border-color: var(--surface-border-hover);
+}

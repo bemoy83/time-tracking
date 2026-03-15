@@ -45,7 +45,7 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   font-size: 18px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
