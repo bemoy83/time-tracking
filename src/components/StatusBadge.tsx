@@ -8,6 +8,7 @@ import type { PlanStatus } from '../lib/planning/plan-model';
 
 export type StatusBadgeVariant =
   | PlanStatus
+  | 'ready' /* display mapping for plan status 'active' */
   | 'review-ready'
   | 'reviewed'
   | 'high'

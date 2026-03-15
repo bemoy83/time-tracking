@@ -456,7 +456,7 @@ function WorkspaceMainPane({
       {/* Plan context bar */}
       <div className="planning-workspace__plan-context-bar">
         <span className="planning-workspace__plan-context-title">{planDisplayName}</span>
-        <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status} />
+        <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status === 'active' ? 'ready' : plan.status} />
         {(assemblyDateRange || dismantleDateRange) && (
           <span className="planning-workspace__plan-context-phases">
             {assemblyDateRange && (

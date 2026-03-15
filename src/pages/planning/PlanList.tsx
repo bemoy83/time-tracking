@@ -384,6 +384,7 @@ interface PlanListItemProps {
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
   active: 'Active',
+  ready: 'Ready',
   'review-ready': 'Review ready',
   reviewed: 'Reviewed',
 };
@@ -405,7 +406,7 @@ function getPlanDateRange(plan: Plan): string | null {
 function PlanStatusIcon({
   variant,
 }: {
-  variant: 'draft' | 'active' | 'review-ready' | 'reviewed';
+  variant: 'draft' | 'ready' | 'review-ready' | 'reviewed';
 }) {
   const title = STATUS_LABELS[variant] ?? variant;
   const iconClass = `planning-view__status-icon planning-view__status-icon--${variant}`;
@@ -414,7 +415,7 @@ function PlanStatusIcon({
       ? CompleteCircleIcon
       : variant === 'review-ready'
         ? CheckIcon
-        : variant === 'active'
+        : variant === 'ready'
           ? PlayIcon
           : PencilIcon;
   return (
@@ -467,7 +468,9 @@ function PlanListItem({
     ? 'reviewed'
     : wrapUpEligible
       ? 'review-ready'
-      : plan.status;
+      : plan.status === 'active'
+        ? 'ready'
+        : plan.status;
 
   const rowClassName = [
     'planning-view__row',
@@ -498,8 +501,8 @@ function PlanListItem({
                   ? 'reviewed'
                   : badgeVariant === 'review-ready'
                     ? 'review-ready'
-                    : badgeVariant === 'active'
-                      ? 'active'
+                    : badgeVariant === 'ready'
+                      ? 'ready'
                       : 'draft'
               }
             />

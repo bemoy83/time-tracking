@@ -534,6 +534,12 @@
     .planning-workspace {
       background: var(--surface-base-bg);
     }
+
+    /* "New Plan" button — use primary brand in dark mode (var(--color-text) is light, would make white-on-light invisible) */
+    .planning-sidebar__create-btn {
+      background: var(--color-primary);
+      color: var(--state-on-solid);
+    }
   }
 
   /* --- Planning workspace dividers — barely visible in dark mode --- */

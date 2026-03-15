@@ -23,7 +23,9 @@
   color: white;
 }
 
-.status-badge--active {
+/* Plan status 'active' displayed as "ready" in UI */
+.status-badge--active,
+.status-badge--ready {
   background: var(--color-ready);
   color: white;
 }

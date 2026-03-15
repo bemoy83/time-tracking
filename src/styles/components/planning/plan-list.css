@@ -177,6 +177,7 @@
 }
 
 .planning-view__status-icon--active,
+.planning-view__status-icon--ready,
 .planning-view__status-icon--reviewed {
   background: var(--color-ready);
 }
@@ -286,6 +287,12 @@
 
 .planning-view__list--compact .planning-view__row--status-draft .planning-view__item::before {
   background: var(--color-amber);
+}
+
+/* Space between accent bar (3px) and title/dates */
+.planning-view__list--compact .planning-view__row--status-active .planning-view__item-btn,
+.planning-view__list--compact .planning-view__row--status-draft .planning-view__item-btn {
+  padding-inline-start: calc(3px + var(--space-md));
 }
 
 /* --- Compact sidebar: date range below plan title --- */

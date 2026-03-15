@@ -426,6 +426,7 @@
   /* Staggered entrance — health → inputs → calendar → grid */
   .planning-workspace__editor-canvas .schedule-view__top-band-health {
     animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+    padding: var(--space-md);
   }
 
   .planning-workspace__editor-canvas .schedule-view__top-band-inputs .schedule-view__block {
@@ -435,6 +436,12 @@
   .planning-workspace__editor-canvas .schedule-view > div:not(.schedule-view__top-band) > .schedule-view__block,
   .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block {
     animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+  }
+
+  /* Match Work Calendar (and sibling blocks) padding to Schedule Inputs compact block for aligned headers */
+  .planning-workspace__editor-canvas .schedule-view > div:not(.schedule-view__top-band) > .schedule-view__block,
+  .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block {
+    padding: var(--space-md);
   }
 
   /* Block titles — align with PlanEditor section headers (caption + uppercase + letter-spacing) */
