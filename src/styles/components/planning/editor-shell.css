@@ -204,74 +204,75 @@
   gap: var(--space-xs);
 }
 
-.planning-view__identity-control {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  width: 100%;
-}
-
-.planning-view__identity-input {
-  width: 100%;
-  font-size: var(--font-large);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.planning-view__identity-or-row {
+/* Unified identity trigger — empty state (brand CTA) */
+.planning-view__identity-trigger {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-}
-
-.planning-view__identity-or-divider {
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.planning-view__identity-input::placeholder {
-  color: var(--color-text-muted);
-  font-weight: 600;
-}
-
-.planning-view__identity-picker-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--touch-min);
-  padding: 0 var(--space-sm);
-  border: 1.5px solid var(--color-border);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1.5px solid var(--color-primary);
   border-radius: var(--radius-lg);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-small);
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
-}
-
-.planning-view__identity-picker-trigger:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
   background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+  font-size: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.planning-view__identity-picker-trigger:focus-visible {
+.planning-view__identity-trigger:hover {
+  background: var(--surface-brand-subtle-hover);
+}
+
+.planning-view__identity-trigger:focus-visible {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* Has-value state — looks like the project pill */
+.planning-view__identity-trigger--has-value {
+  border-color: var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  color: var(--color-text);
+  font-weight: 500;
+  min-height: 32px;
+  padding: var(--space-xs) var(--space-sm);
+  width: auto;
+  border-radius: var(--radius-xl);
+}
+
+.planning-view__identity-trigger--has-value:hover {
+  background: var(--surface-contained-hover);
+}
+
+.planning-view__identity-trigger-value {
+  flex: 1;
+  font-size: var(--font-large);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.planning-view__identity-trigger-placeholder {
+  flex: 1;
+  line-height: 1;
 }
 
 .planning-view__identity-picker-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
-.planning-view__identity-picker-label {
-  line-height: 1;
+.planning-view__identity-picker-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.6;
 }
 
 .planning-view__identity-readonly {

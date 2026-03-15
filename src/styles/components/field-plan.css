@@ -556,13 +556,13 @@
 }
 
 .field-plan-row__phase-badge--assembly {
-  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
-  color: var(--color-primary);
+  background: var(--wp-phase-assembly-header-bg);
+  color: var(--phase-assembly-fg);
 }
 
 .field-plan-row__phase-badge--dismantle {
-  background: color-mix(in srgb, #f59e0b 15%, transparent);
-  color: #b45309;
+  background: var(--wp-phase-dismantle-header-bg);
+  color: var(--phase-dismantle-fg);
 }
 
 .field-plan-row__chip {

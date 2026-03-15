@@ -246,3 +246,31 @@
 .project-picker__create-form .input {
   flex: 1;
 }
+
+.project-picker__standalone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+}
+
+.project-picker__standalone-label {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.project-picker__standalone-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.project-picker__standalone-input {
+  flex: 1;
+}
+
+.project-picker__standalone-btn {
+  flex-shrink: 0;
+}

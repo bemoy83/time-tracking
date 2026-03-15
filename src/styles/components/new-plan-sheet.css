@@ -1,0 +1,195 @@
+/* ============================================================
+   New Plan Sheet + Modal
+   ============================================================ */
+
+/* ── Centered modal (desktop workspace) ─────────────────────── */
+
+.new-plan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--surface-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: 300;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.new-plan-modal {
+  background: var(--surface-elevated-bg);
+  border: 1px solid var(--surface-elevated-border);
+  border-radius: 12px;
+  padding: var(--space-lg);
+  max-width: 440px;
+  width: 100%;
+  box-shadow: var(--surface-elevated-shadow);
+  animation: slideUp 0.2s ease-out;
+}
+
+.new-plan-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.new-plan-modal__title {
+  font-size: var(--font-large);
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.new-plan-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.new-plan-modal__close:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.new-plan-modal__close-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* In modal context, restore normal input border-radius (not pill) */
+.new-plan-modal .input {
+  border-radius: var(--radius-lg);
+}
+
+.new-plan-sheet__segments {
+  margin-bottom: var(--space-md);
+}
+
+.new-plan-sheet__pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.new-plan-sheet__helper {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.new-plan-sheet__search {
+  width: 100%;
+}
+
+.new-plan-sheet__project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.new-plan-sheet__empty {
+  margin: 0;
+  padding: var(--space-md) 0;
+  font-size: var(--font-body);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.new-plan-sheet__project-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-body);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.new-plan-sheet__project-option:hover {
+  background: var(--surface-contained-hover);
+}
+
+.new-plan-sheet__project-option--selected {
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--surface-brand-subtle);
+}
+
+.new-plan-sheet__project-option--selected:hover {
+  background: var(--surface-brand-subtle-hover);
+}
+
+.new-plan-sheet__project-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Larger color dots for readability */
+.new-plan-sheet__project-list .color-swatch--md {
+  width: 16px;
+  height: 16px;
+}
+
+.new-plan-sheet__add-project-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-contained-inset);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: var(--font-body);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.new-plan-sheet__add-project-btn:hover {
+  background: var(--surface-brand-subtle);
+  border-color: var(--color-primary);
+}
+
+.new-plan-sheet__add-project-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.new-plan-sheet__create-form {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.new-plan-sheet__create-form .input {
+  flex: 1;
+}
+
+.new-plan-sheet__name-input {
+  width: 100%;
+}

@@ -46,6 +46,7 @@ export function usePlanningWorkspaceState({
 
   // --- Shared selection state ---
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
+  const [showNewPlanSheet, setShowNewPlanSheet] = useState(false);
   const [selectedPlanIdsForSharedScheduleState, setSelectedPlanIdsForSharedScheduleState] = useState<Set<string>>(
     () => new Set(session?.selectedPlanIdsForSharedSchedule ?? []),
   );
@@ -160,8 +161,16 @@ export function usePlanningWorkspaceState({
     }
   }, [mode]);
 
-  const handleCreatePlan = useCallback(async () => {
-    const plan = await data.handleCreatePlan();
+  const handleRequestNewPlan = useCallback(() => {
+    setShowNewPlanSheet(true);
+  }, []);
+
+  const handleCreatePlan = useCallback(async (init?: {
+    title?: string;
+    projectId?: string | null;
+  }) => {
+    const plan = await data.handleCreatePlan(init);
+    setShowNewPlanSheet(false);
     setActivePlan(plan);
     if (mode === 'stack') {
       setSubView('edit');
@@ -273,6 +282,11 @@ export function usePlanningWorkspaceState({
     // Sidebar preferences
     archiveExpanded,
     toggleArchiveExpanded,
+
+    // New plan sheet
+    showNewPlanSheet,
+    setShowNewPlanSheet,
+    handleRequestNewPlan,
 
     // Actions
     handleCreatePlan,

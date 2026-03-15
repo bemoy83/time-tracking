@@ -16,6 +16,8 @@ interface ProjectPickerProps {
   onClose: () => void;
   onSelect: (projectId: string | null) => void;
   currentProjectId: string | null;
+  currentTitle?: string;
+  onSetTitle?: (title: string) => void;
 }
 
 export function ProjectPicker({
@@ -23,11 +25,14 @@ export function ProjectPicker({
   onClose,
   onSelect,
   currentProjectId,
+  currentTitle,
+  onSetTitle,
 }: ProjectPickerProps) {
   const { projects } = useTaskStore();
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newName, setNewName] = useState('');
   const [search, setSearch] = useState('');
+  const [standaloneTitle, setStandaloneTitle] = useState('');
   const dialogRef = useModalFocusTrap(isOpen, onClose);
   const createInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +50,13 @@ export function ProjectPicker({
       createInputRef.current?.focus();
     }
   }, [showCreateInput]);
+
+  // Sync standalone title when opened
+  useEffect(() => {
+    if (isOpen) {
+      setStandaloneTitle(currentTitle ?? '');
+    }
+  }, [isOpen]);
 
   // Reset state when closed
   useEffect(() => {
@@ -93,7 +105,7 @@ export function ProjectPicker({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="project-picker__header">
-          <h2 className="project-picker__title">Link to Project</h2>
+          <h2 className="project-picker__title">Name This Plan</h2>
           <button
             className="project-picker__close"
             onClick={onClose}
@@ -151,6 +163,42 @@ export function ProjectPicker({
             <PlusIcon className="project-picker__icon" />
             Create project
           </button>
+        )}
+
+        {/* Standalone event name — secondary option */}
+        {onSetTitle && !search.trim() && (
+          <>
+            <hr className="project-picker__divider" />
+            <div className="project-picker__standalone">
+              <span className="project-picker__standalone-label">or name this event</span>
+              <div className="project-picker__standalone-row">
+                <input
+                  className="input project-picker__standalone-input"
+                  placeholder="Event name…"
+                  value={standaloneTitle}
+                  onChange={(e) => setStandaloneTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && standaloneTitle.trim()) {
+                      onSetTitle(standaloneTitle.trim());
+                      onClose();
+                    }
+                  }}
+                />
+                <button
+                  className="btn project-picker__standalone-btn"
+                  disabled={!standaloneTitle.trim()}
+                  onClick={() => {
+                    if (standaloneTitle.trim()) {
+                      onSetTitle(standaloneTitle.trim());
+                      onClose();
+                    }
+                  }}
+                >
+                  Set
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {/* None / unlink option — separated at bottom, hidden during search */}

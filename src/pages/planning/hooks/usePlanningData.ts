@@ -11,7 +11,14 @@ import { createPlan, type Plan } from '../../../lib/planning/plan-model';
 import { computeWorkTypeKpis, type WorkTypeKpi } from '../../../lib/kpi';
 import { buildAttributedRollup } from '../../../lib/attributed-rollup';
 import { getOutlierHandlingMode } from '../../../lib/stores/kpi-settings';
-import { refreshTasks, useTaskStore } from '../../../lib/stores/task-store';
+import {
+  refreshTasks,
+  useTaskStore,
+  ensureProjectColorAssigned,
+  getProjectById,
+  hasProjectPhaseDates,
+} from '../../../lib/stores/task-store';
+import { applyProjectPhaseDatesToPlan } from '../../../lib/planning/scheduling/plan-schedule-update';
 import { buildTimeEntriesByTask } from '../../../lib/time-entries-index';
 import {
   subscribeToExecutionReturnImported,
@@ -93,8 +100,21 @@ export function usePlanningData() {
 
   // --- CRUD actions ---
 
-  const handleCreatePlan = useCallback(async (): Promise<Plan> => {
-    const plan = createPlan('');
+  const handleCreatePlan = useCallback(async (init?: {
+    title?: string;
+    projectId?: string | null;
+  }): Promise<Plan> => {
+    let plan = createPlan(init?.title ?? '');
+    if (init?.projectId) {
+      await ensureProjectColorAssigned(init.projectId);
+      const project = getProjectById(init.projectId);
+      if (project) {
+        plan = { ...plan, projectId: init.projectId, title: project.name };
+        if (hasProjectPhaseDates(project)) {
+          plan = applyProjectPhaseDatesToPlan(plan, project);
+        }
+      }
+    }
     await addPlan(plan);
     setPlans((prev) => [...prev, plan]);
     return plan;

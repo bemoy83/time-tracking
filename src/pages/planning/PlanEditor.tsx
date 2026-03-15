@@ -30,7 +30,7 @@ import {
   generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { ChevronLeftIcon, FolderIcon, PencilIcon } from '../../components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, FolderIcon, PencilIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
@@ -212,18 +212,10 @@ export function PlanEditor({
     addTitleRef.current?.focus();
   };
 
-  const handleSave = () => {
-    const trimmedTitle = title.trim();
-    if (trimmedTitle !== title) {
-      setTitle(trimmedTitle);
-    }
-    if (selectedProject == null && trimmedTitle.length === 0) {
-      setIdentityError('Enter an event or project, or link this plan to a project.');
-      return;
-    }
+  const handleSetTitle = (newTitle: string) => {
+    setTitle(newTitle);
     setIdentityError(null);
-    if (trimmedTitle === currentPlan.title) return;
-    mutatePlan((prev) => ({ ...prev, title: trimmedTitle }));
+    mutatePlan((prev) => ({ ...prev, title: newTitle }));
   };
 
   const handleAssignProject = async (projectId: string | null) => {
@@ -306,7 +298,6 @@ export function PlanEditor({
     onOpenSchedule();
   };
 
-  const titleInputId = `plan-title-${currentPlan.id}`;
   const reviewedDateLabel = currentPlan.reviewedAt
     ? new Date(currentPlan.reviewedAt).toLocaleDateString()
     : null;
@@ -378,10 +369,7 @@ export function PlanEditor({
       <div className="planning-view__sticky-summary">
         <section className="planning-view__overview-block" aria-label="Plan overview">
           <div className="planning-view__overview-identity">
-            <label
-              className="planning-view__overview-field planning-view__overview-field--identity"
-              htmlFor={readOnly || isLocked || selectedProject ? undefined : titleInputId}
-            >
+            <div className="planning-view__overview-field planning-view__overview-field--identity">
               <span className="planning-view__overview-label">Event/Project</span>
               {readOnly || isLocked ? (
                 <div className="planning-view__identity-readonly" aria-live="polite">
@@ -405,46 +393,34 @@ export function PlanEditor({
                   </button>
                 </div>
               ) : (
-                <div className="planning-view__identity-control">
-                  <input
-                    id={titleInputId}
-                    className="input planning-view__identity-input"
-                    value={title}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      if (identityError) setIdentityError(null);
-                    }}
-                    onBlur={handleSave}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSave();
-                      }
-                    }}
-                    placeholder="What event or project are you planning?"
-                    aria-invalid={identityError ? 'true' : 'false'}
-                    aria-describedby={identityError ? `${titleInputId}-error` : undefined}
-                  />
-                  <div className="planning-view__identity-or-row">
-                    <span className="planning-view__identity-or-divider" aria-hidden="true">or</span>
-                    <button
-                      type="button"
-                      className="planning-view__identity-picker-trigger"
-                      onClick={() => setShowProjectPicker(true)}
-                      aria-label="Link to a project"
-                    >
-                      <FolderIcon className="planning-view__identity-picker-icon" />
-                      <span className="planning-view__identity-picker-label">Link project</span>
-                    </button>
-                  </div>
+                <div className="planning-view__identity-assigned-row">
+                  <button
+                    type="button"
+                    className={`planning-view__identity-trigger${title.trim() ? ' planning-view__identity-trigger--has-value' : ''}`}
+                    onClick={() => setShowProjectPicker(true)}
+                    aria-label={title.trim() ? `Edit plan name: ${title}` : 'Set event or project'}
+                  >
+                    {title.trim() ? (
+                      <>
+                        <span className="planning-view__identity-trigger-value">{title}</span>
+                        <PencilIcon className="planning-view__project-edit-icon" />
+                      </>
+                    ) : (
+                      <>
+                        <FolderIcon className="planning-view__identity-picker-icon" />
+                        <span className="planning-view__identity-trigger-placeholder">Set event or project…</span>
+                        <ChevronRightIcon className="planning-view__identity-picker-chevron" />
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
               {identityError && (
-                <span id={`${titleInputId}-error`} className="planning-view__overview-error" role="alert">
+                <span className="planning-view__overview-error" role="alert">
                   {identityError}
                 </span>
               )}
-            </label>
+            </div>
           </div>
 
           <div className="planning-view__overview-content">
@@ -602,6 +578,8 @@ export function PlanEditor({
           void handleAssignProject(projectId);
         }}
         currentProjectId={currentPlan.projectId}
+        currentTitle={title}
+        onSetTitle={handleSetTitle}
       />
     </div>
   );

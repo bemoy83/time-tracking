@@ -1,4 +1,5 @@
 import { PlanEditor } from './planning/PlanEditor';
+import { NewPlanSheet } from './planning/NewPlanSheet';
 import { ScheduleView } from './planning/ScheduleView';
 import { ProgressView } from './planning/ProgressView';
 import { PlanningListRoute } from './planning/PlanningListRoute';
@@ -39,37 +40,50 @@ export function PlanningView({
     onInitialNavigationHandled,
   });
 
+  const newPlanSheet = (
+    <NewPlanSheet
+      isOpen={workspace.showNewPlanSheet}
+      onClose={() => workspace.setShowNewPlanSheet(false)}
+      projects={workspace.projects}
+      onConfirm={workspace.handleCreatePlan}
+      variant={mode === 'workspace' ? 'modal' : 'sheet'}
+    />
+  );
+
   // --- Workspace (desktop/tablet) rendering ---
   if (mode === 'workspace') {
     return (
-      <PlanningWorkspaceShell
-        plans={workspace.plans}
-        tasks={workspace.tasks}
-        projects={workspace.projects}
-        workTypes={workspace.workTypes}
-        kpis={workspace.kpis}
-        timeEntries={workspace.timeEntries}
-        timeEntriesByTask={workspace.timeEntriesByTask}
-        activePlan={workspace.activePlan}
-        activeTab={workspace.activeTab}
-        hasLinkedTasks={workspace.hasLinkedTasks}
-        wrapUpPlan={workspace.wrapUpPlan}
-        selectedPlanIdsForSharedSchedule={workspace.selectedPlanIdsForSharedSchedule}
-        archiveExpanded={workspace.archiveExpanded}
-        onToggleArchive={workspace.toggleArchiveExpanded}
-        onSelectPlan={workspace.handleSelectPlan}
-        onCreatePlan={workspace.handleCreatePlan}
-        onDeletePlan={workspace.handleDeletePlan}
-        onSavePlan={workspace.handleSavePlan}
-        onSetActiveTab={workspace.setActiveTab}
-        onSetSelectedPlanIdsForSharedSchedule={workspace.setSelectedPlanIdsForSharedSchedule}
-        onOpenInsights={workspace.openInsights}
-        onOpenProgress={workspace.openProgress}
-        onOpenWrapUp={workspace.openWrapUp}
-        onCloseWrapUp={workspace.closeWrapUp}
-        onWrapUpCompleted={workspace.handleWrapUpCompleted}
-        onExit={onExitWorkspace ?? (() => {})}
-      />
+      <>
+        <PlanningWorkspaceShell
+          plans={workspace.plans}
+          tasks={workspace.tasks}
+          projects={workspace.projects}
+          workTypes={workspace.workTypes}
+          kpis={workspace.kpis}
+          timeEntries={workspace.timeEntries}
+          timeEntriesByTask={workspace.timeEntriesByTask}
+          activePlan={workspace.activePlan}
+          activeTab={workspace.activeTab}
+          hasLinkedTasks={workspace.hasLinkedTasks}
+          wrapUpPlan={workspace.wrapUpPlan}
+          selectedPlanIdsForSharedSchedule={workspace.selectedPlanIdsForSharedSchedule}
+          archiveExpanded={workspace.archiveExpanded}
+          onToggleArchive={workspace.toggleArchiveExpanded}
+          onSelectPlan={workspace.handleSelectPlan}
+          onCreatePlan={workspace.handleRequestNewPlan}
+          onDeletePlan={workspace.handleDeletePlan}
+          onSavePlan={workspace.handleSavePlan}
+          onSetActiveTab={workspace.setActiveTab}
+          onSetSelectedPlanIdsForSharedSchedule={workspace.setSelectedPlanIdsForSharedSchedule}
+          onOpenInsights={workspace.openInsights}
+          onOpenProgress={workspace.openProgress}
+          onOpenWrapUp={workspace.openWrapUp}
+          onCloseWrapUp={workspace.closeWrapUp}
+          onWrapUpCompleted={workspace.handleWrapUpCompleted}
+          onExit={onExitWorkspace ?? (() => {})}
+        />
+        {newPlanSheet}
+      </>
     );
   }
 
@@ -93,12 +107,13 @@ export function PlanningView({
           projects={workspace.projects}
           tasks={workspace.tasks}
           onSelect={workspace.handleSelectPlan}
-          onCreate={workspace.handleCreatePlan}
+          onCreate={workspace.handleRequestNewPlan}
           onDelete={workspace.handleDeletePlan}
           onOpenWrapUp={workspace.openWrapUp}
           onOpenInsights={workspace.openInsights}
         />
         {wrapUpSheet}
+        {newPlanSheet}
       </>
     );
   }
