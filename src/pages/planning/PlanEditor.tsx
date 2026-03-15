@@ -32,6 +32,7 @@ import {
 } from '../../lib/planning/scheduling/work-calendar';
 import { ChevronLeftIcon, ChevronRightIcon, FolderIcon, PencilIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
+import { ProjectColorDot } from '../../components/ProjectColorDot';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
 import { PlanSetupStepper } from './PlanSetupStepper';
@@ -385,6 +386,9 @@ export function PlanEditor({
               <span className="planning-view__overview-label">Event/Project</span>
               {readOnly || isLocked ? (
                 <div className="planning-view__identity-readonly" aria-live="polite">
+                  {selectedProject && (
+                    <ProjectColorDot color={selectedProject.color} size="md" className="planning-view__project-dot" />
+                  )}
                   <span className="planning-view__identity-readonly-value">
                     {planDisplayName || 'Untitled plan'}
                   </span>
@@ -395,10 +399,10 @@ export function PlanEditor({
                     type="button"
                     className="planning-view__project-button planning-view__project-button--selected"
                     onClick={() => setShowProjectPicker(true)}
-                    style={{ color: selectedProjectColor! }}
                     aria-label={`Change project: ${selectedProject.name}`}
                   >
                     <span className="planning-view__project-selected">
+                      <ProjectColorDot color={selectedProject.color} size="md" className="planning-view__project-dot" />
                       <span>{selectedProject.name}</span>
                       <PencilIcon className="planning-view__project-edit-icon" />
                     </span>

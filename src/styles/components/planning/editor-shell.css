@@ -233,16 +233,20 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
-/* Has-value state — looks like the project pill */
+/* Has-value state — matches readonly/project typography, no border (standalone title, no dot) */
 .planning-view__identity-trigger--has-value {
-  border-color: var(--surface-contained-border);
-  background: var(--surface-contained-bg);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-xl);
   color: var(--color-text);
-  font-weight: 500;
-  min-height: 32px;
+  font-size: var(--font-large);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  min-height: var(--touch-min);
   padding: var(--space-xs) var(--space-sm);
   width: auto;
-  border-radius: var(--radius-xl);
+  gap: var(--space-sm);
 }
 
 .planning-view__identity-trigger--has-value:hover {
@@ -278,7 +282,14 @@
 .planning-view__identity-readonly {
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
   min-height: var(--touch-min);
+}
+
+.planning-view__identity-readonly .planning-view__project-dot {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .planning-view__identity-readonly-value {
@@ -302,15 +313,17 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  min-height: 32px;
+  min-height: var(--touch-min);
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--surface-contained-border);
   border-radius: var(--radius-xl);
   background: var(--surface-contained-bg);
   color: var(--color-text);
   cursor: pointer;
-  font-size: var(--font-small);
-  font-weight: 500;
+  font-size: var(--font-large);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
 }
 
@@ -338,7 +351,14 @@
 .planning-view__project-selected {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
+}
+
+/* Project color dot — scales with large typography (cf. project picker) */
+.planning-view__project-button .planning-view__project-dot {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .planning-view__project-edit-icon {
