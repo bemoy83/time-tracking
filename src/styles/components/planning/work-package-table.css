@@ -687,6 +687,7 @@
 /* Work Package group: round top-right so it meets Assembly’s rounded top-left */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-header-group th:first-child {
   border-top-right-radius: var(--radius-md);
+  border-right: 4px solid var(--surface-contained-bg);
 }
 
 /* 3. Alternating body rows — zebra instead of cell-level phase tinting */
@@ -711,19 +712,20 @@
 }
 
 /* 5. Phase group header — colored chip on spanning label, column headers with muted phase text */
-/* Assembly chip — rounded top corners; left border = separator from base columns */
+/* Assembly chip — rounded top corners; right border = tab edge before Dismantle */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly {
   background: var(--wp-phase-assembly-header-bg);
   color: var(--phase-assembly-fg);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border-left: 4px solid var(--surface-contained-bg);
+  border-left: none;
+  border-right: 4px solid var(--surface-contained-bg);
 }
-/* Dismantle chip */
+/* Dismantle chip (separator is on last Assembly column right) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle {
   background: var(--wp-phase-dismantle-header-bg);
   color: var(--phase-dismantle-fg);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border-left: 4px solid var(--surface-contained-bg);
+  border-left: none;
 }
 /* Column sub-headers: chip bg continues + muted phase color */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly {
@@ -734,15 +736,21 @@
   background: var(--wp-phase-dismantle-header-bg);
   color: color-mix(in srgb, var(--phase-dismantle-fg) 60%, var(--color-text-muted));
 }
-/* Assembly phase columns: align green tint with Assembly group heading (it has 4px left border) */
+/* Unit column header: right border = separator before Assembly (tab-style headers only) */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-unit-col {
+  border-right: 4px solid var(--surface-contained-bg);
+}
+/* Assembly phase group start: no left border (separator is on Unit's right) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--assembly {
   border-left: none;
-  padding-left: calc(var(--space-sm) + 4px);
-  background: linear-gradient(to right, var(--surface-contained-bg) 0 4px, var(--wp-phase-assembly-header-bg) 4px 100%);
 }
 
+/* Dismantle: right border on last Assembly header column (tab-style headers only) */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly.planning-view__wp-hours-col {
+  border-right: 4px solid var(--surface-contained-bg);
+}
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--dismantle {
-  border-left: 4px solid var(--surface-contained-bg);
+  border-left: none;
 }
 
 /* 6. Remove row dividers — zebra makes them redundant */
