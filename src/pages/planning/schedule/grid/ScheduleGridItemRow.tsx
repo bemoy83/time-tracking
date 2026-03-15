@@ -69,9 +69,9 @@ export function ScheduleGridItemRow({
               {isAssistantUnresolved && (
                 <span
                   className={`schedule-grid__assistant-issue-badge${isAssistantActive ? ' schedule-grid__assistant-issue-badge--active' : ''}`}
-                  aria-label={isAssistantActive ? 'Active assistant issue' : 'Assistant issue'}
+                  aria-label={isAssistantActive ? 'Schedule issue in review' : 'Schedule issue'}
                 >
-                  {isAssistantActive ? 'Reviewing issue' : 'Assistant issue'}
+                  {isAssistantActive ? 'In review' : 'Schedule issue'}
                 </span>
               )}
             </span>

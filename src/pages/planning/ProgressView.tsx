@@ -202,7 +202,7 @@ export function ProgressView({
               ? '—'
               : `${item.variancePercent > 0 ? '+' : ''}${item.variancePercent.toFixed(0)}%`;
           return (
-            <article key={item.lineItemId} className="progress-view__item">
+            <article key={`${item.lineItemId}-${item.phase}`} className="progress-view__item">
               <div className="progress-view__item-header">
                 <div>
                   <h3 className="progress-view__item-title">{item.title}</h3>

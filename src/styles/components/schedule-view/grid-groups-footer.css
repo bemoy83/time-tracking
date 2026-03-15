@@ -12,12 +12,8 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  margin-top: var(--space-xs);
 }
 
-.schedule-grid__phase-header--project {
-  margin-top: var(--space-sm);
-}
 
 .schedule-grid__phase-label {
   display: flex;
@@ -210,11 +206,11 @@
 }
 
 .schedule-grid__row--assistant-unresolved .schedule-grid__line-item {
-  border-inline-start: 0;
+  border-inline-start: 3px solid var(--color-amber);
   background: color-mix(in srgb, var(--state-warning-bg-soft) 78%, var(--color-surface-subtle));
 }
 
 .schedule-grid__row--assistant-active .schedule-grid__line-item {
-  border-inline-start: 0;
+  border-inline-start: 3px solid var(--color-amber);
   background: color-mix(in srgb, var(--state-warning-bg-strong) 72%, var(--color-surface-subtle));
 }

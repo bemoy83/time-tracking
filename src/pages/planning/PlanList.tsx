@@ -70,19 +70,28 @@ export function PlanList({
     [projects],
   );
 
-  const { activePlans, archivedPlans } = useMemo(() => {
-    const active: Plan[] = [];
+  const { inProgressPlans, readyPlans, draftPlans, archivedPlans } = useMemo(() => {
+    const inProgress: Plan[] = [];
+    const ready: Plan[] = [];
+    const drafts: Plan[] = [];
     const archived: Plan[] = [];
     for (const plan of plans) {
       if (plan.status === 'received' || plan.status === 'session-closed') continue;
       if (isPlanArchived(plan)) {
         archived.push(plan);
+      } else if (plan.status === 'draft') {
+        drafts.push(plan);
+      } else if (plan.handedOffAt != null) {
+        inProgress.push(plan);
       } else {
-        active.push(plan);
+        // Active but not yet handed off
+        ready.push(plan);
       }
     }
     return {
-      activePlans: sortPlansForSidebar(active, tasks, planIdsWithImportedExecutionReturns),
+      inProgressPlans: sortPlansForSidebar(inProgress, tasks, planIdsWithImportedExecutionReturns),
+      readyPlans: sortPlansForSidebar(ready, tasks, planIdsWithImportedExecutionReturns),
+      draftPlans: sortPlansForSidebar(drafts, tasks, planIdsWithImportedExecutionReturns),
       archivedPlans: archived.sort((a, b) =>
         (b.reviewedAt ?? '').localeCompare(a.reviewedAt ?? ''),
       ),
@@ -105,11 +114,51 @@ export function PlanList({
           </button>
         </div>
 
-        {/* Active zone */}
-        {activePlans.length > 0 && (
-          <SidebarZone label="Active">
+        {/* In Progress zone — plans handed off to field */}
+        {inProgressPlans.length > 0 && (
+          <SidebarZone label="In Progress">
             <PlanItems
-              plans={activePlans}
+              plans={inProgressPlans}
+              projectById={projectById}
+              tasks={tasks}
+              selectedPlanId={selectedPlanId}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              onOpenWrapUp={onOpenWrapUp}
+              planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              compact
+              showAddToScheduleButton={showAddToScheduleButton}
+              selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+              onSelectedPlanIdsChange={onSelectedPlanIdsChange}
+            />
+          </SidebarZone>
+        )}
+
+        {/* Ready zone — active, not yet handed off */}
+        {readyPlans.length > 0 && (
+          <SidebarZone label="Ready">
+            <PlanItems
+              plans={readyPlans}
+              projectById={projectById}
+              tasks={tasks}
+              selectedPlanId={selectedPlanId}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              onOpenWrapUp={onOpenWrapUp}
+              planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              compact
+              showAddToScheduleButton={showAddToScheduleButton}
+              selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+              onSelectedPlanIdsChange={onSelectedPlanIdsChange}
+            />
+          </SidebarZone>
+        )}
+
+        {/* Drafts zone */}
+        {draftPlans.length > 0 && (
+          <SidebarZone label="Drafts">
+            <PlanItems
+              plans={draftPlans}
               projectById={projectById}
               tasks={tasks}
               selectedPlanId={selectedPlanId}
@@ -177,22 +226,65 @@ export function PlanList({
         </div>
       ) : (
         <>
-          {activePlans.length > 0 && (
-            <ul className="planning-view__list">
-              {activePlans.map((plan) => (
-                <PlanListItem
-                  key={plan.id}
-                  plan={plan}
-                  projectById={projectById}
-                  tasks={tasks}
-                  selectedPlanId={selectedPlanId}
-                  onSelect={onSelect}
-                  onDelete={onDelete}
-                  onOpenWrapUp={onOpenWrapUp}
-                  planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
-                />
-              ))}
-            </ul>
+          {inProgressPlans.length > 0 && (
+            <>
+              <h2 className="planning-view__zone-heading">In Progress</h2>
+              <ul className="planning-view__list">
+                {inProgressPlans.map((plan) => (
+                    <PlanListItem
+                    key={plan.id}
+                    plan={plan}
+                    projectById={projectById}
+                    tasks={tasks}
+                    selectedPlanId={selectedPlanId}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onOpenWrapUp={onOpenWrapUp}
+                    planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+          {readyPlans.length > 0 && (
+            <>
+              <h2 className="planning-view__zone-heading">Ready</h2>
+              <ul className="planning-view__list">
+                {readyPlans.map((plan) => (
+                  <PlanListItem
+                    key={plan.id}
+                    plan={plan}
+                    projectById={projectById}
+                    tasks={tasks}
+                    selectedPlanId={selectedPlanId}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onOpenWrapUp={onOpenWrapUp}
+                    planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+          {draftPlans.length > 0 && (
+            <>
+              <h2 className="planning-view__zone-heading">Drafts</h2>
+              <ul className="planning-view__list">
+                {draftPlans.map((plan) => (
+                  <PlanListItem
+                    key={plan.id}
+                    plan={plan}
+                    projectById={projectById}
+                    tasks={tasks}
+                    selectedPlanId={selectedPlanId}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onOpenWrapUp={onOpenWrapUp}
+                    planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                  />
+                ))}
+              </ul>
+            </>
           )}
           {archivedPlans.length > 0 && (
             <>
