@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { findWorkTypeByKey } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
+import { normalizeNumberString } from './number-parse';
 
 const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 const VALID_BUILD_PHASES: BuildPhase[] = ['assembly', 'dismantle'];
@@ -169,7 +170,8 @@ function parseOptionalNumber(
   errors: ImportValidationError[],
 ): number | null {
   if (!value || value === '') return null;
-  const num = Number(value);
+  const normalized = normalizeNumberString(value);
+  const num = Number(normalized);
   if (isNaN(num)) {
     errors.push({ row, field, message: `"${value}" is not a valid number` });
     return null;

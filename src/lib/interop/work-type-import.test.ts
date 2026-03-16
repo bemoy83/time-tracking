@@ -107,6 +107,23 @@ describe('parseWorkTypeCsv', () => {
       dismantleRate: 3,
     });
   });
+
+  it('accepts European decimal format (comma as decimal separator)', () => {
+    const semicolonCsv = [
+      'title;workUnit;assemblyRate;dismantleRate',
+      'Carpet Tiles;m2;11,5;3',
+    ].join('\n');
+    const result = parseWorkTypeCsv(semicolonCsv);
+
+    expect(result.valid).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      title: 'Carpet Tiles',
+      workUnit: 'm2',
+      assemblyRate: 11.5,
+      dismantleRate: 3,
+    });
+  });
 });
 
 describe('generateWorkTypeImportPreview', () => {

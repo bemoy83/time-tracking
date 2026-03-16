@@ -10,6 +10,7 @@ import {
   updateWorkTypeFields,
 } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
+import { normalizeNumberString } from './number-parse';
 
 export interface ImportedWorkType {
   mappingKey: string;
@@ -222,7 +223,8 @@ function parseOptionalNumber(
     return 0;
   }
 
-  const num = Number(value);
+  const normalized = normalizeNumberString(value);
+  const num = Number(normalized);
   if (Number.isNaN(num)) {
     errors.push({ row, field, message: `"${value}" is not a valid number` });
     return null;
