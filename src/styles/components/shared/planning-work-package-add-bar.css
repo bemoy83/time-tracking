@@ -64,9 +64,11 @@
   border-color: var(--surface-border-hover);
 }
 
-.planning-view__wp-add-bar .input:focus-visible {
+.planning-view__wp-add-bar .input:focus-visible,
+.planning-view__wp-add-bar select.input:focus-visible {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .planning-view__wp-add-bar-title {
@@ -83,6 +85,14 @@
   width: 100%;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.planning-view__wp-add-bar-qty::-webkit-inner-spin-button,
+.planning-view__wp-add-bar-qty::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .planning-view__wp-add-bar-unit {

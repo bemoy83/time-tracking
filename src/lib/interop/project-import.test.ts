@@ -88,15 +88,27 @@ describe('parseProjectCsv', () => {
     ]);
   });
 
-  it('rejects incomplete or invalid date ranges', () => {
+  it('rejects invalid date format and invalid date ordering', () => {
     const result = parseProjectCsv(csv([
       'Spring Expo 2026,2026/05/01,,2026-05-08,2026-05-07,,',
     ]));
 
     expect(result.valid).toBe(false);
     expect(result.errors.some((error) => error.field === 'assemblyStartDate')).toBe(true);
-    expect(result.errors.some((error) => error.message.includes('both start and end'))).toBe(true);
     expect(result.errors.some((error) => error.message.includes('on or before'))).toBe(true);
+  });
+
+  it('accepts rows with missing dates (partial or empty)', () => {
+    const result = parseProjectCsv(csv([
+      'Project A,,,,,,',
+      'Project B,2026-05-01,2026-05-03,,,2026-05-05,2026-05-07',
+    ]));
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toMatchObject({ name: 'Project A', assemblyStartDate: null, assemblyEndDate: null });
+    expect(result.items[1]).toMatchObject({ name: 'Project B', assemblyStartDate: '2026-05-01', assemblyEndDate: '2026-05-03', eventStartDate: '2026-05-05', eventEndDate: '2026-05-07', dismantleStartDate: null, dismantleEndDate: null });
   });
 });
 

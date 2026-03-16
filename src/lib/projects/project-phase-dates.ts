@@ -43,19 +43,15 @@ export function getProjectPhaseDateValidationErrors(dates: ProjectPhaseDates): s
   ];
 
   for (const [label, start, end] of rangeFields) {
-    if ((start && !end) || (!start && end)) {
-      errors.push(`${label} dates require both start and end.`);
+    if (start && !isIsoDateOnly(start)) {
+      errors.push(`${label} start must use YYYY-MM-DD.`);
     }
-    if (!isIsoDateOnly(start) || !isIsoDateOnly(end)) {
-      errors.push(`${label} dates must use YYYY-MM-DD.`);
+    if (end && !isIsoDateOnly(end)) {
+      errors.push(`${label} end must use YYYY-MM-DD.`);
     }
     if (start && end && start > end) {
       errors.push(`${label} start must be on or before ${label.toLowerCase()} end.`);
     }
-  }
-
-  if (!hasProjectImportablePhaseDates(dates)) {
-    errors.push('At least one complete assembly or dismantle range is required.');
   }
 
   errors.push(
