@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
+import { usePlanLineItemImport } from './hooks/usePlanLineItemImport';
 import {
   WORK_UNIT_LABELS,
   type Project,
@@ -79,6 +80,14 @@ export function PlanEditor({
   onRegisterBeforeScheduleSwitch,
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
+  const {
+    fileInputRef: importFileInputRef,
+    handleFileChange: handleImportFileChange,
+    handleConfirm: handleImportConfirm,
+    handleCancel: handleImportCancel,
+    pendingCount: importPendingCount,
+    isApplying: isImportApplying,
+  } = usePlanLineItemImport({ mutatePlan });
   const [title, setTitle] = useState(plan.title);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
@@ -478,6 +487,39 @@ export function PlanEditor({
               <span className="planning-view__items-summary-asm">Assembly {assemblyPersonHours.toFixed(1)} ph</span>
               <span className="planning-view__items-summary-dis">Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
             </div>
+            {canAddWorkPackages && (
+              importPendingCount === null ? (
+                <>
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => importFileInputRef.current?.click()}
+                  >
+                    Import CSV
+                  </button>
+                  <input
+                    ref={importFileInputRef}
+                    type="file"
+                    accept=".csv"
+                    hidden
+                    onChange={handleImportFileChange}
+                  />
+                </>
+              ) : (
+                <span className="planning-view__import-confirm">
+                  Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
+                  <button
+                    className="btn btn--primary btn--sm"
+                    onClick={handleImportConfirm}
+                    disabled={isImportApplying}
+                  >
+                    Confirm
+                  </button>
+                  <button className="btn btn--ghost btn--sm" onClick={handleImportCancel}>
+                    Cancel
+                  </button>
+                </span>
+              )
+            )}
           </div>
 
           {canAddWorkPackages && (

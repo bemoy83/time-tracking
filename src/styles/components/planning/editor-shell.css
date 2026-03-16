@@ -7,7 +7,7 @@
 }
 
 .planning-view--editor .planning-view__sticky-summary {
-  padding-bottom: var(--space-xs);
+  padding-bottom: 0;
 }
 
 .planning-view__sticky-summary {

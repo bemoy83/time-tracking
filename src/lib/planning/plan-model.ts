@@ -616,6 +616,15 @@ export function addLineItemToPlan(plan: Plan, item: PlanLineItem): Plan {
   };
 }
 
+/** Add multiple line items to a plan in a single update. */
+export function addLineItemsToPlan(plan: Plan, items: PlanLineItem[]): Plan {
+  return {
+    ...plan,
+    lineItems: [...plan.lineItems, ...items],
+    updatedAt: nowUtc(),
+  };
+}
+
 /** Remove a line item from a plan. */
 export function removeLineItemFromPlan(plan: Plan, lineItemId: string): Plan {
   return {

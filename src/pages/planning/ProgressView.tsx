@@ -212,8 +212,9 @@ export function ProgressView({
         <p className="progress-view__import-msg">{importMsg}</p>
       )}
 
-      <section className="progress-view__list" aria-label="Plan line item progress">
-        {progress.lineItems.map((item) => {
+      {progress.lineItems.length > 0 && (
+        <section className="progress-view__list" aria-label="Plan line item progress">
+          {progress.lineItems.map((item) => {
           const unitLabel = WORK_UNIT_LABELS[item.workUnit] ?? item.workUnit;
           const varianceText =
             item.variancePercent == null
@@ -306,9 +307,10 @@ export function ProgressView({
             </article>
           );
         })}
-      </section>
+        </section>
+      )}
 
-      <section className="progress-view__block">
+      <section className="progress-view__block progress-view__block--unplanned">
         <h3 className="progress-view__block-title">Unplanned Work</h3>
         <p className="progress-view__block-text">
           {progress.unplannedWork.taskCount} task{progress.unplannedWork.taskCount === 1 ? '' : 's'} ·{' '}
