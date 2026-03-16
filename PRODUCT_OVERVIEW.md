@@ -239,7 +239,4 @@ Templates pre-fill fields at task creation. The resulting task is indistinguisha
 |---|---|
 | `parallelTimers` | Multiple simultaneous task timers |
 | `planningWorkspaceDesktop` | Dual-pane planning layout on wide screens |
-| `planningScheduleV1` | Schedule grid view in planning |
-| `fieldPlanExecution` | Field plan import and execution return export |
 | `wrapUpReviewV2` | Updated wrap-up review flow |
-| `calculatorMultiScenarioCards` | Multi-scenario cards in calculator |

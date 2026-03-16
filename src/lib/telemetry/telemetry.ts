@@ -10,9 +10,6 @@ const TELEMETRY_KEY = 'telemetryCounters';
 export type TelemetryEventName =
   | 'calculator_save_task'
   | 'calculator_save_template'
-  | 'calculator_scenario_add'
-  | 'calculator_scenario_remove'
-  | 'calculator_scenario_select'
   | 'interop_import_apply'
   | 'interop_import_conflict'
   | 'interop_plan_package_preview'

@@ -7,13 +7,11 @@
 
 import { type Task, WORK_UNIT_LABELS, formatProductivity } from '../lib/types';
 import { type OutlierHandlingMode } from '../lib/kpi';
-import { MAX_SCENARIOS } from '../lib/calculator-scenarios';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
 import { CompareCard } from './calculator/CompareCard';
 import { ProvenanceDisplay } from './calculator/ProvenanceDisplay';
 import { ResultDisplay } from './calculator/ResultDisplay';
-import { ScenarioCard } from './calculator/ScenarioCard';
 import { useCalculatorSheetModel } from './calculator/useCalculatorSheetModel';
 
 interface CalculatorSheetProps {
@@ -48,39 +46,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks, outlierMode }: Calcula
           )}
         </div>
 
-        {model.multiScenarioEnabled ? (
-          <>
-            <div className="create-task-sheet__section">
-              <div className="calculator__scenario-header">
-                <label className="entry-modal__label">Scenarios</label>
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  disabled={model.scenarios.length >= MAX_SCENARIOS}
-                  onClick={model.handleAddScenario}
-                >
-                  Add Scenario
-                </button>
-              </div>
-              {model.scenarios.length >= MAX_SCENARIOS && (
-                <p className="settings-view__helper">Maximum of 4 scenarios reached.</p>
-              )}
-              <div className="calculator__scenario-grid">
-                {model.computedScenarios.map((computed) => (
-                  <ScenarioCard
-                    key={computed.scenario.id}
-                    computed={computed}
-                    selected={computed.scenario.id === model.selectedScenarioId}
-                    onSelect={() => model.handleSelectScenario(computed.scenario.id)}
-                    onRemove={model.canRemoveScenario(computed.scenario) ? () => model.handleRemoveScenario(computed.scenario.id) : null}
-                    onPatch={(patch) => model.handleScenarioPatch(computed.scenario.id, patch)}
-                  />
-                ))}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
+        <>
             <div className="create-task-sheet__section">
               <label className="entry-modal__label">Productivity Source</label>
               <div className="task-work-quantity__unit-pills" role="group" aria-label="Source">
@@ -218,11 +184,9 @@ export function CalculatorSheet({ isOpen, onClose, tasks, outlierMode }: Calcula
                 </div>
               </div>
             )}
-          </>
-        )}
+        </>
 
-        {(model.effectiveResult != null || (model.multiScenarioEnabled && model.selectedScenarioComputed != null))
-          && (model.eligibleTasks.length > 0 || model.eligibleTemplates.length > 0) && (
+        {model.result != null && (model.eligibleTasks.length > 0 || model.eligibleTemplates.length > 0) && (
           <div className="create-task-sheet__section">
             <label className="entry-modal__label">Apply to Task or Template</label>
             <div className="calculator__save-row">
@@ -256,9 +220,6 @@ export function CalculatorSheet({ isOpen, onClose, tasks, outlierMode }: Calcula
                 {model.saveStatus === 'saved' ? 'Saved' : model.saveStatus === 'saving' ? 'Saving...' : 'Save'}
               </button>
             </div>
-            {model.multiScenarioSaveBlockedReason && (
-              <p className="calculator__save-warning">Selected scenario is not computable: {model.multiScenarioSaveBlockedReason}</p>
-            )}
           </div>
         )}
 

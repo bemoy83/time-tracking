@@ -1,21 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { buildAttributedRollup } from '../../lib/attributed-rollup';
 import {
-  addScenario,
-  canRemoveScenario,
-  computeAllScenarios,
-  createDefaultScenarios,
-  removeScenario,
-  selectScenario,
-  updateScenario,
-  validationReasonLabel,
-  type CalculatorScenario,
-} from '../../lib/calculator-scenarios';
-import {
   saveRecommendationToTask,
   saveRecommendationToTemplate,
 } from '../../lib/calculator-save';
-import { getFeatureFlag } from '../../lib/flags/feature-flags';
 import {
   computeWorkTypeKpis,
   findKpiByKey,
@@ -28,7 +16,7 @@ import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import type { SolveFor } from '../../lib/calculator';
 import type { Task, WorkUnit } from '../../lib/types';
-import { computeResult, toCalcResult } from './result-utils';
+import { computeResult } from './result-utils';
 import type { CalcResult, ProductivitySource, RateInfo } from './types';
 
 interface UseCalculatorSheetModelArgs {
@@ -90,7 +78,6 @@ async function saveRecommendation(
 export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalculatorSheetModelArgs) {
   const { workTypes } = useWorkTypeStore();
   const { templates } = useTemplateStore();
-  const multiScenarioEnabled = getFeatureFlag('calculatorMultiScenarioCards');
 
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string>('');
 
@@ -99,9 +86,6 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
   const [solveFor, setSolveFor] = useState<SolveFor>('crew');
   const [timeHours, setTimeHours] = useState('');
   const [crew, setCrew] = useState(2);
-
-  const [scenarios, setScenarios] = useState<CalculatorScenario[]>(createDefaultScenarios);
-  const [selectedScenarioId, setSelectedScenarioId] = useState('');
 
   const [saveTargetId, setSaveTargetId] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -116,19 +100,8 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
 
   useEffect(() => {
     if (!isOpen) return;
-    const seeded = createDefaultScenarios();
-    setScenarios(seeded);
-    setSelectedScenarioId(seeded[0]?.id ?? '');
     setSaveStatus('idle');
   }, [isOpen, selectedWorkTypeId]);
-
-  useEffect(() => {
-    if (!multiScenarioEnabled) return;
-    const resolvedId = selectScenario(scenarios, selectedScenarioId);
-    if (resolvedId !== selectedScenarioId) {
-      setSelectedScenarioId(resolvedId);
-    }
-  }, [multiScenarioEnabled, scenarios, selectedScenarioId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -233,27 +206,6 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
 
   const hasBothSources = templateRate != null && historicalRate != null && historicalRate.confidence !== 'insufficient';
 
-  const computedScenarios = useMemo(() => computeAllScenarios(scenarios, {
-    workUnit,
-    templateRate: templateRate?.rate ?? null,
-    templateName: templateRate?.templateName ?? null,
-    historicalRate: historicalRate?.rate ?? null,
-    historicalConfidence: historicalRate?.confidence ?? null,
-    historicalSampleCount: historicalRate?.sampleCount ?? null,
-  }), [scenarios, workUnit, templateRate, historicalRate]);
-
-  const selectedScenarioComputed = useMemo(
-    () => computedScenarios.find((computed) => computed.scenario.id === selectedScenarioId) ?? computedScenarios[0] ?? null,
-    [computedScenarios, selectedScenarioId],
-  );
-
-  const selectedScenarioResult = useMemo(
-    () => toCalcResult(selectedScenarioComputed),
-    [selectedScenarioComputed],
-  );
-
-  const effectiveResult = multiScenarioEnabled ? selectedScenarioResult : result;
-
   const eligibleTasks = useMemo(() => {
     if (!selectedWorkType) return [];
     return tasks.filter(
@@ -280,54 +232,7 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
     }
   }, [eligibleTasks, eligibleTemplates, saveTargetId]);
 
-  const handleAddScenario = () => {
-    setScenarios((previous) => {
-      const next = addScenario(previous);
-      if (next.length > previous.length) {
-        const added = next.find((scenario) => !previous.some((candidate) => candidate.id === scenario.id));
-        if (added) {
-          setSelectedScenarioId(added.id);
-        }
-        trackTelemetryEvent('calculator_scenario_add');
-      }
-      return next;
-    });
-  };
-
-  const handleRemoveScenario = (id: string) => {
-    setScenarios((previous) => {
-      const next = removeScenario(previous, id);
-      if (next.length < previous.length) {
-        setSelectedScenarioId((current) => selectScenario(next, current === id ? '' : current));
-        trackTelemetryEvent('calculator_scenario_remove');
-      }
-      return next;
-    });
-  };
-
-  const handleSelectScenario = (id: string) => {
-    setSelectedScenarioId((previous) => {
-      if (previous === id) return previous;
-      trackTelemetryEvent('calculator_scenario_select');
-      return id;
-    });
-  };
-
-  const handleScenarioPatch = (
-    id: string,
-    patch: Partial<Omit<CalculatorScenario, 'id' | 'label'>>,
-  ) => {
-    setScenarios((previous) => updateScenario(previous, id, patch));
-    setSaveStatus('idle');
-  };
-
-  const multiScenarioSaveBlockedReason = multiScenarioEnabled && selectedScenarioComputed && !selectedScenarioComputed.isValid
-    ? validationReasonLabel(selectedScenarioComputed.validationReason)
-    : null;
-
-  const hasValidResultForSave = multiScenarioEnabled
-    ? selectedScenarioComputed?.isValid === true && selectedScenarioResult != null
-    : result != null;
+  const hasValidResultForSave = result != null;
 
   const isSaveDisabled = !saveTargetId || saveStatus === 'saving' || !hasValidResultForSave;
 
@@ -340,13 +245,11 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
     const target = parseSaveTarget(saveTargetId);
     if (!target) return;
 
-    const resultToSave = multiScenarioEnabled ? selectedScenarioResult : result;
-    if (!resultToSave) return;
-    if (multiScenarioEnabled && selectedScenarioComputed?.isValid !== true) return;
+    if (!result) return;
 
     setSaveStatus('saving');
     try {
-      const payload = buildSavePayload(resultToSave);
+      const payload = buildSavePayload(result);
       await saveRecommendation(target.targetType, target.targetId, payload);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -358,7 +261,6 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
   return {
     workTypes,
     templates,
-    multiScenarioEnabled,
 
     selectedWorkTypeId,
     source,
@@ -366,8 +268,6 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
     solveFor,
     timeHours,
     crew,
-    scenarios,
-    selectedScenarioId,
     saveTargetId,
     saveStatus,
 
@@ -381,13 +281,8 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
     altRate,
     altResult,
     hasBothSources,
-    computedScenarios,
-    selectedScenarioComputed,
-    selectedScenarioResult,
-    effectiveResult,
     eligibleTasks,
     eligibleTemplates,
-    multiScenarioSaveBlockedReason,
     isSaveDisabled,
 
     setSelectedWorkTypeId,
@@ -397,11 +292,6 @@ export function useCalculatorSheetModel({ isOpen, tasks, outlierMode }: UseCalcu
     setTimeHours,
     setCrew,
 
-    handleAddScenario,
-    handleRemoveScenario,
-    handleSelectScenario,
-    handleScenarioPatch,
-    canRemoveScenario,
     handleSaveTargetChange,
     handleSave,
   };

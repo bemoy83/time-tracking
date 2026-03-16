@@ -117,35 +117,13 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
           <h2 className="settings-view__sub-header">Feature Flags</h2>
           <p className="settings-view__helper">Gate risky planning features for rollout safety</p>
           <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Calculator multi-scenario cards</span>
+            <span className="settings-view__row-label">Planning workspace (dual-pane on desktop)</span>
             <input
               type="checkbox"
               className="settings-view__toggle"
-              checked={featureFlags.calculatorMultiScenarioCards}
+              checked={featureFlags.planningWorkspaceDesktop}
               onChange={(e) => {
-                handleToggleFeatureFlag('calculatorMultiScenarioCards', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Field plan import + execution</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.fieldPlanExecution}
-              onChange={(e) => {
-                handleToggleFeatureFlag('fieldPlanExecution', e.target.checked);
-              }}
-            />
-          </label>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Planning schedule v1</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.planningScheduleV1}
-              onChange={(e) => {
-                handleToggleFeatureFlag('planningScheduleV1', e.target.checked);
+                handleToggleFeatureFlag('planningWorkspaceDesktop', e.target.checked);
               }}
             />
           </label>

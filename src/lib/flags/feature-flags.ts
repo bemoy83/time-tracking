@@ -2,21 +2,14 @@
  * Feature flags — localStorage-backed runtime gates for risky rollouts.
  */
 
-export type FeatureFlagKey =
-  | 'calculatorMultiScenarioCards'
-  | 'planningWorkspaceDesktop'
-  | 'planningScheduleV1'
-  | 'fieldPlanExecution';
+export type FeatureFlagKey = 'planningWorkspaceDesktop';
 
 export type FeatureFlagState = Record<FeatureFlagKey, boolean>;
 
 const FLAGS_STORAGE_KEY = 'featureFlags';
 
 const DEFAULT_FLAGS: FeatureFlagState = {
-  calculatorMultiScenarioCards: true,
   planningWorkspaceDesktop: true,
-  planningScheduleV1: true,
-  fieldPlanExecution: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -33,16 +33,6 @@ describe('feature flags', () => {
     });
   });
 
-  it('includes calculator multi-scenario cards enabled by default', () => {
-    const flags = getFeatureFlags();
-    expect(flags.calculatorMultiScenarioCards).toBe(true);
-  });
-
-  it('persists calculator multi-scenario cards toggle', () => {
-    setFeatureFlag('calculatorMultiScenarioCards', false);
-    expect(getFeatureFlag('calculatorMultiScenarioCards')).toBe(false);
-  });
-
   it('defaults planningWorkspaceDesktop to true', () => {
     expect(getFeatureFlag('planningWorkspaceDesktop')).toBe(true);
   });
@@ -51,23 +41,4 @@ describe('feature flags', () => {
     setFeatureFlag('planningWorkspaceDesktop', false);
     expect(getFeatureFlag('planningWorkspaceDesktop')).toBe(false);
   });
-
-  it('defaults fieldPlanExecution to true', () => {
-    expect(getFeatureFlag('fieldPlanExecution')).toBe(true);
-  });
-
-  it('disables fieldPlanExecution when toggled off', () => {
-    setFeatureFlag('fieldPlanExecution', false);
-    expect(getFeatureFlag('fieldPlanExecution')).toBe(false);
-  });
-
-  it('defaults planningScheduleV1 to true', () => {
-    expect(getFeatureFlag('planningScheduleV1')).toBe(true);
-  });
-
-  it('disables planningScheduleV1 when toggled off', () => {
-    setFeatureFlag('planningScheduleV1', false);
-    expect(getFeatureFlag('planningScheduleV1')).toBe(false);
-  });
-
 });
