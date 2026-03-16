@@ -96,7 +96,7 @@
 
 .planning-view__work-package-table th,
 .planning-view__work-package-table td {
-  padding: 0 var(--space-sm);
+  padding: 0 var(--space-xs);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -160,11 +160,11 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: left;
-  padding-left: calc(var(--space-sm) + 10px);
+  padding-left: calc(var(--space-xs) + 8px);
 }
 
 .planning-view__wp-header-columns th:first-child {
-  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 10px);
+  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 8px);
 }
 
 .planning-view__wp-group-heading {
@@ -174,11 +174,12 @@
 }
 
 .planning-view__wp-header-group th:first-child {
-  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 10px);
+  padding-left: calc(var(--wp-card-padding, var(--space-md)) + 8px);
 }
 
 .planning-view__wp-group-heading--phase {
   background: var(--wp-phase-header-bg);
+  padding-left: calc(var(--space-xs) + 8px);
 }
 
 .planning-view__wp-group-heading--assembly {
@@ -280,27 +281,24 @@
 
 .planning-view__wp-qty-col,
 .planning-view__wp-row td:nth-child(3) {
-  min-width: 72px;
+  min-width: 64px;
 }
 
 .planning-view__wp-rate-col,
 .planning-view__wp-row td:nth-child(5),
 .planning-view__wp-row td:nth-child(8),
+.planning-view__wp-crew-col,
+.planning-view__wp-row td:nth-child(6),
+.planning-view__wp-row td:nth-child(9),
 .planning-view__wp-hours-col,
 .planning-view__wp-row td:nth-child(7),
 .planning-view__wp-row td:nth-child(10) {
-  min-width: 48px;
-}
-
-.planning-view__wp-crew-col,
-.planning-view__wp-row td:nth-child(6),
-.planning-view__wp-row td:nth-child(9) {
-  min-width: 44px;
+  min-width: 56px;
 }
 
 .planning-view__wp-unit-col,
 .planning-view__wp-row td:nth-child(4) {
-  min-width: 56px;
+  min-width: 52px;
 }
 
 .planning-view__wp-phase-group-start {
@@ -333,7 +331,7 @@
 
 .planning-view__wp-cell-input {
   min-height: 34px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   font-size: var(--font-small);
@@ -376,6 +374,7 @@
   text-align: left;
   font-variant-numeric: tabular-nums;
   -moz-appearance: textfield;
+  min-width: 2.5em;
 }
 
 .planning-view__wp-cell-input--number::-webkit-inner-spin-button,
@@ -547,6 +546,16 @@
     padding-top: var(--wp-card-padding);
   }
 
+  /* Tighter columns on narrow screens so numbers stay visible when table scrolls */
+  .planning-view__wp-title-col,
+  .planning-view__wp-row td:first-child {
+    min-width: 200px;
+  }
+
+  .planning-view__wp-type-col,
+  .planning-view__wp-row td:nth-child(2) {
+    min-width: 140px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -584,8 +593,8 @@
 
 /* Work Package group: round top-right so it meets Assembly’s rounded top-left */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-header-group th:first-child {
-  border-top-right-radius: var(--radius-md);
-  border-right: 4px solid var(--surface-contained-bg);
+  border-top-right-radius: var(--radius-lg);
+  border-right: 2px solid var(--surface-contained-bg);
 }
 
 /* 3. Alternating body rows — zebra instead of cell-level phase tinting */
@@ -599,10 +608,17 @@
   background: var(--surface-contained-hover) !important;
 }
 
-/* 4. Neutralize per-cell phase bg on body rows — let zebra carry the rhythm */
+/* 4. Neutralize per-cell phase bg on body rows — let zebra carry the rhythm.
+   Light left-edge accent on phase-group-start cells keeps phase identity while scanning. */
 .planning-workspace__editor-canvas .planning-view__wp-phase-cell--assembly,
 .planning-workspace__editor-canvas .planning-view__wp-phase-cell--dismantle {
   background: inherit;
+}
+.planning-workspace__editor-canvas .planning-view__wp-phase-cell--assembly.planning-view__wp-phase-group-start {
+  border-left: 3px solid var(--wp-phase-assembly-header-bg);
+}
+.planning-workspace__editor-canvas .planning-view__wp-phase-cell--dismantle.planning-view__wp-phase-group-start {
+  border-left: 3px solid var(--wp-phase-dismantle-header-bg);
 }
 .planning-workspace__editor-canvas .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--assembly,
 .planning-workspace__editor-canvas .planning-view__wp-row:focus-within .planning-view__wp-phase-cell--dismantle {
@@ -610,20 +626,23 @@
 }
 
 /* 5. Phase group header — colored chip on spanning label, column headers with muted phase text */
+/* Match radius to stat badges (radius-lg) */
 /* Assembly chip — rounded top corners; right border = tab edge before Dismantle */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly {
   background: var(--wp-phase-assembly-header-bg);
   color: var(--phase-assembly-fg);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border-left: none;
-  border-right: 4px solid var(--surface-contained-bg);
+  border-right: 2px solid var(--surface-contained-bg);
+  padding-left: calc(var(--space-xs) + 8px);
 }
 /* Dismantle chip (separator is on last Assembly column right) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle {
   background: var(--wp-phase-dismantle-header-bg);
   color: var(--phase-dismantle-fg);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border-left: none;
+  padding-left: calc(var(--space-xs) + 8px);
 }
 /* Column sub-headers: chip bg continues + muted phase color */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly {
@@ -636,7 +655,7 @@
 }
 /* Unit column header: right border = separator before Assembly (tab-style headers only) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-unit-col {
-  border-right: 4px solid var(--surface-contained-bg);
+  border-right: 2px solid var(--surface-contained-bg);
 }
 /* Assembly phase group start: no left border (separator is on Unit's right) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--assembly {
@@ -645,7 +664,7 @@
 
 /* Dismantle: right border on last Assembly header column (tab-style headers only) */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly.planning-view__wp-hours-col {
-  border-right: 4px solid var(--surface-contained-bg);
+  border-right: 2px solid var(--surface-contained-bg);
 }
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-group-start.planning-view__wp-phase-col--dismantle {
   border-left: none;
