@@ -105,7 +105,7 @@ function App() {
     if (view.type === 'tab' && view.tab === 'planning' && !isWideScreen) {
       setView({ type: 'tab', tab: previousTabRef.current });
     }
-  }, [view.type, view.tab, isWideScreen]);
+  }, [view, isWideScreen]);
 
   const isLoading = !initialized || timerLoading || tasksLoading;
 

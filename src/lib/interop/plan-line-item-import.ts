@@ -96,7 +96,7 @@ export interface PlanLineItemImportParseResult {
 export function planLineItemMappingKey(
   title: string,
   workTypeTitle: string,
-  workUnit: string,
+  workUnit: WorkUnit,
 ): string {
   return workTypeKeyString(`${title}::${workTypeTitle}`, workUnit);
 }
@@ -182,7 +182,7 @@ export function parsePlanLineItemCsv(csvText: string): PlanLineItemImportParseRe
     const workTypeId = findWorkTypeByKey(workTypeTitle, workUnit)?.id ?? null;
 
     items.push({
-      mappingKey: planLineItemMappingKey(title, workTypeTitle, workUnitRaw),
+      mappingKey: planLineItemMappingKey(title, workTypeTitle, workUnit),
       title,
       workTypeTitle,
       workUnit,
