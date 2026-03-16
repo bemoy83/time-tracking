@@ -11,7 +11,6 @@ import { PurgeEntriesConfirm } from '../components/PurgeEntriesConfirm';
 import { PurgeResetConfirm } from '../components/PurgeResetConfirm';
 import { ChevronRightIcon } from '../components/icons';
 import { pluralize } from '../lib/utils/pluralize';
-import { getFeatureFlags, setFeatureFlag, type FeatureFlagKey } from '../lib/flags/feature-flags';
 import './settings/settings-styles';
 
 type SettingsSection =
@@ -36,7 +35,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
   const [showResetAll, setShowResetAll] = useState(false);
   const [parallelTimers, setParallelTimers] = useState(getParallelSubtaskTimers);
   const subtaskRollupMode = useSubtaskTimeRollupMode();
-  const [featureFlags, setFeatureFlags] = useState(getFeatureFlags);
 
   useEffect(() => {
     getAllTimeEntries().then((entries) => setEntryCount(entries.length));
@@ -65,11 +63,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'dataTransfer', label: 'Data Transfer', helper: 'Import plan packages and progress reports' },
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
-
-  const handleToggleFeatureFlag = (flag: FeatureFlagKey, enabled: boolean) => {
-    setFeatureFlag(flag, enabled);
-    setFeatureFlags((prev) => ({ ...prev, [flag]: enabled }));
-  };
 
   return (
     <div className="settings-view">
@@ -111,24 +104,6 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
           </button>
         </section>
       ))}
-
-      <section className="settings-view__section">
-        <div className="settings-view__card">
-          <h2 className="settings-view__sub-header">Feature Flags</h2>
-          <p className="settings-view__helper">Gate risky planning features for rollout safety</p>
-          <label className="settings-view__row settings-view__row--toggle">
-            <span className="settings-view__row-label">Planning workspace (dual-pane on desktop)</span>
-            <input
-              type="checkbox"
-              className="settings-view__toggle"
-              checked={featureFlags.planningWorkspaceDesktop}
-              onChange={(e) => {
-                handleToggleFeatureFlag('planningWorkspaceDesktop', e.target.checked);
-              }}
-            />
-          </label>
-        </div>
-      </section>
 
       <section className="settings-view__section">
         <div className="settings-view__card">

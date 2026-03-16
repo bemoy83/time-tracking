@@ -11,7 +11,6 @@ import { InstallPrompt } from './components/InstallPrompt';
 import { LoadingBlock } from './components/LoadingBlock';
 import { TodayView } from './pages/TodayView';
 import { ProjectList } from './pages/ProjectList';
-import { getFeatureFlag } from './lib/flags/feature-flags';
 import { useMediaQuery, WORKSPACE_MIN_WIDTH } from './lib/hooks/useMediaQuery';
 import { lazyNamedExport } from './lib/react/lazy-named-export';
 
@@ -94,14 +93,19 @@ function App() {
   // Track the tab the user was on before entering the planning workspace
   const previousTabRef = useRef<Tab>('today');
 
-  // Workspace mode detection
+  // Planning workspace — desktop only (dual-pane). Hidden on small screens.
   const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
-  const workspaceEnabled = getFeatureFlag('planningWorkspaceDesktop');
   const isPlanningWorkspaceActive =
-    workspaceEnabled &&
     isWideScreen &&
     view.type === 'tab' &&
     view.tab === 'planning';
+
+  // Redirect away from planning when viewport becomes too narrow (e.g. resize)
+  useEffect(() => {
+    if (view.type === 'tab' && view.tab === 'planning' && !isWideScreen) {
+      setView({ type: 'tab', tab: previousTabRef.current });
+    }
+  }, [view.type, view.tab, isWideScreen]);
 
   const isLoading = !initialized || timerLoading || tasksLoading;
 

@@ -51,6 +51,7 @@ import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
 import { isPlanWrapUpEligible } from '../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from '../pages/planning/hooks/usePlanIdsWithImportedExecutionReturns';
+import { useMediaQuery, WORKSPACE_MIN_WIDTH } from '../lib/hooks/useMediaQuery';
 
 interface ProjectDetailProps {
   projectId: string;
@@ -67,6 +68,7 @@ export function ProjectDetail({
 }: ProjectDetailProps) {
   const { projects, tasks } = useTaskStore();
   const { templates } = useTemplateStore();
+  const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
   const { activeTimers } = useTimerStore();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
@@ -282,7 +284,7 @@ export function ProjectDetail({
           Work Qty: {workQuantitySummary}
         </p>
       )}
-      {reviewReadyPlan && (
+      {reviewReadyPlan && isWideScreen && (
         <div className="project-detail__metrics-note">
           This project has a completed plan.{' '}
           <button

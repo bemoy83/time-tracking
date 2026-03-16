@@ -3,22 +3,10 @@ import type { Plan } from '../../../lib/planning/plan-model';
 import { usePlanningData, type PlanningData } from './usePlanningData';
 import { loadPlanningSession, savePlanningSession } from './usePlanningSession';
 
-/**
- * Navigation mode determines layout and navigation behavior.
- * - 'stack': mobile — full-screen sub-views pushed onto a stack
- * - 'workspace': desktop/tablet — persistent sidebar + main pane
- */
-export type NavigationMode = 'stack' | 'workspace';
-
-/** Sub-views for stack (mobile) navigation. */
-export type PlanningSubView = 'list' | 'edit' | 'schedule' | 'progress' | 'insights' | 'report';
-
 /** Tabs available in the workspace main pane. */
 export type WorkspaceTab = 'edit' | 'schedule' | 'issues' | 'shared-schedule' | 'progress' | 'review' | 'insights' | 'report';
 
 interface PlanningWorkspaceOptions {
-  /** Navigation mode: 'stack' for mobile, 'workspace' for desktop. */
-  mode?: NavigationMode;
   initialPlanId?: string | null;
   initialSubView?: 'edit' | 'schedule' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
@@ -34,44 +22,34 @@ function toWorkspaceTab(
 }
 
 export function usePlanningWorkspaceState({
-  mode = 'stack',
   initialPlanId,
   initialSubView,
   onInitialNavigationHandled,
 }: PlanningWorkspaceOptions = {}) {
   const data: PlanningData = usePlanningData();
 
-  // --- Session restoration (workspace mode only) ---
-  const session = useRef(mode === 'workspace' ? loadPlanningSession() : null).current;
+  const session = useRef(loadPlanningSession()).current;
 
-  // --- Shared selection state ---
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
   const [showNewPlanSheet, setShowNewPlanSheet] = useState(false);
   const [selectedPlanIdsForSharedScheduleState, setSelectedPlanIdsForSharedScheduleState] = useState<Set<string>>(
     () => new Set(session?.selectedPlanIdsForSharedSchedule ?? []),
   );
 
-  // --- Sidebar preferences (workspace mode) ---
   const [archiveExpanded, setArchiveExpanded] = useState(() => {
     try { return sessionStorage.getItem('planning_archive_expanded') === 'true'; } catch { return false; }
   });
 
-  // --- Stack navigation state (mobile) ---
-  const [subView, setSubView] = useState<PlanningSubView>('list');
-
-  // --- Workspace navigation state (desktop) ---
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     session?.activeTab ?? 'edit',
   );
   const initialNavigationAppliedRef = useRef(false);
   const sessionRestoredRef = useRef(false);
 
-  // --- Restore session (workspace mode): re-select last plan once plans load ---
+  // Restore session: re-select last plan once plans load
   useEffect(() => {
-    if (mode !== 'workspace') return;
     if (sessionRestoredRef.current) return;
     if (data.plans.length === 0) return;
-    // Don't restore if an external initial navigation was requested
     if (initialPlanId) return;
 
     sessionRestoredRef.current = true;
@@ -81,21 +59,18 @@ export function usePlanningWorkspaceState({
     if (restoredPlan) {
       setActivePlan(restoredPlan);
     }
-  }, [mode, data.plans, session, initialPlanId]);
+  }, [data.plans, session, initialPlanId]);
 
-  // --- Persist session on selection/tab changes (workspace mode) ---
+  // Persist session on selection/tab changes
   useEffect(() => {
-    if (mode !== 'workspace') return;
     savePlanningSession({
       selectedPlanId: activePlan?.id ?? null,
       activeTab,
       selectedPlanIdsForSharedSchedule: Array.from(selectedPlanIdsForSharedScheduleState),
     });
-  }, [mode, activePlan, activeTab, selectedPlanIdsForSharedScheduleState]);
+  }, [activePlan, activeTab, selectedPlanIdsForSharedScheduleState]);
 
-  // Remove shared-schedule selection entries that no longer exist.
   useEffect(() => {
-    if (mode !== 'workspace') return;
     const knownPlanIds = new Set(data.plans.map((plan) => plan.id));
     setSelectedPlanIdsForSharedScheduleState((prev) => {
       let changed = false;
@@ -106,25 +81,20 @@ export function usePlanningWorkspaceState({
       }
       return changed ? next : prev;
     });
-  }, [data.plans, mode]);
+  }, [data.plans]);
 
-  // --- Sync activePlan with plans list (handle updates/deletes) ---
   useEffect(() => {
     if (!activePlan) return;
     const updated = data.plans.find((p) => p.id === activePlan.id);
     if (!updated) {
       setActivePlan(null);
-      if (mode === 'stack') setSubView('list');
       return;
     }
-    // When the plan was updated in the list (e.g. save completed), sync activePlan
-    // so child views (ScheduleView, PlanEditor) receive the latest data.
     if (updated.updatedAt !== activePlan.updatedAt) {
       setActivePlan(updated);
     }
-  }, [activePlan, data.plans, mode]);
+  }, [activePlan, data.plans]);
 
-  // --- Handle initial navigation from external launch ---
   useEffect(() => {
     if (initialNavigationAppliedRef.current) return;
     if (!initialPlanId) return;
@@ -136,30 +106,18 @@ export function usePlanningWorkspaceState({
 
     if (!requestedPlan) return;
     setActivePlan(requestedPlan);
+    setActiveTab(toWorkspaceTab(initialSubView));
+  }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans]);
 
-    if (mode === 'stack') {
-      setSubView(initialSubView ?? 'edit');
-    } else {
-      setActiveTab(toWorkspaceTab(initialSubView));
-    }
-  }, [initialPlanId, initialSubView, onInitialNavigationHandled, data.plans, mode]);
-
-  // --- Derived ---
   const hasLinkedTasks = useMemo(() => {
     if (!activePlan) return false;
     return data.hasLinkedTasksForPlan(activePlan.id);
   }, [activePlan, data]);
 
-  // --- Navigation actions ---
-
   const handleSelectPlan = useCallback((plan: Plan) => {
     setActivePlan(plan);
-    if (mode === 'stack') {
-      setSubView('edit');
-    } else {
-      setActiveTab('edit');
-    }
-  }, [mode]);
+    setActiveTab('edit');
+  }, []);
 
   const handleRequestNewPlan = useCallback(() => {
     setShowNewPlanSheet(true);
@@ -172,67 +130,38 @@ export function usePlanningWorkspaceState({
     const plan = await data.handleCreatePlan(init);
     setShowNewPlanSheet(false);
     setActivePlan(plan);
-    if (mode === 'stack') {
-      setSubView('edit');
-    } else {
-      setActiveTab('edit');
-    }
-  }, [data, mode]);
+    setActiveTab('edit');
+  }, [data]);
 
   const handleDeletePlan = useCallback(async (planId: string) => {
     await data.handleDeletePlan(planId);
     if (activePlan?.id === planId) {
       setActivePlan(null);
-      if (mode === 'stack') setSubView('list');
     }
-  }, [activePlan, data, mode]);
+  }, [activePlan, data]);
 
   const handleSavePlan = useCallback(async (plan: Plan) => {
     await data.handleSavePlan(plan);
     setActivePlan(plan);
   }, [data]);
 
-  const handleBack = useCallback(() => {
-    if (mode === 'stack') {
-      setSubView('list');
-      setActivePlan(null);
-    }
-    // Workspace mode: back is a no-op (sidebar is always visible)
-  }, [mode]);
-
   const openInsights = useCallback(() => {
-    if (mode === 'stack') {
-      setSubView('insights');
-    } else {
-      setActivePlan(null);
-      setActiveTab('insights');
-    }
-  }, [mode]);
+    setActivePlan(null);
+    setActiveTab('insights');
+  }, []);
 
   const openProgress = useCallback(async () => {
     await data.reloadTimeEntries();
-    if (mode === 'stack') {
-      setSubView('progress');
-    } else {
-      setActiveTab('progress');
-    }
-  }, [data, mode]);
+    setActiveTab('progress');
+  }, [data]);
 
   const openSchedule = useCallback(() => {
-    if (mode === 'stack') {
-      setSubView('schedule');
-    } else {
-      setActiveTab('schedule');
-    }
-  }, [mode]);
+    setActiveTab('schedule');
+  }, []);
 
   const openReport = useCallback(() => {
-    if (mode === 'stack') {
-      setSubView('report');
-    } else {
-      setActiveTab('report');
-    }
-  }, [mode]);
+    setActiveTab('report');
+  }, []);
 
   const toggleArchiveExpanded = useCallback(() => {
     setArchiveExpanded((prev) => {
@@ -252,10 +181,6 @@ export function usePlanningWorkspaceState({
   }, []);
 
   return {
-    // Navigation mode
-    mode,
-
-    // Data (pass-through from usePlanningData)
     plans: data.plans,
     timeEntries: data.timeEntries,
     timeEntriesByTask: data.timeEntriesByTask,
@@ -265,35 +190,25 @@ export function usePlanningWorkspaceState({
     workTypes: data.workTypes,
     wrapUpPlan: data.wrapUpPlan,
 
-    // Selection state
     activePlan,
     hasLinkedTasks,
     selectedPlanIdsForSharedSchedule: selectedPlanIdsForSharedScheduleState,
     setSelectedPlanIdsForSharedSchedule,
 
-    // Stack navigation (mobile)
-    subView,
-    setSubView,
-
-    // Workspace navigation (desktop)
     activeTab,
     setActiveTab,
 
-    // Sidebar preferences
     archiveExpanded,
     toggleArchiveExpanded,
 
-    // New plan sheet
     showNewPlanSheet,
     setShowNewPlanSheet,
     handleRequestNewPlan,
 
-    // Actions
     handleCreatePlan,
     handleSelectPlan,
     handleSavePlan,
     handleDeletePlan,
-    handleBack,
     openInsights,
     openProgress,
     openSchedule,

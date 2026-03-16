@@ -55,8 +55,6 @@ The app introduces quantifiable task tracking integrated with time and personnel
 
 **WorkType is the only classification model** — no categories, no tags, no freeform grouping. All analytics flow through WorkType.
 
-**Feature flags (localStorage-backed)** — in-progress features are gated for safe rollout without branching.
-
 ---
 
 ## 4. Core Data Model
@@ -233,10 +231,11 @@ Templates pre-fill fields at task creation. The resulting task is indistinguisha
 
 ---
 
-## 10. Active Feature Flags
+## 10. Active Feature Flags / Toggles
 
 | Flag | Feature |
 |---|---|
 | `parallelTimers` | Multiple simultaneous task timers |
-| `planningWorkspaceDesktop` | Dual-pane planning layout on wide screens |
 | `wrapUpReviewV2` | Updated wrap-up review flow |
+
+Planning workspace is dual-pane on desktop (wide screens only). Hidden on smaller screens. No toggle.

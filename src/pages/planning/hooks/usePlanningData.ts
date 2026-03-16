@@ -29,7 +29,7 @@ import { isPlanInPlannerState } from '../../../lib/planning/plan-lifecycle';
 
 /**
  * Shared planning data layer — owns loading, CRUD, and derived state.
- * Consumed by both desktop workspace and mobile stack navigation layers.
+ * Consumed by the planning workspace (desktop only).
  */
 export function usePlanningData() {
   const [plans, setPlans] = useState<Plan[]>([]);
