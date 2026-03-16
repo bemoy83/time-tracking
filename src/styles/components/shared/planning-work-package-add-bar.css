@@ -3,17 +3,51 @@
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-md);
+  padding-top: 0;
   font-size: var(--font-small);
   background: var(--surface-contained-bg);
   border-radius: var(--radius-xl);
 }
 
+/* Segmented control: longer, slimmer, text on one line (uses task-work-quantity__unit-pills) */
+.planning-view__wp-add-segments {
+  align-self: flex-start;
+  padding: 2px;
+}
+
+.planning-view__wp-add-segments .task-work-quantity__unit-pill {
+  flex: 1 1 auto;
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 18px;
+  white-space: nowrap;
+}
+
+.planning-view__wp-add-mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.planning-view__wp-add-mode--csv .planning-view__wp-add-bar-help {
+  margin-bottom: 0;
+}
+
+.planning-view__import-confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 .planning-view__wp-add-bar-help {
   margin: 0;
-  font-size: var(--font-caption);
+  font-size: var(--font-small);
   color: var(--color-text-muted);
   max-width: 72ch;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .planning-view__wp-add-bar-fields {

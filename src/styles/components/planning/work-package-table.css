@@ -61,6 +61,7 @@
 
 .planning-view__wp-add-zone {
   padding: var(--wp-card-padding);
+  padding-top: 0;
   background: var(--surface-contained-bg);
   border-bottom: none;
 }
@@ -517,6 +518,7 @@
 
   .planning-workspace__editor-canvas .planning-view__wp-add-zone {
     padding: var(--wp-card-padding);
+    padding-top: 0;
   }
 
   .planning-workspace__editor-canvas .planning-view__wp-add-zone .planning-view__wp-add-bar {
@@ -535,6 +537,7 @@
 
   .planning-view__wp-add-zone {
     padding: var(--wp-card-padding);
+    padding-top: 0;
   }
 
   .planning-view__wp-add-zone + .planning-view__wp-table-zone {

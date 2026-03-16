@@ -91,6 +91,7 @@ export function PlanEditor({
   const [title, setTitle] = useState(plan.title);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [addMode, setAddMode] = useState<'manual' | 'csv'>('manual');
 
   useEffect(() => {
     setTitle(currentPlan.title);
@@ -487,50 +488,65 @@ export function PlanEditor({
               <span className="planning-view__items-summary-asm">Assembly {assemblyPersonHours.toFixed(1)} ph</span>
               <span className="planning-view__items-summary-dis">Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
             </div>
-            {canAddWorkPackages && (
-              importPendingCount === null ? (
-                <>
-                  <button
-                    className="btn btn--secondary btn--sm"
-                    onClick={() => importFileInputRef.current?.click()}
-                  >
-                    Import CSV
-                  </button>
-                  <input
-                    ref={importFileInputRef}
-                    type="file"
-                    accept=".csv"
-                    hidden
-                    onChange={handleImportFileChange}
-                  />
-                </>
-              ) : (
-                <span className="planning-view__import-confirm">
-                  Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
-                  <button
-                    className="btn btn--primary btn--sm"
-                    onClick={handleImportConfirm}
-                    disabled={isImportApplying}
-                  >
-                    Confirm
-                  </button>
-                  <button className="btn btn--ghost btn--sm" onClick={handleImportCancel}>
-                    Cancel
-                  </button>
-                </span>
-              )
-            )}
           </div>
 
           {canAddWorkPackages && (
             <div className="planning-view__wp-add-zone">
               <div className="planning-view__wp-add-bar">
-                <p className="planning-view__wp-add-bar-help">
-                  List the work needed for this project/event. Start with title, type, and
-                  quantity, then adjust details in the table below.
-                </p>
+                {importPendingCount !== null ? (
+                  <div className="planning-view__wp-add-mode planning-view__wp-add-mode--csv-confirm">
+                    <span className="planning-view__import-confirm">
+                      Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
+                        <button
+                          className="btn btn--primary btn--sm"
+                          onClick={() => {
+                            handleImportConfirm();
+                            setAddMode('manual');
+                          }}
+                          disabled={isImportApplying}
+                        >
+                        Confirm
+                      </button>
+                      <button className="btn btn--ghost btn--sm" onClick={handleImportCancel}>
+                        Cancel
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      className="task-work-quantity__unit-pills planning-view__wp-add-segments"
+                      role="group"
+                      aria-label="Add work packages by"
+                    >
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={addMode === 'manual'}
+                        className={`task-work-quantity__unit-pill${addMode === 'manual' ? ' task-work-quantity__unit-pill--active' : ''}`}
+                        onClick={() => setAddMode('manual')}
+                      >
+                        Add manually
+                      </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={addMode === 'csv'}
+                        className={`task-work-quantity__unit-pill${addMode === 'csv' ? ' task-work-quantity__unit-pill--active' : ''}`}
+                        onClick={() => setAddMode('csv')}
+                      >
+                        Import CSV
+                      </button>
+                    </div>
 
-                <div className="planning-view__wp-add-bar-fields">
+                    {addMode === 'manual' ? (
+                      <>
+                        <p className="planning-view__wp-add-bar-help">
+                          List the work needed for this project/event. Start with title, type, and
+                          quantity, then adjust details in the table below.
+                        </p>
+
+                        <div className="planning-view__wp-add-bar-fields">
                   <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--title">
                     <span className="planning-view__wp-add-bar-label">Title</span>
                     <input
@@ -609,6 +625,30 @@ export function PlanEditor({
                     </button>
                   </div>
                 </div>
+                      </>
+                    ) : (
+                      <div className="planning-view__wp-add-mode planning-view__wp-add-mode--csv">
+                        <p className="planning-view__wp-add-bar-help">
+                          Choose a CSV file with work package data (title, workTypeTitle, workUnit, phase, …)
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn--secondary btn--sm"
+                          onClick={() => importFileInputRef.current?.click()}
+                        >
+                          Choose file
+                        </button>
+                        <input
+                          ref={importFileInputRef}
+                          type="file"
+                          accept=".csv"
+                          hidden
+                          onChange={handleImportFileChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}
