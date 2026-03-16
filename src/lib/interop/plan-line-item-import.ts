@@ -12,10 +12,54 @@
 
 import { type WorkUnit, WORK_UNITS, workTypeKeyString } from '../types';
 import { findWorkTypeByKey } from '../stores/work-type-store';
-import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
+import { detectCsvDelimiter, parseCsvLine, csvRow } from './csv-utils';
 import { normalizeNumberString } from './number-parse';
 import { type PlanLineItem } from '../planning/plan-model';
 import { createLineItem } from '../planning/plan-model';
+
+const PLAN_LINE_ITEM_CSV_HEADERS = [
+  'title',
+  'workTypeTitle',
+  'workUnit',
+  'workQuantity',
+  'assemblyRate',
+  'assemblyCrew',
+  'assemblyEstimatedMinutes',
+  'dismantleRate',
+  'dismantleCrew',
+  'dismantleEstimatedMinutes',
+];
+
+/** Generate a sample CSV with one example row showing all supported fields. */
+export function exportPlanLineItemCsvSample(): string {
+  return [
+    csvRow(PLAN_LINE_ITEM_CSV_HEADERS),
+    csvRow([
+      'Carpet Tiles Hall A',
+      'Carpet Tiles',
+      'm2',
+      500,
+      12,
+      2,
+      '',
+      6,
+      1,
+      '',
+    ]),
+    csvRow([
+      'Staging Risers',
+      'Staging',
+      'pcs',
+      80,
+      8,
+      3,
+      '',
+      4,
+      2,
+      '',
+    ]),
+  ].join('\n');
+}
 
 export interface ImportedPlanLineItem {
   /** Stable mapping key: title::workTypeTitle:workUnit (no phase). */

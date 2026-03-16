@@ -20,6 +20,7 @@ type SettingsSection =
   | 'projects'
   | 'workTypes'
   | 'templates'
+  | 'planLineItems'
   | 'productivity'
   | 'attribution'
   | 'remediation'
@@ -42,6 +43,7 @@ const PlanningView = lazyNamedExport(() => import('./pages/PlanningView'), 'Plan
 const SettingsProjectsView = lazyNamedExport(() => import('./pages/settings/SettingsProjectsView'), 'SettingsProjectsView');
 const SettingsWorkTypesView = lazyNamedExport(() => import('./pages/settings/SettingsWorkTypesView'), 'SettingsWorkTypesView');
 const SettingsTemplatesView = lazyNamedExport(() => import('./pages/settings/SettingsTemplatesView'), 'SettingsTemplatesView');
+const SettingsPlanLineItemsView = lazyNamedExport(() => import('./pages/settings/SettingsPlanLineItemsView'), 'SettingsPlanLineItemsView');
 const SettingsProductivityView = lazyNamedExport(() => import('./pages/settings/SettingsProductivityView'), 'SettingsProductivityView');
 const SettingsAttributionView = lazyNamedExport(() => import('./pages/settings/SettingsAttributionView'), 'SettingsAttributionView');
 const SettingsRemediationView = lazyNamedExport(() => import('./pages/settings/SettingsRemediationView'), 'SettingsRemediationView');
@@ -217,6 +219,9 @@ function App() {
       )}
       {view.type === 'settingsDetail' && view.section === 'templates' && (
         <SettingsTemplatesView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'planLineItems' && (
+        <SettingsPlanLineItemsView onBack={handleBack} />
       )}
       {view.type === 'settingsDetail' && view.section === 'productivity' && (
         <SettingsProductivityView onBack={handleBack} />
