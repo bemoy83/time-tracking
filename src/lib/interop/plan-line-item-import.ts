@@ -172,6 +172,8 @@ export function parsePlanLineItemCsv(csvText: string): PlanLineItemImportParseRe
 
     const workUnit = workUnitRaw as WorkUnit;
     const workQuantity = parseOptionalNumber(row['workquantity'], rowNum, 'workQuantity', errors) ?? 0;
+    if (workQuantity === 0) continue; // skip zero-quantity rows (not applicable to this event)
+
     const assemblyRate = parseOptionalNumber(row['assemblyrate'], rowNum, 'assemblyRate', errors) ?? 0;
     const assemblyCrew = parseOptionalNumberOrNull(row['assemblycrew'], rowNum, 'assemblyCrew', errors);
     const assemblyEstimatedMinutes = parseOptionalNumberOrNull(row['assemblyestimatedminutes'], rowNum, 'assemblyEstimatedMinutes', errors);
