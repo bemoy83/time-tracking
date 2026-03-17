@@ -48,7 +48,13 @@ export function NewPlanSheet({
   const [newProjectName, setNewProjectName] = useState('');
   const createProjectInputRef = useRef<HTMLInputElement>(null);
   const standaloneInputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useModalFocusTrap(isOpen && variant === 'modal', onClose);
+  const projectListRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useModalFocusTrap(
+    isOpen && variant === 'modal',
+    onClose,
+    variant === 'modal' ? searchInputRef : undefined
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -97,6 +103,49 @@ export function NewPlanSheet({
     setNewProjectName('');
   };
 
+  const handleProjectListKeyDown = (e: React.KeyboardEvent) => {
+    if (filteredProjects.length === 0) return;
+    const idx = selectedProjectId
+      ? filteredProjects.findIndex((p) => p.id === selectedProjectId)
+      : -1;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = idx < filteredProjects.length - 1 ? idx + 1 : 0;
+      setSelectedProjectId(filteredProjects[next].id);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = idx > 0 ? idx - 1 : filteredProjects.length - 1;
+      setSelectedProjectId(filteredProjects[prev].id);
+    } else if (e.key === 'Enter' && canCreate) {
+      e.preventDefault();
+      handleConfirm();
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    if (filteredProjects.length === 0) return;
+    e.preventDefault();
+    projectListRef.current?.focus();
+    if (!selectedProjectId) {
+      setSelectedProjectId(
+        e.key === 'ArrowDown'
+          ? filteredProjects[0].id
+          : filteredProjects[filteredProjects.length - 1].id
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (selectedProjectId && projectListRef.current) {
+      const el = projectListRef.current.querySelector(
+        `[data-project-id="${selectedProjectId}"]`
+      );
+      el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedProjectId]);
+
   const body = (
     <>
       {/* Segmented control */}
@@ -131,14 +180,26 @@ export function NewPlanSheet({
             Link to a project to pre-fill event dates and group all delivery tasks together.
           </p>
           <input
+            ref={searchInputRef}
             className="input new-plan-sheet__search"
             type="search"
             placeholder="Search projects…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             aria-label="Search projects"
           />
-          <div className="new-plan-sheet__project-list">
+          <div
+            ref={projectListRef}
+            className="new-plan-sheet__project-list"
+            role="listbox"
+            tabIndex={filteredProjects.length > 0 ? 0 : -1}
+            aria-label="Projects"
+            aria-activedescendant={
+              selectedProjectId ? `project-option-${selectedProjectId}` : undefined
+            }
+            onKeyDown={handleProjectListKeyDown}
+          >
             {filteredProjects.length === 0 ? (
               <p className="new-plan-sheet__empty">
                 {search.trim() ? 'No projects match your search.' : 'No projects yet.'}
@@ -147,10 +208,21 @@ export function NewPlanSheet({
               filteredProjects.map((project) => (
                 <button
                   key={project.id}
+                  id={`project-option-${project.id}`}
                   type="button"
+                  role="option"
+                  aria-selected={selectedProjectId === project.id}
+                  data-project-id={project.id}
+                  tabIndex={-1}
                   className={`new-plan-sheet__project-option${selectedProjectId === project.id ? ' new-plan-sheet__project-option--selected' : ''}`}
-                  aria-pressed={selectedProjectId === project.id}
                   onClick={() => setSelectedProjectId(project.id)}
+                  onKeyDown={(e) => {
+                    if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
+                      e.preventDefault();
+                      handleProjectListKeyDown(e);
+                      if (e.key !== 'Enter') projectListRef.current?.focus();
+                    }
+                  }}
                 >
                   <ProjectColorDot color={project.color} />
                   <span className="new-plan-sheet__project-name">{project.name}</span>

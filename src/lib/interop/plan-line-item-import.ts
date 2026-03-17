@@ -210,13 +210,18 @@ export function importedPlanLineItemsToLineItems(
   imported: ImportedPlanLineItem[],
 ): PlanLineItem[] {
   return imported.map((item) => {
+    // Fall back to stored work type rates when CSV didn't provide them.
+    const storedWorkType = findWorkTypeByKey(item.workTypeTitle, item.workUnit);
+    const assemblyRate = item.assemblyRate || storedWorkType?.assemblyRate || 0;
+    const dismantleRate = item.dismantleRate || storedWorkType?.dismantleRate || 0;
+
     const base = createLineItem(
       item.title,
       item.workTypeTitle,
       item.workUnit,
       item.workQuantity,
-      item.assemblyRate,
-      item.dismantleRate,
+      assemblyRate,
+      dismantleRate,
       'manual',
       item.workTypeId,
     );
