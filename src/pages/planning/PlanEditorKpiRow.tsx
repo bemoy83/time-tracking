@@ -5,6 +5,8 @@ interface PlanEditorKpiRowProps {
   personHours: number;
   utilizationPct: number | null;
   workDays: number | null;
+  /** Optional secondary metric: assembly / dismantle work day split */
+  workDaysSecondary?: { assembly: number; dismantle: number } | null;
 }
 
 export function PlanEditorKpiRow({
@@ -12,7 +14,11 @@ export function PlanEditorKpiRow({
   personHours,
   utilizationPct,
   workDays,
+  workDaysSecondary,
 }: PlanEditorKpiRowProps) {
+  const hasWorkDaysSecondary =
+    workDaysSecondary != null && (workDaysSecondary.assembly > 0 || workDaysSecondary.dismantle > 0);
+
   return (
     <div className="planning-view__kpi-row">
       <div className="planning-view__kpi-card">
@@ -38,12 +44,35 @@ export function PlanEditorKpiRow({
         </span>
         <span className="planning-view__kpi-card-lbl">Utilization</span>
       </div>
-      <div className="planning-view__kpi-card">
+      <div
+        className={`planning-view__kpi-card${hasWorkDaysSecondary ? ' planning-view__kpi-card--has-secondary' : ''}`}
+      >
         <div className="planning-view__kpi-card-ico">
           <TaskListIcon />
         </div>
-        <span className="planning-view__kpi-card-val">{workDays ?? '—'}</span>
-        <span className="planning-view__kpi-card-lbl">Work Days</span>
+        {hasWorkDaysSecondary ? (
+          <>
+            <div className="planning-view__kpi-card-primary">
+              <span className="planning-view__kpi-card-val">{workDays ?? '—'}</span>
+              <span className="planning-view__kpi-card-lbl">Work Days</span>
+            </div>
+            <div className="planning-view__kpi-card-secondary">
+              <div className="planning-view__kpi-card-secondary-row">
+                <span className="planning-view__kpi-card-secondary-val">{workDaysSecondary!.assembly}</span>
+                <span className="planning-view__kpi-card-secondary-lbl">Assembly</span>
+              </div>
+              <div className="planning-view__kpi-card-secondary-row">
+                <span className="planning-view__kpi-card-secondary-val">{workDaysSecondary!.dismantle}</span>
+                <span className="planning-view__kpi-card-secondary-lbl">Dismantle</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="planning-view__kpi-card-val">{workDays ?? '—'}</span>
+            <span className="planning-view__kpi-card-lbl">Work Days</span>
+          </>
+        )}
       </div>
     </div>
   );

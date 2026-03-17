@@ -53,6 +53,62 @@
   color: var(--color-text-muted);
 }
 
+/* Secondary metric layout — 2 columns (primary | assembly/dismantle split) */
+.planning-view__kpi-card--has-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "ico secondary"
+    "primary secondary";
+  gap: 8px;
+  column-gap: 12px;
+}
+
+.planning-view__kpi-card--has-secondary .planning-view__kpi-card-ico {
+  grid-area: ico;
+}
+
+.planning-view__kpi-card--has-secondary .planning-view__kpi-card-primary {
+  grid-area: primary;
+}
+
+.planning-view__kpi-card-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planning-view__kpi-card-secondary {
+  grid-area: secondary;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.planning-view__kpi-card-secondary-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  line-height: 1.2;
+}
+
+.planning-view__kpi-card-secondary-val {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.planning-view__kpi-card-secondary-lbl {
+  font-size: 0.625rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
 /* Risk variant — value turns danger color */
 .planning-view__kpi-card--risk .planning-view__kpi-card-val {
   color: var(--state-danger-fg);
@@ -125,6 +181,16 @@
   }
   .planning-view__kpi-ring {
     display: none;
+  }
+  .planning-view__kpi-card--has-secondary {
+    display: flex;
+    flex-direction: column;
+    grid-template-areas: unset;
+  }
+  .planning-view__kpi-card--has-secondary .planning-view__kpi-card-ico,
+  .planning-view__kpi-card--has-secondary .planning-view__kpi-card-primary,
+  .planning-view__kpi-card--has-secondary .planning-view__kpi-card-secondary {
+    grid-area: unset;
   }
 }
 

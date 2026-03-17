@@ -7,7 +7,7 @@ import {
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
-import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
+import { generatePlanSuggestions, getPhaseWorkDayCount } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
@@ -163,6 +163,9 @@ export function PlanEditor({
     const headroom = totalAvailable - totalPersonHours;
     return { workDayCount: workDays.length, totalAvailable, headroom };
   })();
+
+  const assemblyWorkDays = getPhaseWorkDayCount(currentPlan, 'assembly');
+  const dismantleWorkDays = getPhaseWorkDayCount(currentPlan, 'dismantle');
 
   const isLocked = currentPlan.status === 'active';
   const selectedProject = currentPlan.projectId
@@ -377,6 +380,7 @@ export function PlanEditor({
         personHours={totalPersonHours}
         utilizationPct={utilizationPct}
         workDays={availableScope?.workDayCount ?? null}
+        workDaysSecondary={{ assembly: assemblyWorkDays, dismantle: dismantleWorkDays }}
       />
       {showBackButton && (
         <header className="planning-view__editor-header">
