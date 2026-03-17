@@ -1,6 +1,13 @@
 import type { BuildPhase } from '../../types';
-import { getEffectiveCrewForDate, getPhaseFields, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
+import {
+  getCrewEquivalentForDate,
+  getPhaseFields,
+  getPlannedPersonHoursForDate,
+  type PlanLineItem,
+  type WorkCalendarDay,
+} from '../plan-model';
 import type { CapacitySummary, DailyCapacity } from './capacity';
+import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
 import {
   dayAccessHours,
   dayAvailablePersonHours,
@@ -64,29 +71,28 @@ function applyScheduledItem(
   dates: string[],
 ): void {
   const pf = getPhaseFields(item, phase);
-  const totalPersonHours = pf.timeHours * pf.crew;
-  let remaining = totalPersonHours;
+  const totalPersonHours = resolveRequiredPersonHoursForPhase(item, phase) ?? (pf.timeHours * pf.crew);
+  let scheduledTotal = 0;
   const lastDate = dates[dates.length - 1];
 
   for (const date of dates) {
     const day = dayMap.get(date);
     if (!day) continue;
-    const effectiveCrew = getEffectiveCrewForDate(item, phase, date);
-    const capacity = day.isWorkDay ? effectiveCrew * (day.accessHours || 8) : 0;
+    const plannedPersonHours = getPlannedPersonHoursForDate(item, phase, date);
+    const crewEquivalent = day.isWorkDay
+      ? getCrewEquivalentForDate(item, phase, date, day.accessHours || 8)
+      : 0;
 
-    // Always count assigned crew for days in span (user may assign more crew than work needs)
-    if (day.isWorkDay && effectiveCrew > 0) {
-      day.assignedCrewTotal += effectiveCrew;
+    if (day.isWorkDay && crewEquivalent > 0) {
+      day.assignedCrewTotal += crewEquivalent;
     }
     day.lineItemCount += 1;
 
-    if (remaining <= 0) continue;
+    if (plannedPersonHours <= 0) continue;
+    day.requiredPersonHours += plannedPersonHours;
+    scheduledTotal += plannedPersonHours;
 
-    const work = Math.min(remaining, capacity);
-    day.requiredPersonHours += work;
-    remaining -= work;
-
-    if (date === lastDate && remaining > 0.01) {
+    if (date === lastDate && totalPersonHours - scheduledTotal > 0.01) {
       // Only accumulate shortfall on work days so the badge displays it
       const targetDay = day.isWorkDay ? day : (() => {
         for (let i = dates.length - 1; i >= 0; i--) {
@@ -95,8 +101,8 @@ function applyScheduledItem(
         }
         return day;
       })();
-      targetDay.needToMeetTargetPersonHours += work + remaining;
-      targetDay.shortfallPersonHours += remaining;
+      targetDay.needToMeetTargetPersonHours += totalPersonHours - (scheduledTotal - plannedPersonHours);
+      targetDay.shortfallPersonHours += totalPersonHours - scheduledTotal;
     }
   }
 

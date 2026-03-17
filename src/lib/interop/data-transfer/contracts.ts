@@ -2,8 +2,8 @@ import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from 
 import type { BuildPhase, Project, Task, TimeEntry, WorkType } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
-export const DATA_TRANSFER_SCHEMA_VERSION = '2.0';
-export const DATA_TRANSFER_SCHEMA_COMPAT = ['2.0'] as const;
+export const DATA_TRANSFER_SCHEMA_VERSION = '3.0';
+export const DATA_TRANSFER_SCHEMA_COMPAT = ['3.0'] as const;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -47,8 +47,8 @@ export interface ExecutionReturnLineItem {
   removedFromSource: boolean;
   scheduledStart: string | null;
   scheduledEnd: string | null;
-  /** Per-day assigned crew from plan schedule. */
-  crewByDate?: Record<string, number>;
+  /** Per-day planned effort from plan schedule. */
+  personHoursByDate?: Record<string, number>;
   actualStartDate: string | null;
   actualEndDate: string | null;
   deadlineStatusAtClose: DeadlineStatus | null;

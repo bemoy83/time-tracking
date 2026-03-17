@@ -9,7 +9,6 @@ import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { generateConflictSuggestions } from '../../lib/planning/scheduling/conflict-resolution';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
-import { lazyMigrateCrewByDate } from '../../lib/planning/scheduling/plan-schedule-update';
 import { applyBulkScheduleAmendment, applyScheduleAmendment, type BulkScheduleAmendmentChange } from '../../lib/planning/scheduling/amendments';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { BUILD_PHASES, type BuildPhase } from '../../lib/types';
@@ -19,10 +18,11 @@ import {
   setPlanPhaseDate,
   updatePlanCalendarDay,
   updateLineItemAssignment,
-  updateLineItemCrewForDate,
+  updateLineItemPersonHoursForDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
-import { reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
+import { dayAccessHours, reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import {
+  resolveRequiredPersonHoursForPhase,
   runAutoSchedule,
 } from '../../lib/planning/scheduling/auto-schedule';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
@@ -149,7 +149,7 @@ export function ScheduleView({
     for (const item of currentPlan.lineItems) {
       for (const phase of BUILD_PHASES) {
         const pf = getPhaseFields(item, phase);
-        if (pf.scheduledStart != null || pf.scheduledEnd != null) count += 1;
+        if (getAssignedDates(pf).length > 0) count += 1;
       }
     }
     return count;
@@ -222,8 +222,18 @@ export function ScheduleView({
       const currentLineItem = prev.lineItems.find((item) => item.id === lineItem.id);
       if (!currentLineItem) return prev;
       const pf = getPhaseFields(currentLineItem, phase);
-      const migrated = lazyMigrateCrewByDate(pf, prev.workCalendar);
-      const result = toggleAssignmentDate({ ...pf, crewByDate: migrated }, date);
+      const day = prev.workCalendar.find((candidate) => candidate.date === date);
+      if (day && !day.isWorkDay) return prev;
+      const accessHours = day ? dayAccessHours(day) : 8;
+      const requiredPH = resolveRequiredPersonHoursForPhase(currentLineItem, phase) ?? 0;
+      const alreadyScheduledPH = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
+      const preferredDayPH = accessHours * Math.max(pf.crew, 1);
+      const remainingPH = Math.max(requiredPH - alreadyScheduledPH, 0);
+      const defaultPersonHours = Math.max(
+        Math.min(remainingPH || preferredDayPH, preferredDayPH),
+        0.01,
+      );
+      const result = toggleAssignmentDate({ personHoursByDate: pf.personHoursByDate }, date, defaultPersonHours);
       if (prev.status === 'active') {
         return applyScheduleAmendment(
           prev,
@@ -232,10 +242,54 @@ export function ScheduleView({
           result.span.scheduledStart,
           result.span.scheduledEnd,
           amendmentNote,
-          result.crewByDate,
+          result.personHoursByDate,
         );
       }
-      return updateLineItemAssignment(prev, currentLineItem.id, phase, result.span, result.crewByDate);
+      return updateLineItemAssignment(prev, currentLineItem.id, phase, result.span, result.personHoursByDate);
+    });
+    trackTelemetryEvent('schedule_assignment_edit');
+  };
+
+  const handlePersonHoursForDateChange = (
+    lineItemId: string,
+    phase: BuildPhase,
+    date: string,
+    personHours: number,
+  ) => {
+    let amendmentNote: string | null = null;
+    if (currentPlan.status === 'active') {
+      const note = window.prompt('Planned-hours amendment note (required):', '');
+      if (note == null) return;
+      if (note.trim().length === 0) {
+        window.alert('Amendment note is required when editing planned hours on active plans.');
+        return;
+      }
+      amendmentNote = note.trim();
+    }
+
+    clearAssistantReport();
+    mutatePlan((prev) => {
+      const currentLineItem = prev.lineItems.find((item) => item.id === lineItemId);
+      if (!currentLineItem) return prev;
+
+      const nextPlan = updateLineItemPersonHoursForDate(prev, currentLineItem.id, phase, date, personHours);
+      if (nextPlan === prev) return prev;
+
+      if (prev.status === 'active') {
+        const nextLineItem = nextPlan.lineItems.find((item) => item.id === currentLineItem.id) ?? currentLineItem;
+        const nextPf = getPhaseFields(nextLineItem, phase);
+        return applyScheduleAmendment(
+          prev,
+          currentLineItem,
+          phase,
+          nextPf.scheduledStart,
+          nextPf.scheduledEnd,
+          amendmentNote,
+          nextPf.personHoursByDate,
+        );
+      }
+
+      return nextPlan;
     });
     trackTelemetryEvent('schedule_assignment_edit');
   };
@@ -258,7 +312,7 @@ export function ScheduleView({
       if (!currentLineItem) return prev;
 
       const pf = getPhaseFields(currentLineItem, phase);
-      if (pf.scheduledStart == null && pf.scheduledEnd == null) return prev;
+      if (getAssignedDates(pf).length === 0) return prev;
 
       if (prev.status === 'active') {
         return applyScheduleAmendment(prev, currentLineItem, phase, null, null, amendmentNote);
@@ -301,7 +355,7 @@ export function ScheduleView({
       for (const item of prev.lineItems) {
         for (const phase of BUILD_PHASES) {
           const pf = getPhaseFields(item, phase);
-          if (pf.scheduledStart == null && pf.scheduledEnd == null) continue;
+          if (getAssignedDates(pf).length === 0) continue;
           nextPlan = updateLineItemAssignment(
             nextPlan,
             item.id,
@@ -375,12 +429,6 @@ export function ScheduleView({
       over_capacity_days_after: report.after.overCapacityDays,
     });
   }, [assistantReportStale, applyAssistantRunReport, currentPlan, mutatePlan]);
-
-  const handleCrewForDateChange = (lineItemId: string, phase: BuildPhase, date: string, crew: number) => {
-    clearAssistantReport();
-    mutatePlan((prev) => updateLineItemCrewForDate(prev, lineItemId, phase, date, crew));
-    trackTelemetryEvent('schedule_assignment_edit');
-  };
 
   const isLocked = currentPlan.status === 'active';
 
@@ -658,7 +706,7 @@ export function ScheduleView({
           onAutoSchedule={handleAutoSchedule}
           onToggleAssignment={handleToggleAssignment}
           onClearRowSchedule={handleClearRowSchedule}
-          onCrewForDateChange={handleCrewForDateChange}
+          onPersonHoursForDateChange={handlePersonHoursForDateChange}
           unresolvedIssueKeys={unresolvedIssueKeys}
           activeIssueKey={activeAssistantIssue?.key ?? null}
         />

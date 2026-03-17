@@ -12,7 +12,7 @@ import {
 } from '../../lib/planning/scheduling/crew-pool-calendar';
 import { buildSharedRows } from '../../lib/planning/scheduling/schedule-hierarchy';
 import {
-  setSharedCrewForDate,
+  setSharedPersonHoursForDate,
   toggleSharedAssignment,
 } from '../../lib/planning/scheduling/shared-schedule-mutations';
 import {
@@ -225,21 +225,17 @@ export function SharedScheduleView({
     }
   }, [applyPlanMutation]);
 
-  const handleCrewForDateChange = useCallback((
+  const handlePersonHoursForDateChange = useCallback((
     planId: string,
     lineItemId: string,
     phase: BuildPhase,
     date: string,
-    crew: number,
+    personHours: number,
   ) => {
-    if (
-      applyPlanMutation(planId, (plan) =>
-        setSharedCrewForDate(plan, lineItemId, phase, date, crew, crewPoolCalendar),
-      )
-    ) {
+    if (applyPlanMutation(planId, (plan) => setSharedPersonHoursForDate(plan, lineItemId, phase, date, personHours))) {
       trackTelemetryEvent('shared_schedule_assignment_edit');
     }
-  }, [applyPlanMutation, crewPoolCalendar]);
+  }, [applyPlanMutation]);
 
   const handleDefaultCrewSizeChange = (value: string) => {
     const newCrew = normalizeCrew(value);
@@ -411,9 +407,9 @@ export function SharedScheduleView({
             phaseDatesByPlanId={phaseDatesByPlanId}
             planDisplayNameByPlanId={planDisplayNameByPlanId}
             itemByCompositeId={itemByCompositeId}
-              onAutoSchedule={handleAutoScheduleShared}
+            onAutoSchedule={handleAutoScheduleShared}
             onToggleAssignment={handleToggleAssignment}
-            onCrewForDateChange={handleCrewForDateChange}
+            onPersonHoursForDateChange={handlePersonHoursForDateChange}
           />
         </>
       )}

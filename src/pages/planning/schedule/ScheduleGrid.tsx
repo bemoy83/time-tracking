@@ -57,7 +57,7 @@ interface SingleScheduleGridProps {
   onAutoSchedule?: () => void;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
   onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
-  onCrewForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, crew: number) => void;
+  onPersonHoursForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, personHours: number) => void;
   unresolvedIssueKeys?: Set<string>;
   activeIssueKey?: string | null;
 }
@@ -78,12 +78,12 @@ interface SharedScheduleGridProps {
     date: string,
     cellElement?: HTMLElement,
   ) => void;
-  onCrewForDateChange?: (
+  onPersonHoursForDateChange?: (
     planId: string,
     lineItemId: string,
     phase: BuildPhase,
     date: string,
-    crew: number,
+    personHours: number,
   ) => void;
 }
 
@@ -120,7 +120,7 @@ export function getSchedulableUnscheduledPhaseRowCount(
 
   return phaseRows.filter(({ item, phase }) => {
     const pf = getPhaseFields(item, phase);
-    if (pf.scheduledStart != null && pf.scheduledEnd != null) return false;
+    if (getAssignedDates(pf).length > 0) return false;
 
     const requiredPH = resolveRequiredPersonHoursForPhase(item, phase, 'time_hours_first');
     if (requiredPH == null || requiredPH <= 0) return false;
@@ -149,7 +149,7 @@ export function getSharedSchedulableUnscheduledCount(
     if (!item) continue;
 
     const pf = getPhaseFields(item, row.phase);
-    if (pf.scheduledStart != null && pf.scheduledEnd != null) continue;
+    if (getAssignedDates(pf).length > 0) continue;
 
     const requiredPH = resolveRequiredPersonHoursForPhase(item, row.phase, 'time_hours_first');
     if (requiredPH == null || requiredPH <= 0) continue;
@@ -175,7 +175,7 @@ function getUnscheduledPhaseRowCount(lineItems: PlanLineItem[]): number {
     for (const phase of BUILD_PHASES) {
       if (!isPhaseActive(item, phase)) continue;
       const pf = getPhaseFields(item, phase);
-      if (pf.scheduledStart == null || pf.scheduledEnd == null) count += 1;
+      if (getAssignedDates(pf).length === 0) count += 1;
     }
   }
   return count;
@@ -190,7 +190,7 @@ function SingleScheduleGrid({
   onAutoSchedule,
   onToggleAssignment,
   onClearRowSchedule,
-  onCrewForDateChange,
+  onPersonHoursForDateChange,
   unresolvedIssueKeys,
   activeIssueKey,
 }: SingleScheduleGridProps) {
@@ -263,7 +263,11 @@ function SingleScheduleGrid({
         readOnly={readOnly}
         onToggleAssignment={(date, cellElement) => onToggleAssignment(item, phase, date, cellElement)}
         onClearSchedule={onClearRowSchedule ? () => onClearRowSchedule(item, phase) : undefined}
-        onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(item.id, phase, date, crew) : undefined}
+        onPersonHoursForDateChange={
+          onPersonHoursForDateChange
+            ? (date, personHours) => onPersonHoursForDateChange(item.id, phase, date, personHours)
+            : undefined
+        }
         outOfPhaseAriaUsesLabel
         isAssistantUnresolved={unresolvedKeys.has(rowKey)}
         isAssistantActive={activeIssueKey === rowKey}
@@ -340,7 +344,7 @@ function SharedScheduleGrid({
   itemByCompositeId,
   onAutoSchedule,
   onToggleAssignment,
-  onCrewForDateChange,
+  onPersonHoursForDateChange,
 }: SharedScheduleGridProps) {
   const dayByDate = useMemo(
     () => new Map(capacity.days.map((day) => [day.date, day])),
@@ -387,7 +391,7 @@ function SharedScheduleGrid({
       const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
       if (!item) { count += 1; continue; }
       const pf = getPhaseFields(item, row.phase);
-      if (!pf.scheduledStart || !pf.scheduledEnd) count += 1;
+      if (getAssignedDates(pf).length === 0) count += 1;
     }
     return count;
   }, [rows, itemByCompositeId]);
@@ -468,7 +472,11 @@ function SharedScheduleGrid({
               readOnly={row.readOnly}
               metaPrefix={metaPrefix}
               onToggleAssignment={(date, cellElement) => onToggleAssignment(row.planId, row.lineItemId, row.phase, date, cellElement)}
-              onCrewForDateChange={onCrewForDateChange ? (date, crew) => onCrewForDateChange(row.planId, row.lineItemId, row.phase, date, crew) : undefined}
+              onPersonHoursForDateChange={
+                onPersonHoursForDateChange
+                  ? (date, personHours) => onPersonHoursForDateChange(row.planId, row.lineItemId, row.phase, date, personHours)
+                  : undefined
+              }
               outOfPhaseAriaUsesLabel={false}
               readOnlyTitle="Read-only (reviewed plan)"
             />

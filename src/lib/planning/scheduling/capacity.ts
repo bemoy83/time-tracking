@@ -2,10 +2,10 @@ import { BUILD_PHASES } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive } from '../plan-model';
 import type { SharedScheduleInput } from './shared-schedule-types';
+import { getAssignedDates } from './assignment';
 import {
   generateDefaultWorkCalendarForSpans,
   hasSchedulingCalendar,
-  listDateRange,
 } from './work-calendar';
 import { getWorkCalendarPhaseSpans, readPhaseDateValues } from './schedule-span';
 import {
@@ -59,10 +59,6 @@ export interface CapacitySummary {
   overStaffedDayCount: number;
 }
 
-function listScheduledDates(start: string, end: string): string[] {
-  return listDateRange(start, end);
-}
-
 function createPlanCapacityCalendar(plan: Plan): WorkCalendarDay[] {
   if (hasSchedulingCalendar(plan)) {
     return plan.workCalendar;
@@ -88,13 +84,7 @@ function buildSinglePlanEntries(plan: Plan): {
     for (const phase of BUILD_PHASES) {
       if (!isPhaseActive(item, phase)) continue;
       const pf = getPhaseFields(item, phase);
-
-      if (!pf.scheduledStart || !pf.scheduledEnd) {
-        unscheduledLineItemCount += 1;
-        continue;
-      }
-
-      const dates = listScheduledDates(pf.scheduledStart, pf.scheduledEnd);
+      const dates = getAssignedDates(pf);
       if (dates.length === 0) {
         unscheduledLineItemCount += 1;
         continue;
@@ -124,13 +114,7 @@ function buildSharedEntries(input: SharedScheduleInput): {
     for (const phase of BUILD_PHASES) {
       if (!isPhaseActive(item, phase)) continue;
       const pf = getPhaseFields(item, phase);
-
-      if (!pf.scheduledStart || !pf.scheduledEnd) {
-        unscheduledLineItemCount += 1;
-        continue;
-      }
-
-      const dates = listScheduledDates(pf.scheduledStart, pf.scheduledEnd);
+      const dates = getAssignedDates(pf);
       const phaseSpan = getPhaseSpan(plan, phase);
       const validDates = phaseSpan
         ? dates.filter((date) => date >= phaseSpan.start && date <= phaseSpan.end)

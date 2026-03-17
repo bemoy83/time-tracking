@@ -25,6 +25,7 @@ describe('shared-row-aggregates', () => {
     item.assemblyTimeHours = 16;
     item.assemblyScheduledStart = '2026-03-01';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-01': 8, '2026-03-02': 8 };
     plan.lineItems = [item];
 
     const rows = buildSharedRows([plan]);
@@ -74,12 +75,14 @@ describe('shared-row-aggregates', () => {
     itemA.assemblyTimeHours = 16;
     itemA.assemblyScheduledStart = '2026-03-01';
     itemA.assemblyScheduledEnd = '2026-03-03';
+    itemA.assemblyPersonHoursByDate = { '2026-03-01': 8, '2026-03-02': 8 };
 
     const itemB = createLineItem('B Item', 'B Item', 'pcs', 1, 1, 0);
     itemB.assemblyCrew = 1;
     itemB.assemblyTimeHours = 16;
     itemB.assemblyScheduledStart = '2026-03-02';
     itemB.assemblyScheduledEnd = '2026-03-03';
+    itemB.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 8 };
 
     planA.lineItems = [itemA];
     planB.lineItems = [itemB];

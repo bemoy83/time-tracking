@@ -1,5 +1,6 @@
 import { getAssignedDates } from '../../../../lib/planning/scheduling/assignment';
-import { getEffectiveCrewForDate, getPhaseFields, type PlanLineItem } from '../../../../lib/planning/plan-model';
+import { getPhaseFields, getPlannedPersonHoursForDate, type PlanLineItem } from '../../../../lib/planning/plan-model';
+import { resolveRequiredPersonHoursForPhase } from '../../../../lib/planning/scheduling/auto-schedule';
 import type { BuildPhase } from '../../../../lib/types';
 import type { PhaseDateValues } from '../schedule-date-ui';
 import { getPhaseRange, hasCompletePhaseDates, isDateWithinSpan } from '../schedule-date-ui';
@@ -12,25 +13,13 @@ export function getWorkHoursForDay(
   item: PlanLineItem,
   phase: BuildPhase,
   date: string,
-  dayByDate: Map<string, { accessHours: number }>,
+  _dayByDate: Map<string, { accessHours: number }>,
   assignedDatesOverride?: string[],
 ): number {
   const pf = getPhaseFields(item, phase);
   const assignedDates = assignedDatesOverride ?? getAssignedDates(pf);
   if (!assignedDates.includes(date)) return 0;
-  const totalPersonHours = pf.timeHours * pf.crew;
-  let remaining = totalPersonHours;
-  for (const d of assignedDates) {
-    const day = dayByDate.get(d);
-    const accessH = day?.accessHours ?? 0;
-    if (accessH <= 0) continue;
-    const crew = getEffectiveCrewForDate(item, phase, d);
-    const capacity = crew * accessH;
-    const work = Math.min(remaining, capacity);
-    if (d === date) return Math.round(work * 10) / 10;
-    remaining -= work;
-  }
-  return 0;
+  return Math.round(getPlannedPersonHoursForDate(item, phase, date) * 10) / 10;
 }
 
 /**
@@ -42,16 +31,12 @@ export function getScheduledHours(
   item: PlanLineItem,
   phase: BuildPhase,
   assignedDates: string[],
-  dayByDate: Map<string, { accessHours: number }>,
+  _dayByDate: Map<string, { accessHours: number }>,
 ): number {
   if (assignedDates.length === 0) return 0;
   let total = 0;
   for (const date of assignedDates) {
-    const day = dayByDate.get(date);
-    const accessH = day?.accessHours ?? 0;
-    if (accessH <= 0) continue;
-    const crew = getEffectiveCrewForDate(item, phase, date);
-    total += crew * accessH;
+    total += getPlannedPersonHoursForDate(item, phase, date);
   }
   return Math.round(total * 10) / 10;
 }
@@ -77,11 +62,10 @@ export function getLastDayBreakdown(
   const day = dayByDate.get(date);
   const accessH = day?.accessHours ?? 0;
   if (accessH <= 0) return null;
-  const crew = getEffectiveCrewForDate(item, phase, date);
-  const assignedPersonHours = Math.round(crew * accessH * 10) / 10;
+  const assignedPersonHours = Math.round(getPlannedPersonHoursForDate(item, phase, date) * 10) / 10;
   if (assignedPersonHours <= 0) return null;
 
-  const totalPersonHours = pf.timeHours * pf.crew;
+  const totalPersonHours = resolveRequiredPersonHoursForPhase(item, phase) ?? (pf.timeHours * pf.crew);
   let remaining = totalPersonHours;
   let remainingAtStart = 0;
 
@@ -89,8 +73,7 @@ export function getLastDayBreakdown(
     const dDay = dayByDate.get(d);
     const dAccessH = dDay?.accessHours ?? 0;
     if (dAccessH <= 0) continue;
-    const dCrew = getEffectiveCrewForDate(item, phase, d);
-    const capacity = dCrew * dAccessH;
+    const capacity = getPlannedPersonHoursForDate(item, phase, d);
     if (d === date) remainingAtStart = remaining;
     remaining -= Math.min(remaining, capacity);
   }

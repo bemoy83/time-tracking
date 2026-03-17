@@ -23,6 +23,7 @@ function createScheduledPlan(title: string, hours: number): Plan {
   item.assemblyTimeHours = hours;
   item.assemblyScheduledStart = '2026-03-10';
   item.assemblyScheduledEnd = '2026-03-10';
+  item.assemblyPersonHoursByDate = { '2026-03-10': hours };
   plan.lineItems = [item];
   return plan;
 }

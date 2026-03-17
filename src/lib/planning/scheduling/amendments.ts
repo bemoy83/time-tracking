@@ -1,14 +1,31 @@
 import type { BuildPhase } from '../../types';
-import type { Plan, PlanLineItem } from '../plan-model';
-import { getPhaseFields, phaseFieldUpdates } from '../plan-model';
+import type { DailyEffortMap, Plan, PlanLineItem } from '../plan-model';
+import {
+  getPhaseFields,
+  normalizeDailyEffortMap,
+  phaseFieldUpdates,
+  recomputeScheduledSpanFromEffortMap,
+} from '../plan-model';
 import { nowUtc } from '../../types';
-import { listDateRange } from './work-calendar';
+import { dayAccessHours, listDateRange } from './work-calendar';
 
 export interface BulkScheduleAmendmentChange {
   lineItemId: string;
   phase: BuildPhase;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+}
+
+function sameEffortMap(
+  a: DailyEffortMap | undefined,
+  b: DailyEffortMap | undefined,
+): boolean {
+  const left = a ?? {};
+  const right = b ?? {};
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) return false;
+  return leftKeys.every((key) => Math.abs((left[key] ?? 0) - (right[key] ?? 0)) <= 0.01);
 }
 
 function didScheduleChange(
@@ -25,22 +42,43 @@ export function applyScheduleAmendment(
   nextScheduledStart: string | null,
   nextScheduledEnd: string | null,
   amendmentNote: string | null,
-  overrideCrewByDate?: Record<string, number> | undefined,
+  overridePersonHoursByDate?: DailyEffortMap | undefined,
 ): Plan {
   const pf = getPhaseFields(lineItem, phase);
+  let nextPersonHoursByDate: DailyEffortMap | undefined = pf.personHoursByDate;
+
+  if (overridePersonHoursByDate !== undefined) {
+    nextPersonHoursByDate = normalizeDailyEffortMap(overridePersonHoursByDate);
+  } else if (nextScheduledStart && nextScheduledEnd) {
+    const allDates = listDateRange(nextScheduledStart, nextScheduledEnd);
+    const dayByDate = new Map(plan.workCalendar.map((day) => [day.date, day]));
+    const existing = pf.personHoursByDate ?? {};
+    const updated: DailyEffortMap = {};
+    for (const date of allDates) {
+      const day = dayByDate.get(date);
+      if (day && !day.isWorkDay) continue;
+      const accessHours = day ? dayAccessHours(day) : 8;
+      updated[date] = existing[date] ?? Number((Math.max(pf.crew, 1) * accessHours).toFixed(2));
+    }
+    nextPersonHoursByDate = normalizeDailyEffortMap(updated);
+  } else {
+    nextPersonHoursByDate = undefined;
+  }
+
+  const span = recomputeScheduledSpanFromEffortMap(nextPersonHoursByDate);
+  const effortChanged = !sameEffortMap(pf.personHoursByDate, nextPersonHoursByDate);
+  const spanChanged = didScheduleChange(
+    { scheduledStart: pf.scheduledStart, scheduledEnd: pf.scheduledEnd },
+    { scheduledStart: span.scheduledStart, scheduledEnd: span.scheduledEnd },
+  );
 
   if (
-    pf.scheduledStart === nextScheduledStart &&
-    pf.scheduledEnd === nextScheduledEnd &&
+    !spanChanged &&
+    !effortChanged &&
     (amendmentNote ?? null) === (lineItem.amendmentNote ?? null)
   ) {
     return plan;
   }
-
-  const changed = didScheduleChange(
-    { scheduledStart: pf.scheduledStart, scheduledEnd: pf.scheduledEnd },
-    { scheduledStart: nextScheduledStart, scheduledEnd: nextScheduledEnd },
-  );
 
   const updatedAt = nowUtc();
 
@@ -49,42 +87,19 @@ export function applyScheduleAmendment(
     updatedAt,
     lineItems: plan.lineItems.map((item) => {
       if (item.id !== lineItem.id) return item;
-      if (!changed) {
+      if (!spanChanged && !effortChanged) {
         return {
           ...item,
           amendmentNote: amendmentNote?.trim() || null,
         };
       }
 
-      // Update crewByDate when span changes — only store work days to avoid orphaned non-work entries
-      let nextCrewByDate: Record<string, number> | undefined = pf.crewByDate;
-      if (overrideCrewByDate !== undefined) {
-        nextCrewByDate = overrideCrewByDate;
-      } else if (nextScheduledStart && nextScheduledEnd) {
-        const allDates = listDateRange(nextScheduledStart, nextScheduledEnd);
-        const workDaySet =
-          plan.workCalendar.length > 0
-            ? new Set(plan.workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
-            : null;
-        const newDates = workDaySet
-          ? allDates.filter((d) => workDaySet.has(d))
-          : allDates;
-        const existing = pf.crewByDate ?? {};
-        const updated: Record<string, number> = {};
-        for (const date of newDates) {
-          updated[date] = existing[date] ?? pf.crew;
-        }
-        nextCrewByDate = updated;
-      } else {
-        nextCrewByDate = undefined;
-      }
-
       const phaseUpdates = phaseFieldUpdates(phase, {
-        originalScheduledStart: pf.originalScheduledStart ?? pf.scheduledStart,
-        originalScheduledEnd: pf.originalScheduledEnd ?? pf.scheduledEnd,
-        scheduledStart: nextScheduledStart,
-        scheduledEnd: nextScheduledEnd,
-        crewByDate: nextCrewByDate,
+        originalScheduledStart: spanChanged ? (pf.originalScheduledStart ?? pf.scheduledStart) : pf.originalScheduledStart,
+        originalScheduledEnd: spanChanged ? (pf.originalScheduledEnd ?? pf.scheduledEnd) : pf.originalScheduledEnd,
+        scheduledStart: span.scheduledStart,
+        scheduledEnd: span.scheduledEnd,
+        personHoursByDate: nextPersonHoursByDate,
       });
 
       return {
@@ -99,7 +114,7 @@ export function applyScheduleAmendment(
 
 /**
  * Apply a single amendment note/timestamp for a batch assistant run.
- * Preserves the schedule/crewByDate already computed in `nextPlan`.
+ * Preserves the schedule/personHoursByDate already computed in `nextPlan`.
  */
 export function applyBulkScheduleAmendment(
   previousPlan: Plan,
@@ -140,7 +155,7 @@ export function applyBulkScheduleAmendment(
             originalScheduledEnd: previousPf.originalScheduledEnd ?? previousPf.scheduledEnd,
             scheduledStart: nextPf.scheduledStart,
             scheduledEnd: nextPf.scheduledEnd,
-            crewByDate: nextPf.crewByDate,
+            personHoursByDate: nextPf.personHoursByDate,
           }),
         };
       }

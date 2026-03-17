@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { PeopleIcon, UndoIcon, WarningIcon } from '../../../../components/icons';
-import { getPhaseFields } from '../../../../lib/planning/plan-model';
+import { getCrewEquivalentForDate, getPhaseFields } from '../../../../lib/planning/plan-model';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../../lib/types';
 import {
   getLastDayBreakdown,
@@ -26,14 +27,30 @@ export function ScheduleGridItemRow({
   metaPrefix,
   onToggleAssignment,
   onClearSchedule,
-  onCrewForDateChange,
+  onPersonHoursForDateChange,
   outOfPhaseAriaUsesLabel,
   readOnlyTitle,
   isAssistantUnresolved = false,
   isAssistantActive = false,
 }: ItemRowRenderInput) {
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [personHoursDraft, setPersonHoursDraft] = useState('');
   const pf = getPhaseFields(item, phase);
   const assigned = new Set(assignedDates);
+  const editingIsAssigned = editingDate != null ? assigned.has(editingDate) : false;
+  const editingPersonHours = editingDate != null ? pf.personHoursByDate?.[editingDate] : undefined;
+
+  useEffect(() => {
+    if (editingDate == null) return;
+    if (!editingIsAssigned) {
+      setEditingDate(null);
+      setPersonHoursDraft('');
+      return;
+    }
+    if (editingPersonHours != null) {
+      setPersonHoursDraft(String(editingPersonHours));
+    }
+  }, [editingDate, editingIsAssigned, editingPersonHours, rowKey]);
 
   const hasAssignments = assigned.size > 0;
   const estimateHours = pf.timeHours * pf.crew;
@@ -53,6 +70,25 @@ export function ScheduleGridItemRow({
           : '';
   const unresolvedClass = isAssistantUnresolved ? ' schedule-grid__row--assistant-unresolved' : '';
   const activeClass = isAssistantActive ? ' schedule-grid__row--assistant-active' : '';
+
+  const commitPersonHoursChange = (date: string) => {
+    if (!onPersonHoursForDateChange) {
+      setEditingDate(null);
+      setPersonHoursDraft('');
+      return;
+    }
+    const trimmed = personHoursDraft.trim();
+    const parsed = trimmed === '' ? 0 : Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      const previous = pf.personHoursByDate?.[date];
+      setPersonHoursDraft(previous != null ? String(previous) : '');
+      setEditingDate(null);
+      return;
+    }
+    onPersonHoursForDateChange(date, Number(parsed.toFixed(2)));
+    setEditingDate(null);
+    setPersonHoursDraft('');
+  };
 
   return (
     <div className="schedule-grid__row-wrapper">
@@ -127,11 +163,14 @@ export function ScheduleGridItemRow({
           const isOver = cap?.isOverAllocated ?? false;
           const isOverCrew = cap?.isOverAssignedCrew ?? false;
           const isOverWorker = isAssigned && isOverWorkerForDay(item, phase, day.date, dayByDate, assignedDates);
-          const crewValue = isAssigned && day.isWorkDay ? (pf.crewByDate?.[day.date] ?? pf.crew) : 0;
+          const crewValue = isAssigned && day.isWorkDay
+            ? getCrewEquivalentForDate(item, phase, day.date, cap?.accessHours ?? 0)
+            : 0;
           const lastDayBd = isAssigned ? getLastDayBreakdown(item, phase, day.date, dayByDate, assignedDates) : null;
           const isOverTargetCell = isOverTargetCellBreakdown(lastDayBd);
           const isTargetMet =
             isAssigned && isOnTarget && !isOver && !isOverCrew && !isOverWorker && !isOverTargetCell;
+          const isEditing = editingDate === day.date;
 
           const isCellDisabled = readOnly || !day.isWorkDay || isOutOfPhase;
 
@@ -145,7 +184,7 @@ export function ScheduleGridItemRow({
               className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOutOfPhase ? ' schedule-grid__cell--phase-locked' : ''}${isPhaseMismatch ? ' schedule-grid__cell--phase-mismatch' : ''}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
               onClick={(e) => {
                 if (isCellDisabled) return;
-                if ((e.target as HTMLElement).closest('.schedule-grid__cell-crew-btn')) return;
+                if ((e.target as HTMLElement).closest('.schedule-grid__cell-hours-btn, .schedule-grid__cell-editor')) return;
                 onToggleAssignment(day.date, e.currentTarget);
               }}
               title={
@@ -153,8 +192,10 @@ export function ScheduleGridItemRow({
                   ? readOnlyTitle
                   : isOutOfPhase
                     ? `Outside ${BUILD_PHASE_LABELS[phase]} window`
+                    : isAssigned && !isCellDisabled && onPersonHoursForDateChange
+                      ? 'Click hours to edit, or click the cell background to unassign'
                     : isOverWorker
-                      ? 'Exceeds worker capacity (add crew or days)'
+                      ? 'Under planned effort on final assigned day'
                       : isAssigned
                         ? 'Click to unassign'
                         : 'Click to assign'
@@ -167,67 +208,85 @@ export function ScheduleGridItemRow({
             >
               {isAssigned ? (
                 <>
-                  {(() => {
+                  {isEditing ? (
+                    <label
+                      className="schedule-grid__cell-editor"
+                      aria-label={`Edit planned hours for ${item.title} on ${day.date}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <input
+                        className="schedule-grid__cell-hours-input"
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value={personHoursDraft}
+                        onChange={(event) => setPersonHoursDraft(event.target.value)}
+                        onBlur={() => commitPersonHoursChange(day.date)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            commitPersonHoursChange(day.date);
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            setEditingDate(null);
+                            setPersonHoursDraft('');
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <span className="schedule-grid__cell-hours-unit">h</span>
+                    </label>
+                  ) : (() => {
                     const hours = getWorkHoursForDay(item, phase, day.date, dayByDate, assignedDates);
                     if (hours <= 0) return null;
                     const lastDayBreakdown = getLastDayBreakdown(item, phase, day.date, dayByDate, assignedDates);
                     if (lastDayBreakdown == null) {
-                      return <span className="schedule-grid__cell-badge">{hours.toFixed(1)}h</span>;
+                      return onPersonHoursForDateChange && !isCellDisabled ? (
+                        <button
+                          type="button"
+                          className="schedule-grid__cell-hours-btn"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setEditingDate(day.date);
+                            setPersonHoursDraft(String(hours));
+                          }}
+                          aria-label={`Edit planned hours for ${item.title} on ${day.date}`}
+                        >
+                          <span className="schedule-grid__cell-badge">{hours.toFixed(1)}h</span>
+                        </button>
+                      ) : <span className="schedule-grid__cell-badge">{hours.toFixed(1)}h</span>;
                     }
                     const { assignedPersonHours, remainingAtStart, deficit } = lastDayBreakdown;
                     const isDeficit = deficit != null;
                     const isOverCell = !isDeficit && assignedPersonHours > remainingAtStart + 0.01;
-                    return (
+                    const badge = (
                       <span className={`schedule-grid__cell-badge${isDeficit ? ' schedule-grid__cell-badge--need' : isOverCell ? ' schedule-grid__cell-badge--over' : ''}`}>
                         {assignedPersonHours.toFixed(1)}h / {remainingAtStart.toFixed(1)}h
                       </span>
                     );
+                    return onPersonHoursForDateChange && !isCellDisabled ? (
+                      <button
+                        type="button"
+                        className="schedule-grid__cell-hours-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setEditingDate(day.date);
+                          setPersonHoursDraft(String(assignedPersonHours));
+                        }}
+                        aria-label={`Edit planned hours for ${item.title} on ${day.date}`}
+                      >
+                        {badge}
+                      </button>
+                    ) : badge;
                   })()}
                   {day.isWorkDay && (
                     <div className="schedule-grid__cell-crew">
-                      {!readOnly && onCrewForDateChange ? (
-                        <>
-                          <button
-                            type="button"
-                            className="schedule-grid__cell-crew-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (crewValue > 0) onCrewForDateChange(day.date, crewValue - 1);
-                            }}
-                            disabled={crewValue <= 0}
-                            aria-label={`Decrease crew for ${item.title} on ${day.date}`}
-                          >
-                            −
-                          </button>
-                          {isOverWorker ? (
-                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
-                          ) : (
-                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
-                          )}
-                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
-                          <button
-                            type="button"
-                            className="schedule-grid__cell-crew-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (crewValue < 99) onCrewForDateChange(day.date, crewValue + 1);
-                            }}
-                            disabled={crewValue >= 99}
-                            aria-label={`Increase crew for ${item.title} on ${day.date}`}
-                          >
-                            +
-                          </button>
-                        </>
+                      {isOverWorker ? (
+                        <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Under planned effort" />
                       ) : (
-                        <>
-                          {isOverWorker ? (
-                            <WarningIcon className="schedule-grid__cell-icon schedule-grid__cell-icon--warning" aria-label="Exceeds worker capacity" />
-                          ) : (
-                            <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
-                          )}
-                          <span className="schedule-grid__cell-crew-value">{crewValue}</span>
-                        </>
+                        <PeopleIcon className="schedule-grid__cell-icon" aria-hidden />
                       )}
+                      <span className="schedule-grid__cell-crew-value">{crewValue.toFixed(2).replace(/\.?0+$/, '')}</span>
                     </div>
                   )}
                 </>

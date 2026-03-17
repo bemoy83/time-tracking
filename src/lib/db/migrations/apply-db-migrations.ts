@@ -5,6 +5,38 @@ import type { TimeTrackingDBSchema } from '../schema';
 /** Legacy placeholder task ID - removed; migration cleans up any existing instances. */
 const LEGACY_UNASSIGNED_TASK_ID = 'unassigned';
 
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: string, days: number): string {
+  const value = new Date(`${date}T00:00:00`);
+  value.setDate(value.getDate() + days);
+  return formatLocalDate(value);
+}
+
+function listDateRange(start: string, end: string): string[] {
+  const dates: string[] = [];
+  for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
+    dates.push(cursor);
+  }
+  return dates;
+}
+
+function accessHoursForDay(day: Record<string, unknown> | undefined): number {
+  const start = typeof day?.accessStart === 'string' ? day.accessStart : null;
+  const end = typeof day?.accessEnd === 'string' ? day.accessEnd : null;
+  if (!start || !end) return 8;
+  const startParts = start.split(':').map(Number);
+  const endParts = end.split(':').map(Number);
+  if (startParts.length !== 2 || endParts.length !== 2) return 8;
+  const hours = (endParts[0] + endParts[1] / 60) - (startParts[0] + startParts[1] / 60);
+  return Number.isFinite(hours) && hours > 0 ? hours : 8;
+}
+
 function renameField(record: Record<string, unknown>, from: string, to: string): boolean {
   if (!(from in record) || to in record) return false;
   record[to] = record[from];
@@ -614,6 +646,72 @@ export const applyDbMigrations: DbUpgradeCallback = (
               p.eventEndDate = null;
               changed = true;
             }
+            return changed;
+          });
+        }
+
+        // Version 32: Replace crewByDate schedule maps with personHoursByDate maps.
+        if (oldVersion < 32 && db.objectStoreNames.contains('plans')) {
+          backfillStore('plans', (plan) => {
+            const p = plan as unknown as Record<string, unknown>;
+            const workCalendar = Array.isArray(p.workCalendar)
+              ? (p.workCalendar as Array<Record<string, unknown>>)
+              : [];
+            const dayByDate = new Map(workCalendar.map((day) => [String(day.date ?? ''), day]));
+            let changed = false;
+
+            for (const item of plan.lineItems) {
+              const record = item as unknown as Record<string, unknown>;
+              for (const prefix of ['assembly', 'dismantle'] as const) {
+                const personHoursKey = `${prefix}PersonHoursByDate`;
+                const crewByDateKey = `${prefix}CrewByDate`;
+                const scheduledStartKey = `${prefix}ScheduledStart`;
+                const scheduledEndKey = `${prefix}ScheduledEnd`;
+                if (record[personHoursKey] !== undefined) continue;
+
+                const start = typeof record[scheduledStartKey] === 'string' ? String(record[scheduledStartKey]) : null;
+                const end = typeof record[scheduledEndKey] === 'string' ? String(record[scheduledEndKey]) : null;
+                const rate = Number(record[`${prefix}Rate`] ?? 0);
+                const crew = Number(record[`${prefix}Crew`] ?? 0);
+                const timeHours = Number(record[`${prefix}TimeHours`] ?? 0);
+                const quantity = prefix === 'dismantle'
+                  ? Number(record.dismantleQuantity ?? record.workQuantity ?? 0)
+                  : Number(record.workQuantity ?? 0);
+                const requiredPH = timeHours > 0 && crew > 0
+                  ? timeHours * crew
+                  : rate > 0 && quantity > 0
+                    ? quantity / rate
+                    : null;
+                const legacy = record[crewByDateKey] && typeof record[crewByDateKey] === 'object'
+                  ? (record[crewByDateKey] as Record<string, unknown>)
+                  : undefined;
+                const migrated: Record<string, number> = {};
+                let remaining = requiredPH ?? 0;
+
+                if (start && end && requiredPH != null && requiredPH > 0) {
+                  for (const date of listDateRange(start, end)) {
+                    const day = dayByDate.get(date);
+                    if (day && day.isWorkDay === false) continue;
+                    const legacyCrew = Number((legacy?.[date] ?? crew) ?? 0);
+                    const dayCap = Math.max(0, legacyCrew * accessHoursForDay(day));
+                    const assigned = Math.min(remaining, dayCap);
+                    if (assigned > 0) {
+                      migrated[date] = Number(assigned.toFixed(2));
+                      remaining -= assigned;
+                    }
+                    if (remaining <= 0.01) break;
+                  }
+                }
+
+                record[personHoursKey] = Object.keys(migrated).length > 0 ? migrated : undefined;
+                const dates = Object.keys(migrated).sort();
+                record[scheduledStartKey] = dates.length > 0 ? dates[0] : null;
+                record[scheduledEndKey] = dates.length > 0 ? dates[dates.length - 1] : null;
+                delete record[crewByDateKey];
+                changed = true;
+              }
+            }
+
             return changed;
           });
         }

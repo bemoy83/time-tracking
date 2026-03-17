@@ -16,19 +16,21 @@ const mockedUseMediaQuery = vi.mocked(useMediaQuery);
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   mockedUseMediaQuery.mockReset();
 });
 
 function renderSchedule(plan: Plan, desktop = false) {
   mockedUseMediaQuery.mockReturnValue(desktop);
+  const onSave = vi.fn();
   return render(
     <ScheduleView
       plan={plan}
-      onSave={vi.fn()}
+      onSave={onSave}
       onBack={vi.fn()}
       showBackButton={false}
       readOnly={false}
-    />,
+    />
   );
 }
 
@@ -93,7 +95,7 @@ describe('ScheduleView', () => {
     plan.workCalendar = [
       {
         date: '2026-03-02',
-        isWorkDay: false,
+        isWorkDay: true,
         accessStart: '08:00',
         accessEnd: '16:00',
         crewSize: 1,
@@ -103,7 +105,7 @@ describe('ScheduleView', () => {
     const item = createLineItem('WP-1', 'WP-1', 'm2', 8, 1, 0);
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-02';
-    item.assemblyCrewByDate = { '2026-03-02': 1 };
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
     plan.lineItems = [item];
 
     const { container } = renderSchedule(plan, true);
@@ -113,8 +115,138 @@ describe('ScheduleView', () => {
     fireEvent.click(within(grid as HTMLElement).getByRole('button', { name: /Clear schedule for WP-1/i }));
 
     await waitFor(() => {
-      expect(within(grid as HTMLElement).queryByRole('button', { name: /Clear schedule for WP-1/i })).toBeNull();
-      expect(container.querySelector('.schedule-grid__unscheduled-badge')?.textContent).toContain('1 unscheduled');
+      expect(container.textContent).toContain('Unscheduled hrs');
+      expect(container.textContent).toContain('8');
+      expect(container.querySelectorAll('.schedule-grid__cell--assigned')).toHaveLength(0);
     });
+  });
+
+  it('toggles off the last assigned cell completely', async () => {
+    const plan = createPlan('Toggle Off');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+
+    const item = createLineItem('WP-3', 'WP-3', 'm2', 8, 1, 0);
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+    plan.lineItems = [item];
+
+    const { container } = renderSchedule(plan, true);
+    const assignedCell = container.querySelector('.schedule-grid__cell--assigned');
+    expect(assignedCell).toBeTruthy();
+
+    fireEvent.click(assignedCell as HTMLElement);
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('.schedule-grid__cell--assigned')).toHaveLength(0);
+    });
+  });
+
+  it('clears all schedules from the assistant action', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const plan = createPlan('Clear All');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-03';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+      {
+        date: '2026-03-03',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+
+    const itemA = createLineItem('A', 'A', 'm2', 8, 1, 0);
+    itemA.assemblyScheduledStart = '2026-03-02';
+    itemA.assemblyScheduledEnd = '2026-03-02';
+    itemA.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+
+    const itemB = createLineItem('B', 'B', 'm2', 8, 1, 0);
+    itemB.assemblyScheduledStart = '2026-03-03';
+    itemB.assemblyScheduledEnd = '2026-03-03';
+    itemB.assemblyPersonHoursByDate = { '2026-03-03': 8 };
+
+    plan.lineItems = [itemA, itemB];
+
+    const { container } = renderSchedule(plan, true);
+    fireEvent.click(within(container).getByRole('button', { name: /Schedule Assistant/i }));
+    fireEvent.click(await within(container).findByRole('button', { name: /Clear all schedules/i }));
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('.schedule-grid__cell--assigned')).toHaveLength(0);
+    });
+
+    confirmSpy.mockRestore();
+  });
+
+  it('edits planned hours inline from an assigned cell', async () => {
+    const plan = createPlan('Edit Hours');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+
+    const item = createLineItem('WP-2', 'WP-2', 'm2', 8, 1, 0);
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+    plan.lineItems = [item];
+
+    const onSave = vi.fn();
+    mockedUseMediaQuery.mockReturnValue(true);
+    const { container } = render(
+      <ScheduleView
+        plan={plan}
+        onSave={onSave}
+        onBack={vi.fn()}
+        showBackButton={false}
+        readOnly={false}
+      />,
+    );
+
+    fireEvent.click(within(container).getByRole('button', { name: /Edit planned hours for WP-2 on 2026-03-02/i }));
+    const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '5.5' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('5.5h / 8.0h');
+    });
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalled();
+    }, { timeout: 1200 });
+
+    const savedPlan = onSave.mock.calls[onSave.mock.calls.length - 1]?.[0] as Plan;
+    expect(savedPlan.lineItems[0].assemblyPersonHoursByDate).toEqual({ '2026-03-02': 5.5 });
   });
 });

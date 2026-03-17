@@ -27,7 +27,7 @@ describe('getSchedulableUnscheduledPhaseRowCount', () => {
     item.dismantleCrew = 2;
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
-    item.assemblyCrewByDate = { '2026-03-02': 2, '2026-03-03': 2 };
+    item.assemblyPersonHoursByDate = { '2026-03-02': 16, '2026-03-03': 16 };
 
     const count = getSchedulableUnscheduledPhaseRowCount(
       [item],
@@ -48,6 +48,23 @@ describe('getSchedulableUnscheduledPhaseRowCount', () => {
       [item],
       phaseDates,
       workDays('2026-03-02', '2026-03-03', '2026-03-04'),
+    );
+
+    expect(count).toBe(0);
+  });
+
+  it('does not count a row as unscheduled when effort exists but span cache is null', () => {
+    const item = createLineItem('Stale Cache', 'Stale Cache', 'm2', 100, 10, 0);
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 8;
+    item.assemblyScheduledStart = null;
+    item.assemblyScheduledEnd = null;
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+
+    const count = getSchedulableUnscheduledPhaseRowCount(
+      [item],
+      phaseDates,
+      workDays('2026-03-02', '2026-03-03'),
     );
 
     expect(count).toBe(0);

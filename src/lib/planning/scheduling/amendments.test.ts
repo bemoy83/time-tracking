@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLineItem, createPlan, getPhaseFields } from '../plan-model';
-import { applyBulkScheduleAmendment } from './amendments';
+import { applyBulkScheduleAmendment, applyScheduleAmendment } from './amendments';
 
 function makePlanWithItem() {
   const plan = createPlan('Amendments');
@@ -15,7 +15,7 @@ describe('applyBulkScheduleAmendment', () => {
     const previousItem = previousPlan.lineItems[0];
     previousItem.assemblyScheduledStart = '2026-03-02';
     previousItem.assemblyScheduledEnd = '2026-03-03';
-    previousItem.assemblyCrewByDate = { '2026-03-02': 2, '2026-03-03': 2 };
+    previousItem.assemblyPersonHoursByDate = { '2026-03-02': 16, '2026-03-03': 16 };
 
     const nextPlan = {
       ...previousPlan,
@@ -25,7 +25,7 @@ describe('applyBulkScheduleAmendment', () => {
               ...lineItem,
               assemblyScheduledStart: '2026-03-04',
               assemblyScheduledEnd: '2026-03-05',
-              assemblyCrewByDate: { '2026-03-04': 1, '2026-03-05': 2 },
+              assemblyPersonHoursByDate: { '2026-03-04': 8, '2026-03-05': 16 },
             }
           : lineItem
       )),
@@ -48,7 +48,7 @@ describe('applyBulkScheduleAmendment', () => {
 
     expect(pf.scheduledStart).toBe('2026-03-04');
     expect(pf.scheduledEnd).toBe('2026-03-05');
-    expect(pf.crewByDate).toEqual({ '2026-03-04': 1, '2026-03-05': 2 });
+    expect(pf.personHoursByDate).toEqual({ '2026-03-04': 8, '2026-03-05': 16 });
     expect(pf.originalScheduledStart).toBe('2026-03-02');
     expect(pf.originalScheduledEnd).toBe('2026-03-03');
     expect(amended.amendmentNote).toBe('Adjusted by assistant');
@@ -66,5 +66,35 @@ describe('applyBulkScheduleAmendment', () => {
       scheduledStart: null,
       scheduledEnd: null,
     }], '   ')).toBe(plan);
+  });
+});
+
+describe('applyScheduleAmendment', () => {
+  it('persists effort-only changes when the schedule span stays the same', () => {
+    const { plan, item } = makePlanWithItem();
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 12, '2026-03-03': 20 };
+
+    const result = applyScheduleAmendment(
+      plan,
+      item,
+      'assembly',
+      '2026-03-02',
+      '2026-03-03',
+      'Adjusted day split',
+      { '2026-03-02': 8, '2026-03-03': 24 },
+    );
+
+    const amended = result.lineItems.find((lineItem) => lineItem.id === item.id)!;
+    const pf = getPhaseFields(amended, 'assembly');
+
+    expect(pf.scheduledStart).toBe('2026-03-02');
+    expect(pf.scheduledEnd).toBe('2026-03-03');
+    expect(pf.personHoursByDate).toEqual({ '2026-03-02': 8, '2026-03-03': 24 });
+    expect(pf.originalScheduledStart).toBeNull();
+    expect(pf.originalScheduledEnd).toBeNull();
+    expect(amended.amendmentNote).toBe('Adjusted day split');
+    expect(amended.amendedAt).toBeTruthy();
   });
 });

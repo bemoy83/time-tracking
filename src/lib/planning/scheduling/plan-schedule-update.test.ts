@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createPlan } from '../plan-model';
+import { createLineItem, createPlan } from '../plan-model';
 import type { Project } from '../../types';
 import {
   applyProjectPhaseDatesToPlan,
   setPlanEventDate,
   setPlanPhaseDate,
+  updateLineItemAssignment,
 } from './plan-schedule-update';
 
 describe('plan-schedule-update calendar reconciliation', () => {
@@ -63,5 +64,27 @@ describe('plan-schedule-update calendar reconciliation', () => {
       '2026-05-08',
       '2026-05-09',
     ]);
+  });
+
+  it('clears personHoursByDate when a phase schedule is removed', () => {
+    const plan = createPlan('Clear assignment');
+    const item = createLineItem('Install', 'Install', 'pcs', 8, 1, 0);
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+    plan.lineItems = [item];
+
+    const updated = updateLineItemAssignment(
+      plan,
+      item.id,
+      'assembly',
+      { scheduledStart: null, scheduledEnd: null },
+      undefined,
+    );
+
+    const cleared = updated.lineItems[0];
+    expect(cleared.assemblyScheduledStart).toBeNull();
+    expect(cleared.assemblyScheduledEnd).toBeNull();
+    expect(cleared.assemblyPersonHoursByDate).toBeUndefined();
   });
 });

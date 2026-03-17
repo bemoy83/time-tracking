@@ -15,6 +15,7 @@ describe('schedule-grid-metrics', () => {
     item.assemblyTimeHours = 20;
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 8 };
 
     const dayByDate = new Map([
       ['2026-03-02', { accessHours: 8 }],
@@ -37,6 +38,7 @@ describe('schedule-grid-metrics', () => {
     item.assemblyTimeHours = 12;
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 20 };
 
     const dayByDate = new Map([
       ['2026-03-02', { accessHours: 8 }],
@@ -46,13 +48,13 @@ describe('schedule-grid-metrics', () => {
 
     const breakdown = getLastDayBreakdown(item, 'assembly', '2026-03-03', dayByDate, assignedDates);
     expect(breakdown).toEqual({
-      assignedPersonHours: 16,
-      remainingAtStart: 8,
+      assignedPersonHours: 20,
+      remainingAtStart: 16,
     });
     expect(isOverTargetCell(breakdown)).toBe(true);
   });
 
-  it('does not count hours on non-work days', () => {
+  it('returns zero when no effort is assigned', () => {
     const item = createLineItem('Lighting', 'Lighting', 'pcs', 1, 1, 0);
     item.assemblyCrew = 2;
     item.assemblyTimeHours = 4;
@@ -62,7 +64,7 @@ describe('schedule-grid-metrics', () => {
     const dayByDate = new Map([
       ['2026-03-02', { accessHours: 0 }],
     ]);
-    const assignedDates = ['2026-03-02'];
+    const assignedDates: string[] = [];
 
     expect(getWorkHoursForDay(item, 'assembly', '2026-03-02', dayByDate, assignedDates)).toBe(0);
     expect(getScheduledHours(item, 'assembly', assignedDates, dayByDate)).toBe(0);

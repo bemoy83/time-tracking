@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createLineItem, createPlan, getPhaseFields, getPhaseSpan, type Plan } from '../plan-model';
 import { computeCapacityFromNormalizedInput } from './capacity-core';
 import { computeCapacitySummary, computeSharedCapacitySummary } from './capacity';
-import { listDateRange } from './work-calendar';
+import { getAssignedDates } from './assignment';
 
 describe('capacity-core parity', () => {
   it('matches single-plan wrapper output for representative fixture', () => {
@@ -22,6 +22,7 @@ describe('capacity-core parity', () => {
     scheduled.assemblyTimeHours = 10;
     scheduled.assemblyScheduledStart = '2026-03-02';
     scheduled.assemblyScheduledEnd = '2026-03-03';
+    scheduled.assemblyPersonHoursByDate = { '2026-03-02': 16, '2026-03-03': 4 };
 
     const unscheduled = createLineItem('Unscheduled', 'Unscheduled', 'pcs', 1, 1, 0);
 
@@ -35,7 +36,7 @@ describe('capacity-core parity', () => {
         {
           item: scheduled,
           phase: 'assembly',
-          dates: ['2026-03-02', '2026-03-03'],
+          dates: getAssignedDates(getPhaseFields(scheduled, 'assembly')),
         },
       ],
       scheduledLineItemCount: 1,
@@ -59,6 +60,7 @@ describe('capacity-core parity', () => {
     itemA.assemblyTimeHours = 12;
     itemA.assemblyScheduledStart = '2026-03-02';
     itemA.assemblyScheduledEnd = '2026-03-03';
+    itemA.assemblyPersonHoursByDate = { '2026-03-02': 12 };
     planA.lineItems = [itemA];
 
     const planB = {
@@ -74,6 +76,7 @@ describe('capacity-core parity', () => {
     itemB.assemblyTimeHours = 8;
     itemB.assemblyScheduledStart = '2026-03-02';
     itemB.assemblyScheduledEnd = '2026-03-02';
+    itemB.assemblyPersonHoursByDate = { '2026-03-02': 8 };
     planB.lineItems = [itemB];
 
     const calendar = [
@@ -102,7 +105,7 @@ describe('capacity-core parity', () => {
         {
           item: itemA,
           phase: 'assembly',
-          dates: listDateRange(itemAPf.scheduledStart!, itemAPf.scheduledEnd!).filter((date) => {
+          dates: getAssignedDates(itemAPf).filter((date) => {
             const span = getPhaseSpan(planA, 'assembly');
             return span ? date >= span.start && date <= span.end : true;
           }),
@@ -110,7 +113,7 @@ describe('capacity-core parity', () => {
         {
           item: itemB,
           phase: 'assembly',
-          dates: listDateRange(itemBPf.scheduledStart!, itemBPf.scheduledEnd!).filter((date) => {
+          dates: getAssignedDates(itemBPf).filter((date) => {
             const span = getPhaseSpan(planB, 'assembly');
             return span ? date >= span.start && date <= span.end : true;
           }),

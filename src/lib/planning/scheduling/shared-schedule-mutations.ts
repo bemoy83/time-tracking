@@ -1,11 +1,12 @@
 import type { BuildPhase } from '../../types';
 import { isPlanArchived } from '../plan-lifecycle';
-import type { Plan, WorkCalendarDay } from '../plan-model';
+import type { Plan } from '../plan-model';
 import { getPhaseFields } from '../plan-model';
 import { toggleAssignmentDate } from './assignment';
-import { lazyMigrateCrewByDate } from './plan-schedule-update';
 import { applyScheduleAmendment } from './amendments';
-import { updateLineItemAssignment, updateLineItemCrewForDate } from './plan-schedule-update';
+import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
+import { dayAccessHours } from './work-calendar';
+import { updateLineItemAssignment, updateLineItemPersonHoursForDate } from './plan-schedule-update';
 
 export function toggleSharedAssignment(
   plan: Plan,
@@ -19,8 +20,17 @@ export function toggleSharedAssignment(
   if (!lineItem) return plan;
 
   const pf = getPhaseFields(lineItem, phase);
-  const migrated = lazyMigrateCrewByDate(pf, plan.workCalendar);
-  const result = toggleAssignmentDate({ ...pf, crewByDate: migrated }, date);
+  const day = plan.workCalendar.find((candidate) => candidate.date === date);
+  if (day && !day.isWorkDay) return plan;
+  const accessHours = day ? dayAccessHours(day) : 8;
+  const requiredPH = resolveRequiredPersonHoursForPhase(lineItem, phase) ?? 0;
+  const scheduledPH = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
+  const preferredDayPH = accessHours * Math.max(pf.crew, 1);
+  const defaultPersonHours = Math.max(
+    Math.min(Math.max(requiredPH - scheduledPH, 0) || preferredDayPH, preferredDayPH),
+    0.01,
+  );
+  const result = toggleAssignmentDate({ personHoursByDate: pf.personHoursByDate }, date, defaultPersonHours);
 
   if (plan.status === 'active') {
     return applyScheduleAmendment(
@@ -30,22 +40,41 @@ export function toggleSharedAssignment(
       result.span.scheduledStart,
       result.span.scheduledEnd,
       null,
-      result.crewByDate,
+      result.personHoursByDate,
     );
   }
 
-  return updateLineItemAssignment(plan, lineItemId, phase, result.span, result.crewByDate);
+  return updateLineItemAssignment(plan, lineItemId, phase, result.span, result.personHoursByDate);
 }
 
-export function setSharedCrewForDate(
+export function setSharedPersonHoursForDate(
   plan: Plan,
   lineItemId: string,
   phase: BuildPhase,
   date: string,
-  crew: number,
-  /** Crew pool calendar; when provided, used for work-day check instead of plan.workCalendar. */
-  workDayCalendar?: WorkCalendarDay[],
+  personHours: number,
 ): Plan {
   if (isPlanArchived(plan)) return plan;
-  return updateLineItemCrewForDate(plan, lineItemId, phase, date, crew, workDayCalendar);
+
+  const lineItem = plan.lineItems.find((item) => item.id === lineItemId);
+  if (!lineItem) return plan;
+
+  const nextPlan = updateLineItemPersonHoursForDate(plan, lineItemId, phase, date, personHours);
+  if (nextPlan === plan) return plan;
+
+  if (plan.status === 'active') {
+    const nextLineItem = nextPlan.lineItems.find((item) => item.id === lineItemId) ?? lineItem;
+    const nextPf = getPhaseFields(nextLineItem, phase);
+    return applyScheduleAmendment(
+      plan,
+      lineItem,
+      phase,
+      nextPf.scheduledStart,
+      nextPf.scheduledEnd,
+      null,
+      nextPf.personHoursByDate,
+    );
+  }
+
+  return nextPlan;
 }

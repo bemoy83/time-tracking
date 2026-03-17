@@ -43,6 +43,7 @@ export type BlockCategory =
   | 'other';
 
 export type RateSource = 'template' | 'historical' | 'manual';
+export type DailyEffortMap = Record<string, number>;
 
 export interface WorkCalendarDay {
   /** Local calendar date (YYYY-MM-DD). */
@@ -91,14 +92,14 @@ export interface PlanLineItem {
   assemblyScheduledEnd: string | null;
   assemblyOriginalScheduledStart: string | null;
   assemblyOriginalScheduledEnd: string | null;
-  assemblyCrewByDate?: Record<string, number>;
+  assemblyPersonHoursByDate?: DailyEffortMap;
 
   // Dismantle scheduling (independent per phase)
   dismantleScheduledStart: string | null;
   dismantleScheduledEnd: string | null;
   dismantleOriginalScheduledStart: string | null;
   dismantleOriginalScheduledEnd: string | null;
-  dismantleCrewByDate?: Record<string, number>;
+  dismantlePersonHoursByDate?: DailyEffortMap;
 
   // Assembly execution state
   assemblyExecutionStatus: LineItemExecutionStatus;
@@ -143,7 +144,7 @@ export interface PhaseFields {
   scheduledEnd: string | null;
   originalScheduledStart: string | null;
   originalScheduledEnd: string | null;
-  crewByDate: Record<string, number> | undefined;
+  personHoursByDate: DailyEffortMap | undefined;
   executionStatus: LineItemExecutionStatus;
   blockReason: string | null;
   blockCategory: BlockCategory | null;
@@ -177,7 +178,7 @@ const PHASE_FIELD_SUFFIXES = {
   scheduledEnd: 'ScheduledEnd',
   originalScheduledStart: 'OriginalScheduledStart',
   originalScheduledEnd: 'OriginalScheduledEnd',
-  crewByDate: 'CrewByDate',
+  personHoursByDate: 'PersonHoursByDate',
   executionStatus: 'ExecutionStatus',
   blockReason: 'BlockReason',
   blockCategory: 'BlockCategory',
@@ -250,9 +251,8 @@ export function phaseFieldUpdates(
 ): Partial<PlanLineItem> {
   const result: Record<string, unknown> = {};
   for (const fieldName of PHASE_FIELD_NAMES) {
-    const value = updates[fieldName];
-    if (value !== undefined) {
-      result[getPhaseFieldKey(phase, fieldName)] = value;
+    if (Object.prototype.hasOwnProperty.call(updates, fieldName)) {
+      result[getPhaseFieldKey(phase, fieldName)] = updates[fieldName];
     }
   }
   return result as Partial<PlanLineItem>;
@@ -363,13 +363,68 @@ export function lineItemWorkTypeKey(item: PlanLineItem): WorkTypeKey {
 }
 
 // ---------------------------------------------------------------------------
-// Crew / schedule helpers (phase-aware)
+// Effort / schedule helpers (phase-aware)
 // ---------------------------------------------------------------------------
 
+function roundPlannedPersonHours(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+export function normalizeDailyEffortMap(
+  value: DailyEffortMap | undefined,
+): DailyEffortMap | undefined {
+  if (!value) return undefined;
+  const normalized: DailyEffortMap = {};
+  for (const [date, hours] of Object.entries(value)) {
+    if (!Number.isFinite(hours) || hours <= 0) continue;
+    normalized[date] = roundPlannedPersonHours(hours);
+  }
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+export function getAssignedDatesFromEffortMap(
+  personHoursByDate: DailyEffortMap | undefined,
+): string[] {
+  return Object.keys(personHoursByDate ?? {})
+    .filter((date) => (personHoursByDate?.[date] ?? 0) > 0)
+    .sort();
+}
+
+export function recomputeScheduledSpanFromEffortMap(
+  personHoursByDate: DailyEffortMap | undefined,
+): { scheduledStart: string | null; scheduledEnd: string | null } {
+  const dates = getAssignedDatesFromEffortMap(personHoursByDate);
+  if (dates.length === 0) {
+    return { scheduledStart: null, scheduledEnd: null };
+  }
+  return {
+    scheduledStart: dates[0],
+    scheduledEnd: dates[dates.length - 1],
+  };
+}
+
+export function getPlannedPersonHoursForDate(
+  item: PlanLineItem,
+  phase: BuildPhase,
+  date: string,
+): number {
+  const pf = getPhaseFields(item, phase);
+  return roundPlannedPersonHours(pf.personHoursByDate?.[date] ?? 0);
+}
+
+export function getCrewEquivalentForDate(
+  item: PlanLineItem,
+  phase: BuildPhase,
+  date: string,
+  accessHours: number,
+): number {
+  if (accessHours <= 0) return 0;
+  return roundPlannedPersonHours(getPlannedPersonHoursForDate(item, phase, date) / accessHours);
+}
+
 /**
- * Effective crew count for a line item on a given date for a specific phase.
- * Returns crewByDate[date] if set, else phase crew for dates in the phase's
- * scheduled span, else 0.
+ * Legacy crew-equivalent helper retained for display-oriented callers.
+ * Returns preferred crew for task/release semantics, not assignment truth.
  */
 export function getEffectiveCrewForDate(
   item: PlanLineItem,
@@ -377,23 +432,15 @@ export function getEffectiveCrewForDate(
   date: string,
 ): number {
   const pf = getPhaseFields(item, phase);
-  if (!pf.scheduledStart || !pf.scheduledEnd) return 0;
-  if (date < pf.scheduledStart || date > pf.scheduledEnd) return 0;
-  if (pf.crewByDate) return pf.crewByDate[date] ?? 0;
-  return pf.crew;
+  return getPlannedPersonHoursForDate(item, phase, date) > 0 ? pf.crew : 0;
 }
 
 /**
  * Effective single crew value for a line item phase (for task creation, etc.).
- * Returns max of crewByDate values if present, else phase crew.
+ * Returns preferred crew only; schedule truth lives in personHoursByDate.
  */
 export function lineItemEffectiveCrew(item: PlanLineItem, phase: BuildPhase): number {
-  const pf = getPhaseFields(item, phase);
-  const byDate = pf.crewByDate;
-  if (!byDate) return pf.crew;
-  const values = Object.values(byDate);
-  if (values.length === 0) return pf.crew;
-  return Math.max(...values, pf.crew);
+  return getPhaseFields(item, phase).crew;
 }
 
 // ---------------------------------------------------------------------------
@@ -486,7 +533,7 @@ export function createLineItem(
       scheduledEnd: null,
       originalScheduledStart: null,
       originalScheduledEnd: null,
-      crewByDate: undefined,
+      personHoursByDate: undefined,
       executionStatus: 'pending',
       blockReason: null,
       blockCategory: null,
@@ -502,7 +549,7 @@ export function createLineItem(
       scheduledEnd: null,
       originalScheduledStart: null,
       originalScheduledEnd: null,
-      crewByDate: undefined,
+      personHoursByDate: undefined,
       executionStatus: 'pending',
       blockReason: null,
       blockCategory: null,
@@ -534,7 +581,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     dismantleQuantity: item.dismantleQuantity,
     ...phaseFieldState('assembly', {
       ...getPhaseFields(item, 'assembly'),
-      crewByDate: item.assemblyCrewByDate ? { ...item.assemblyCrewByDate } : undefined,
+      personHoursByDate: item.assemblyPersonHoursByDate ? { ...item.assemblyPersonHoursByDate } : undefined,
       blockReason: null,
       blockCategory: null,
       executorNote: null,
@@ -542,7 +589,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     }),
     ...phaseFieldState('dismantle', {
       ...getPhaseFields(item, 'dismantle'),
-      crewByDate: item.dismantleCrewByDate ? { ...item.dismantleCrewByDate } : undefined,
+      personHoursByDate: item.dismantlePersonHoursByDate ? { ...item.dismantlePersonHoursByDate } : undefined,
       blockReason: null,
       blockCategory: null,
       executorNote: null,

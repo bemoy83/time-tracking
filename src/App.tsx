@@ -52,6 +52,7 @@ const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlan
 
 function App() {
   const [initialized, setInitialized] = useState(false);
+  const [initTimedOut, setInitTimedOut] = useState(false);
   const { isLoading: timerLoading } = useTimerStore();
   const { isLoading: tasksLoading } = useTaskStore();
   // Sync status disabled until sync is implemented
@@ -64,14 +65,29 @@ function App() {
 
   // Initialize stores and sync queue on mount
   useEffect(() => {
+    const INIT_TIMEOUT_MS = 15_000;
+
     async function initialize() {
-      await Promise.all([
-        initializeTimerStore(),
-        initializeTaskStore(),
-        initializeTemplateStore(),
-        initializeWorkTypeStore(),
-        initializeSyncQueue(),
-      ]);
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Initialization timeout')), INIT_TIMEOUT_MS)
+      );
+
+      try {
+        await Promise.race([
+          Promise.all([
+            initializeTimerStore(),
+            initializeTaskStore(),
+            initializeTemplateStore(),
+            initializeWorkTypeStore(),
+            initializeSyncQueue(),
+          ]),
+          timeout,
+        ]);
+      } catch (err) {
+        console.error('[App] Initialization failed:', err);
+        setInitTimedOut(true);
+        // Unblock UI so user can retry or inspect; stores may be partially ready
+      }
 
       // Backfill legacy task/template links to WorkType deterministically.
       // This is best-effort and should never block app startup.
@@ -107,7 +123,9 @@ function App() {
     }
   }, [view, isWideScreen]);
 
-  const isLoading = !initialized || timerLoading || tasksLoading;
+  const isLoading =
+    !initialized ||
+    (!initTimedOut && (timerLoading || tasksLoading));
 
   if (isLoading) {
     return (

@@ -1,8 +1,14 @@
 import type { BuildPhase, Project } from '../../types';
-import type { PhaseFields, Plan, WorkCalendarDay } from '../plan-model';
-import { getPhaseFields, phaseFieldUpdates, updatePlanLineItem } from '../plan-model';
+import type { DailyEffortMap, PhaseFields, Plan, WorkCalendarDay } from '../plan-model';
+import {
+  getPhaseFields,
+  normalizeDailyEffortMap,
+  phaseFieldUpdates,
+  recomputeScheduledSpanFromEffortMap,
+  updatePlanLineItem,
+} from '../plan-model';
 import type { ScheduleSpan } from './assignment';
-import { listDateRange, reconcileWorkCalendarForSpans } from './work-calendar';
+import { dayAccessHours, listDateRange, reconcileWorkCalendarForSpans } from './work-calendar';
 import {
   getWorkCalendarPhaseSpans,
   isDateWithinAnySpan,
@@ -11,28 +17,27 @@ import {
 } from './schedule-span';
 
 /**
- * Lazy migration: if crewByDate is undefined and a span exists, populate it
- * from pf.crew for all work days in the span. Returns undefined if no span.
+ * Build a normalized effort map for work days within a span using preferred crew
+ * as a default chunking heuristic.
  */
-export function lazyMigrateCrewByDate(
-  pf: Pick<PhaseFields, 'scheduledStart' | 'scheduledEnd' | 'crewByDate' | 'crew'>,
+export function buildDefaultPersonHoursByDate(
+  pf: Pick<PhaseFields, 'scheduledStart' | 'scheduledEnd' | 'personHoursByDate' | 'crew'>,
   workCalendar: WorkCalendarDay[],
-): Record<string, number> | undefined {
-  if (pf.crewByDate) return pf.crewByDate;
+): DailyEffortMap | undefined {
+  if (pf.personHoursByDate) return pf.personHoursByDate;
   if (!pf.scheduledStart || !pf.scheduledEnd) return undefined;
 
   const allDates = listDateRange(pf.scheduledStart, pf.scheduledEnd);
-  const workDaySet =
-    workCalendar.length > 0
-      ? new Set(workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
-      : null;
-  const migrated: Record<string, number> = {};
+  const dayByDate = new Map(workCalendar.map((day) => [day.date, day]));
+  const migrated: DailyEffortMap = {};
   for (const date of allDates) {
-    if (!workDaySet || workDaySet.has(date)) {
-      migrated[date] = pf.crew;
-    }
+    const day = dayByDate.get(date);
+    if (day && !day.isWorkDay) continue;
+    const accessHours = day ? dayAccessHours(day) : 8;
+    const defaultHours = Number(Math.max(accessHours * Math.max(pf.crew, 1), 0.01).toFixed(2));
+    migrated[date] = defaultHours;
   }
-  return migrated;
+  return normalizeDailyEffortMap(migrated);
 }
 
 export function normalizeDefaultCrewSize(value: string): number | null {
@@ -190,17 +195,17 @@ export function syncCrewPoolCalendarToPlan(
 
 /**
  * Apply a schedule span change to a line item for a specific phase,
- * managing crewByDate lifecycle:
- * - When span extends: initialize crewByDate for new dates with phase crew.
- * - When span shrinks: prune crewByDate entries outside new span.
- * - When unscheduled (null span): clear crewByDate entirely.
+ * managing personHoursByDate lifecycle:
+ * - When span extends: initialize new work days using preferred daily effort.
+ * - When span shrinks: prune entries outside new span.
+ * - When unscheduled (null span): clear personHoursByDate entirely.
  */
 export function updateLineItemAssignment(
   plan: Plan,
   lineItemId: string,
   phase: BuildPhase,
   nextSpan: ScheduleSpan,
-  toggleCrewByDate?: Record<string, number> | undefined,
+  togglePersonHoursByDate?: DailyEffortMap | undefined,
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
   if (!item) return plan;
@@ -209,57 +214,57 @@ export function updateLineItemAssignment(
     return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
       scheduledStart: null,
       scheduledEnd: null,
-      crewByDate: undefined,
+      personHoursByDate: undefined,
     }));
   }
 
-  // When crewByDate is provided directly from toggle, use it as-is
-  if (toggleCrewByDate !== undefined) {
+  // When personHoursByDate is provided directly from toggle, use it as-is
+  if (togglePersonHoursByDate !== undefined) {
+    const normalized = normalizeDailyEffortMap(togglePersonHoursByDate);
+    const span = recomputeScheduledSpanFromEffortMap(normalized);
     return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
-      scheduledStart: nextSpan.scheduledStart,
-      scheduledEnd: nextSpan.scheduledEnd,
-      crewByDate: toggleCrewByDate,
+      scheduledStart: span.scheduledStart,
+      scheduledEnd: span.scheduledEnd,
+      personHoursByDate: normalized,
     }));
   }
 
-  // Legacy path: rebuild crewByDate from span (used by non-toggle callers)
   const pf = getPhaseFields(item, phase);
   const allDates = listDateRange(nextSpan.scheduledStart, nextSpan.scheduledEnd);
-  const workDaySet =
-    plan.workCalendar.length > 0
-      ? new Set(plan.workCalendar.filter((d) => d.isWorkDay).map((d) => d.date))
-      : null;
-  const newDates = new Set(
-    workDaySet ? allDates.filter((d) => workDaySet.has(d)) : allDates,
-  );
-  const existingCrewByDate = pf.crewByDate ?? {};
-
-  const nextCrewByDate: Record<string, number> = {};
-  for (const date of newDates) {
-    nextCrewByDate[date] = existingCrewByDate[date] ?? pf.crew;
+  const dayByDate = new Map(plan.workCalendar.map((day) => [day.date, day]));
+  const nextPersonHoursByDate: DailyEffortMap = {};
+  const existing = pf.personHoursByDate ?? {};
+  for (const date of allDates) {
+    const day = dayByDate.get(date);
+    if (day && !day.isWorkDay) continue;
+    const accessHours = day ? dayAccessHours(day) : 8;
+    const defaultHours = Number(Math.max(accessHours * Math.max(pf.crew, 1), 0.01).toFixed(2));
+    nextPersonHoursByDate[date] = existing[date] ?? defaultHours;
   }
 
+  const normalized = normalizeDailyEffortMap(nextPersonHoursByDate);
+  const span = recomputeScheduledSpanFromEffortMap(normalized);
   return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
-    scheduledStart: nextSpan.scheduledStart,
-    scheduledEnd: nextSpan.scheduledEnd,
-    crewByDate: nextCrewByDate,
+    scheduledStart: span.scheduledStart,
+    scheduledEnd: span.scheduledEnd,
+    personHoursByDate: normalized,
   }));
 }
 
 /**
- * Update crew count for a specific line item on a specific date for a specific phase.
- * Non-work days are never stored; if date is non-work, its entry is removed from crewByDate.
+ * Update planned effort for a specific line item on a specific date for a specific phase.
+ * Non-work days are never stored; if date is non-work, its entry is removed.
  *
  * @param workDayCalendarOverride - When provided (e.g. shared schedule crew pool), use this
  * for the work-day check instead of plan.workCalendar. Allows crew changes on days the
  * shared calendar marks as work days even when the plan's calendar has not been synced.
  */
-export function updateLineItemCrewForDate(
+export function updateLineItemPersonHoursForDate(
   plan: Plan,
   lineItemId: string,
   phase: BuildPhase,
   date: string,
-  crew: number,
+  personHours: number,
   workDayCalendarOverride?: WorkCalendarDay[],
 ): Plan {
   const item = plan.lineItems.find((i) => i.id === lineItemId);
@@ -274,12 +279,17 @@ export function updateLineItemCrewForDate(
   const isWorkDay =
     calendar.length > 0 ? calendar.some((d) => d.date === date && d.isWorkDay) : true;
 
-  const existing = { ...(pf.crewByDate ?? {}) };
-  if (isWorkDay) {
-    existing[date] = Math.max(0, Math.floor(crew));
-  } else {
+  const existing = { ...(pf.personHoursByDate ?? {}) };
+  if (!isWorkDay || personHours <= 0) {
     delete existing[date];
+  } else {
+    existing[date] = Number(personHours.toFixed(2));
   }
-  const crewByDate = Object.keys(existing).length > 0 ? existing : undefined;
-  return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, { crewByDate }));
+  const personHoursByDate = normalizeDailyEffortMap(existing);
+  const span = recomputeScheduledSpanFromEffortMap(personHoursByDate);
+  return updatePlanLineItem(plan, lineItemId, phaseFieldUpdates(phase, {
+    personHoursByDate,
+    scheduledStart: span.scheduledStart,
+    scheduledEnd: span.scheduledEnd,
+  }));
 }

@@ -46,14 +46,14 @@ function coerceExecutionStatus(value: unknown): LineItemExecutionStatus {
   return 'pending';
 }
 
-function normalizeCrewByDate(value: unknown): Record<string, number> | undefined {
+function normalizePersonHoursByDate(value: unknown): Record<string, number> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const result: Record<string, number> = {};
   for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
     const num = Number(val);
     if (!Number.isFinite(num) || num < 0) continue;
-    result[key] = Math.floor(num);
+    result[key] = Number(num.toFixed(2));
   }
   return Object.keys(result).length > 0 ? result : undefined;
 }
@@ -97,12 +97,12 @@ function normalizeImportedLineItem(raw: PlanLineItem): PlanLineItem {
     dismantleExecutorNote: raw.dismantleExecutorNote ?? null,
     dismantleDeferredNote: raw.dismantleDeferredNote ?? null,
     removedFromSource: raw.removedFromSource ?? false,
-    assemblyCrewByDate: normalizeCrewByDate(raw.assemblyCrewByDate),
+    assemblyPersonHoursByDate: normalizePersonHoursByDate(raw.assemblyPersonHoursByDate),
     assemblyScheduledStart: raw.assemblyScheduledStart ?? null,
     assemblyScheduledEnd: raw.assemblyScheduledEnd ?? null,
     assemblyOriginalScheduledStart: raw.assemblyOriginalScheduledStart ?? null,
     assemblyOriginalScheduledEnd: raw.assemblyOriginalScheduledEnd ?? null,
-    dismantleCrewByDate: normalizeCrewByDate(raw.dismantleCrewByDate),
+    dismantlePersonHoursByDate: normalizePersonHoursByDate(raw.dismantlePersonHoursByDate),
     dismantleScheduledStart: raw.dismantleScheduledStart ?? null,
     dismantleScheduledEnd: raw.dismantleScheduledEnd ?? null,
     dismantleOriginalScheduledStart: raw.dismantleOriginalScheduledStart ?? null,
@@ -460,7 +460,7 @@ const DIFF_FIELDS = [
   'dismantleOriginalScheduledStart', 'dismantleOriginalScheduledEnd',
 ] as const;
 
-function shallowEqualCrewByDate(
+function shallowEqualPersonHoursByDate(
   a: Record<string, number> | undefined,
   b: Record<string, number> | undefined,
 ): boolean {
@@ -493,11 +493,11 @@ export function diffPlanPackageLineItems(
         changedFields.push(field);
       }
     }
-    if (!shallowEqualCrewByDate(incomingItem.assemblyCrewByDate, existingItem.assemblyCrewByDate)) {
-      changedFields.push('assemblyCrewByDate');
+    if (!shallowEqualPersonHoursByDate(incomingItem.assemblyPersonHoursByDate, existingItem.assemblyPersonHoursByDate)) {
+      changedFields.push('assemblyPersonHoursByDate');
     }
-    if (!shallowEqualCrewByDate(incomingItem.dismantleCrewByDate, existingItem.dismantleCrewByDate)) {
-      changedFields.push('dismantleCrewByDate');
+    if (!shallowEqualPersonHoursByDate(incomingItem.dismantlePersonHoursByDate, existingItem.dismantlePersonHoursByDate)) {
+      changedFields.push('dismantlePersonHoursByDate');
     }
     diffs.push({
       lineItemId: incomingItem.id,

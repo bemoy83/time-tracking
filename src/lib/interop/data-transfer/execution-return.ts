@@ -1,5 +1,10 @@
 import type { Plan, LineItemExecutionStatus } from '../../planning/plan-model';
-import { getPhaseFields, isPhaseActive, getEffectiveCrewForDate } from '../../planning/plan-model';
+import {
+  getCrewEquivalentForDate,
+  getPhaseFields,
+  getPlannedPersonHoursForDate,
+  isPhaseActive,
+} from '../../planning/plan-model';
 import type { Task, TimeEntry, WorkType } from '../../types';
 import { BUILD_PHASES, durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
@@ -105,7 +110,7 @@ export async function buildExecutionReturnEnvelope(
           removedFromSource: item.removedFromSource,
           scheduledStart: pf.scheduledStart,
           scheduledEnd: pf.scheduledEnd,
-          crewByDate: pf.crewByDate ?? undefined,
+          personHoursByDate: pf.personHoursByDate ?? undefined,
           actualStartDate: deadline.actualStartDate,
           actualEndDate: deadline.actualEndDate,
           deadlineStatusAtClose: deadline.status,
@@ -232,17 +237,22 @@ function buildScheduleSection(plan: Plan): ScheduleSection {
       if (!pf.scheduledStart || !pf.scheduledEnd) continue;
 
       const dates = listDateRange(pf.scheduledStart, pf.scheduledEnd);
-      const totalPH = pf.timeHours * pf.crew;
-      const perDay = dates.length > 0 ? totalPH / dates.length : 0;
-
       for (const date of dates) {
-        const crew = getEffectiveCrewForDate(item, phase, date);
+        const day = plan.workCalendar.find((entry) => entry.date === date);
+        const accessHours = day
+          ? ((day.accessEnd && day.accessStart)
+            ? (Number(day.accessEnd.slice(0, 2)) + Number(day.accessEnd.slice(3, 5)) / 60)
+              - (Number(day.accessStart.slice(0, 2)) + Number(day.accessStart.slice(3, 5)) / 60)
+            : 8)
+          : 8;
+        const crew = getCrewEquivalentForDate(item, phase, date, accessHours);
+        const plannedPersonHours = getPlannedPersonHoursForDate(item, phase, date);
         if (!dayMap.has(date)) dayMap.set(date, { date, lineItems: [] });
         dayMap.get(date)!.lineItems.push({
           lineItemId: item.id,
           title: item.title,
           assignedCrew: crew,
-          plannedPersonHours: Number(perDay.toFixed(2)),
+          plannedPersonHours,
         });
       }
     }

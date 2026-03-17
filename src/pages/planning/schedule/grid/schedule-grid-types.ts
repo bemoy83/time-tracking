@@ -21,7 +21,7 @@ export interface ItemRowRenderInput {
   metaPrefix?: string;
   onToggleAssignment: (date: string, cellElement?: HTMLElement) => void;
   onClearSchedule?: () => void;
-  onCrewForDateChange?: (date: string, crew: number) => void;
+  onPersonHoursForDateChange?: (date: string, personHours: number) => void;
   outOfPhaseAriaUsesLabel: boolean;
   readOnlyTitle?: string;
   isAssistantUnresolved?: boolean;

@@ -1,6 +1,13 @@
 import type { BuildPhase } from '../../types';
 import { getAssignedDates } from './assignment';
-import { getEffectiveCrewForDate, getPhaseFields, type PlanLineItem, type WorkCalendarDay } from '../plan-model';
+import {
+  getCrewEquivalentForDate,
+  getPhaseFields,
+  getPlannedPersonHoursForDate,
+  type PlanLineItem,
+  type WorkCalendarDay,
+} from '../plan-model';
+import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
 import type { PhaseDateValues } from './schedule-span';
 import { getPhaseRange, hasCompletePhaseDates, isDateWithinSpan } from './schedule-span';
 import type { SharedScheduleRow } from './shared-schedule-types';
@@ -82,25 +89,26 @@ export function computeSharedRowAggregates(
       const assignedDates = getAssignedDatesWithinPhase(item, phase, phaseDates);
       if (assignedDates.length === 0) continue;
 
-      let remaining = pf.timeHours * pf.crew;
+      let remaining = resolveRequiredPersonHoursForPhase(item, phase) ?? (pf.timeHours * pf.crew);
       const lastDate = assignedDates[assignedDates.length - 1];
       for (const date of assignedDates) {
         const day = dayByDate.get(date);
         if (!day) continue;
         const aggregate = byDate.get(date);
         if (!aggregate) continue;
-        const crew = getEffectiveCrewForDate(item, phase, date);
+        const plannedPersonHours = getPlannedPersonHoursForDate(item, phase, date);
         const accessHours = day.accessHours || 8;
+        const crew = getCrewEquivalentForDate(item, phase, date, accessHours);
 
         // Always count assigned crew for days in span (user may assign more crew than work needs)
         if (day.isWorkDay && crew > 0) {
           aggregate.assignedCrew += crew;
-          aggregate.assignedCapacityHours += crew * accessHours;
+          aggregate.assignedCapacityHours += plannedPersonHours;
         }
 
         if (remaining <= 0) continue;
 
-        const dayCapacity = day.isWorkDay ? crew * accessHours : 0;
+        const dayCapacity = day.isWorkDay ? plannedPersonHours : 0;
         const work = Math.min(remaining, dayCapacity);
         aggregate.requiredHours += work;
         remaining -= work;

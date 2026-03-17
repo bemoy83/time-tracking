@@ -55,12 +55,12 @@ function makeLineItem(overrides: Partial<PlanLineItem> = {}): PlanLineItem {
     assemblyScheduledEnd: null,
     assemblyOriginalScheduledStart: null,
     assemblyOriginalScheduledEnd: null,
-    assemblyCrewByDate: undefined,
+    assemblyPersonHoursByDate: undefined,
     dismantleScheduledStart: null,
     dismantleScheduledEnd: null,
     dismantleOriginalScheduledStart: null,
     dismantleOriginalScheduledEnd: null,
-    dismantleCrewByDate: undefined,
+    dismantlePersonHoursByDate: undefined,
     assemblyExecutionStatus: 'pending',
     assemblyBlockReason: null,
     assemblyBlockCategory: null,
@@ -310,7 +310,7 @@ describe('plan-package export', () => {
 
   it('rejects legacy single-phase line item payloads', () => {
     const parsed = parsePlanPackageJson(JSON.stringify({
-      schemaVersion: '2.0',
+        schemaVersion: '3.0',
       exportType: 'plan-package',
       exportedAt: '2026-02-28T10:00:00.000Z',
       appVersion: '0.0.1',

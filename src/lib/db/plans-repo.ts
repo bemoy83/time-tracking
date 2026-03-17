@@ -1,8 +1,13 @@
 import type { Plan } from '../planning/plan-model';
 import {
+  normalizeDailyEffortMap,
+  recomputeScheduledSpanFromEffortMap,
+} from '../planning/plan-model';
+import {
   generateDefaultWorkCalendarForSpans,
   reconcileWorkCalendarForSpans,
 } from '../planning/scheduling/work-calendar';
+import { dayAccessHours, listDateRange } from '../planning/scheduling/work-calendar';
 import { getWorkCalendarPhaseSpans, readPhaseDateValues } from '../planning/scheduling/schedule-span';
 import { getDB } from './core';
 
@@ -89,6 +94,14 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
   }
 
   if (Array.isArray(raw.lineItems)) {
+    const workCalendar = raw.workCalendar as Array<{
+      date: string;
+      isWorkDay: boolean;
+      accessStart: string | null;
+      accessEnd: string | null;
+      crewSize: number | null;
+    }>;
+    const dayByDate = new Map(workCalendar.map((day) => [day.date, day]));
     for (const lineItem of raw.lineItems as Array<Record<string, unknown>>) {
       if (lineItem.executionStatus === undefined) lineItem.executionStatus = 'pending';
       if (lineItem.blockReason === undefined) lineItem.blockReason = null;
@@ -102,6 +115,52 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
       if (lineItem.originalScheduledEnd === undefined) lineItem.originalScheduledEnd = null;
       if (lineItem.amendmentNote === undefined) lineItem.amendmentNote = null;
       if (lineItem.amendedAt === undefined) lineItem.amendedAt = null;
+
+      for (const prefix of ['assembly', 'dismantle'] as const) {
+        const personHoursKey = `${prefix}PersonHoursByDate`;
+        const crewByDateKey = `${prefix}CrewByDate`;
+        const scheduledStartKey = `${prefix}ScheduledStart`;
+        const scheduledEndKey = `${prefix}ScheduledEnd`;
+        if (lineItem[personHoursKey] === undefined) {
+          const existing = lineItem[crewByDateKey] as Record<string, number> | undefined;
+          const start = lineItem[scheduledStartKey] as string | null | undefined;
+          const end = lineItem[scheduledEndKey] as string | null | undefined;
+          const rate = Number(lineItem[`${prefix}Rate`] ?? 0);
+          const crew = Number(lineItem[`${prefix}Crew`] ?? 0);
+          const timeHours = Number(lineItem[`${prefix}TimeHours`] ?? 0);
+          const quantity = prefix === 'dismantle'
+            ? Number(lineItem.dismantleQuantity ?? lineItem.workQuantity ?? 0)
+            : Number(lineItem.workQuantity ?? 0);
+          const requiredPH = timeHours > 0 && crew > 0
+            ? timeHours * crew
+            : rate > 0 && quantity > 0
+              ? quantity / rate
+              : null;
+          const dates = start && end ? listDateRange(start, end) : [];
+          let remaining = requiredPH ?? 0;
+          const migrated: Record<string, number> = {};
+          for (const date of dates) {
+            const day = dayByDate.get(date);
+            if (day && !day.isWorkDay) continue;
+            const accessHours = day ? dayAccessHours(day) : 8;
+            const legacyCrew = existing?.[date] ?? crew;
+            const dayCap = Math.max(0, legacyCrew * accessHours);
+            if (requiredPH == null || requiredPH <= 0) continue;
+            const assigned = Math.min(remaining, dayCap);
+            if (assigned > 0) {
+              migrated[date] = Number(assigned.toFixed(2));
+              remaining -= assigned;
+            }
+            if (remaining <= 0.01) break;
+          }
+          const normalized = normalizeDailyEffortMap(migrated);
+          lineItem[personHoursKey] = normalized;
+          const span = recomputeScheduledSpanFromEffortMap(normalized);
+          lineItem[scheduledStartKey] = span.scheduledStart;
+          lineItem[scheduledEndKey] = span.scheduledEnd;
+          delete lineItem[crewByDateKey];
+        }
+      }
     }
   }
 

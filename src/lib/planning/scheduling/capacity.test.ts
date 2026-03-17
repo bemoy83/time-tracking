@@ -48,12 +48,31 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 8;
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-02';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
     expect(summary.days).toHaveLength(2);
     expect(summary.totalAvailablePersonHours).toBe(48);
     expect(summary.totalRequiredPersonHours).toBe(8);
+  });
+
+  it('treats personHoursByDate as schedule truth even when span cache is stale', () => {
+    const plan = makePlan();
+    const item = createLineItem('Cache Drift', 'Cache Drift', 'pcs', 8, 1, 0);
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 8;
+    item.assemblyScheduledStart = null;
+    item.assemblyScheduledEnd = null;
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8 };
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+
+    expect(summary.totalRequiredPersonHours).toBe(8);
+    expect(summary.scheduledLineItemCount).toBe(1);
+    expect(summary.unscheduledLineItemCount).toBe(0);
+    expect(summary.days[0].requiredPersonHours).toBe(8);
   });
 
   it('fills days sequentially — Day 1 absorbs work up to its capacity', () => {
@@ -65,6 +84,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 10; // 2×10 = 20h total
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 16, '2026-03-03': 4 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -92,14 +112,14 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 5; // 4×5 = 20h total. Day 1 capacity: 4×8 = 32h → all done Day 1.
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 20 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
     // All 20h done on Day 1 (capacity 32h > 20h needed)
     expect(summary.days[0].requiredPersonHours).toBe(20);
     expect(summary.days[1].requiredPersonHours).toBe(0);
-    // Day 2 still has crew assigned (item spans both days) — badge shows assigned/required for planning
-    expect(summary.days[1].assignedCrewTotal).toBe(4);
+    expect(summary.days[1].assignedCrewTotal).toBe(0);
     expect(summary.days[0].isOverWorkerCapacity).toBe(false);
   });
 
@@ -128,6 +148,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 20; // 20h total, 16h total capacity → can't finish
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 8 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -161,6 +182,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 8;
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 48, '2026-03-03': 48 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -170,7 +192,7 @@ describe('computeCapacitySummary', () => {
     expect(summary.overWorkerCapacityDayCount).toBe(2);
   });
 
-  it('fills correctly with varying crew via crewByDate', () => {
+    it('fills correctly with varying daily effort', () => {
     const plan: Plan = {
       ...createPlan('Varying Crew Plan'),
       eventStartDate: '2026-03-02',
@@ -186,8 +208,8 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 10; // 60h total
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
-    // Day 1: 8 crew × 8h = 64h capacity, Day 2: 4 crew × 8h = 32h
-    item.assemblyCrewByDate = { '2026-03-02': 8, '2026-03-03': 4 };
+    // Day 1: 60h planned, Day 2: 0h planned
+    item.assemblyPersonHoursByDate = { '2026-03-02': 60 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -214,6 +236,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 8; // 32h total
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 32, '2026-03-03': 32 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -240,6 +263,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 10; // 10h total. Day 1: 1×8=8h capacity, does 8h. Day 2: 1×8=8h capacity, does 2h.
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 2 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -266,6 +290,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 16; // 16h total, 8h capacity/day → fills both days exactly
     item.assemblyScheduledStart = '2026-03-02';
     item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 8, '2026-03-03': 8 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -300,6 +325,7 @@ describe('computeCapacitySummary', () => {
     item.assemblyTimeHours = 24; // 24h total spanning Thu–Tue
     item.assemblyScheduledStart = '2026-03-05';
     item.assemblyScheduledEnd = '2026-03-10';
+    item.assemblyPersonHoursByDate = { '2026-03-05': 8, '2026-03-06': 8, '2026-03-09': 8 };
     plan.lineItems = [item];
 
     const summary = computeCapacitySummary(plan);
@@ -308,11 +334,11 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[2].assignedCrewTotal).toBe(0);
     expect(summary.days[3].isWorkDay).toBe(false);
     expect(summary.days[3].assignedCrewTotal).toBe(0);
-    // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job. Tue has crew (item spans all days)
+    // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job.
     expect(summary.days[0].assignedCrewTotal).toBe(1);
     expect(summary.days[1].assignedCrewTotal).toBe(1);
     expect(summary.days[4].assignedCrewTotal).toBe(1);
-    expect(summary.days[5].assignedCrewTotal).toBe(1); // Crew assigned for planning even when work done
+    expect(summary.days[5].assignedCrewTotal).toBe(0);
   });
 
   it('computes shared capacity across plans using a single crew-pool calendar', () => {
@@ -329,6 +355,7 @@ describe('computeCapacitySummary', () => {
     itemA.assemblyTimeHours = 8;
     itemA.assemblyScheduledStart = '2026-03-02';
     itemA.assemblyScheduledEnd = '2026-03-02';
+    itemA.assemblyPersonHoursByDate = { '2026-03-02': 8 };
     planA.lineItems = [itemA];
 
     const planB: Plan = {
@@ -344,6 +371,7 @@ describe('computeCapacitySummary', () => {
     itemB.assemblyTimeHours = 8;
     itemB.assemblyScheduledStart = '2026-03-02';
     itemB.assemblyScheduledEnd = '2026-03-02';
+    itemB.assemblyPersonHoursByDate = { '2026-03-02': 8 };
     planB.lineItems = [itemB];
 
     const summary = computeSharedCapacitySummary({

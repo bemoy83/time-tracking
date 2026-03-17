@@ -18,6 +18,25 @@
   line-height: 1;
 }
 
+.schedule-grid__cell-hours-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: inherit;
+}
+
+.schedule-grid__cell-hours-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.schedule-grid__cell-hours-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 .schedule-grid__cell-badge--need {
   color: var(--state-danger-fg-strong);
   font-weight: 700;
@@ -32,6 +51,32 @@
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.schedule-grid__cell-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface-raised, white) 88%, transparent);
+}
+
+.schedule-grid__cell-hours-input {
+  width: 64px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-grid__cell-hours-unit {
+  font-size: var(--font-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
 .schedule-grid__cell-crew-btn {

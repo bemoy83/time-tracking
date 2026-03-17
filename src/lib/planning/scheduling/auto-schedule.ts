@@ -1,20 +1,22 @@
 /**
  * Auto-schedule assistant: place line-item phase rows into work days
- * while respecting phase windows, access hours, and crew limits.
+ * while respecting day effort capacity. Preferred crew is only a chunking hint.
  */
 
 import type { BuildPhase } from '../../types';
-import type { Plan, PlanLineItem, PhaseFields } from '../plan-model';
+import type { DailyEffortMap, Plan, PlanLineItem, PhaseFields } from '../plan-model';
 import {
   getPhaseFields,
   getPhaseQuantity,
   getPhaseSpan,
   isPhaseActive,
+  normalizeDailyEffortMap,
   phaseFieldUpdates,
+  recomputeScheduledSpanFromEffortMap,
   updatePlanLineItem,
 } from '../plan-model';
 import { BUILD_PHASES } from '../../types';
-import { dayAccessHours, dayCrewSize, listDateRange } from './work-calendar';
+import { dayAccessHours, dayAvailablePersonHours } from './work-calendar';
 import { computeCapacitySummary } from './capacity';
 
 export type AutoScheduleRequiredWorkMode = 'time_hours_first' | 'rate_first';
@@ -70,8 +72,7 @@ interface NormalizedOptions {
 interface DayState {
   date: string;
   accessHours: number;
-  totalCrew: number;
-  remainingCrew: number;
+  remainingPersonHours: number;
 }
 
 interface RequiredWorkResolution {
@@ -79,34 +80,9 @@ interface RequiredWorkResolution {
   source: 'time' | 'rate' | null;
 }
 
-interface PhaseCandidateItem {
-  item: PlanLineItem;
-  pf: PhaseFields;
-  requiredPH: number;
-  requestedCrew: number;
-  source: 'time' | 'rate';
-}
-
 interface Placement {
-  startDate: string;
-  endDate: string;
-  startIndex: number;
-  endIndex: number;
-  spanLength: number;
   assignedPH: number;
-  crewByDate: Record<string, number>;
-  maxCrewUsed: number;
-  covers: boolean;
-}
-
-interface ScheduledRowState {
-  lineItemId: string;
-  phase: BuildPhase;
-  requiredPH: number;
-  requestedCrew: number;
-  source: 'time' | 'rate';
-  candidateDays: DayState[];
-  placement: Placement;
+  personHoursByDate: DailyEffortMap;
 }
 
 interface PhaseScheduleResult {
@@ -133,15 +109,6 @@ function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
     includeScheduled: options?.includeScheduled ?? DEFAULT_OPTIONS.includeScheduled,
     allowOverAllocation: options?.allowOverAllocation ?? DEFAULT_OPTIONS.allowOverAllocation,
   };
-}
-
-function getUsableCrew(
-  requestedCrew: number,
-  remainingCrew: number,
-  allowOverAllocation: boolean,
-): number {
-  if (allowOverAllocation) return Math.max(0, requestedCrew);
-  return Math.max(0, Math.min(requestedCrew, remainingCrew));
 }
 
 function resolveRequiredWork(
@@ -184,34 +151,13 @@ export function resolveRequiredPersonHoursForPhase(
 }
 
 function computeCoveredPersonHoursForRow(
-  plan: Plan,
   item: PlanLineItem,
   phase: BuildPhase,
   requiredPH: number,
 ): number {
   const pf = getPhaseFields(item, phase);
-  if (!pf.scheduledStart || !pf.scheduledEnd) return 0;
-
-  const dayByDate = new Map(plan.workCalendar.map((d) => [d.date, d]));
-  const dates = listDateRange(pf.scheduledStart, pf.scheduledEnd);
-  let remaining = requiredPH;
-  let covered = 0;
-
-  for (const date of dates) {
-    if (remaining <= 0.01) break;
-    const day = dayByDate.get(date);
-    if (!day || !day.isWorkDay) continue;
-    const accessHours = dayAccessHours(day);
-    if (accessHours <= 0) continue;
-    const crew = pf.crewByDate?.[date] ?? pf.crew;
-    if (crew <= 0) continue;
-    const dayPH = crew * accessHours;
-    const delivered = Math.min(dayPH, remaining);
-    remaining -= delivered;
-    covered += delivered;
-  }
-
-  return round2(covered);
+  const scheduled = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
+  return round2(Math.min(requiredPH, scheduled));
 }
 
 function computeScheduleMetrics(
@@ -227,7 +173,7 @@ function computeScheduleMetrics(
       const required = resolveRequiredWork(item, phase, mode).requiredPH;
       if (required == null || required <= 0) continue;
       requiredPH += required;
-      coveredPH += computeCoveredPersonHoursForRow(plan, item, phase, required);
+      coveredPH += computeCoveredPersonHoursForRow(item, phase, required);
     }
   }
 
@@ -236,13 +182,13 @@ function computeScheduleMetrics(
     requiredPersonHours: round2(requiredPH),
     coveredPersonHours: round2(coveredPH),
     coverageRatio: requiredPH > 0 ? round2(coveredPH / requiredPH) : 1,
-    overCapacityDays: capacity.overWorkerCapacityDayCount,
+    overCapacityDays: capacity.overAllocatedDayCount,
   };
 }
 
-function sameCrewByDate(
-  a: Record<string, number> | undefined,
-  b: Record<string, number> | undefined,
+function sameEffortMap(
+  a: DailyEffortMap | undefined,
+  b: DailyEffortMap | undefined,
 ): boolean {
   const aKeys = Object.keys(a ?? {}).sort();
   const bKeys = Object.keys(b ?? {}).sort();
@@ -264,126 +210,57 @@ function mapChangedRows(changed: AutoScheduleChangedRow[]): AutoScheduleChangedR
 
 function simulatePlacement(
   candidates: DayState[],
-  startIndex: number,
   requiredPH: number,
-  requestedCrew: number,
+  preferredCrew: number,
   allowOverAllocation: boolean,
-  availableByDate?: Map<string, number>,
-  allowCrewScaleUp = false,
 ): Placement | null {
-  const crewByDate: Record<string, number> = {};
-  let phLeft = requiredPH;
+  const personHoursByDate: DailyEffortMap = {};
   let assignedPH = 0;
-  let lastIndex = startIndex;
 
-  for (let i = startIndex; i < candidates.length; i++) {
-    lastIndex = i;
-    const day = candidates[i];
-    const remainingCrew = availableByDate?.get(day.date) ?? day.remainingCrew;
-    let usableCrew = getUsableCrew(requestedCrew, remainingCrew, allowOverAllocation);
-
-    // If requested crew cannot cover remaining work across the remaining window,
-    // allow temporary scale-up (bounded by day crew availability) to finish.
-    if (allowCrewScaleUp && day.accessHours > 0 && phLeft > 0.01) {
-      let requestedPotentialPH = 0;
-      for (let j = i; j < candidates.length; j++) {
-        const future = candidates[j];
-        const futureRemaining = availableByDate?.get(future.date) ?? future.remainingCrew;
-        const futureCrew = getUsableCrew(requestedCrew, futureRemaining, allowOverAllocation);
-        if (futureCrew <= 0 || future.accessHours <= 0) continue;
-        requestedPotentialPH += futureCrew * future.accessHours;
-      }
-
-      const shortagePH = phLeft - requestedPotentialPH;
-      if (shortagePH > 0.01) {
-        const maxCrewToday = allowOverAllocation
-          ? Math.max(usableCrew, Math.ceil(phLeft / day.accessHours))
-          : Math.max(usableCrew, remainingCrew);
-        const maxExtraTodayPH = Math.max(0, (maxCrewToday - usableCrew) * day.accessHours);
-        const extraTodayPH = Math.min(shortagePH, maxExtraTodayPH);
-        if (extraTodayPH > 0.01) {
-          usableCrew = Math.min(
-            maxCrewToday,
-            usableCrew + Math.ceil(extraTodayPH / day.accessHours),
-          );
-        }
-      }
-    }
-
-    if (usableCrew <= 0 || day.accessHours <= 0) continue;
-
-    const dayPH = usableCrew * day.accessHours;
-    const delivered = Math.min(dayPH, phLeft);
-    if (delivered <= 0) continue;
-
-    const crewThisDay = Math.max(1, Math.min(usableCrew, Math.ceil(delivered / day.accessHours)));
-    crewByDate[day.date] = crewThisDay;
-    assignedPH += delivered;
-    phLeft -= delivered;
-
-    if (phLeft <= 0.01) break;
+  for (const day of candidates) {
+    if (assignedPH >= requiredPH - 0.01) break;
+    const preferredDayTarget = Math.max(preferredCrew, 1) * day.accessHours;
+    const availablePH = allowOverAllocation ? Math.max(day.remainingPersonHours, preferredDayTarget) : day.remainingPersonHours;
+    const assignablePH = Math.min(requiredPH - assignedPH, availablePH, preferredDayTarget);
+    if (assignablePH <= 0.01) continue;
+    personHoursByDate[day.date] = round2(assignablePH);
+    assignedPH += assignablePH;
   }
 
-  const assignedDates = Object.keys(crewByDate).sort();
-  if (assignedDates.length === 0) return null;
-
-  const covers = phLeft <= 0.01;
-  const maxCrewUsed = Math.max(...Object.values(crewByDate));
-  const endDate = assignedDates[assignedDates.length - 1];
-  const endIndex = candidates.findIndex((d) => d.date === endDate);
-
+  const normalized = normalizeDailyEffortMap(personHoursByDate);
+  if (!normalized) return null;
   return {
-    startDate: assignedDates[0],
-    endDate,
-    startIndex,
-    endIndex: endIndex >= 0 ? endIndex : lastIndex,
-    spanLength: (endIndex >= 0 ? endIndex : lastIndex) - startIndex + 1,
     assignedPH: round2(assignedPH),
-    crewByDate,
-    maxCrewUsed,
-    covers,
+    personHoursByDate: normalized,
   };
 }
 
-function isPlacementBetter(a: Placement, b: Placement): boolean {
-  if (a.covers !== b.covers) return a.covers;
-  if (!a.covers && !b.covers && a.assignedPH !== b.assignedPH) return a.assignedPH > b.assignedPH;
-  if (a.spanLength !== b.spanLength) return a.spanLength < b.spanLength;
-  return a.startDate < b.startDate;
-}
+function buildDayStates(plan: Plan, options: NormalizedOptions): DayState[] {
+  const availableByDate = new Map<string, number>();
 
-function applyPlacementToDayState(
-  dayStateMap: Map<string, DayState>,
-  crewByDate: Record<string, number>,
-  multiplier: 1 | -1,
-): void {
-  for (const [date, crew] of Object.entries(crewByDate)) {
-    const day = dayStateMap.get(date);
-    if (!day) continue;
-    day.remainingCrew -= crew * multiplier;
+  for (const day of plan.workCalendar.filter((candidate) => candidate.isWorkDay)) {
+    availableByDate.set(day.date, dayAvailablePersonHours(day, plan.defaultCrewSize));
   }
-}
 
-function overCapacityViolationCount(
-  placement: Placement,
-  availableByDate: Map<string, number>,
-): number {
-  let violations = 0;
-  for (const [date, crew] of Object.entries(placement.crewByDate)) {
-    const available = availableByDate.get(date) ?? 0;
-    if (crew > available) violations += 1;
+  if (!options.includeScheduled) {
+    for (const item of plan.lineItems) {
+      for (const phase of BUILD_PHASES) {
+        if (!isPhaseActive(item, phase)) continue;
+        const pf = getPhaseFields(item, phase);
+        for (const [date, hours] of Object.entries(pf.personHoursByDate ?? {})) {
+          availableByDate.set(date, (availableByDate.get(date) ?? 0) - hours);
+        }
+      }
+    }
   }
-  return violations;
-}
 
-function isLocalObjectiveBetter(
-  candidate: { covered: number; violations: number; spanLength: number; startDate: string },
-  current: { covered: number; violations: number; spanLength: number; startDate: string },
-): boolean {
-  if (candidate.covered !== current.covered) return candidate.covered > current.covered;
-  if (candidate.violations !== current.violations) return candidate.violations < current.violations;
-  if (candidate.spanLength !== current.spanLength) return candidate.spanLength < current.spanLength;
-  return candidate.startDate < current.startDate;
+  return plan.workCalendar
+    .filter((day) => day.isWorkDay)
+    .map((day) => ({
+      date: day.date,
+      accessHours: dayAccessHours(day),
+      remainingPersonHours: round2(availableByDate.get(day.date) ?? 0),
+    }));
 }
 
 function schedulePhase(
@@ -391,43 +268,17 @@ function schedulePhase(
   phase: BuildPhase,
   options: NormalizedOptions,
 ): PhaseScheduleResult {
-  const { defaultCrewSize, workCalendar } = plan;
-  if (workCalendar.length === 0) return { plan, changed: [], unresolved: [] };
-
-  const workDays = workCalendar.filter((d) => d.isWorkDay);
-  if (workDays.length === 0) return { plan, changed: [], unresolved: [] };
-
-  const dayStateMap = new Map<string, DayState>();
-  for (const day of workDays) {
-    const crew = dayCrewSize(day, defaultCrewSize);
-    dayStateMap.set(day.date, {
-      date: day.date,
-      accessHours: dayAccessHours(day),
-      totalCrew: crew,
-      remainingCrew: crew,
-    });
-  }
-
-  if (!options.includeScheduled) {
-    for (const item of plan.lineItems) {
-      if (!isPhaseActive(item, phase)) continue;
-      const pf = getPhaseFields(item, phase);
-      if (!pf.scheduledStart || !pf.scheduledEnd) continue;
-      for (const [date, dayState] of dayStateMap) {
-        if (date < pf.scheduledStart || date > pf.scheduledEnd) continue;
-        const crew = pf.crewByDate ? (pf.crewByDate[date] ?? 0) : pf.crew;
-        dayState.remainingCrew -= crew;
-      }
-    }
-  }
+  if (plan.workCalendar.length === 0) return { plan, changed: [], unresolved: [] };
 
   const phaseSpan = getPhaseSpan(plan, phase);
+  const allCandidates = buildDayStates(plan, options);
   const candidates = phaseSpan
-    ? workDays
-      .filter((d) => d.date >= phaseSpan.start && d.date <= phaseSpan.end)
-      .map((d) => dayStateMap.get(d.date)!)
-      .filter(Boolean)
-    : workDays.map((d) => dayStateMap.get(d.date)!).filter(Boolean);
+    ? allCandidates.filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end)
+    : allCandidates;
+
+  if (candidates.length === 0) {
+    return { plan, changed: [], unresolved: [] };
+  }
 
   let result = plan;
   const changed: AutoScheduleChangedRow[] = [];
@@ -437,13 +288,12 @@ function schedulePhase(
     .filter((item) => {
       if (!isPhaseActive(item, phase)) return false;
       if (options.includeScheduled) return true;
-      const pf = getPhaseFields(item, phase);
-      return !pf.scheduledStart || !pf.scheduledEnd;
+      return Object.keys(getPhaseFields(item, phase).personHoursByDate ?? {}).length === 0;
     })
     .map((item) => {
       const pf = getPhaseFields(item, phase);
       const required = resolveRequiredWork(item, phase, options.requiredWorkMode);
-      if (required.requiredPH == null || required.requiredPH <= 0 || required.source == null) {
+      if (required.requiredPH == null || required.requiredPH <= 0) {
         unresolved.push({
           lineItemId: item.id,
           phase,
@@ -457,49 +307,15 @@ function schedulePhase(
         item,
         pf,
         requiredPH: required.requiredPH,
-        requestedCrew: pf.crew > 0 ? pf.crew : 1,
-        source: required.source,
-      } satisfies PhaseCandidateItem;
+        preferredCrew: Math.max(pf.crew, 1),
+      };
     })
-    .filter((row): row is PhaseCandidateItem => row != null)
-    .sort((a, b) => {
-      if (b.requiredPH !== a.requiredPH) return b.requiredPH - a.requiredPH;
-      return a.item.id.localeCompare(b.item.id);
-    });
-
-  if (candidates.length === 0) {
-    for (const row of schedulable) {
-      unresolved.push({
-        lineItemId: row.item.id,
-        phase,
-        reason: 'no_work_days',
-        requiredPH: round2(row.requiredPH),
-        assignedPH: 0,
-      });
-    }
-    return { plan: result, changed: mapChangedRows(changed), unresolved };
-  }
-
-  const scheduledRows: ScheduledRowState[] = [];
+    .filter((row): row is { item: PlanLineItem; pf: PhaseFields; requiredPH: number; preferredCrew: number } => row != null)
+    .sort((a, b) => b.requiredPH - a.requiredPH || a.item.id.localeCompare(b.item.id));
 
   for (const row of schedulable) {
-    let best: Placement | null = null;
-
-    for (let start = 0; start < candidates.length; start++) {
-      const placement = simulatePlacement(
-        candidates,
-        start,
-        row.requiredPH,
-        row.requestedCrew,
-        options.allowOverAllocation,
-      );
-      if (!placement) continue;
-      if (!best || isPlacementBetter(placement, best)) {
-        best = placement;
-      }
-    }
-
-    if (!best) {
+    const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation);
+    if (!placement) {
       unresolved.push({
         lineItemId: row.item.id,
         phase,
@@ -510,171 +326,40 @@ function schedulePhase(
       continue;
     }
 
-    if (!best.covers) {
-      const scaled = simulatePlacement(
-        candidates,
-        best.startIndex,
-        row.requiredPH,
-        row.requestedCrew,
-        options.allowOverAllocation,
-        undefined,
-        true,
-      );
-      if (scaled && isPlacementBetter(scaled, best)) {
-        best = scaled;
-      }
+    for (const [date, hours] of Object.entries(placement.personHoursByDate)) {
+      const day = candidates.find((candidate) => candidate.date === date);
+      if (!day) continue;
+      day.remainingPersonHours = round2(day.remainingPersonHours - hours);
     }
 
-    applyPlacementToDayState(dayStateMap, best.crewByDate, 1);
-
-    const updates: Partial<PhaseFields> = {
-      scheduledStart: best.startDate,
-      scheduledEnd: best.endDate,
-      crewByDate: best.crewByDate,
-    };
-    if (row.pf.crew <= 0) {
-      updates.crew = best.maxCrewUsed;
-    }
-    if (row.pf.timeHours <= 0 && row.source === 'rate' && best.maxCrewUsed > 0) {
-      updates.timeHours = round2(row.requiredPH / best.maxCrewUsed);
-    }
-
-    result = updatePlanLineItem(result, row.item.id, phaseFieldUpdates(phase, updates));
-
+    const span = recomputeScheduledSpanFromEffortMap(placement.personHoursByDate);
     const previous = getPhaseFields(row.item, phase);
-    const scheduleChanged =
-      previous.scheduledStart !== best.startDate
-      || previous.scheduledEnd !== best.endDate
-      || !sameCrewByDate(previous.crewByDate, best.crewByDate);
+    result = updatePlanLineItem(result, row.item.id, phaseFieldUpdates(phase, {
+      scheduledStart: span.scheduledStart,
+      scheduledEnd: span.scheduledEnd,
+      personHoursByDate: placement.personHoursByDate,
+    }));
 
-    if (scheduleChanged) {
+    if (
+      previous.scheduledStart !== span.scheduledStart
+      || previous.scheduledEnd !== span.scheduledEnd
+      || !sameEffortMap(previous.personHoursByDate, placement.personHoursByDate)
+    ) {
       changed.push({
         lineItemId: row.item.id,
         phase,
-        scheduledStart: best.startDate,
-        scheduledEnd: best.endDate,
+        scheduledStart: span.scheduledStart,
+        scheduledEnd: span.scheduledEnd,
       });
     }
 
-    if (!best.covers) {
+    if (placement.assignedPH < row.requiredPH - 0.01) {
       unresolved.push({
         lineItemId: row.item.id,
         phase,
         reason: 'no_capacity_window',
         requiredPH: round2(row.requiredPH),
-        assignedPH: best.assignedPH,
-      });
-    }
-
-    scheduledRows.push({
-      lineItemId: row.item.id,
-      phase,
-      requiredPH: row.requiredPH,
-      requestedCrew: row.requestedCrew,
-      source: row.source,
-      candidateDays: candidates,
-      placement: best,
-    });
-  }
-
-  if (options.rebalance === 'local' && scheduledRows.length > 0) {
-    const sortedRows = [...scheduledRows].sort((a, b) => a.lineItemId.localeCompare(b.lineItemId));
-
-    for (const rowState of sortedRows) {
-      const current = rowState.placement;
-      const baseAvailable = new Map<string, number>();
-      for (const day of rowState.candidateDays) {
-        const currentCrew = current.crewByDate[day.date] ?? 0;
-        baseAvailable.set(day.date, day.remainingCrew + currentCrew);
-      }
-
-      const currentObjective = {
-        covered: current.assignedPH,
-        violations: overCapacityViolationCount(current, baseAvailable),
-        spanLength: current.spanLength,
-        startDate: current.startDate,
-      };
-
-      let bestPlacement = current;
-      let improved = true;
-      let guard = 0;
-
-      while (improved && guard < rowState.candidateDays.length) {
-        guard += 1;
-        improved = false;
-
-        for (const shift of [-1, 1] as const) {
-          const nextStart = bestPlacement.startIndex + shift;
-          if (nextStart < 0 || nextStart >= rowState.candidateDays.length) continue;
-
-          const neighbor = simulatePlacement(
-            rowState.candidateDays,
-            nextStart,
-            rowState.requiredPH,
-            rowState.requestedCrew,
-            options.allowOverAllocation,
-            baseAvailable,
-          );
-          if (!neighbor) continue;
-
-          const neighborObjective = {
-            covered: neighbor.assignedPH,
-            violations: overCapacityViolationCount(neighbor, baseAvailable),
-            spanLength: neighbor.spanLength,
-            startDate: neighbor.startDate,
-          };
-
-          const bestObjective = {
-            covered: bestPlacement.assignedPH,
-            violations: overCapacityViolationCount(bestPlacement, baseAvailable),
-            spanLength: bestPlacement.spanLength,
-            startDate: bestPlacement.startDate,
-          };
-
-          if (isLocalObjectiveBetter(neighborObjective, bestObjective)) {
-            bestPlacement = neighbor;
-            improved = true;
-          }
-        }
-      }
-
-      const bestObjective = {
-        covered: bestPlacement.assignedPH,
-        violations: overCapacityViolationCount(bestPlacement, baseAvailable),
-        spanLength: bestPlacement.spanLength,
-        startDate: bestPlacement.startDate,
-      };
-
-      if (!isLocalObjectiveBetter(bestObjective, currentObjective)) {
-        continue;
-      }
-
-      applyPlacementToDayState(dayStateMap, current.crewByDate, -1);
-      applyPlacementToDayState(dayStateMap, bestPlacement.crewByDate, 1);
-      rowState.placement = bestPlacement;
-
-      const currentItem = result.lineItems.find((x) => x.id === rowState.lineItemId);
-      if (!currentItem) continue;
-      const currentPf = getPhaseFields(currentItem, phase);
-
-      const updates: Partial<PhaseFields> = {
-        scheduledStart: bestPlacement.startDate,
-        scheduledEnd: bestPlacement.endDate,
-        crewByDate: bestPlacement.crewByDate,
-      };
-      if (currentPf.crew <= 0) {
-        updates.crew = bestPlacement.maxCrewUsed;
-      }
-      if (currentPf.timeHours <= 0 && rowState.source === 'rate' && bestPlacement.maxCrewUsed > 0) {
-        updates.timeHours = round2(rowState.requiredPH / bestPlacement.maxCrewUsed);
-      }
-
-      result = updatePlanLineItem(result, rowState.lineItemId, phaseFieldUpdates(phase, updates));
-      changed.push({
-        lineItemId: rowState.lineItemId,
-        phase,
-        scheduledStart: bestPlacement.startDate,
-        scheduledEnd: bestPlacement.endDate,
+        assignedPH: placement.assignedPH,
       });
     }
   }
