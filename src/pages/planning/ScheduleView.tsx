@@ -674,7 +674,6 @@ export function ScheduleView({
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
             readOnly={readOnly}
-            showBackButton={showBackButton}
             collapseWhenConfigured
             primaryRange={workCalendarRange ?? primaryRange}
             dayCount={currentPlan.workCalendar.length}

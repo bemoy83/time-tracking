@@ -8,7 +8,6 @@ interface PlanScheduleInputsPanelProps extends PhaseDateValues {
   eventEndDate: string | null;
   defaultCrewSize: number | null;
   readOnly: boolean;
-  showBackButton?: boolean;
   /** When true (Schedule view), collapse by default when dates are set and show summary. Always collapsible. */
   collapseWhenConfigured?: boolean;
   primaryRange: { start: string; end: string } | null;
@@ -29,7 +28,6 @@ export function PlanScheduleInputsPanel({
   eventEndDate,
   defaultCrewSize,
   readOnly,
-  showBackButton = false,
   collapseWhenConfigured = false,
   primaryRange,
   dayCount,

@@ -471,7 +471,6 @@ export function PlanEditor({
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
             readOnly={readOnly || isLocked}
-            showBackButton={showBackButton}
             primaryRange={summaryRange}
             dayCount={availableScope?.workDayCount ?? 0}
             crewSize={currentPlan.defaultCrewSize ?? null}
