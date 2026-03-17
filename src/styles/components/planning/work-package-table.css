@@ -121,7 +121,7 @@
 
 .planning-view__wp-header-group th,
 .planning-view__wp-header-columns th {
-  position: relative;
+  position: sticky;
 }
 
 .planning-view__wp-header-columns th::after,
@@ -586,14 +586,15 @@
 
 /* 1. Summary badges — subtle chips (inherits from base) */
 
-/* 2. Thead pinned to card surface — stays distinct from zebra rows */
+/* 2. Thead pinned to card surface — square corners (no radius) so no gap for scroll; phase tints override */
 .planning-workspace__editor-canvas .planning-view__work-package-table thead th {
   background: var(--surface-contained-bg);
+  border-radius: 0;
 }
 
 /* Work Package group: round top-right so it meets Assembly’s rounded top-left */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-header-group th:first-child {
-  border-top-right-radius: var(--radius-lg);
+  border-radius: 0;
   border-right: 2px solid var(--surface-contained-bg);
 }
 
@@ -625,32 +626,61 @@
   background: var(--surface-contained-hover) !important;
 }
 
-/* 5. Phase group header — colored chip on spanning label, column headers with muted phase text */
-/* Match radius to stat badges (radius-lg) */
-/* Assembly chip — rounded top corners; right border = tab edge before Dismantle */
-.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly {
-  background: var(--wp-phase-assembly-header-bg);
+/* 5. Phase group header — solid bg + rounded tint overlay for tab style (no corner gaps) */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly,
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly.planning-view__wp-phase-group-start {
+  position: sticky;
+  top: 0;
+  background: var(--surface-contained-bg) !important;
   color: var(--phase-assembly-fg);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: 0;
   border-left: none;
   border-right: 2px solid var(--surface-contained-bg);
   padding-left: calc(var(--space-xs) + 8px);
 }
-/* Dismantle chip (separator is on last Assembly column right) */
-.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle {
-  background: var(--wp-phase-dismantle-header-bg);
-  color: var(--phase-dismantle-fg);
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly::before,
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--assembly.planning-view__wp-phase-group-start::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--phase-assembly-fg) 9%, var(--surface-contained-bg));
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* Dismantle chip */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle,
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle.planning-view__wp-phase-group-start {
+  position: sticky;
+  top: 0;
+  background: var(--surface-contained-bg) !important;
+  color: var(--phase-dismantle-fg);
+  border-radius: 0;
   border-left: none;
   padding-left: calc(var(--space-xs) + 8px);
 }
-/* Column sub-headers: chip bg continues + muted phase color */
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle::before,
+.planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-group-heading--dismantle.planning-view__wp-phase-group-start::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--phase-dismantle-fg) 9%, var(--surface-contained-bg));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+/* Column sub-headers: match group heading tint (9%) for cohesive tab look */
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--assembly {
-  background: var(--wp-phase-assembly-header-bg);
+  background: color-mix(in srgb, var(--phase-assembly-fg) 9%, var(--surface-contained-bg)) !important;
   color: color-mix(in srgb, var(--phase-assembly-fg) 60%, var(--color-text-muted));
 }
 .planning-workspace__editor-canvas .planning-view__work-package-table .planning-view__wp-phase-col--dismantle {
-  background: var(--wp-phase-dismantle-header-bg);
+  background: color-mix(in srgb, var(--phase-dismantle-fg) 9%, var(--surface-contained-bg)) !important;
   color: color-mix(in srgb, var(--phase-dismantle-fg) 60%, var(--color-text-muted));
 }
 /* Unit column header: right border = separator before Assembly (tab-style headers only) */

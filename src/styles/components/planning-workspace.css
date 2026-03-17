@@ -701,6 +701,57 @@
   overflow-y: auto;
 }
 
+/* Edit tab: work packages table scrolls with sticky header; tab-content passes height down */
+.planning-workspace__tab-content:has(.planning-view--editor) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-workspace__editor-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1520px;
+  margin-inline: auto;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-view--editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-view__work-packages-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-view__wp-surface {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-view__wp-table-zone {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.planning-workspace__tab-content:has(.planning-view--editor) .planning-view__work-package-table-wrap {
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
+  height: 100%;
+}
+
 .planning-workspace__editor-canvas {
   width: 100%;
   max-width: 1520px;

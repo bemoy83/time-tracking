@@ -219,7 +219,7 @@ export function WorkPackageTable({
               title="Defaults from work type. Edit values only when overriding."
               aria-label="Assembly defaults from work type; editable to override"
             >
-              Assembly
+              <span className="planning-view__wp-group-heading-label">Assembly</span>
             </th>
             <th
               colSpan={3}
@@ -228,7 +228,7 @@ export function WorkPackageTable({
               title="Defaults from work type. Edit values only when overriding."
               aria-label="Dismantle defaults from work type; editable to override"
             >
-              Dismantle
+              <span className="planning-view__wp-group-heading-label">Dismantle</span>
             </th>
             <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">
               <div className="planning-view__wp-actions-col-content">
