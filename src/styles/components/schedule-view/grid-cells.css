@@ -56,27 +56,48 @@
 .schedule-grid__cell-editor {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-surface-raised, white) 88%, transparent);
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: var(--surface-contained-inset);
+}
+
+.schedule-grid__cell-editor:focus-within {
+  border-color: var(--color-primary);
+}
+
+/* Suppress input outline — editor :focus-within border provides focus indicator */
+.schedule-grid__cell-hours-input:focus {
+  outline: none;
 }
 
 .schedule-grid__cell-hours-input {
-  width: 64px;
-  padding: 4px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  width: 4.5ch;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-text);
-  font: inherit;
+  font-size: var(--font-body);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.schedule-grid__cell-hours-input::-webkit-inner-spin-button,
+.schedule-grid__cell-hours-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .schedule-grid__cell-hours-unit {
-  font-size: var(--font-caption);
-  font-weight: 700;
+  font-size: var(--font-small);
+  font-weight: 600;
   color: var(--color-text-muted);
+  flex-shrink: 0;
 }
 
 .schedule-grid__cell-crew-btn {

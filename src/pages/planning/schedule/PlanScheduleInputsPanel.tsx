@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMediaQuery } from '../../../lib/hooks/useMediaQuery';
 import { PlanScheduleInputs } from './PlanScheduleInputs';
 import { ScheduleInputsBlock } from './ScheduleInputsBlock';
 import type { PhaseDateField, PhaseDateValues } from './schedule-date-ui';
@@ -41,16 +40,15 @@ export function PlanScheduleInputsPanel({
   onDefaultCrewSizeChange,
 }: PlanScheduleInputsPanelProps) {
   const isEmpty = primaryRange == null;
-  const [inputsExpanded, setInputsExpanded] = useState(isEmpty);
-  const isBigScreen = useMediaQuery('(min-width: 1200px)');
-  const isDesktopControlBand = !collapseWhenConfigured && isBigScreen && !showBackButton;
-  const scheduleInputsExpanded = isDesktopControlBand ? true : inputsExpanded;
+  const [inputsExpanded, setInputsExpanded] = useState(
+    collapseWhenConfigured ? isEmpty : true,
+  );
 
   return (
     <ScheduleInputsBlock
-      expanded={scheduleInputsExpanded}
+      expanded={inputsExpanded}
       onToggle={() => setInputsExpanded((prev) => !prev)}
-      collapsible={collapseWhenConfigured || !isDesktopControlBand}
+      collapsible
       primaryRange={primaryRange}
       dayCount={dayCount}
       crewSize={crewSize}

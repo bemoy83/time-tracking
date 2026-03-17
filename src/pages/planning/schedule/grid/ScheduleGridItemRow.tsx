@@ -216,11 +216,11 @@ export function ScheduleGridItemRow({
                     >
                       <input
                         className="schedule-grid__cell-hours-input"
-                        type="number"
-                        min="0"
-                        step="0.25"
+                        type="text"
+                        inputMode="decimal"
                         value={personHoursDraft}
                         onChange={(event) => setPersonHoursDraft(event.target.value)}
+                        onFocus={(event) => event.target.select()}
                         onBlur={() => commitPersonHoursChange(day.date)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
