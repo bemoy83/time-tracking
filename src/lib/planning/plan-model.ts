@@ -283,6 +283,8 @@ export interface Plan {
   dismantleEndDate: string | null;
   /** Default crew size for schedule capacity math. */
   defaultCrewSize: number | null;
+  /** Efficiency factor (0.5–1.0). null = use app default (0.8). */
+  defaultEfficiency: number | null;
   /** Per-day work calendar across event period. */
   workCalendar: WorkCalendarDay[];
   createdAt: string;
@@ -474,6 +476,23 @@ export function planTotalsByUnit(plan: Plan): Map<WorkUnit, number> {
 }
 
 // ---------------------------------------------------------------------------
+// Efficiency helpers
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_PLAN_EFFICIENCY = 0.8;
+
+/** Clamp a raw number to the valid efficiency range [0.5, 1.0]. Returns null for invalid input. */
+export function normalizePlanEfficiency(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return Math.min(1.0, Math.max(0.5, value));
+}
+
+/** Resolve the efficiency to use for capacity math. Never returns null. */
+export function resolvePlanEfficiency(plan: Pick<Plan, 'defaultEfficiency'>): number {
+  return normalizePlanEfficiency(plan.defaultEfficiency) ?? DEFAULT_PLAN_EFFICIENCY;
+}
+
+// ---------------------------------------------------------------------------
 // Factories
 // ---------------------------------------------------------------------------
 
@@ -493,6 +512,7 @@ export function createPlan(title: string): Plan {
     dismantleStartDate: null,
     dismantleEndDate: null,
     defaultCrewSize: null,
+    defaultEfficiency: null,
     workCalendar: [],
     createdAt: now,
     updatedAt: now,

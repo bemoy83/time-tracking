@@ -23,6 +23,8 @@ export interface NormalizedScheduledEntry {
 export interface CapacityComputationInput {
   calendar: WorkCalendarDay[];
   defaultCrewSize: number | null;
+  /** Efficiency factor 0.5–1.0. Defaults to 1.0 if omitted. */
+  efficiency?: number;
   scheduledEntries: NormalizedScheduledEntry[];
   unscheduledLineItemCount: number;
   scheduledLineItemCount: number;
@@ -35,21 +37,25 @@ function round2(value: number): number {
 function buildDayMapFromCalendar(
   calendar: WorkCalendarDay[],
   defaultCrewSize: number | null,
+  efficiency: number,
 ): Map<string, DailyCapacity> {
   const dayMap = new Map<string, DailyCapacity>();
   for (const day of calendar) {
-    const available = dayAvailablePersonHours(day, defaultCrewSize);
+    const raw = dayAvailablePersonHours(day, defaultCrewSize);
+    const effective = round2(raw * efficiency);
     const crew = dayCrewSize(day, defaultCrewSize);
     const access = dayAccessHours(day);
     dayMap.set(day.date, {
       date: day.date,
       isWorkDay: day.isWorkDay,
       requiredPersonHours: 0,
-      availablePersonHours: round2(available),
+      availablePersonHours: effective,
+      rawAvailablePersonHours: round2(raw),
+      effectiveAvailablePersonHours: effective,
       accessHours: access,
       availableCrew: crew,
       assignedCrewTotal: 0,
-      utilization: available > 0 ? 0 : null,
+      utilization: effective > 0 ? 0 : null,
       lineItemCount: 0,
       isOverAllocated: false,
       isOverAssignedCrew: false,
@@ -119,8 +125,9 @@ function finalizeCapacitySummary(
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((day) => {
       const required = round2(day.requiredPersonHours);
-      const available = round2(day.availablePersonHours);
-      const utilization = available > 0 ? round2(required / available) : null;
+      const effective = round2(day.effectiveAvailablePersonHours);
+      const raw = round2(day.rawAvailablePersonHours);
+      const utilization = effective > 0 ? round2(required / effective) : null;
       const isOverAssignedCrew = day.isWorkDay && day.assignedCrewTotal > day.availableCrew;
       const isOverWorkerCapacity = isOverAssignedCrew; // Derived from crew display (assigned/available)
       const assignedCapacityPersonHours = round2(day.assignedCrewTotal * (day.accessHours || 8));
@@ -130,9 +137,11 @@ function finalizeCapacitySummary(
       return {
         ...day,
         requiredPersonHours: required,
-        availablePersonHours: available,
+        availablePersonHours: effective,
+        rawAvailablePersonHours: raw,
+        effectiveAvailablePersonHours: effective,
         utilization,
-        isOverAllocated: available > 0 ? required > available : required > 0,
+        isOverAllocated: effective > 0 ? required > effective : required > 0,
         isOverAssignedCrew,
         isOverWorkerCapacity,
         assignedCapacityPersonHours,
@@ -143,8 +152,10 @@ function finalizeCapacitySummary(
     });
 
   const totalRequiredPersonHours = round2(days.reduce((sum, day) => sum + day.requiredPersonHours, 0));
-  const totalAvailablePersonHours = round2(days.reduce((sum, day) => sum + day.availablePersonHours, 0));
-  const headroomPersonHours = round2(totalAvailablePersonHours - totalRequiredPersonHours);
+  const totalRawAvailablePersonHours = round2(days.reduce((sum, day) => sum + day.rawAvailablePersonHours, 0));
+  const totalEffectiveAvailablePersonHours = round2(days.reduce((sum, day) => sum + day.effectiveAvailablePersonHours, 0));
+  const totalAvailablePersonHours = totalEffectiveAvailablePersonHours;
+  const headroomPersonHours = round2(totalEffectiveAvailablePersonHours - totalRequiredPersonHours);
   const overAllocatedDayCount = days.filter((day) => day.isOverAllocated).length;
   const overAssignedCrewDayCount = days.filter((day) => day.isOverAssignedCrew).length;
   const overWorkerCapacityDayCount = days.filter((day) => day.isOverWorkerCapacity).length;
@@ -154,6 +165,8 @@ function finalizeCapacitySummary(
     days,
     totalRequiredPersonHours,
     totalAvailablePersonHours,
+    totalRawAvailablePersonHours,
+    totalEffectiveAvailablePersonHours,
     headroomPersonHours,
     overAllocatedDayCount,
     overAssignedCrewDayCount,
@@ -167,7 +180,8 @@ function finalizeCapacitySummary(
 export function computeCapacityFromNormalizedInput(
   input: CapacityComputationInput,
 ): CapacitySummary {
-  const dayMap = buildDayMapFromCalendar(input.calendar, input.defaultCrewSize);
+  const efficiency = input.efficiency ?? 1.0;
+  const dayMap = buildDayMapFromCalendar(input.calendar, input.defaultCrewSize, efficiency);
 
   for (const entry of input.scheduledEntries) {
     applyScheduledItem(dayMap, entry.item, entry.phase, entry.dates);

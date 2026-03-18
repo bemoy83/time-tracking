@@ -48,6 +48,7 @@
 @import './styles/components/modal.css';
 @import './styles/components/alert-dialog.css';
 @import './styles/components/stepper-pill.css';
+@import './styles/components/segmented-control.css';
 @import './styles/components/entry-modal.css';
 @import './styles/components/action-sheet.css';
 @import './styles/components/fab.css';

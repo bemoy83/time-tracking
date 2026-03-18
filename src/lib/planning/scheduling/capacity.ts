@@ -1,6 +1,6 @@
 import { BUILD_PHASES } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
-import { getPhaseFields, getPhaseSpan, isPhaseActive } from '../plan-model';
+import { getPhaseFields, getPhaseSpan, isPhaseActive, resolvePlanEfficiency, DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import { getAssignedDates } from './assignment';
 import {
@@ -18,6 +18,10 @@ export interface DailyCapacity {
   isWorkDay: boolean;
   requiredPersonHours: number;
   availablePersonHours: number;
+  /** Raw crew × access hours (no efficiency factor). */
+  rawAvailablePersonHours: number;
+  /** Raw capacity × efficiency factor — the plannable amount. */
+  effectiveAvailablePersonHours: number;
   /** Access hours per worker for this day (e.g. 8 for 08:00-16:00). */
   accessHours: number;
   /** Available crew from work calendar for this day. */
@@ -47,6 +51,8 @@ export interface CapacitySummary {
   days: DailyCapacity[];
   totalRequiredPersonHours: number;
   totalAvailablePersonHours: number;
+  totalRawAvailablePersonHours: number;
+  totalEffectiveAvailablePersonHours: number;
   headroomPersonHours: number;
   overAllocatedDayCount: number;
   /** Number of days where assigned crew exceeds available crew. */
@@ -141,6 +147,7 @@ export function computeCapacitySummary(plan: Plan): CapacitySummary {
   return computeCapacityFromNormalizedInput({
     calendar: createPlanCapacityCalendar(plan),
     defaultCrewSize: plan.defaultCrewSize,
+    efficiency: resolvePlanEfficiency(plan),
     scheduledEntries: entries.scheduledEntries,
     scheduledLineItemCount: entries.scheduledLineItemCount,
     unscheduledLineItemCount: entries.unscheduledLineItemCount,
@@ -152,6 +159,7 @@ export function computeSharedCapacitySummary(input: SharedScheduleInput): Capaci
   return computeCapacityFromNormalizedInput({
     calendar: input.calendar,
     defaultCrewSize: input.defaultCrewSize,
+    efficiency: DEFAULT_PLAN_EFFICIENCY,
     scheduledEntries: entries.scheduledEntries,
     scheduledLineItemCount: entries.scheduledLineItemCount,
     unscheduledLineItemCount: entries.unscheduledLineItemCount,

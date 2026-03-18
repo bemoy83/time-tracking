@@ -80,6 +80,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     dismantleStartDate: null,
     dismantleEndDate: null,
     defaultCrewSize: 2,
+    defaultEfficiency: null,
     workCalendar: [],
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T00:00:00.000Z',

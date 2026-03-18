@@ -1,0 +1,73 @@
+/* ─── Shared base ────────────────────────────────────────────── */
+.segmented-control {
+  display: flex;
+  gap: 0;
+}
+
+.segmented-control__option {
+  flex: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: var(--font-small);
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.segmented-control__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Pill variant (default) — dark iOS-style track ─────────── */
+.segmented-control--pill {
+  background: var(--color-border);
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.segmented-control--pill .segmented-control__option {
+  min-height: 32px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  color: var(--color-text-muted);
+}
+
+.segmented-control--pill .segmented-control__option:hover:not(.is-active):not(:disabled) {
+  color: var(--color-text);
+}
+
+.segmented-control--pill .segmented-control__option.is-active {
+  background: #1f1f1f;
+  color: var(--state-on-solid);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* ─── Outline variant — ghost buttons, blue active ──────────── */
+.segmented-control--outline {
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.segmented-control--outline .segmented-control__option {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+}
+
+.segmented-control--outline .segmented-control__option:hover:not(.is-active):not(:disabled) {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.segmented-control--outline .segmented-control__option.is-active {
+  background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.3);
+}

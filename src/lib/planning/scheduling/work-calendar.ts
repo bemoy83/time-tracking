@@ -196,6 +196,14 @@ export function dayAvailablePersonHours(day: WorkCalendarDay, defaultCrewSize: n
   return dayAccessHours(day) * dayCrewSize(day, defaultCrewSize);
 }
 
+export function dayEffectiveAvailablePersonHours(
+  day: WorkCalendarDay,
+  defaultCrewSize: number | null,
+  efficiency: number,
+): number {
+  return dayAvailablePersonHours(day, defaultCrewSize) * efficiency;
+}
+
 export function hasSchedulingCalendar(plan: Pick<Plan, 'workCalendar'>): boolean {
   return plan.workCalendar.length > 0;
 }

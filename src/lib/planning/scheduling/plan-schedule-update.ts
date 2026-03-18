@@ -3,6 +3,7 @@ import type { DailyEffortMap, PhaseFields, Plan, WorkCalendarDay } from '../plan
 import {
   getPhaseFields,
   normalizeDailyEffortMap,
+  normalizePlanEfficiency,
   phaseFieldUpdates,
   recomputeScheduledSpanFromEffortMap,
   updatePlanLineItem,
@@ -112,6 +113,14 @@ export function setPlanDefaultCrewSize(plan: Plan, value: string): Plan {
     ...next,
     workCalendar,
   });
+}
+
+export function setPlanDefaultEfficiency(plan: Plan, value: string): Plan {
+  const pct = parseFloat(value);
+  const decimal = Number.isFinite(pct) && value !== ''
+    ? normalizePlanEfficiency(pct / 100) ?? null
+    : null;
+  return { ...plan, defaultEfficiency: decimal };
 }
 
 export function updatePlanCalendarDay(

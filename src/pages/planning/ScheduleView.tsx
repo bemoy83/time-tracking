@@ -14,6 +14,7 @@ import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { BUILD_PHASES, type BuildPhase } from '../../lib/types';
 import {
   setPlanDefaultCrewSize,
+  setPlanDefaultEfficiency,
   setPlanEventDate,
   setPlanPhaseDate,
   updatePlanCalendarDay,
@@ -196,6 +197,12 @@ export function ScheduleView({
   const handleDefaultCrewChange = (value: string) => {
     clearAssistantReport();
     mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
+    trackTelemetryEvent('schedule_calendar_edit');
+  };
+
+  const handleDefaultEfficiencyChange = (value: string) => {
+    clearAssistantReport();
+    mutatePlan((prev) => setPlanDefaultEfficiency(prev, value));
     trackTelemetryEvent('schedule_calendar_edit');
   };
 
@@ -673,15 +680,17 @@ export function ScheduleView({
             eventStartDate={currentPlan.eventStartDate}
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
+            defaultEfficiency={currentPlan.defaultEfficiency}
             readOnly={readOnly}
             collapseWhenConfigured
             primaryRange={workCalendarRange ?? primaryRange}
             dayCount={currentPlan.workCalendar.length}
             crewSize={currentPlan.defaultCrewSize ?? null}
-            totalAvailable={capacity.totalAvailablePersonHours}
+            totalAvailable={capacity.totalEffectiveAvailablePersonHours}
             onPhaseDateChange={handlePlanPhaseDateChange}
             onEventDateChange={handlePlanDateChange}
             onDefaultCrewSizeChange={handleDefaultCrewChange}
+            onDefaultEfficiencyChange={handleDefaultEfficiencyChange}
           />
         </div>
       </div>

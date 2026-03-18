@@ -53,7 +53,7 @@ export function ScheduleInputsBlock({
                   — {formatShortDate(primaryRange.start)}-
                   {formatShortDate(primaryRange.end)} · {dayCount}{' '}
                   {dayCount === 1 ? 'day' : 'days'} · {crewSize ?? '–'} crew ·{' '}
-                  {totalAvailable.toFixed(0)}h available
+                  {totalAvailable.toFixed(0)}h usable
                 </span>
               )}
             </h3>

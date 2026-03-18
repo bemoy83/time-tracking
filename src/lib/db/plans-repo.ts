@@ -72,6 +72,10 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.defaultCrewSize = null;
   }
 
+  if (raw.defaultEfficiency === undefined) {
+    raw.defaultEfficiency = null;
+  }
+
   const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(raw as unknown as Plan));
 
   if (!Array.isArray(raw.workCalendar)) {

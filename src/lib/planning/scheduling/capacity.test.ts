@@ -8,6 +8,7 @@ function makePlan(): Plan {
     eventStartDate: '2026-03-02',
     eventEndDate: '2026-03-03',
     defaultCrewSize: 4,
+    defaultEfficiency: 1.0,
     workCalendar: [
       {
         date: '2026-03-02',
@@ -38,6 +39,7 @@ describe('computeCapacitySummary', () => {
       dismantleStartDate: '2026-03-04',
       dismantleEndDate: '2026-03-05',
       defaultCrewSize: 3,
+      defaultEfficiency: 1.0,
       workCalendar: [
         { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
         { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
@@ -386,7 +388,120 @@ describe('computeCapacitySummary', () => {
     });
 
     expect(summary.totalRequiredPersonHours).toBe(16);
-    expect(summary.totalAvailablePersonHours).toBe(8);
+    // shared schedule always uses 0.8 efficiency: 1 crew * 8h * 0.8 = 6.4h usable
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(6.4);
+    expect(summary.totalRawAvailablePersonHours).toBe(8);
     expect(summary.overAllocatedDayCount).toBe(1);
+  });
+});
+
+describe('efficiency factor', () => {
+  function makeEfficiencyPlan(efficiency: number | null): Plan {
+    return {
+      ...createPlan('Efficiency Plan'),
+      defaultCrewSize: 4,
+      defaultEfficiency: efficiency,
+      workCalendar: [
+        {
+          date: '2026-04-01',
+          isWorkDay: true,
+          accessStart: '08:00',
+          accessEnd: '16:00',
+          crewSize: null,
+        },
+      ],
+    };
+  }
+
+  it('computes raw=32h and effective=25.6h at 0.8 efficiency', () => {
+    const plan = makeEfficiencyPlan(0.8);
+    const summary = computeCapacitySummary(plan);
+    expect(summary.totalRawAvailablePersonHours).toBe(32);
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
+    expect(summary.totalAvailablePersonHours).toBe(25.6);
+  });
+
+  it('defaults null efficiency to 0.8 (same as explicit 0.8)', () => {
+    const nullPlan = makeEfficiencyPlan(null);
+    const explicitPlan = makeEfficiencyPlan(0.8);
+    const nullSummary = computeCapacitySummary(nullPlan);
+    const explicitSummary = computeCapacitySummary(explicitPlan);
+    expect(nullSummary.totalEffectiveAvailablePersonHours).toBe(
+      explicitSummary.totalEffectiveAvailablePersonHours,
+    );
+  });
+
+  it('24h required is NOT over-allocated at 0.8 (effective=25.6)', () => {
+    const plan = makeEfficiencyPlan(0.8);
+    const item = createLineItem('Work', 'Work', 'pcs', 24, 1, 0);
+    item.assemblyCrew = 3;
+    item.assemblyTimeHours = 8;
+    item.assemblyScheduledStart = '2026-04-01';
+    item.assemblyScheduledEnd = '2026-04-01';
+    item.assemblyPersonHoursByDate = { '2026-04-01': 24 };
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    expect(summary.overAllocatedDayCount).toBe(0);
+    expect(summary.days[0].isOverAllocated).toBe(false);
+  });
+
+  it('28h required IS over-allocated at 0.8 (effective=25.6)', () => {
+    const plan = makeEfficiencyPlan(0.8);
+    const item = createLineItem('Work', 'Work', 'pcs', 1, 1, 0);
+    item.assemblyCrew = 4;
+    item.assemblyTimeHours = 7;
+    item.assemblyScheduledStart = '2026-04-01';
+    item.assemblyScheduledEnd = '2026-04-01';
+    item.assemblyPersonHoursByDate = { '2026-04-01': 28 };
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    expect(summary.overAllocatedDayCount).toBe(1);
+    expect(summary.days[0].isOverAllocated).toBe(true);
+  });
+
+  it('utilization is computed against effective capacity, not raw', () => {
+    const plan = makeEfficiencyPlan(0.8); // effective = 25.6h
+    const item = createLineItem('Work', 'Work', 'pcs', 1, 1, 0);
+    item.assemblyCrew = 1;
+    item.assemblyTimeHours = 12.8;
+    item.assemblyScheduledStart = '2026-04-01';
+    item.assemblyScheduledEnd = '2026-04-01';
+    item.assemblyPersonHoursByDate = { '2026-04-01': 12.8 };
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    // 12.8 / 25.6 = 0.5, not 12.8 / 32 = 0.4
+    expect(summary.days[0].utilization).toBe(0.5);
+  });
+});
+
+describe('shared schedule uses fixed 0.8 efficiency', () => {
+  it('ignores plan defaultEfficiency and uses 0.8 for shared capacity', () => {
+    const plan1 = {
+      ...createPlan('Plan A'),
+      defaultCrewSize: 4,
+      defaultEfficiency: 1.0, // would be 32h if respected
+      workCalendar: [
+        {
+          date: '2026-04-01',
+          isWorkDay: true,
+          accessStart: '08:00',
+          accessEnd: '16:00',
+          crewSize: null,
+        },
+      ],
+    };
+
+    const summary = computeSharedCapacitySummary({
+      calendar: plan1.workCalendar,
+      defaultCrewSize: 4,
+      lineItems: [],
+    });
+
+    // shared always uses 0.8: 4 crew * 8h * 0.8 = 25.6
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
+    expect(summary.totalRawAvailablePersonHours).toBe(32);
   });
 });

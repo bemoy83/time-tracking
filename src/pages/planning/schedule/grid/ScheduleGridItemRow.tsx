@@ -53,7 +53,7 @@ export function ScheduleGridItemRow({
   }, [editingDate, editingIsAssigned, editingPersonHours, rowKey]);
 
   const hasAssignments = assigned.size > 0;
-  const estimateHours = pf.timeHours * pf.crew;
+  const estimateHours = Math.round(pf.timeHours * pf.crew * 10) / 10;
   const scheduledHours = hasAssignments ? getScheduledHours(item, phase, assignedDates, dayByDate) : 0;
   const isOnTarget = hasAssignments && scheduledHours >= estimateHours - 0.01;
   const isUnderTarget = hasAssignments && scheduledHours < estimateHours - 0.01;

@@ -23,6 +23,7 @@ import {
 import {
   applyProjectPhaseDatesToPlan,
   setPlanDefaultCrewSize,
+  setPlanDefaultEfficiency,
   setPlanEventDate,
   setPlanPhaseDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
@@ -276,6 +277,10 @@ export function PlanEditor({
     mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
   };
 
+  const handleSetDefaultEfficiency = (value: string) => {
+    mutatePlan((prev) => setPlanDefaultEfficiency(prev, value));
+  };
+
   const handleAddLineItem = (item: PlanLineItem) => {
     mutatePlan((prev) => addLineItemToPlan(prev, item));
   };
@@ -470,6 +475,7 @@ export function PlanEditor({
             eventStartDate={currentPlan.eventStartDate}
             eventEndDate={currentPlan.eventEndDate}
             defaultCrewSize={currentPlan.defaultCrewSize}
+            defaultEfficiency={currentPlan.defaultEfficiency}
             readOnly={readOnly || isLocked}
             primaryRange={summaryRange}
             dayCount={availableScope?.workDayCount ?? 0}
@@ -478,6 +484,7 @@ export function PlanEditor({
             onPhaseDateChange={handleSetPhaseDate}
             onEventDateChange={handleSetEventDate}
             onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+            onDefaultEfficiencyChange={handleSetDefaultEfficiency}
           />
         </div>
       </div>

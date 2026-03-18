@@ -3,6 +3,9 @@ import {
   createPlan,
   createLineItem,
   activatePlan,
+  normalizePlanEfficiency,
+  resolvePlanEfficiency,
+  DEFAULT_PLAN_EFFICIENCY,
   revertToDraft,
   addLineItemToPlan,
   removeLineItemFromPlan,
@@ -217,5 +220,60 @@ describe('phase field config map', () => {
       dismantleTimeHours: 7,
       dismantleDeferredNote: 'Shifted to final day',
     });
+  });
+});
+
+describe('normalizePlanEfficiency', () => {
+  it('returns null for null input', () => {
+    expect(normalizePlanEfficiency(null)).toBeNull();
+  });
+
+  it('returns null for undefined input', () => {
+    expect(normalizePlanEfficiency(undefined)).toBeNull();
+  });
+
+  it('returns null for non-finite input', () => {
+    expect(normalizePlanEfficiency(NaN)).toBeNull();
+    expect(normalizePlanEfficiency(Infinity)).toBeNull();
+  });
+
+  it('passes through valid values unchanged', () => {
+    expect(normalizePlanEfficiency(0.8)).toBe(0.8);
+    expect(normalizePlanEfficiency(0.5)).toBe(0.5);
+    expect(normalizePlanEfficiency(1.0)).toBe(1.0);
+  });
+
+  it('clamps values below 0.5 to 0.5', () => {
+    expect(normalizePlanEfficiency(0.3)).toBe(0.5);
+    expect(normalizePlanEfficiency(0)).toBe(0.5);
+  });
+
+  it('clamps values above 1.0 to 1.0', () => {
+    expect(normalizePlanEfficiency(1.2)).toBe(1.0);
+    expect(normalizePlanEfficiency(2.0)).toBe(1.0);
+  });
+});
+
+describe('resolvePlanEfficiency', () => {
+  it('returns DEFAULT_PLAN_EFFICIENCY when defaultEfficiency is null', () => {
+    expect(resolvePlanEfficiency({ defaultEfficiency: null })).toBe(DEFAULT_PLAN_EFFICIENCY);
+    expect(resolvePlanEfficiency({ defaultEfficiency: null })).toBe(0.8);
+  });
+
+  it('returns the plan value when set', () => {
+    expect(resolvePlanEfficiency({ defaultEfficiency: 0.7 })).toBe(0.7);
+    expect(resolvePlanEfficiency({ defaultEfficiency: 1.0 })).toBe(1.0);
+  });
+
+  it('clamps out-of-range values', () => {
+    expect(resolvePlanEfficiency({ defaultEfficiency: 0.2 })).toBe(0.5);
+    expect(resolvePlanEfficiency({ defaultEfficiency: 1.5 })).toBe(1.0);
+  });
+});
+
+describe('createPlan', () => {
+  it('initializes defaultEfficiency as null', () => {
+    const plan = createPlan('Test');
+    expect(plan.defaultEfficiency).toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import {
   type PlanLineItem,
   type LineItemExecutionStatus,
   getPhaseFields,
+  normalizePlanEfficiency,
 } from '../../planning/plan-model';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { nowUtc } from '../../types';
@@ -153,6 +154,7 @@ function normalizeIncomingPlan(plan: PlanPackagePayload['plan']): Plan {
     sessionClosedAt: null,
     updatedAt: now,
     defaultCrewSize: normalizedDates.defaultCrewSize ?? null,
+    defaultEfficiency: normalizePlanEfficiency((normalizedDates as unknown as Record<string, unknown>).defaultEfficiency as number | null | undefined) ?? null,
     workCalendar: normalizedCalendar,
     lineItems: normalizedLineItems.map((item) => ({
       ...item,

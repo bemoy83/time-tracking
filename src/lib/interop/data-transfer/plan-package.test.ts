@@ -93,6 +93,7 @@ function makePlan(lineItems: PlanLineItem[]): Plan {
     dismantleStartDate: null,
     dismantleEndDate: null,
     defaultCrewSize: 4,
+    defaultEfficiency: null,
     workCalendar: [],
     createdAt: '2026-02-18T00:00:00.000Z',
     updatedAt: '2026-02-20T15:00:00.000Z',

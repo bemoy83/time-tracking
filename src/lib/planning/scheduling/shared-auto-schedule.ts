@@ -15,7 +15,8 @@ import {
   recomputeScheduledSpanFromEffortMap,
   updatePlanLineItem,
 } from '../plan-model';
-import { dayAccessHours, dayAvailablePersonHours } from './work-calendar';
+import { dayAccessHours, dayEffectiveAvailablePersonHours } from './work-calendar';
+import { DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
 import { computeSharedCapacitySummary } from './capacity';
 import type {
   AutoScheduleOptions,
@@ -141,7 +142,7 @@ function sameEffortMap(
 function buildDayStates(input: SharedAutoScheduleInput, plans: Plan[], options: NormalizedOptions): DayState[] {
   const remainingByDate = new Map<string, number>();
   for (const day of input.calendar.filter((candidate) => candidate.isWorkDay)) {
-    remainingByDate.set(day.date, dayAvailablePersonHours(day, input.defaultCrewSize));
+    remainingByDate.set(day.date, dayEffectiveAvailablePersonHours(day, input.defaultCrewSize, DEFAULT_PLAN_EFFICIENCY));
   }
 
   if (!options.includeScheduled) {
@@ -243,7 +244,7 @@ export function runSharedAutoSchedule(
       continue;
     }
 
-    const placement = simulatePlacement(scopedDays, candidate.requiredPH, candidate.pf.crew, normalized.allowOverAllocation);
+    const placement = simulatePlacement(scopedDays, candidate.requiredPH, Math.max(candidate.pf.crew, input.defaultCrewSize, 1), normalized.allowOverAllocation);
     if (!placement) {
       unresolved.push({
         planId: candidate.planId,

@@ -16,7 +16,7 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
       </span>
       <span className="feasibility-bar__separator">/</span>
       <span className="feasibility-bar__metric">
-        {capacity.totalAvailablePersonHours.toFixed(1)}h available
+        {capacity.totalEffectiveAvailablePersonHours.toFixed(1)}h usable
       </span>
       <span className="feasibility-bar__separator">&middot;</span>
       <span className={`feasibility-bar__headroom${isOver ? ' feasibility-bar__headroom--over' : ''}`}>

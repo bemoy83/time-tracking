@@ -73,6 +73,9 @@ export function ScheduleGridHeader({
             key={day.date}
             role="columnheader"
             className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${cap?.isOverStaffed ? ' schedule-grid__day-col--over-staffed' : ''}`}
+            title={cap && day.isWorkDay && cap.rawAvailablePersonHours > 0
+              ? `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`
+              : undefined}
           >
             <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
             {cap && day.isWorkDay && (

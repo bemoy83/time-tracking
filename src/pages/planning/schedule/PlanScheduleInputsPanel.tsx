@@ -7,6 +7,7 @@ interface PlanScheduleInputsPanelProps extends PhaseDateValues {
   eventStartDate: string | null;
   eventEndDate: string | null;
   defaultCrewSize: number | null;
+  defaultEfficiency: number | null;
   readOnly: boolean;
   /** When true (Schedule view), collapse by default when dates are set and show summary. Always collapsible. */
   collapseWhenConfigured?: boolean;
@@ -17,6 +18,7 @@ interface PlanScheduleInputsPanelProps extends PhaseDateValues {
   onPhaseDateChange: (field: PhaseDateField, value: string) => void;
   onEventDateChange: (field: 'eventStartDate' | 'eventEndDate', value: string) => void;
   onDefaultCrewSizeChange: (value: string) => void;
+  onDefaultEfficiencyChange: (value: string) => void;
 }
 
 export function PlanScheduleInputsPanel({
@@ -27,6 +29,7 @@ export function PlanScheduleInputsPanel({
   eventStartDate,
   eventEndDate,
   defaultCrewSize,
+  defaultEfficiency,
   readOnly,
   collapseWhenConfigured = false,
   primaryRange,
@@ -36,6 +39,7 @@ export function PlanScheduleInputsPanel({
   onPhaseDateChange,
   onEventDateChange,
   onDefaultCrewSizeChange,
+  onDefaultEfficiencyChange,
 }: PlanScheduleInputsPanelProps) {
   const isEmpty = primaryRange == null;
   const [inputsExpanded, setInputsExpanded] = useState(
@@ -60,10 +64,12 @@ export function PlanScheduleInputsPanel({
         eventStartDate={eventStartDate}
         eventEndDate={eventEndDate}
         defaultCrewSize={defaultCrewSize}
+        defaultEfficiency={defaultEfficiency}
         readOnly={readOnly}
         onPhaseDateChange={onPhaseDateChange}
         onEventDateChange={onEventDateChange}
         onDefaultCrewSizeChange={onDefaultCrewSizeChange}
+        onDefaultEfficiencyChange={onDefaultEfficiencyChange}
       />
     </ScheduleInputsBlock>
   );

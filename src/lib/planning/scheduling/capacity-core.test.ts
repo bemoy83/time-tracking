@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createLineItem, createPlan, getPhaseFields, getPhaseSpan, type Plan } from '../plan-model';
+import { createLineItem, createPlan, getPhaseFields, getPhaseSpan, type Plan, DEFAULT_PLAN_EFFICIENCY, resolvePlanEfficiency } from '../plan-model';
 import { computeCapacityFromNormalizedInput } from './capacity-core';
 import { computeCapacitySummary, computeSharedCapacitySummary } from './capacity';
 import { getAssignedDates } from './assignment';
@@ -32,6 +32,7 @@ describe('capacity-core parity', () => {
     const coreSummary = computeCapacityFromNormalizedInput({
       calendar: plan.workCalendar,
       defaultCrewSize: plan.defaultCrewSize,
+      efficiency: resolvePlanEfficiency(plan),
       scheduledEntries: [
         {
           item: scheduled,
@@ -101,6 +102,7 @@ describe('capacity-core parity', () => {
     const coreSummary = computeCapacityFromNormalizedInput({
       calendar,
       defaultCrewSize: 2,
+      efficiency: DEFAULT_PLAN_EFFICIENCY,
       scheduledEntries: [
         {
           item: itemA,

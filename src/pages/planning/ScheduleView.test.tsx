@@ -234,7 +234,7 @@ describe('ScheduleView', () => {
     );
 
     fireEvent.click(within(container).getByRole('button', { name: /Edit planned hours for WP-2 on 2026-03-02/i }));
-    const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+    const input = within(container).getByRole('textbox', { name: /Edit planned hours for WP-2 on 2026-03-02/i }) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '5.5' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 

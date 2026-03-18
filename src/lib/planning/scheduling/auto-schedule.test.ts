@@ -44,3 +44,83 @@ describe('runAutoSchedule', () => {
     expect(report.unresolved[0]?.reason).toBe('no_capacity_window');
   });
 });
+
+describe('defaultCrewSize floor for preferredCrew', () => {
+  it('item with default crew=1 can use full plan capacity when defaultCrewSize is larger', () => {
+    // Plan has 8 crew → 64h/day available. Item has assemblyCrew=1 (default).
+    // Required = 48h. Without the fix, capped at 8h/day → 6 days.
+    // With the fix, preferredCrew = max(1, 8) = 8 → can schedule in 1 day.
+    const plan = createPlan('CrewFloor');
+    plan.assemblyStartDate = '2026-04-01';
+    plan.assemblyEndDate = '2026-04-07';
+    plan.defaultCrewSize = 8;
+    plan.defaultEfficiency = 1.0;
+    plan.workCalendar = [
+      { date: '2026-04-01', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-02', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-03', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-04', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-05', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-06', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+      { date: '2026-04-07', isWorkDay: true, accessStart: '08:00', accessEnd: '14:00', crewSize: null },
+    ];
+    // 6h access × 8 crew = 48h/day available. Item crew=1 (default). Required = 48h.
+    const item = createLineItem('Task', 'Task', 'pcs', 1, 1, 0);
+    // assemblyCrew left at default (1)
+    item.assemblyTimeHours = 48; // 1 crew × 48h = 48h required (single-crew task, lots of hours)
+    plan.lineItems = [item];
+
+    const { plan: scheduled } = runAutoSchedule(plan);
+    const pf = getPhaseFields(scheduled.lineItems[0]!, 'assembly');
+    const daysUsed = Object.keys(pf.personHoursByDate ?? {}).length;
+
+    // With plan crew floor, 48h available/day → fits in 1 day
+    expect(daysUsed).toBe(1);
+    expect(pf.scheduledStart).toBe('2026-04-01');
+  });
+});
+
+describe('efficiency affects auto-schedule day span', () => {
+  it('workload spanning exactly between effective and raw capacity needs more days at 0.8', () => {
+    // 28h required: at 1.0 efficiency (raw=32h/day) → fits in 1 day; at 0.8 (usable=25.6h/day) → 2 days
+    function makeEfficiencyPlan(efficiency: number | null) {
+      const plan = createPlan('Efficiency');
+      plan.assemblyStartDate = '2026-04-01';
+      plan.assemblyEndDate = '2026-04-05';
+      plan.defaultCrewSize = 4;
+      plan.defaultEfficiency = efficiency;
+      plan.workCalendar = [
+        { date: '2026-04-01', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+        { date: '2026-04-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+        { date: '2026-04-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+        { date: '2026-04-04', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+        { date: '2026-04-05', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: null },
+      ];
+      return plan;
+    }
+
+    // 28h required: between usable (25.6h at 0.8) and raw (32h at 1.0)
+    // At 1.0: day cap = 32h → 28h fits in 1 day
+    // At 0.8: day cap = 25.6h → 28h requires 2 days (25.6 + 2.4)
+    const plan100 = makeEfficiencyPlan(1.0);
+    const item100 = createLineItem('Work', 'Work', 'pcs', 1, 1, 0);
+    item100.assemblyCrew = 4;
+    item100.assemblyTimeHours = 7; // 4 crew * 7h = 28h required
+    plan100.lineItems = [item100];
+    const { plan: scheduled100 } = runAutoSchedule(plan100);
+    const pf100 = getPhaseFields(scheduled100.lineItems[0]!, 'assembly');
+    const days100 = Object.keys(pf100.personHoursByDate ?? {}).length;
+
+    const plan80 = makeEfficiencyPlan(0.8);
+    const item80 = createLineItem('Work', 'Work', 'pcs', 1, 1, 0);
+    item80.assemblyCrew = 4;
+    item80.assemblyTimeHours = 7;
+    plan80.lineItems = [item80];
+    const { plan: scheduled80 } = runAutoSchedule(plan80);
+    const pf80 = getPhaseFields(scheduled80.lineItems[0]!, 'assembly');
+    const days80 = Object.keys(pf80.personHoursByDate ?? {}).length;
+
+    expect(days100).toBe(1);
+    expect(days80).toBeGreaterThan(days100);
+  });
+});

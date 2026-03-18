@@ -16,7 +16,8 @@ import {
   updatePlanLineItem,
 } from '../plan-model';
 import { BUILD_PHASES } from '../../types';
-import { dayAccessHours, dayAvailablePersonHours } from './work-calendar';
+import { dayAccessHours, dayEffectiveAvailablePersonHours } from './work-calendar';
+import { resolvePlanEfficiency } from '../plan-model';
 import { computeCapacitySummary } from './capacity';
 
 export type AutoScheduleRequiredWorkMode = 'time_hours_first' | 'rate_first';
@@ -237,9 +238,10 @@ function simulatePlacement(
 
 function buildDayStates(plan: Plan, options: NormalizedOptions): DayState[] {
   const availableByDate = new Map<string, number>();
+  const efficiency = resolvePlanEfficiency(plan);
 
   for (const day of plan.workCalendar.filter((candidate) => candidate.isWorkDay)) {
-    availableByDate.set(day.date, dayAvailablePersonHours(day, plan.defaultCrewSize));
+    availableByDate.set(day.date, dayEffectiveAvailablePersonHours(day, plan.defaultCrewSize, efficiency));
   }
 
   if (!options.includeScheduled) {
@@ -307,7 +309,7 @@ function schedulePhase(
         item,
         pf,
         requiredPH: required.requiredPH,
-        preferredCrew: Math.max(pf.crew, 1),
+        preferredCrew: Math.max(pf.crew, plan.defaultCrewSize ?? 1, 1),
       };
     })
     .filter((row): row is { item: PlanLineItem; pf: PhaseFields; requiredPH: number; preferredCrew: number } => row != null)

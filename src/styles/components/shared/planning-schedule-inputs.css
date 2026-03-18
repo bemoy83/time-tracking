@@ -5,7 +5,8 @@
 }
 
 .planning-view__schedule-inputs--phase {
-  align-items: stretch;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
 }
 
 /* Schedule inputs makeover (sticky summary + schedule view) */
@@ -132,10 +133,13 @@
   .planning-view__schedule-group-grid {
     grid-template-columns: 1fr;
   }
+  .planning-view__schedule-inputs--phase {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 920px) {
-  .planning-view__schedule-inputs {
+  .planning-view__schedule-inputs:not(.planning-view__schedule-inputs--phase) {
     grid-template-columns: 1fr;
   }
 }
@@ -178,6 +182,62 @@
 .planning-view__schedule-validation--error {
   background: var(--state-danger-bg);
   color: var(--state-danger-fg-strong);
+}
+
+/* ─── Custom slider ──────────────────────────────────────────── */
+.planning-view__schedule-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 2px;
+}
+
+.planning-view__schedule-slider {
+  flex: 1;
+  accent-color: var(--color-primary);
+  height: 4px;
+  cursor: pointer;
+}
+
+.planning-view__schedule-slider-value {
+  font-size: var(--font-small);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--color-primary);
+  font-weight: 600;
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* ─── Efficiency preset controls ────────────────────────────── */
+.planning-view__schedule-value-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planning-view__schedule-unit {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.planning-view__schedule-presets {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.planning-view__schedule-presets .btn--ghost.is-active {
+  background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.planning-view__schedule-helper-text {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* ─── Editor canvas: schedule inputs reskin (≥768px) ────────── */
@@ -251,7 +311,44 @@
   border-color: var(--surface-border-hover);
 }
 
-/* Crew size: same token styling as date inputs */
+/* Phase color dots on label text */
+.planning-view__schedule-label-text--assembly::before,
+.planning-view__schedule-label-text--dismantle::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.planning-view__schedule-label-text--assembly::before { background: var(--phase-assembly-fg); }
+.planning-view__schedule-label-text--dismantle::before { background: var(--phase-dismantle-fg); }
+
+/* ─── Editor canvas: direct-child inputs match date display token ── */
+.planning-workspace__editor-canvas .planning-view__schedule-input > .input {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: var(--font-label);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  min-height: 34px;
+  border-radius: var(--radius-lg);
+}
+
+.planning-workspace__editor-canvas .planning-view__schedule-input > input[type="number"]::-webkit-inner-spin-button,
+.planning-workspace__editor-canvas .planning-view__schedule-input > input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.planning-workspace__editor-canvas .planning-view__schedule-input > input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Crew size: same token styling as date inputs (legacy wrapper) */
 .planning-workspace__editor-canvas .planning-view__schedule-value-wrap {
   position: relative;
 }
@@ -263,11 +360,9 @@
   font-size: var(--font-label);
   font-family: ui-monospace, monospace;
   min-height: 34px;
-  border-radius: var(--radius-lg); /* match date display token */
-  /* inherits background, border, focus, hover from global .input */
+  border-radius: var(--radius-lg);
 }
 
-/* Hide number input spinners for cleaner token look */
 .planning-workspace__editor-canvas .planning-view__schedule-value-wrap input[type="number"]::-webkit-inner-spin-button,
 .planning-workspace__editor-canvas .planning-view__schedule-value-wrap input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
