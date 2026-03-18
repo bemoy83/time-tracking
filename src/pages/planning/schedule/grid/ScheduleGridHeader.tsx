@@ -81,10 +81,13 @@ export function ScheduleGridHeader({
             {cap && day.isWorkDay && (
               <>
                 {(() => {
-                  const required = cap.requiredPersonHours + cap.shortfallPersonHours;
-                  if (required <= 0) return null;
-                  const pct = Math.round((cap.assignedCapacityPersonHours / required) * 100);
-                  const barWidth = Math.min(pct, 100);
+                  if (cap.availableCrew <= 0 || cap.assignedCrewTotal <= 0) return null;
+                  const pct = Math.min(Math.round((cap.assignedCrewTotal / cap.availableCrew) * 100), 100);
+                  const fillClass = cap.isOverAllocated
+                    ? ' schedule-grid__day-bar-fill--over'
+                    : cap.isOverStaffed
+                      ? ' schedule-grid__day-bar-fill--under'
+                      : '';
                   return (
                     <span
                       className="schedule-grid__day-bar"
@@ -92,21 +95,21 @@ export function ScheduleGridHeader({
                       aria-valuenow={pct}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`${pct}% capacity used`}
+                      aria-label={`${pct}% crew utilization`}
                     >
                       <span
-                        className={`schedule-grid__day-bar-fill${cap.isOverAllocated ? ' schedule-grid__day-bar-fill--over' : ''}`}
-                        style={{ width: `${barWidth}%` }}
+                        className={`schedule-grid__day-bar-fill${fillClass}`}
+                        style={{ width: `${pct}%` }}
                       />
                     </span>
                   );
                 })()}
-                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${cap.isOverStaffed ? ' schedule-grid__day-util--over-staffed' : ''}`}>
+                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}`}>
                   {formatUtilBadge(cap)}
                 </span>
                 {cap.assignedCrewTotal > 0 && (
                   <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>
-                    {cap.assignedCrewTotal}/{cap.availableCrew} crew
+                    {parseFloat(cap.assignedCrewTotal.toFixed(2))}/{cap.availableCrew} crew
                   </span>
                 )}
               </>

@@ -24,8 +24,10 @@ export interface DailyCapacity {
   effectiveAvailablePersonHours: number;
   /** Access hours per worker for this day (e.g. 8 for 08:00-16:00). */
   accessHours: number;
-  /** Available crew from work calendar for this day. */
+  /** Available crew from work calendar for this day (physical headcount). */
   availableCrew: number;
+  /** Effective available crew after applying efficiency factor (availableCrew × efficiency). */
+  effectiveAvailableCrew: number;
   /** Sum of assigned crew across all line items on this day. */
   assignedCrewTotal: number;
   utilization: number | null;

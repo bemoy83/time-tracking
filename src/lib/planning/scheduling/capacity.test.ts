@@ -337,9 +337,10 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[3].isWorkDay).toBe(false);
     expect(summary.days[3].assignedCrewTotal).toBe(0);
     // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job.
-    expect(summary.days[0].assignedCrewTotal).toBe(1);
-    expect(summary.days[1].assignedCrewTotal).toBe(1);
-    expect(summary.days[4].assignedCrewTotal).toBe(1);
+    // With default 80% efficiency: effectiveAccessHours = 6.4h, crewEquivalent = 8h / 6.4h = 1.25
+    expect(summary.days[0].assignedCrewTotal).toBe(1.25);
+    expect(summary.days[1].assignedCrewTotal).toBe(1.25);
+    expect(summary.days[4].assignedCrewTotal).toBe(1.25);
     expect(summary.days[5].assignedCrewTotal).toBe(0);
   });
 

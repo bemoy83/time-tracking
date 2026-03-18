@@ -163,8 +163,11 @@ export function ScheduleGridItemRow({
           const isOver = cap?.isOverAllocated ?? false;
           const isOverCrew = cap?.isOverAssignedCrew ?? false;
           const isOverWorker = isAssigned && isOverWorkerForDay(item, phase, day.date, dayByDate, assignedDates);
+          const effectiveAccessHours = cap && cap.availableCrew > 0
+            ? cap.effectiveAvailablePersonHours / cap.availableCrew
+            : (cap?.accessHours ?? 8);
           const crewValue = isAssigned && day.isWorkDay
-            ? getCrewEquivalentForDate(item, phase, day.date, cap?.accessHours ?? 0)
+            ? getCrewEquivalentForDate(item, phase, day.date, effectiveAccessHours)
             : 0;
           const lastDayBd = isAssigned ? getLastDayBreakdown(item, phase, day.date, dayByDate, assignedDates) : null;
           const isOverTargetCell = isOverTargetCellBreakdown(lastDayBd);

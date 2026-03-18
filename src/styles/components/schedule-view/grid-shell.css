@@ -180,6 +180,10 @@
   background: var(--color-recording);
 }
 
+.schedule-grid__day-bar-fill--under {
+  background: var(--color-amber);
+}
+
 .schedule-grid__day-util {
   display: block;
   font-size: var(--font-caption);
