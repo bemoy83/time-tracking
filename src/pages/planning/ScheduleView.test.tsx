@@ -65,7 +65,7 @@ describe('ScheduleView', () => {
     expect((toggle as HTMLElement).getAttribute('aria-expanded')).toBe('false');
 
     fireEvent.click(toggle as HTMLElement);
-    expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
+    expect(within(inputsColumn as HTMLElement).getByText('Assembly from')).toBeTruthy();
   });
 
   it('keeps schedule inputs collapsible on non-desktop', () => {
@@ -84,7 +84,7 @@ describe('ScheduleView', () => {
       name: /Schedule Inputs/i,
     });
     fireEvent.click(toggle);
-    expect(within(inputsColumn as HTMLElement).getByText('Assembly')).toBeTruthy();
+    expect(within(inputsColumn as HTMLElement).getByText('Assembly from')).toBeTruthy();
   });
 
   it('clears a scheduled row from the row face clear action', async () => {

@@ -3,6 +3,7 @@ import {
   type PlanDateSpan,
   type WorkCalendarDay,
   getPlanEffectiveSpan,
+  normalizePlanEfficiency,
 } from '../plan-model';
 import type { DateSpan } from './schedule-span';
 
@@ -71,6 +72,7 @@ function buildDefaultDay(date: string, _defaultCrewSize: number | null): WorkCal
       accessStart: null,
       accessEnd: null,
       crewSize: null,
+      efficiency: null,
     };
   }
   return {
@@ -79,6 +81,7 @@ function buildDefaultDay(date: string, _defaultCrewSize: number | null): WorkCal
     accessStart: DEFAULT_WORKDAY_START,
     accessEnd: DEFAULT_WORKDAY_END,
     crewSize: null,
+    efficiency: null,
   };
 }
 
@@ -111,6 +114,7 @@ export function normalizeWorkCalendarDay(
       accessStart: null,
       accessEnd: null,
       crewSize: null,
+      efficiency: day.efficiency ?? null,
     };
   }
   return {
@@ -119,6 +123,7 @@ export function normalizeWorkCalendarDay(
     accessStart: day.accessStart ?? DEFAULT_WORKDAY_START,
     accessEnd: day.accessEnd ?? DEFAULT_WORKDAY_END,
     crewSize: day.crewSize ?? defaultCrewSize,
+    efficiency: day.efficiency ?? null,
   };
 }
 
@@ -196,12 +201,25 @@ export function dayAvailablePersonHours(day: WorkCalendarDay, defaultCrewSize: n
   return dayAccessHours(day) * dayCrewSize(day, defaultCrewSize);
 }
 
+/**
+ * Resolve effective efficiency for a single day.
+ * Per-day efficiency (when set) overrides the plan-level default.
+ * Future hook: set day.efficiency in the work calendar editor to enable per-day control.
+ */
+export function resolveDayEfficiency(
+  day: WorkCalendarDay,
+  planEfficiency: number,
+): number {
+  if (day.efficiency == null) return planEfficiency;
+  return normalizePlanEfficiency(day.efficiency) ?? planEfficiency;
+}
+
 export function dayEffectiveAvailablePersonHours(
   day: WorkCalendarDay,
   defaultCrewSize: number | null,
-  efficiency: number,
+  planEfficiency: number,
 ): number {
-  return dayAvailablePersonHours(day, defaultCrewSize) * efficiency;
+  return dayAvailablePersonHours(day, defaultCrewSize) * resolveDayEfficiency(day, planEfficiency);
 }
 
 export function hasSchedulingCalendar(plan: Pick<Plan, 'workCalendar'>): boolean {

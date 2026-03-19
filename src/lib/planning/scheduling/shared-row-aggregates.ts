@@ -1,12 +1,12 @@
 import type { BuildPhase } from '../../types';
 import { getAssignedDates } from './assignment';
 import {
-  getCrewEquivalentForDate,
   getPhaseFields,
   getPlannedPersonHoursForDate,
   type PlanLineItem,
   type WorkCalendarDay,
 } from '../plan-model';
+import { getCrewEquivalentForDate } from './capacity-math';
 import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
 import type { PhaseDateValues } from './schedule-span';
 import { getPhaseRange, hasCompletePhaseDates, isDateWithinSpan } from './schedule-span';

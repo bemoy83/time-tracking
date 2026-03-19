@@ -76,6 +76,12 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.defaultEfficiency = null;
   }
 
+  if (Array.isArray(raw.workCalendar)) {
+    for (const day of raw.workCalendar as Array<Record<string, unknown>>) {
+      if (day['efficiency'] === undefined) day['efficiency'] = null;
+    }
+  }
+
   const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(raw as unknown as Plan));
 
   if (!Array.isArray(raw.workCalendar)) {

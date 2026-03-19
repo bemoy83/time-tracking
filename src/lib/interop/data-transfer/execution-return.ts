@@ -1,10 +1,10 @@
 import type { Plan, LineItemExecutionStatus } from '../../planning/plan-model';
 import {
-  getCrewEquivalentForDate,
   getPhaseFields,
   getPlannedPersonHoursForDate,
   isPhaseActive,
 } from '../../planning/plan-model';
+import { getCrewEquivalentForDate } from '../../planning/scheduling/capacity-math';
 import type { Task, TimeEntry, WorkType } from '../../types';
 import { BUILD_PHASES, durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';

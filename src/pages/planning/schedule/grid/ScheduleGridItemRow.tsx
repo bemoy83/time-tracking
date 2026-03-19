@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PeopleIcon, UndoIcon, WarningIcon } from '../../../../components/icons';
-import { getCrewEquivalentForDate, getPhaseFields } from '../../../../lib/planning/plan-model';
+import { getPhaseFields } from '../../../../lib/planning/plan-model';
+import { getCrewEquivalentForDate, resolveEffectiveAccessHours } from '../../../../lib/planning/scheduling/capacity-math';
 import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../../lib/types';
 import {
   getLastDayBreakdown,
@@ -163,9 +164,11 @@ export function ScheduleGridItemRow({
           const isOver = cap?.isOverAllocated ?? false;
           const isOverCrew = cap?.isOverAssignedCrew ?? false;
           const isOverWorker = isAssigned && isOverWorkerForDay(item, phase, day.date, dayByDate, assignedDates);
-          const effectiveAccessHours = cap && cap.availableCrew > 0
-            ? cap.effectiveAvailablePersonHours / cap.availableCrew
-            : (cap?.accessHours ?? 8);
+          const effectiveAccessHours = resolveEffectiveAccessHours(
+            cap?.effectiveAvailablePersonHours ?? 0,
+            cap?.availableCrew ?? 0,
+            cap?.accessHours ?? 8,
+          );
           const crewValue = isAssigned && day.isWorkDay
             ? getCrewEquivalentForDate(item, phase, day.date, effectiveAccessHours)
             : 0;

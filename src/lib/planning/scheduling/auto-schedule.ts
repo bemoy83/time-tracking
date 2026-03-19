@@ -4,21 +4,21 @@
  */
 
 import type { BuildPhase } from '../../types';
-import type { DailyEffortMap, Plan, PlanLineItem, PhaseFields } from '../plan-model';
+import type { Plan, PlanLineItem, PhaseFields } from '../plan-model';
 import {
   getPhaseFields,
   getPhaseQuantity,
   getPhaseSpan,
   isPhaseActive,
-  normalizeDailyEffortMap,
   phaseFieldUpdates,
   recomputeScheduledSpanFromEffortMap,
   updatePlanLineItem,
 } from '../plan-model';
 import { BUILD_PHASES } from '../../types';
-import { dayAccessHours, dayEffectiveAvailablePersonHours } from './work-calendar';
+import { round2, sameEffortMap } from './capacity-math';
 import { resolvePlanEfficiency } from '../plan-model';
 import { computeCapacitySummary } from './capacity';
+import { buildDayStates, simulatePlacement, type DayState, type Placement } from './placement';
 
 export type AutoScheduleRequiredWorkMode = 'time_hours_first' | 'rate_first';
 export type AutoScheduleRebalanceMode = 'none' | 'local';
@@ -70,20 +70,9 @@ interface NormalizedOptions {
   allowOverAllocation: boolean;
 }
 
-interface DayState {
-  date: string;
-  accessHours: number;
-  remainingPersonHours: number;
-}
-
 interface RequiredWorkResolution {
   requiredPH: number | null;
   source: 'time' | 'rate' | null;
-}
-
-interface Placement {
-  assignedPH: number;
-  personHoursByDate: DailyEffortMap;
 }
 
 interface PhaseScheduleResult {
@@ -92,16 +81,15 @@ interface PhaseScheduleResult {
   unresolved: AutoScheduleUnresolvedRow[];
 }
 
+// Re-export for consumers that previously imported these from this file
+export type { DayState, Placement };
+
 const DEFAULT_OPTIONS: NormalizedOptions = {
   requiredWorkMode: 'time_hours_first',
   rebalance: 'local',
   includeScheduled: false,
   allowOverAllocation: false,
 };
-
-function round2(value: number): number {
-  return Number(value.toFixed(2));
-}
 
 function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
   return {
@@ -187,20 +175,6 @@ function computeScheduleMetrics(
   };
 }
 
-function sameEffortMap(
-  a: DailyEffortMap | undefined,
-  b: DailyEffortMap | undefined,
-): boolean {
-  const aKeys = Object.keys(a ?? {}).sort();
-  const bKeys = Object.keys(b ?? {}).sort();
-  if (aKeys.length !== bKeys.length) return false;
-  for (let i = 0; i < aKeys.length; i++) {
-    if (aKeys[i] !== bKeys[i]) return false;
-    if ((a ?? {})[aKeys[i]] !== (b ?? {})[bKeys[i]]) return false;
-  }
-  return true;
-}
-
 function mapChangedRows(changed: AutoScheduleChangedRow[]): AutoScheduleChangedRow[] {
   const byKey = new Map<string, AutoScheduleChangedRow>();
   for (const row of changed) {
@@ -209,60 +183,18 @@ function mapChangedRows(changed: AutoScheduleChangedRow[]): AutoScheduleChangedR
   return [...byKey.values()];
 }
 
-function simulatePlacement(
-  candidates: DayState[],
-  requiredPH: number,
-  preferredCrew: number,
-  allowOverAllocation: boolean,
-): Placement | null {
-  const personHoursByDate: DailyEffortMap = {};
-  let assignedPH = 0;
-
-  for (const day of candidates) {
-    if (assignedPH >= requiredPH - 0.01) break;
-    const preferredDayTarget = Math.max(preferredCrew, 1) * day.accessHours;
-    const availablePH = allowOverAllocation ? Math.max(day.remainingPersonHours, preferredDayTarget) : day.remainingPersonHours;
-    const assignablePH = Math.min(requiredPH - assignedPH, availablePH, preferredDayTarget);
-    if (assignablePH <= 0.01) continue;
-    personHoursByDate[day.date] = round2(assignablePH);
-    assignedPH += assignablePH;
-  }
-
-  const normalized = normalizeDailyEffortMap(personHoursByDate);
-  if (!normalized) return null;
-  return {
-    assignedPH: round2(assignedPH),
-    personHoursByDate: normalized,
-  };
-}
-
-function buildDayStates(plan: Plan, options: NormalizedOptions): DayState[] {
-  const availableByDate = new Map<string, number>();
-  const efficiency = resolvePlanEfficiency(plan);
-
-  for (const day of plan.workCalendar.filter((candidate) => candidate.isWorkDay)) {
-    availableByDate.set(day.date, dayEffectiveAvailablePersonHours(day, plan.defaultCrewSize, efficiency));
-  }
-
-  if (!options.includeScheduled) {
-    for (const item of plan.lineItems) {
-      for (const phase of BUILD_PHASES) {
-        if (!isPhaseActive(item, phase)) continue;
-        const pf = getPhaseFields(item, phase);
-        for (const [date, hours] of Object.entries(pf.personHoursByDate ?? {})) {
-          availableByDate.set(date, (availableByDate.get(date) ?? 0) - hours);
-        }
+function buildCommitted(plan: Plan, options: NormalizedOptions): Map<string, number> {
+  const committed = new Map<string, number>();
+  if (options.includeScheduled) return committed;
+  for (const item of plan.lineItems) {
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
+        committed.set(date, (committed.get(date) ?? 0) + hours);
       }
     }
   }
-
-  return plan.workCalendar
-    .filter((day) => day.isWorkDay)
-    .map((day) => ({
-      date: day.date,
-      accessHours: dayAccessHours(day),
-      remainingPersonHours: round2(availableByDate.get(day.date) ?? 0),
-    }));
+  return committed;
 }
 
 function schedulePhase(
@@ -273,7 +205,8 @@ function schedulePhase(
   if (plan.workCalendar.length === 0) return { plan, changed: [], unresolved: [] };
 
   const phaseSpan = getPhaseSpan(plan, phase);
-  const allCandidates = buildDayStates(plan, options);
+  const efficiency = resolvePlanEfficiency(plan);
+  const allCandidates = buildDayStates(plan.workCalendar, plan.defaultCrewSize, efficiency, buildCommitted(plan, options));
   const candidates = phaseSpan
     ? allCandidates.filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end)
     : allCandidates;

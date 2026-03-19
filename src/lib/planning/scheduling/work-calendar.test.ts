@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dayAccessHours,
   dayAvailablePersonHours,
+  dayEffectiveAvailablePersonHours,
   getEffectiveScheduleSpan,
   generateDefaultWorkCalendar,
   generateDefaultWorkCalendarForSpans,
@@ -10,6 +11,7 @@ import {
   listDateRange,
   reconcileWorkCalendar,
   reconcileWorkCalendarForSpans,
+  resolveDayEfficiency,
 } from './work-calendar';
 
 describe('work-calendar', () => {
@@ -163,5 +165,48 @@ describe('work-calendar', () => {
       start: '2026-03-04',
       end: '2026-03-06',
     });
+  });
+});
+
+const BASE_DAY = {
+  date: '2026-03-01',
+  isWorkDay: true as const,
+  accessStart: '08:00',
+  accessEnd: '16:00',
+  crewSize: 4,
+};
+
+describe('resolveDayEfficiency', () => {
+  it('returns planEfficiency when day.efficiency is null', () => {
+    expect(resolveDayEfficiency({ ...BASE_DAY, efficiency: null }, 0.8)).toBe(0.8);
+  });
+
+  it('returns per-day override when set', () => {
+    expect(resolveDayEfficiency({ ...BASE_DAY, efficiency: 0.7 }, 0.8)).toBe(0.7);
+  });
+
+  it('clamps per-day efficiency below 0.5 to 0.5 (minimum floor)', () => {
+    // normalizePlanEfficiency clamps to [0.5, 1.0]; 0.3 → 0.5 (not null — clamps, does not reject)
+    expect(resolveDayEfficiency({ ...BASE_DAY, efficiency: 0.3 }, 0.8)).toBe(0.5);
+  });
+
+  it('clamps per-day efficiency above 1.0 to 1.0', () => {
+    expect(resolveDayEfficiency({ ...BASE_DAY, efficiency: 1.5 }, 0.8)).toBe(1.0);
+  });
+});
+
+describe('dayEffectiveAvailablePersonHours', () => {
+  it('applies plan efficiency when day.efficiency is null', () => {
+    // 4 crew × 8h × 0.8 = 25.6
+    expect(dayEffectiveAvailablePersonHours({ ...BASE_DAY, efficiency: null }, 4, 0.8)).toBe(25.6);
+  });
+
+  it('applies per-day efficiency override', () => {
+    // 4 crew × 8h × 0.7 = 22.4 (plan efficiency 0.8 overridden by day 0.7)
+    expect(dayEffectiveAvailablePersonHours({ ...BASE_DAY, efficiency: 0.7 }, 4, 0.8)).toBe(22.4);
+  });
+
+  it('returns 0 for off days', () => {
+    expect(dayEffectiveAvailablePersonHours({ ...BASE_DAY, isWorkDay: false, efficiency: null }, 4, 0.8)).toBe(0);
   });
 });

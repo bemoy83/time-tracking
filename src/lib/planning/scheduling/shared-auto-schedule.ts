@@ -5,19 +5,19 @@
 
 import type { BuildPhase } from '../../types';
 import { BUILD_PHASES } from '../../types';
-import type { DailyEffortMap, Plan, WorkCalendarDay } from '../plan-model';
+import type { Plan, WorkCalendarDay } from '../plan-model';
 import {
   getPhaseFields,
   getPhaseSpan,
   isPhaseActive,
-  normalizeDailyEffortMap,
   phaseFieldUpdates,
   recomputeScheduledSpanFromEffortMap,
   updatePlanLineItem,
+  DEFAULT_PLAN_EFFICIENCY,
 } from '../plan-model';
-import { dayAccessHours, dayEffectiveAvailablePersonHours } from './work-calendar';
-import { DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
+import { round2, sameEffortMap } from './capacity-math';
 import { computeSharedCapacitySummary } from './capacity';
+import { buildDayStates, simulatePlacement } from './placement';
 import type {
   AutoScheduleOptions,
   AutoScheduleMetrics,
@@ -65,20 +65,10 @@ interface NormalizedOptions {
   allowOverAllocation: boolean;
 }
 
-interface DayState {
-  date: string;
-  accessHours: number;
-  remainingPersonHours: number;
-}
-
 const DEFAULT_OPTIONS: NormalizedOptions = {
   includeScheduled: false,
   allowOverAllocation: false,
 };
-
-function round2(value: number): number {
-  return Number(value.toFixed(2));
-}
 
 function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
   return {
@@ -125,69 +115,20 @@ function computeSharedMetrics(input: SharedAutoScheduleInput, plans: Plan[]): Au
   };
 }
 
-function sameEffortMap(
-  a: DailyEffortMap | undefined,
-  b: DailyEffortMap | undefined,
-): boolean {
-  const aKeys = Object.keys(a ?? {}).sort();
-  const bKeys = Object.keys(b ?? {}).sort();
-  if (aKeys.length !== bKeys.length) return false;
-  for (let i = 0; i < aKeys.length; i++) {
-    if (aKeys[i] !== bKeys[i]) return false;
-    if ((a ?? {})[aKeys[i]] !== (b ?? {})[bKeys[i]]) return false;
-  }
-  return true;
-}
-
-function buildDayStates(input: SharedAutoScheduleInput, plans: Plan[], options: NormalizedOptions): DayState[] {
-  const remainingByDate = new Map<string, number>();
-  for (const day of input.calendar.filter((candidate) => candidate.isWorkDay)) {
-    remainingByDate.set(day.date, dayEffectiveAvailablePersonHours(day, input.defaultCrewSize, DEFAULT_PLAN_EFFICIENCY));
-  }
-
-  if (!options.includeScheduled) {
-    for (const plan of plans) {
-      for (const item of plan.lineItems) {
-        for (const phase of BUILD_PHASES) {
-          if (!isPhaseActive(item, phase)) continue;
-          const pf = getPhaseFields(item, phase);
-          for (const [date, hours] of Object.entries(pf.personHoursByDate ?? {})) {
-            remainingByDate.set(date, (remainingByDate.get(date) ?? 0) - hours);
-          }
+function buildCommitted(plans: Plan[], options: NormalizedOptions): Map<string, number> {
+  const committed = new Map<string, number>();
+  if (options.includeScheduled) return committed;
+  for (const plan of plans) {
+    for (const item of plan.lineItems) {
+      for (const phase of BUILD_PHASES) {
+        if (!isPhaseActive(item, phase)) continue;
+        for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
+          committed.set(date, (committed.get(date) ?? 0) + hours);
         }
       }
     }
   }
-
-  return input.calendar
-    .filter((day) => day.isWorkDay)
-    .map((day) => ({
-      date: day.date,
-      accessHours: dayAccessHours(day),
-      remainingPersonHours: round2(remainingByDate.get(day.date) ?? 0),
-    }));
-}
-
-function simulatePlacement(
-  candidates: DayState[],
-  requiredPH: number,
-  preferredCrew: number,
-  allowOverAllocation: boolean,
-): DailyEffortMap | undefined {
-  const result: DailyEffortMap = {};
-  let assignedPH = 0;
-
-  for (const day of candidates) {
-    if (assignedPH >= requiredPH - 0.01) break;
-    const preferredDayTarget = Math.max(preferredCrew, 1) * day.accessHours;
-    const availablePH = allowOverAllocation ? Math.max(day.remainingPersonHours, preferredDayTarget) : day.remainingPersonHours;
-    const assignablePH = Math.min(requiredPH - assignedPH, availablePH, preferredDayTarget);
-    if (assignablePH <= 0.01) continue;
-    result[day.date] = round2(assignablePH);
-    assignedPH += assignablePH;
-  }
-
-  return normalizeDailyEffortMap(result);
+  return committed;
 }
 
 export function runSharedAutoSchedule(
@@ -199,7 +140,14 @@ export function runSharedAutoSchedule(
   const plansById = new Map(input.plans.map((plan) => [plan.id, plan]));
   const changed: SharedAutoScheduleChangedRow[] = [];
   const unresolved: SharedAutoScheduleUnresolvedRow[] = [];
-  const dayStates = buildDayStates(input, input.plans, normalized);
+
+  // Shared schedule always uses the fixed DEFAULT_PLAN_EFFICIENCY — no per-plan override.
+  const dayStates = buildDayStates(
+    input.calendar,
+    input.defaultCrewSize,
+    DEFAULT_PLAN_EFFICIENCY,
+    buildCommitted(input.plans, normalized),
+  );
 
   const candidates = input.plans
     .flatMap((plan) => plan.lineItems.map((item) => ({ plan, item })))
@@ -244,7 +192,12 @@ export function runSharedAutoSchedule(
       continue;
     }
 
-    const placement = simulatePlacement(scopedDays, candidate.requiredPH, Math.max(candidate.pf.crew, input.defaultCrewSize, 1), normalized.allowOverAllocation);
+    const placement = simulatePlacement(
+      scopedDays,
+      candidate.requiredPH,
+      Math.max(candidate.pf.crew, input.defaultCrewSize, 1),
+      normalized.allowOverAllocation,
+    );
     if (!placement) {
       unresolved.push({
         planId: candidate.planId,
@@ -257,7 +210,7 @@ export function runSharedAutoSchedule(
       continue;
     }
 
-    for (const [date, hours] of Object.entries(placement)) {
+    for (const [date, hours] of Object.entries(placement.personHoursByDate)) {
       const day = dayStates.find((entry) => entry.date === date);
       if (!day) continue;
       day.remainingPersonHours = round2(day.remainingPersonHours - hours);
@@ -265,18 +218,18 @@ export function runSharedAutoSchedule(
 
     const plan = plansById.get(candidate.planId);
     if (!plan) continue;
-    const span = recomputeScheduledSpanFromEffortMap(placement);
+    const span = recomputeScheduledSpanFromEffortMap(placement.personHoursByDate);
     const updatedPlan = updatePlanLineItem(plan, candidate.item.id, phaseFieldUpdates(candidate.phase, {
       scheduledStart: span.scheduledStart,
       scheduledEnd: span.scheduledEnd,
-      personHoursByDate: placement,
+      personHoursByDate: placement.personHoursByDate,
     }));
     plansById.set(candidate.planId, updatedPlan);
 
     if (
       candidate.pf.scheduledStart !== span.scheduledStart
       || candidate.pf.scheduledEnd !== span.scheduledEnd
-      || !sameEffortMap(candidate.pf.personHoursByDate, placement)
+      || !sameEffortMap(candidate.pf.personHoursByDate, placement.personHoursByDate)
     ) {
       changed.push({
         planId: candidate.planId,
@@ -287,15 +240,14 @@ export function runSharedAutoSchedule(
       });
     }
 
-    const assignedPH = Object.values(placement).reduce((sum, value) => sum + value, 0);
-    if (assignedPH < candidate.requiredPH - 0.01) {
+    if (placement.assignedPH < candidate.requiredPH - 0.01) {
       unresolved.push({
         planId: candidate.planId,
         lineItemId: candidate.item.id,
         phase: candidate.phase,
         reason: 'no_capacity_window',
         requiredPH: round2(candidate.requiredPH),
-        assignedPH: round2(assignedPH),
+        assignedPH: placement.assignedPH,
       });
     }
   }

@@ -56,6 +56,8 @@ export interface WorkCalendarDay {
   accessEnd: string | null;
   /** Per-day crew override; null falls back to plan default crew size. */
   crewSize: number | null;
+  /** Per-day efficiency override (0.5–1.0); null (or absent) falls back to plan defaultEfficiency. */
+  efficiency?: number | null;
 }
 
 export interface PlanLineItem {
@@ -412,16 +414,6 @@ export function getPlannedPersonHoursForDate(
 ): number {
   const pf = getPhaseFields(item, phase);
   return roundPlannedPersonHours(pf.personHoursByDate?.[date] ?? 0);
-}
-
-export function getCrewEquivalentForDate(
-  item: PlanLineItem,
-  phase: BuildPhase,
-  date: string,
-  accessHours: number,
-): number {
-  if (accessHours <= 0) return 0;
-  return roundPlannedPersonHours(getPlannedPersonHoursForDate(item, phase, date) / accessHours);
 }
 
 /**

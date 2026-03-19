@@ -1,6 +1,5 @@
 import type { BuildPhase } from '../../types';
 import {
-  getCrewEquivalentForDate,
   getPhaseFields,
   getPlannedPersonHoursForDate,
   type PlanLineItem,
@@ -12,7 +11,9 @@ import {
   dayAccessHours,
   dayAvailablePersonHours,
   dayCrewSize,
+  resolveDayEfficiency,
 } from './work-calendar';
+import { round2, resolveEffectiveAccessHours, getCrewEquivalentForDate } from './capacity-math';
 
 export interface NormalizedScheduledEntry {
   item: PlanLineItem;
@@ -30,19 +31,16 @@ export interface CapacityComputationInput {
   scheduledLineItemCount: number;
 }
 
-function round2(value: number): number {
-  return Number(value.toFixed(2));
-}
-
 function buildDayMapFromCalendar(
   calendar: WorkCalendarDay[],
   defaultCrewSize: number | null,
-  efficiency: number,
+  planEfficiency: number,
 ): Map<string, DailyCapacity> {
   const dayMap = new Map<string, DailyCapacity>();
   for (const day of calendar) {
+    const dayEfficiency = resolveDayEfficiency(day, planEfficiency);
     const raw = dayAvailablePersonHours(day, defaultCrewSize);
-    const effective = round2(raw * efficiency);
+    const effective = round2(raw * dayEfficiency);
     const crew = dayCrewSize(day, defaultCrewSize);
     const access = dayAccessHours(day);
     dayMap.set(day.date, {
@@ -54,7 +52,7 @@ function buildDayMapFromCalendar(
       effectiveAvailablePersonHours: effective,
       accessHours: access,
       availableCrew: crew,
-      effectiveAvailableCrew: round2(crew * efficiency),
+      effectiveAvailableCrew: round2(crew * dayEfficiency),
       assignedCrewTotal: 0,
       utilization: effective > 0 ? 0 : null,
       lineItemCount: 0,
@@ -86,12 +84,13 @@ function applyScheduledItem(
     const day = dayMap.get(date);
     if (!day) continue;
     const plannedPersonHours = getPlannedPersonHoursForDate(item, phase, date);
-    // Divide by effective access hours (accessHours × efficiency) so that assigning the
-    // full effective capacity counts as 100% crew utilization, not (efficiency × 100%).
-    // e.g. 8 crew × 80% efficiency: effectiveAccessHours = 6.4h, so 51.2h assigned = 8/8 crew.
-    const effectiveAccessHours = day.isWorkDay && day.availableCrew > 0
-      ? day.effectiveAvailablePersonHours / day.availableCrew
-      : (day.accessHours || 8);
+    // resolveEffectiveAccessHours = effectiveAvailablePersonHours / availableCrew
+    // = accessHours × dayEfficiency, so full effective utilization → crew/crew.
+    const effectiveAccessHours = resolveEffectiveAccessHours(
+      day.effectiveAvailablePersonHours,
+      day.availableCrew,
+      day.accessHours,
+    );
     const crewEquivalent = day.isWorkDay
       ? getCrewEquivalentForDate(item, phase, date, effectiveAccessHours)
       : 0;
@@ -145,7 +144,7 @@ function finalizeCapacitySummary(
       const assignedCapacityPersonHours = round2(day.assignedCapacityPersonHours);
       const needToMeetTargetPersonHours = round2(day.needToMeetTargetPersonHours || 0);
       const shortfallPersonHours = round2(day.shortfallPersonHours || 0);
-      const isOverStaffed = day.isWorkDay && required > 0.01 && day.assignedCrewTotal < day.availableCrew - 0.01; // Derived from crew display: assigned < available = spare capacity
+      const isOverStaffed = day.isWorkDay && required > 0.01 && day.assignedCrewTotal < day.availableCrew - 0.01;
       return {
         ...day,
         requiredPersonHours: required,
