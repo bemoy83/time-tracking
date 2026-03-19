@@ -21,6 +21,16 @@ interface BuildScheduleViewIssuesParams {
   assistantReviewIssues: AssistantReviewIssue[];
 }
 
+interface ScheduleIssueBuildResult {
+  planningIssues: PlanningIssue[];
+  panelIssues: ScheduleIssueItem[];
+}
+
+interface ScheduleIssueContext {
+  capacity: CapacitySummary;
+  conflictSuggestions: ReturnType<typeof generateConflictSuggestions>;
+}
+
 function unresolvedReasonLabel(reason: AutoScheduleUnresolvedReason): string {
   switch (reason) {
     case 'missing_required_hours':
@@ -55,34 +65,36 @@ function fragmentationRank(risk: CapacitySummary['days'][number]['fragmentationR
   return 0;
 }
 
-export function buildScheduleViewIssues({
-  capacity,
-  conflictSuggestions,
-  schedulableUnscheduledCount,
-  assistantReportStale,
-  assistantUnresolvedCount,
-  assistantReviewIssues,
-}: BuildScheduleViewIssuesParams): {
-  planningIssues: PlanningIssue[];
-  panelIssues: ScheduleIssueItem[];
-} {
-  const planningIssues: PlanningIssue[] = [];
-  const panelIssues: ScheduleIssueItem[] = [];
+function emptyIssueResult(): ScheduleIssueBuildResult {
+  return { planningIssues: [], panelIssues: [] };
+}
+
+function combineIssueResults(...results: ScheduleIssueBuildResult[]): ScheduleIssueBuildResult {
+  return {
+    planningIssues: results.flatMap((result) => result.planningIssues),
+    panelIssues: results.flatMap((result) => result.panelIssues),
+  };
+}
+
+function buildCapacityIssues(context: ScheduleIssueContext): ScheduleIssueBuildResult {
+  const { capacity, conflictSuggestions } = context;
+  const result = emptyIssueResult();
 
   if (capacity.overWorkerCapacityDayCount > 0) {
-    planningIssues.push({
+    const label = `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`;
+    result.planningIssues.push({
       id: 'worker-capacity',
       severity: 'critical',
-      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
+      label,
     });
-    panelIssues.push({
+    result.panelIssues.push({
       id: 'worker-capacity',
       kind: 'capacity',
       severity: 'critical',
       assistantPriority: 10,
       impact: 'Solving the constrained day first is likely to unblock multiple assignments at once.',
       sharedConstraintKey: 'plan:capacity',
-      label: `${capacity.overWorkerCapacityDayCount} ${capacity.overWorkerCapacityDayCount === 1 ? 'day has' : 'days have'} too much work for available crew`,
+      label,
       scope: 'plan',
       category: 'blocking',
       detail: 'Some scheduled days require more person-hours than the assigned crew can physically deliver.',
@@ -93,19 +105,20 @@ export function buildScheduleViewIssues({
   }
 
   if (capacity.overAllocatedDayCount > 0) {
-    planningIssues.push({
+    const label = `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`;
+    result.planningIssues.push({
       id: 'over-allocated',
       severity: 'critical',
-      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
+      label,
     });
-    panelIssues.push({
+    result.panelIssues.push({
       id: 'over-allocated',
       kind: 'capacity',
       severity: 'critical',
       assistantPriority: 15,
       impact: 'Relieving the most overloaded day should create immediate placement room for the assistant.',
       sharedConstraintKey: 'plan:capacity',
-      label: `${capacity.overAllocatedDayCount} ${capacity.overAllocatedDayCount === 1 ? 'day is' : 'days are'} overloaded`,
+      label,
       scope: 'plan',
       category: 'blocking',
       detail: 'Assigned work currently exceeds the available crew capacity on some scheduled days.',
@@ -120,35 +133,52 @@ export function buildScheduleViewIssues({
     });
   }
 
-  if (schedulableUnscheduledCount > 0) {
-    planningIssues.push({
+  return result;
+}
+
+function buildSchedulingGapIssues(
+  schedulableUnscheduledCount: number,
+): ScheduleIssueBuildResult {
+  if (schedulableUnscheduledCount <= 0) return emptyIssueResult();
+
+  const label = `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`;
+  return {
+    planningIssues: [{
       id: 'unscheduled',
       severity: 'warning',
-      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
-    });
-    panelIssues.push({
+      label,
+    }],
+    panelIssues: [{
       id: 'unscheduled',
       kind: 'unscheduled',
       severity: 'warning',
       assistantPriority: 30,
       impact: 'Giving these rows valid spans lets the assistant place and optimize the remaining work.',
-      label: `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'assignment' : 'assignments'} not yet scheduled`,
+      label,
       scope: 'plan',
       category: 'adjustment',
       detail: 'These rows still have no scheduled span, so the work has nowhere to be placed in the grid yet.',
       facts: [
         `${schedulableUnscheduledCount} ${schedulableUnscheduledCount === 1 ? 'row is' : 'rows are'} still missing scheduled dates.`,
       ],
-    });
-  }
+    }],
+  };
+}
+
+function buildAssistantIssues(
+  assistantReportStale: boolean,
+  assistantUnresolvedCount: number,
+  assistantReviewIssues: AssistantReviewIssue[],
+): ScheduleIssueBuildResult {
+  const result = emptyIssueResult();
 
   if (assistantReportStale) {
-    planningIssues.push({
+    result.planningIssues.push({
       id: 'assistant-stale',
       severity: 'warning',
       label: 'Schedule changed - re-run to re-check',
     });
-    panelIssues.push({
+    result.panelIssues.push({
       id: 'assistant-stale',
       kind: 'assistant-stale',
       severity: 'warning',
@@ -158,9 +188,7 @@ export function buildScheduleViewIssues({
       category: 'blocking',
       detail: 'Assistant findings are out of date because the schedule changed after the last run.',
     });
-  }
-
-  if (!assistantReportStale) {
+  } else {
     for (const issue of assistantReviewIssues) {
       const missingHours = Math.max(0, issue.requiredPH - issue.assignedPH);
       const detail =
@@ -174,7 +202,7 @@ export function buildScheduleViewIssues({
         facts.push(`${issue.assignedPH.toFixed(1)}h currently scheduled of ${issue.requiredPH.toFixed(1)}h needed.`);
       }
       facts.push(`${issue.lineItemTitle} is blocked in ${issue.phase}.`);
-      panelIssues.push({
+      result.panelIssues.push({
         id: `assistant-unresolved-${issue.key}`,
         kind: 'assistant-unresolved',
         severity: 'warning',
@@ -207,32 +235,38 @@ export function buildScheduleViewIssues({
   }
 
   if (assistantUnresolvedCount > 0) {
-    planningIssues.push({
+    result.planningIssues.push({
       id: 'assistant-unresolved',
       severity: 'warning',
       label: `${assistantUnresolvedCount} ${assistantUnresolvedCount === 1 ? 'item' : 'items'} still ${assistantUnresolvedCount === 1 ? 'needs' : 'need'} review`,
     });
   }
 
-  if (capacity.fragmentedDayCount > 0) {
-    const fragmentedDays = capacity.days
-      .filter((day) => day.fragmentationRisk !== 'none')
-      .sort((a, b) => {
-        const riskDiff = fragmentationRank(b.fragmentationRisk) - fragmentationRank(a.fragmentationRisk);
-        if (riskDiff !== 0) return riskDiff;
-        const scoreDiff = b.fragmentationScore - a.fragmentationScore;
-        if (scoreDiff !== 0) return scoreDiff;
-        return a.date.localeCompare(b.date);
-      });
-    const topDay = fragmentedDays[0];
-    const label = `${capacity.fragmentedDayCount} ${capacity.fragmentedDayCount === 1 ? 'day shows' : 'days show'} fragmentation risk`;
+  return result;
+}
 
-    planningIssues.push({
+function buildFragmentationIssues(capacity: CapacitySummary): ScheduleIssueBuildResult {
+  if (capacity.fragmentedDayCount <= 0) return emptyIssueResult();
+
+  const fragmentedDays = capacity.days
+    .filter((day) => day.fragmentationRisk !== 'none')
+    .sort((a, b) => {
+      const riskDiff = fragmentationRank(b.fragmentationRisk) - fragmentationRank(a.fragmentationRisk);
+      if (riskDiff !== 0) return riskDiff;
+      const scoreDiff = b.fragmentationScore - a.fragmentationScore;
+      if (scoreDiff !== 0) return scoreDiff;
+      return a.date.localeCompare(b.date);
+    });
+  const topDay = fragmentedDays[0];
+  const label = `${capacity.fragmentedDayCount} ${capacity.fragmentedDayCount === 1 ? 'day shows' : 'days show'} fragmentation risk`;
+
+  return {
+    planningIssues: [{
       id: 'fragmentation',
       severity: 'warning',
       label,
-    });
-    panelIssues.push({
+    }],
+    panelIssues: [{
       id: 'fragmentation',
       kind: 'fragmentation',
       severity: 'warning',
@@ -245,28 +279,53 @@ export function buildScheduleViewIssues({
         `${topDay.assignedRowCount} assigned rows · ${topDay.smallAllocationCount} under 2h.`,
         `${topDay.averageAllocationPersonHours?.toFixed(1) ?? '0.0'}h average allocation · ${Math.round((topDay.largestAllocationShare ?? 0) * 100)}% largest task share.`,
       ],
-    });
-  }
+    }],
+  };
+}
 
-  if (capacity.overStaffedDayCount > 0) {
-    planningIssues.push({
+function buildOverstaffedIssues(capacity: CapacitySummary): ScheduleIssueBuildResult {
+  if (capacity.overStaffedWarningDayCount <= 0) return emptyIssueResult();
+
+  const count = capacity.overStaffedWarningDayCount;
+  const label = `${count} ${count === 1 ? 'day' : 'days'} may be overstaffed`;
+  return {
+    planningIssues: [{
       id: 'over-staffed',
       severity: 'info',
-      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed`,
-    });
-    panelIssues.push({
+      label,
+    }],
+    panelIssues: [{
       id: 'overstaffed',
       kind: 'overstaffed',
       severity: 'info',
       assistantPriority: 90,
       impact: 'This is an optimization opportunity rather than a blocker.',
-      label: `${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day may be' : 'days may be'} overstaffed`,
+      label,
       scope: 'plan',
       category: 'optimization',
       detail: 'Some days appear to carry more crew than the planned work currently needs.',
-      facts: [`${capacity.overStaffedDayCount} ${capacity.overStaffedDayCount === 1 ? 'day has' : 'days have'} spare crew capacity.`],
-    });
-  }
+      facts: [`${count} ${count === 1 ? 'day has' : 'days have'} spare crew capacity.`],
+    }],
+  };
+}
 
-  return { planningIssues, panelIssues };
+export function buildScheduleViewIssues({
+  capacity,
+  conflictSuggestions,
+  schedulableUnscheduledCount,
+  assistantReportStale,
+  assistantUnresolvedCount,
+  assistantReviewIssues,
+}: BuildScheduleViewIssuesParams): ScheduleIssueBuildResult {
+  return combineIssueResults(
+    buildCapacityIssues({ capacity, conflictSuggestions }),
+    buildSchedulingGapIssues(schedulableUnscheduledCount),
+    buildAssistantIssues(
+      assistantReportStale,
+      assistantUnresolvedCount,
+      assistantReviewIssues,
+    ),
+    buildFragmentationIssues(capacity),
+    buildOverstaffedIssues(capacity),
+  );
 }

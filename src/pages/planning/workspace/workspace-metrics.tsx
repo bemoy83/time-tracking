@@ -44,7 +44,7 @@ type MetricCardIconVariant = 'tasks' | 'done' | 'time' | 'people' | 'blocked' | 
 
 export interface UtilizationInput {
   totalRequiredPersonHours: number;
-  totalAvailablePersonHours: number;
+  totalEffectiveAvailablePersonHours: number;
 }
 
 /**
@@ -52,10 +52,10 @@ export interface UtilizationInput {
  * Returns "—" when no capacity data; shows percentage with risk variant when over-allocated.
  */
 export function createUtilizationMetric(input: UtilizationInput | null): SidebarMetricDescriptor {
-  if (!input || input.totalAvailablePersonHours <= 0) {
+  if (!input || input.totalEffectiveAvailablePersonHours <= 0) {
     return { value: '—', label: 'Utilization', icon: <PeopleIcon />, iconVariant: 'people' };
   }
-  const ratio = input.totalRequiredPersonHours / input.totalAvailablePersonHours;
+  const ratio = input.totalRequiredPersonHours / input.totalEffectiveAvailablePersonHours;
   const pct = Math.round(ratio * 100);
   return {
     value: `${pct}%`,
@@ -285,8 +285,8 @@ export function getScheduleViewMetrics(
       variant: coverage.unscheduledHours > 0 ? 'risk' : 'default',
     },
     {
-      value: formatHoursMetricValue(cap.totalAvailablePersonHours),
-      label: 'Available hrs',
+      value: formatHoursMetricValue(cap.totalEffectiveAvailablePersonHours),
+      label: 'Usable hrs',
       icon: <ClockIcon />,
       iconVariant: 'time',
     },
@@ -332,7 +332,7 @@ export function getSharedScheduleMetrics(
   selectedPlanIds: Set<string>,
   capacityFromView?: {
     totalRequiredPersonHours: number;
-    totalAvailablePersonHours: number;
+    totalEffectiveAvailablePersonHours: number;
     unscheduledLineItemCount?: number;
   } | null,
 ): SidebarMetricDescriptor[] {
@@ -345,7 +345,7 @@ export function getSharedScheduleMetrics(
 
   // Use capacity from main view when provided (matches FeasibilityBar); otherwise derive
   let utilizationMetric = createUtilizationMetric(null);
-  if (capacityFromView && capacityFromView.totalAvailablePersonHours > 0) {
+  if (capacityFromView && capacityFromView.totalEffectiveAvailablePersonHours > 0) {
     scheduledRequiredHours = capacityFromView.totalRequiredPersonHours;
     unscheduledLineItemCount = capacityFromView.unscheduledLineItemCount;
     utilizationMetric = createUtilizationMetric(capacityFromView);
@@ -370,7 +370,7 @@ export function getSharedScheduleMetrics(
     unscheduledLineItemCount = cap.unscheduledLineItemCount;
     utilizationMetric = createUtilizationMetric({
       totalRequiredPersonHours: cap.totalRequiredPersonHours,
-      totalAvailablePersonHours: cap.totalAvailablePersonHours,
+      totalEffectiveAvailablePersonHours: cap.totalEffectiveAvailablePersonHours,
     });
   }
   const unscheduledHours = Math.max(0, totalPH - scheduledRequiredHours);

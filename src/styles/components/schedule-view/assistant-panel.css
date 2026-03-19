@@ -333,7 +333,8 @@
 .schedule-assistant-panel__issue-label {
   margin: 0;
   font-size: var(--font-small);
-  color: var(--color-text);
+  font-weight: 600;
+  color: var(--color-amber);
   line-height: 1.35;
 }
 

@@ -8,7 +8,6 @@ function makeDay(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
     date: '2026-03-24',
     isWorkDay: true,
     requiredPersonHours: 8,
-    availablePersonHours: 16,
     rawAvailablePersonHours: 20,
     effectiveAvailablePersonHours: 16,
     accessHours: 8,
@@ -40,7 +39,6 @@ function makeCapacitySummary(overrides: Partial<CapacitySummary> = {}): Capacity
   return {
     days: [makeDay()],
     totalRequiredPersonHours: 8,
-    totalAvailablePersonHours: 16,
     totalRawAvailablePersonHours: 20,
     totalEffectiveAvailablePersonHours: 16,
     headroomPersonHours: 8,
@@ -50,6 +48,7 @@ function makeCapacitySummary(overrides: Partial<CapacitySummary> = {}): Capacity
     unscheduledLineItemCount: 0,
     scheduledLineItemCount: 1,
     overStaffedDayCount: 0,
+    overStaffedWarningDayCount: 0,
     fragmentedDayCount: 0,
     highFragmentationDayCount: 0,
     ...overrides,

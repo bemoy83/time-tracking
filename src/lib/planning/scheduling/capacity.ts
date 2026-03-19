@@ -17,7 +17,6 @@ export interface DailyCapacity {
   date: string;
   isWorkDay: boolean;
   requiredPersonHours: number;
-  availablePersonHours: number;
   /** Raw crew × access hours (no efficiency factor). */
   rawAvailablePersonHours: number;
   /** Raw capacity × efficiency factor — the plannable amount. */
@@ -62,7 +61,6 @@ export interface DailyCapacity {
 export interface CapacitySummary {
   days: DailyCapacity[];
   totalRequiredPersonHours: number;
-  totalAvailablePersonHours: number;
   totalRawAvailablePersonHours: number;
   totalEffectiveAvailablePersonHours: number;
   headroomPersonHours: number;
@@ -75,6 +73,8 @@ export interface CapacitySummary {
   scheduledLineItemCount: number;
   /** Number of days where assigned crew < available crew (excess spare capacity; derived from crew display X/Y crew). */
   overStaffedDayCount: number;
+  /** Days counted as overstaffed for UI warnings (only when utilization < OVER_STAFFED_AMBER_THRESHOLD). */
+  overStaffedWarningDayCount: number;
   fragmentedDayCount: number;
   highFragmentationDayCount: number;
 }

@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react';
 import type { WorkCalendarDay } from '../../../../lib/planning/plan-model';
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
+import { OVER_STAFFED_AMBER_THRESHOLD } from '../../../../lib/planning/scheduling/capacity-core';
+import { FragmentationWarningIcon } from './FragmentationWarningIcon';
 
 interface ScheduleGridHeaderProps {
   calendar: WorkCalendarDay[];
@@ -40,95 +41,10 @@ function formatUtilBadge(cap: DailyCapacity): string {
   return `${allocated.toFixed(0)} / ${required.toFixed(0)}h`;
 }
 
-/** Only show over-staffed (amber) when utilization is below this %. Near-full days use default styling. */
-const OVER_STAFFED_AMBER_THRESHOLD = 95;
-const FRAGMENTATION_TOOLTIP_DELAY_MS = 150;
-
 function buildDayTitle(cap: DailyCapacity | undefined, isWorkDay: boolean): string | undefined {
   if (!cap || !isWorkDay || cap.rawAvailablePersonHours <= 0) return undefined;
 
   return `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`;
-}
-
-function formatFragmentationRiskLabel(risk: DailyCapacity['fragmentationRisk']): string {
-  if (risk === 'high') return 'High';
-  if (risk === 'moderate') return 'Moderate';
-  return 'None';
-}
-
-function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
-  const tooltipId = useId();
-  const isHighFragmentation = cap.fragmentationRisk === 'high';
-  const rationale = cap.fragmentationRisk === 'high'
-    ? 'This day is heavily fragmented and may underperform despite available capacity.'
-    : 'This day may lose throughput to switching and coordination.';
-
-  useEffect(() => () => {
-    if (timeoutRef.current != null) {
-      window.clearTimeout(timeoutRef.current);
-    }
-  }, []);
-
-  const openWithDelay = () => {
-    if (timeoutRef.current != null) {
-      window.clearTimeout(timeoutRef.current);
-    }
-    timeoutRef.current = window.setTimeout(() => {
-      setIsOpen(true);
-      timeoutRef.current = null;
-    }, FRAGMENTATION_TOOLTIP_DELAY_MS);
-  };
-
-  const openImmediately = () => {
-    if (timeoutRef.current != null) {
-      window.clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setIsOpen(true);
-  };
-
-  const closeTooltip = () => {
-    if (timeoutRef.current != null) {
-      window.clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setIsOpen(false);
-  };
-
-  return (
-    <span className="schedule-grid__day-warning">
-      <button
-        type="button"
-        className={`schedule-grid__day-warning-icon${isHighFragmentation ? ' schedule-grid__day-warning-icon--high' : ' schedule-grid__day-warning-icon--moderate'}`}
-        aria-label={`Fragmentation risk ${formatFragmentationRiskLabel(cap.fragmentationRisk)}`}
-        aria-describedby={isOpen ? tooltipId : undefined}
-        onMouseEnter={openWithDelay}
-        onMouseLeave={closeTooltip}
-        onFocus={openImmediately}
-        onBlur={closeTooltip}
-      >
-        <span className="schedule-grid__day-warning-icon-glyph" aria-hidden="true">▲</span>
-      </button>
-      {isOpen && (
-        <span
-          id={tooltipId}
-          role="tooltip"
-          className="schedule-grid__day-warning-tooltip"
-        >
-          <strong className="schedule-grid__day-warning-tooltip-title">
-            Fragmentation risk: {formatFragmentationRiskLabel(cap.fragmentationRisk)}
-          </strong>
-          <span>Assigned rows: {cap.assignedRowCount}</span>
-          <span>Small allocations (&lt;2h): {cap.smallAllocationCount}</span>
-          <span>Average allocation: {(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h</span>
-          <span>Largest task share: {Math.round((cap.largestAllocationShare ?? 0) * 100)}%</span>
-          <span>{rationale}</span>
-        </span>
-      )}
-    </span>
-  );
 }
 
 export function ScheduleGridHeader({

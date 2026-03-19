@@ -27,7 +27,6 @@ function makeCapacity(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
     date: '2026-03-24',
     isWorkDay: true,
     requiredPersonHours: 12,
-    availablePersonHours: 16,
     rawAvailablePersonHours: 20,
     effectiveAvailablePersonHours: 16,
     accessHours: 8,

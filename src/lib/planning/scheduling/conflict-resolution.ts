@@ -66,13 +66,13 @@ export function generateConflictSuggestions(capacity: CapacitySummary): Conflict
 
     if (!day.isOverAllocated) continue;
 
-    const deficit = day.requiredPersonHours - day.availablePersonHours;
+    const deficit = day.requiredPersonHours - day.effectiveAvailablePersonHours;
     if (deficit <= 0) continue;
 
     // Solve for crew: how many additional crew needed?
     const currentCrew = day.availableCrew;
     if (currentCrew > 0) {
-      const accessHours = day.availablePersonHours / currentCrew;
+      const accessHours = day.effectiveAvailablePersonHours / currentCrew;
       if (accessHours > 0) {
         const needed = Math.ceil(day.requiredPersonHours / accessHours);
         const additional = needed - currentCrew;
@@ -99,8 +99,8 @@ export function generateConflictSuggestions(capacity: CapacitySummary): Conflict
     });
   }
 
-  const excessCapacitySuggestion = capacity.overStaffedDayCount > 0
-    ? { dayCount: capacity.overStaffedDayCount }
+  const excessCapacitySuggestion = capacity.overStaffedWarningDayCount > 0
+    ? { dayCount: capacity.overStaffedWarningDayCount }
     : undefined;
 
   return {

@@ -40,11 +40,11 @@ export function FeasibilityBar({ capacity }: FeasibilityBarProps) {
           </span>
         </>
       )}
-      {capacity.overStaffedDayCount > 0 && (
+      {capacity.overStaffedWarningDayCount > 0 && (
         <>
           <span className="feasibility-bar__separator">&middot;</span>
           <span className="feasibility-bar__info feasibility-bar__info--excess">
-            {capacity.overStaffedDayCount} {capacity.overStaffedDayCount === 1 ? 'day' : 'days'} may be overstaffed
+            {capacity.overStaffedWarningDayCount} {capacity.overStaffedWarningDayCount === 1 ? 'day' : 'days'} may be overstaffed
           </span>
         </>
       )}

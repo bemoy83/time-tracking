@@ -55,7 +55,7 @@ describe('computeCapacitySummary', () => {
 
     const summary = computeCapacitySummary(plan);
     expect(summary.days).toHaveLength(2);
-    expect(summary.totalAvailablePersonHours).toBe(48);
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(48);
     expect(summary.totalRequiredPersonHours).toBe(8);
   });
 
@@ -91,7 +91,7 @@ describe('computeCapacitySummary', () => {
 
     const summary = computeCapacitySummary(plan);
     expect(summary.totalRequiredPersonHours).toBe(20);
-    expect(summary.totalAvailablePersonHours).toBe(40); // 32 + 8
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(40); // 32 + 8
     expect(summary.unscheduledLineItemCount).toBe(0);
     // Sequential: Day 1 fills to capacity (16h), Day 2 gets remainder (4h)
     expect(summary.days[0].requiredPersonHours).toBe(16);
@@ -273,6 +273,37 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[0].isOverStaffed).toBe(true);
     expect(summary.days[1].isOverStaffed).toBe(true);
     expect(summary.overStaffedDayCount).toBe(2);
+    // Low utilization (1/6 ≈ 17%) → both days count for warning
+    expect(summary.overStaffedWarningDayCount).toBe(2);
+  });
+
+  it('excludes overstaffed days from warning count when utilization >= 95%', () => {
+    // 4 crew. Day 1: 3.8 crew (95%) → isOverStaffed, no warning. Day 2: 0.5 crew (12.5%) → isOverStaffed, warning
+    const plan: Plan = {
+      ...createPlan('Near-Full Plan'),
+      defaultEfficiency: 1.0,
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-03',
+      defaultCrewSize: 4,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+        { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    };
+    const item = createLineItem('Rigging', 'Rigging', 'm2', 10, 1, 0);
+    item.assemblyCrew = 1;
+    // 34.4h total: Day 1: 30.4h (3.8 crew), Day 2: 4h (0.5 crew)
+    item.assemblyTimeHours = 34.4;
+    item.assemblyScheduledStart = '2026-03-02';
+    item.assemblyScheduledEnd = '2026-03-03';
+    item.assemblyPersonHoursByDate = { '2026-03-02': 30.4, '2026-03-03': 4 };
+    plan.lineItems = [item];
+
+    const summary = computeCapacitySummary(plan);
+    expect(summary.days[0].isOverStaffed).toBe(true);
+    expect(summary.days[1].isOverStaffed).toBe(true);
+    expect(summary.overStaffedDayCount).toBe(2);
+    expect(summary.overStaffedWarningDayCount).toBe(1); // only Day 2 (12.5% < 95%)
   });
 
   it('shows balanced capacity when crew matches required exactly', () => {
@@ -419,7 +450,7 @@ describe('efficiency factor', () => {
     const summary = computeCapacitySummary(plan);
     expect(summary.totalRawAvailablePersonHours).toBe(32);
     expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
-    expect(summary.totalAvailablePersonHours).toBe(25.6);
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
   });
 
   it('defaults null efficiency to 0.8 (same as explicit 0.8)', () => {
