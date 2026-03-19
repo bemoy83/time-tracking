@@ -15,6 +15,15 @@ import {
 } from './work-calendar';
 import { round2, resolveEffectiveAccessHours, getCrewEquivalentForDate } from './capacity-math';
 
+const FRAGMENTATION_SMALL_ALLOCATION_HOURS = 2;
+const FRAGMENTATION_MIN_SURFACED_HOURS = 4;
+const FRAGMENTATION_ROW_THRESHOLD_MODERATE = 5;
+const FRAGMENTATION_ROW_THRESHOLD_HIGH = 8;
+const FRAGMENTATION_SMALL_COUNT_MODERATE = 2;
+const FRAGMENTATION_SMALL_COUNT_HIGH = 4;
+const FRAGMENTATION_AVERAGE_HOURS_THRESHOLD = 2;
+const FRAGMENTATION_LARGEST_SHARE_THRESHOLD = 0.45;
+
 export interface NormalizedScheduledEntry {
   item: PlanLineItem;
   phase: BuildPhase;
@@ -31,12 +40,48 @@ export interface CapacityComputationInput {
   scheduledLineItemCount: number;
 }
 
+type FragmentationRisk = DailyCapacity['fragmentationRisk'];
+type InternalDailyCapacity = DailyCapacity & {
+  largestAllocationPersonHours: number;
+};
+
+function computeFragmentationScore(day: Pick<
+  DailyCapacity,
+  'assignedRowCount' | 'smallAllocationCount' | 'averageAllocationPersonHours' | 'largestAllocationShare'
+>): number {
+  let score = 0;
+  if (day.assignedRowCount >= FRAGMENTATION_ROW_THRESHOLD_MODERATE) score += 1;
+  if (day.assignedRowCount >= FRAGMENTATION_ROW_THRESHOLD_HIGH) score += 1;
+  if (day.smallAllocationCount >= FRAGMENTATION_SMALL_COUNT_MODERATE) score += 1;
+  if (day.smallAllocationCount >= FRAGMENTATION_SMALL_COUNT_HIGH) score += 1;
+  if (
+    day.averageAllocationPersonHours != null
+    && day.averageAllocationPersonHours < FRAGMENTATION_AVERAGE_HOURS_THRESHOLD
+  ) {
+    score += 1;
+  }
+  if (
+    day.largestAllocationShare != null
+    && day.largestAllocationShare < FRAGMENTATION_LARGEST_SHARE_THRESHOLD
+    && day.assignedRowCount >= 4
+  ) {
+    score += 1;
+  }
+  return score;
+}
+
+function mapFragmentationRisk(score: number): FragmentationRisk {
+  if (score >= 4) return 'high';
+  if (score >= 2) return 'moderate';
+  return 'none';
+}
+
 function buildDayMapFromCalendar(
   calendar: WorkCalendarDay[],
   defaultCrewSize: number | null,
   planEfficiency: number,
-): Map<string, DailyCapacity> {
-  const dayMap = new Map<string, DailyCapacity>();
+): Map<string, InternalDailyCapacity> {
+  const dayMap = new Map<string, InternalDailyCapacity>();
   for (const day of calendar) {
     const dayEfficiency = resolveDayEfficiency(day, planEfficiency);
     const raw = dayAvailablePersonHours(day, defaultCrewSize);
@@ -56,6 +101,13 @@ function buildDayMapFromCalendar(
       assignedCrewTotal: 0,
       utilization: effective > 0 ? 0 : null,
       lineItemCount: 0,
+      assignedRowCount: 0,
+      smallAllocationCount: 0,
+      allocatedPersonHours: 0,
+      averageAllocationPersonHours: null,
+      largestAllocationShare: null,
+      fragmentationScore: 0,
+      fragmentationRisk: 'none',
       isOverAllocated: false,
       isOverAssignedCrew: false,
       isOverWorkerCapacity: false,
@@ -64,13 +116,14 @@ function buildDayMapFromCalendar(
       needToMeetTargetPersonHours: 0,
       shortfallPersonHours: 0,
       isOverStaffed: false,
+      largestAllocationPersonHours: 0,
     });
   }
   return dayMap;
 }
 
 function applyScheduledItem(
-  dayMap: Map<string, DailyCapacity>,
+  dayMap: Map<string, InternalDailyCapacity>,
   item: PlanLineItem,
   phase: BuildPhase,
   dates: string[],
@@ -101,6 +154,12 @@ function applyScheduledItem(
     // Accumulate actual person-hours directly (decoupled from inflated crewEquivalent)
     if (day.isWorkDay && plannedPersonHours > 0) {
       day.assignedCapacityPersonHours += plannedPersonHours;
+      day.allocatedPersonHours += plannedPersonHours;
+      day.assignedRowCount += 1;
+      if (plannedPersonHours < FRAGMENTATION_SMALL_ALLOCATION_HOURS) {
+        day.smallAllocationCount += 1;
+      }
+      day.largestAllocationPersonHours = Math.max(day.largestAllocationPersonHours, plannedPersonHours);
     }
     day.lineItemCount += 1;
 
@@ -127,13 +186,14 @@ function applyScheduledItem(
 }
 
 function finalizeCapacitySummary(
-  dayMap: Map<string, DailyCapacity>,
+  dayMap: Map<string, InternalDailyCapacity>,
   unscheduledLineItemCount: number,
   scheduledLineItemCount: number,
 ): CapacitySummary {
   const days = [...dayMap.values()]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((day) => {
+      const { largestAllocationPersonHours: _largestAllocationPersonHours, ...rest } = day;
       const required = round2(day.requiredPersonHours);
       const effective = round2(day.effectiveAvailablePersonHours);
       const raw = round2(day.rawAvailablePersonHours);
@@ -142,16 +202,37 @@ function finalizeCapacitySummary(
       const isOverWorkerCapacity = isOverAssignedCrew; // Derived from crew display (assigned/available)
       // Use directly accumulated person-hours (not recomputed from inflated crewEquivalent)
       const assignedCapacityPersonHours = round2(day.assignedCapacityPersonHours);
+      const allocatedPersonHours = round2(day.allocatedPersonHours);
+      const averageAllocationPersonHours = day.assignedRowCount > 0
+        ? round2(allocatedPersonHours / day.assignedRowCount)
+        : null;
+      const largestAllocationShare = allocatedPersonHours > 0
+        ? round2(day.largestAllocationPersonHours / allocatedPersonHours)
+        : null;
+      const fragmentationScore = computeFragmentationScore({
+        assignedRowCount: day.assignedRowCount,
+        smallAllocationCount: day.smallAllocationCount,
+        averageAllocationPersonHours,
+        largestAllocationShare,
+      });
+      const fragmentationRisk = allocatedPersonHours >= FRAGMENTATION_MIN_SURFACED_HOURS
+        ? mapFragmentationRisk(fragmentationScore)
+        : 'none';
       const needToMeetTargetPersonHours = round2(day.needToMeetTargetPersonHours || 0);
       const shortfallPersonHours = round2(day.shortfallPersonHours || 0);
       const isOverStaffed = day.isWorkDay && required > 0.01 && day.assignedCrewTotal < day.availableCrew - 0.01;
       return {
-        ...day,
+        ...rest,
         requiredPersonHours: required,
         availablePersonHours: effective,
         rawAvailablePersonHours: raw,
         effectiveAvailablePersonHours: effective,
         utilization,
+        allocatedPersonHours,
+        averageAllocationPersonHours,
+        largestAllocationShare,
+        fragmentationScore,
+        fragmentationRisk,
         isOverAllocated: effective > 0 ? required > effective : required > 0,
         isOverAssignedCrew,
         isOverWorkerCapacity,
@@ -171,6 +252,8 @@ function finalizeCapacitySummary(
   const overAssignedCrewDayCount = days.filter((day) => day.isOverAssignedCrew).length;
   const overWorkerCapacityDayCount = days.filter((day) => day.isOverWorkerCapacity).length;
   const overStaffedDayCount = days.filter((day) => day.isOverStaffed).length;
+  const fragmentedDayCount = days.filter((day) => day.fragmentationRisk !== 'none').length;
+  const highFragmentationDayCount = days.filter((day) => day.fragmentationRisk === 'high').length;
 
   return {
     days,
@@ -185,6 +268,8 @@ function finalizeCapacitySummary(
     unscheduledLineItemCount,
     scheduledLineItemCount,
     overStaffedDayCount,
+    fragmentedDayCount,
+    highFragmentationDayCount,
   };
 }
 

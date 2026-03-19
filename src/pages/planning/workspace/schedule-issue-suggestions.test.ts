@@ -71,4 +71,19 @@ describe('buildIssueSuggestions', () => {
     expect(suggestions.some((item) => item.label.includes('System fix: add crew or extend access hours'))).toBe(true);
     expect(suggestions.some((item) => item.label.includes('Fallback: if crew cannot increase'))).toBe(true);
   });
+
+  it('builds fragmentation guidance', () => {
+    const suggestions = buildIssueSuggestions(createItem({
+      kind: 'fragmentation',
+      severity: 'warning',
+      label: '2 days show fragmentation risk',
+      scope: 'plan',
+      category: 'optimization',
+      issueKey: undefined,
+    }), createState());
+
+    expect(suggestions.some((item) => item.label.includes('consolidate the smallest allocations'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('keep extra buffer'))).toBe(true);
+    expect(suggestions.some((item) => item.label.includes('move low-effort rows'))).toBe(true);
+  });
 });

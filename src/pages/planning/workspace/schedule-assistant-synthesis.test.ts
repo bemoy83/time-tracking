@@ -107,4 +107,28 @@ describe('synthesizeScheduleAssistant', () => {
       'Most unresolved assembly rows are short on capacity, not dates.',
     );
   });
+
+  it('keeps the assistant ready when only optimization issues remain', () => {
+    const result = synthesizeScheduleAssistant({
+      isStale: false,
+      unresolvedCount: 0,
+      canRunAssistant: true,
+      issues: [
+        createIssue({
+          id: 'fragmentation-1',
+          kind: 'fragmentation',
+          severity: 'warning',
+          label: '2 days show fragmentation risk',
+          category: 'optimization',
+          scope: 'plan',
+          assistantPriority: undefined,
+          detail: 'Tue, Mar 24 has many small allocations and may lose throughput to switching and coordination.',
+        }),
+      ],
+    });
+
+    expect(result.assistantStatus).toBe('ready');
+    expect(result.assistantBestNextMove).toBeNull();
+    expect(result.assistantSummary).toContain('Only optional optimization opportunities remain');
+  });
 });

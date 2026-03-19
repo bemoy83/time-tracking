@@ -136,6 +136,10 @@
   background: var(--state-warning-bg-soft);
 }
 
+.schedule-grid__day-col--fragmented {
+  box-shadow: inset 0 0 0 1px var(--state-warning-fg);
+}
+
 .schedule-grid__day-crew {
   display: block;
   font-size: var(--font-caption);
@@ -202,6 +206,10 @@
 .schedule-grid__day-util--over-worker {
   color: var(--color-recording);
   font-weight: 700;
+}
+
+.schedule-grid__day-util--fragmented {
+  color: var(--state-warning-fg-strong);
 }
 
 .schedule-grid__day-util--over-staffed {

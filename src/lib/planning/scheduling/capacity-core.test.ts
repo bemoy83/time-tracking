@@ -127,4 +127,147 @@ describe('capacity-core parity', () => {
 
     expect(wrapperSummary).toEqual(coreSummary);
   });
+
+  it('computes moderate fragmentation when a day has several mixed small allocations', () => {
+    const plan: Plan = {
+      ...createPlan('Moderate Fragmentation'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-02',
+      defaultCrewSize: 4,
+      defaultEfficiency: 1.0,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    };
+
+    const allocations = [1, 1, 3, 3, 4];
+    plan.lineItems = allocations.map((hours, index) => {
+      const item = createLineItem(`Row ${index + 1}`, `Row ${index + 1}`, 'pcs', hours, 1, 0);
+      item.assemblyCrew = 1;
+      item.assemblyTimeHours = hours;
+      item.assemblyScheduledStart = '2026-03-02';
+      item.assemblyScheduledEnd = '2026-03-02';
+      item.assemblyPersonHoursByDate = { '2026-03-02': hours };
+      return item;
+    });
+
+    const summary = computeCapacitySummary(plan);
+    const day = summary.days[0];
+
+    expect(day.allocatedPersonHours).toBe(12);
+    expect(day.assignedRowCount).toBe(5);
+    expect(day.smallAllocationCount).toBe(2);
+    expect(day.fragmentationScore).toBe(3);
+    expect(day.fragmentationRisk).toBe('moderate');
+    expect(summary.fragmentedDayCount).toBe(1);
+    expect(summary.highFragmentationDayCount).toBe(0);
+  });
+
+  it('computes high fragmentation for many small allocations on one day', () => {
+    const plan: Plan = {
+      ...createPlan('High Fragmentation'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-02',
+      defaultCrewSize: 4,
+      defaultEfficiency: 1.0,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 4 },
+      ],
+    };
+
+    plan.lineItems = Array.from({ length: 8 }, (_, index) => {
+      const item = createLineItem(`Small ${index + 1}`, `Small ${index + 1}`, 'pcs', 1, 1, 0);
+      item.assemblyCrew = 1;
+      item.assemblyTimeHours = 1;
+      item.assemblyScheduledStart = '2026-03-02';
+      item.assemblyScheduledEnd = '2026-03-02';
+      item.assemblyPersonHoursByDate = { '2026-03-02': 1 };
+      return item;
+    });
+
+    const summary = computeCapacitySummary(plan);
+    const day = summary.days[0];
+
+    expect(day.fragmentationScore).toBe(6);
+    expect(day.fragmentationRisk).toBe('high');
+    expect(summary.highFragmentationDayCount).toBe(1);
+  });
+
+  it('does not surface fragmentation below the 4h minimum threshold', () => {
+    const plan: Plan = {
+      ...createPlan('Tiny Fragmentation'),
+      eventStartDate: '2026-03-02',
+      eventEndDate: '2026-03-02',
+      defaultCrewSize: 2,
+      defaultEfficiency: 1.0,
+      workCalendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+      ],
+    };
+
+    plan.lineItems = Array.from({ length: 4 }, (_, index) => {
+      const item = createLineItem(`Tiny ${index + 1}`, `Tiny ${index + 1}`, 'pcs', 0.75, 1, 0);
+      item.assemblyCrew = 1;
+      item.assemblyTimeHours = 0.75;
+      item.assemblyScheduledStart = '2026-03-02';
+      item.assemblyScheduledEnd = '2026-03-02';
+      item.assemblyPersonHoursByDate = { '2026-03-02': 0.75 };
+      return item;
+    });
+
+    const summary = computeCapacitySummary(plan);
+    const day = summary.days[0];
+
+    expect(day.allocatedPersonHours).toBe(3);
+    expect(day.fragmentationScore).toBeGreaterThanOrEqual(4);
+    expect(day.fragmentationRisk).toBe('none');
+    expect(summary.fragmentedDayCount).toBe(0);
+  });
+
+  it('aggregates fragmentation across shared schedule inputs', () => {
+    const makeSharedPlan = (name: string) => ({
+      ...createPlan(name),
+      assemblyStartDate: '2026-03-02',
+      assemblyEndDate: '2026-03-02',
+      defaultEfficiency: 1.0,
+    });
+
+    const planA = makeSharedPlan('Plan A');
+    const planB = makeSharedPlan('Plan B');
+
+    planA.lineItems = Array.from({ length: 2 }, (_, index) => {
+      const item = createLineItem(`A${index + 1}`, `A${index + 1}`, 'pcs', 1, 1, 0);
+      item.assemblyCrew = 1;
+      item.assemblyTimeHours = 1;
+      item.assemblyScheduledStart = '2026-03-02';
+      item.assemblyScheduledEnd = '2026-03-02';
+      item.assemblyPersonHoursByDate = { '2026-03-02': 1 };
+      return item;
+    });
+    planB.lineItems = Array.from({ length: 2 }, (_, index) => {
+      const item = createLineItem(`B${index + 1}`, `B${index + 1}`, 'pcs', 1, 1, 0);
+      item.assemblyCrew = 1;
+      item.assemblyTimeHours = 1;
+      item.assemblyScheduledStart = '2026-03-02';
+      item.assemblyScheduledEnd = '2026-03-02';
+      item.assemblyPersonHoursByDate = { '2026-03-02': 1 };
+      return item;
+    });
+
+    const summary = computeSharedCapacitySummary({
+      calendar: [
+        { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+      ],
+      defaultCrewSize: 2,
+      lineItems: [
+        { planId: planA.id, lineItemId: planA.lineItems[0].id, plan: planA, item: planA.lineItems[0], readOnly: false },
+        { planId: planA.id, lineItemId: planA.lineItems[1].id, plan: planA, item: planA.lineItems[1], readOnly: false },
+        { planId: planB.id, lineItemId: planB.lineItems[0].id, plan: planB, item: planB.lineItems[0], readOnly: false },
+        { planId: planB.id, lineItemId: planB.lineItems[1].id, plan: planB, item: planB.lineItems[1], readOnly: false },
+      ],
+    });
+
+    expect(summary.days[0].fragmentationRisk).toBe('high');
+    expect(summary.fragmentedDayCount).toBe(1);
+  });
 });

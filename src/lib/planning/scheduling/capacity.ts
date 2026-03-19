@@ -32,6 +32,16 @@ export interface DailyCapacity {
   assignedCrewTotal: number;
   utilization: number | null;
   lineItemCount: number;
+  /** Number of phase rows with positive effort on this day. */
+  assignedRowCount: number;
+  /** Number of phase rows contributing < 2.0h on this day. */
+  smallAllocationCount: number;
+  /** Sum of positive scheduled effort allocations on this day. */
+  allocatedPersonHours: number;
+  averageAllocationPersonHours: number | null;
+  largestAllocationShare: number | null;
+  fragmentationScore: number;
+  fragmentationRisk: 'none' | 'moderate' | 'high';
   isOverAllocated: boolean;
   /** True when assignedCrewTotal > availableCrew. */
   isOverAssignedCrew: boolean;
@@ -65,6 +75,8 @@ export interface CapacitySummary {
   scheduledLineItemCount: number;
   /** Number of days where assigned crew < available crew (excess spare capacity; derived from crew display X/Y crew). */
   overStaffedDayCount: number;
+  fragmentedDayCount: number;
+  highFragmentationDayCount: number;
 }
 
 function createPlanCapacityCalendar(plan: Plan): WorkCalendarDay[] {

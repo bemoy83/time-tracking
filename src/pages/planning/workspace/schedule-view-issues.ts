@@ -49,6 +49,12 @@ function formatMinutesAsDuration(totalMinutes: number): string {
   return `${hours}h ${minutes}m`;
 }
 
+function fragmentationRank(risk: CapacitySummary['days'][number]['fragmentationRisk']): number {
+  if (risk === 'high') return 2;
+  if (risk === 'moderate') return 1;
+  return 0;
+}
+
 export function buildScheduleViewIssues({
   capacity,
   conflictSuggestions,
@@ -205,6 +211,40 @@ export function buildScheduleViewIssues({
       id: 'assistant-unresolved',
       severity: 'warning',
       label: `${assistantUnresolvedCount} ${assistantUnresolvedCount === 1 ? 'item' : 'items'} still ${assistantUnresolvedCount === 1 ? 'needs' : 'need'} review`,
+    });
+  }
+
+  if (capacity.fragmentedDayCount > 0) {
+    const fragmentedDays = capacity.days
+      .filter((day) => day.fragmentationRisk !== 'none')
+      .sort((a, b) => {
+        const riskDiff = fragmentationRank(b.fragmentationRisk) - fragmentationRank(a.fragmentationRisk);
+        if (riskDiff !== 0) return riskDiff;
+        const scoreDiff = b.fragmentationScore - a.fragmentationScore;
+        if (scoreDiff !== 0) return scoreDiff;
+        return a.date.localeCompare(b.date);
+      });
+    const topDay = fragmentedDays[0];
+    const label = `${capacity.fragmentedDayCount} ${capacity.fragmentedDayCount === 1 ? 'day shows' : 'days show'} fragmentation risk`;
+
+    planningIssues.push({
+      id: 'fragmentation',
+      severity: 'warning',
+      label,
+    });
+    panelIssues.push({
+      id: 'fragmentation',
+      kind: 'fragmentation',
+      severity: 'warning',
+      impact: 'This is a throughput risk, not a blocker, and is best handled after capacity and date problems are solved.',
+      label,
+      scope: 'plan',
+      category: 'optimization',
+      detail: `${formatShortDate(topDay.date)} has many small allocations and may lose throughput to switching and coordination.`,
+      facts: [
+        `${topDay.assignedRowCount} assigned rows · ${topDay.smallAllocationCount} under 2h.`,
+        `${topDay.averageAllocationPersonHours?.toFixed(1) ?? '0.0'}h average allocation · ${Math.round((topDay.largestAllocationShare ?? 0) * 100)}% largest task share.`,
+      ],
     });
   }
 

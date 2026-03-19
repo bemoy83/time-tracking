@@ -10,6 +10,7 @@ export type ScheduleIssueKind =
   | 'assistant-unresolved'
   | 'assistant-stale'
   | 'unscheduled'
+  | 'fragmentation'
   | 'overstaffed';
 
 export type ScheduleIssueScope = 'plan' | 'item';

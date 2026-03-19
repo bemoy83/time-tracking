@@ -73,6 +73,22 @@ export function buildIssueSuggestions(
     return suggestions;
   }
 
+  if (issue.kind === 'fragmentation') {
+    pushUnique(suggestions, {
+      id: `${issue.id}-consolidate`,
+      label: 'Optimization: consolidate the smallest allocations onto fewer days where phase dates allow.',
+    }, 3);
+    pushUnique(suggestions, {
+      id: `${issue.id}-keep-buffer`,
+      label: 'Alternative: keep extra buffer on the most fragmented day instead of filling it to nominal capacity.',
+    }, 3);
+    pushUnique(suggestions, {
+      id: `${issue.id}-move-light-work`,
+      label: 'Local fix: move low-effort rows to adjacent lower-risk days if the current day is too fragmented to stay efficient.',
+    }, 3);
+    return suggestions;
+  }
+
   if (issue.kind === 'assistant-unresolved') {
     if (issue.issueKey != null) {
       if (issue.unresolvedReason === 'missing_required_hours') {

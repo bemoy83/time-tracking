@@ -39,6 +39,18 @@ function formatUtilBadge(cap: DailyCapacity): string {
   return `${allocated.toFixed(0)} / ${required.toFixed(0)}h`;
 }
 
+function buildDayTitle(cap: DailyCapacity | undefined, isWorkDay: boolean): string | undefined {
+  if (!cap || !isWorkDay || cap.rawAvailablePersonHours <= 0) return undefined;
+
+  let title = `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`;
+
+  if (cap.fragmentationRisk !== 'none') {
+    title += `\nFragmentation: ${cap.fragmentationRisk}\n${cap.assignedRowCount} assigned rows · ${cap.smallAllocationCount} under 2h\nAverage allocation: ${(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h · Largest share: ${Math.round((cap.largestAllocationShare ?? 0) * 100)}%`;
+  }
+
+  return title;
+}
+
 export function ScheduleGridHeader({
   calendar,
   dayByDate,
@@ -68,14 +80,14 @@ export function ScheduleGridHeader({
       {calendar.map((day, index) => {
         const cap = dayByDate.get(day.date);
         const isOver = cap?.isOverAllocated ?? false;
+        const isFragmented = cap?.fragmentationRisk === 'moderate' || cap?.fragmentationRisk === 'high';
+        const showFragmentedTone = isFragmented && !isOver && !cap?.isOverWorkerCapacity && !cap?.isOverStaffed;
         return (
           <span
             key={day.date}
             role="columnheader"
-            className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${cap?.isOverStaffed ? ' schedule-grid__day-col--over-staffed' : ''}`}
-            title={cap && day.isWorkDay && cap.rawAvailablePersonHours > 0
-              ? `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`
-              : undefined}
+            className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${cap?.isOverStaffed ? ' schedule-grid__day-col--over-staffed' : ''}${showFragmentedTone ? ' schedule-grid__day-col--fragmented' : ''}`}
+            title={buildDayTitle(cap, day.isWorkDay)}
           >
             <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
             {cap && day.isWorkDay && (
@@ -104,7 +116,7 @@ export function ScheduleGridHeader({
                     </span>
                   );
                 })()}
-                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}`}>
+                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${showFragmentedTone ? ' schedule-grid__day-util--fragmented' : ''}`}>
                   {formatUtilBadge(cap)}
                 </span>
                 {cap.assignedCrewTotal > 0 && (
