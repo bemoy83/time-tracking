@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState } from 'react';
 import type { WorkCalendarDay } from '../../../../lib/planning/plan-model';
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
 
@@ -12,14 +13,14 @@ interface ScheduleGridHeaderProps {
   hasWorkDays?: boolean;
 }
 
-function formatDayLabel(date: string, index: number): string {
+function formatDayLabel(date: string): string {
   const parsed = new Date(`${date}T00:00:00`);
   const formatted = parsed.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
-  return `Day ${index + 1} | ${formatted}`;
+  return formatted;
 }
 
 /**
@@ -39,16 +40,95 @@ function formatUtilBadge(cap: DailyCapacity): string {
   return `${allocated.toFixed(0)} / ${required.toFixed(0)}h`;
 }
 
+/** Only show over-staffed (amber) when utilization is below this %. Near-full days use default styling. */
+const OVER_STAFFED_AMBER_THRESHOLD = 95;
+const FRAGMENTATION_TOOLTIP_DELAY_MS = 150;
+
 function buildDayTitle(cap: DailyCapacity | undefined, isWorkDay: boolean): string | undefined {
   if (!cap || !isWorkDay || cap.rawAvailablePersonHours <= 0) return undefined;
 
-  let title = `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`;
+  return `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`;
+}
 
-  if (cap.fragmentationRisk !== 'none') {
-    title += `\nFragmentation: ${cap.fragmentationRisk}\n${cap.assignedRowCount} assigned rows · ${cap.smallAllocationCount} under 2h\nAverage allocation: ${(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h · Largest share: ${Math.round((cap.largestAllocationShare ?? 0) * 100)}%`;
-  }
+function formatFragmentationRiskLabel(risk: DailyCapacity['fragmentationRisk']): string {
+  if (risk === 'high') return 'High';
+  if (risk === 'moderate') return 'Moderate';
+  return 'None';
+}
 
-  return title;
+function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+  const tooltipId = useId();
+  const isHighFragmentation = cap.fragmentationRisk === 'high';
+  const rationale = cap.fragmentationRisk === 'high'
+    ? 'This day is heavily fragmented and may underperform despite available capacity.'
+    : 'This day may lose throughput to switching and coordination.';
+
+  useEffect(() => () => {
+    if (timeoutRef.current != null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+  }, []);
+
+  const openWithDelay = () => {
+    if (timeoutRef.current != null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      setIsOpen(true);
+      timeoutRef.current = null;
+    }, FRAGMENTATION_TOOLTIP_DELAY_MS);
+  };
+
+  const openImmediately = () => {
+    if (timeoutRef.current != null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsOpen(true);
+  };
+
+  const closeTooltip = () => {
+    if (timeoutRef.current != null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <span className="schedule-grid__day-warning">
+      <button
+        type="button"
+        className={`schedule-grid__day-warning-icon${isHighFragmentation ? ' schedule-grid__day-warning-icon--high' : ' schedule-grid__day-warning-icon--moderate'}`}
+        aria-label={`Fragmentation risk ${formatFragmentationRiskLabel(cap.fragmentationRisk)}`}
+        aria-describedby={isOpen ? tooltipId : undefined}
+        onMouseEnter={openWithDelay}
+        onMouseLeave={closeTooltip}
+        onFocus={openImmediately}
+        onBlur={closeTooltip}
+      >
+        <span className="schedule-grid__day-warning-icon-glyph" aria-hidden="true">▲</span>
+      </button>
+      {isOpen && (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className="schedule-grid__day-warning-tooltip"
+        >
+          <strong className="schedule-grid__day-warning-tooltip-title">
+            Fragmentation risk: {formatFragmentationRiskLabel(cap.fragmentationRisk)}
+          </strong>
+          <span>Assigned rows: {cap.assignedRowCount}</span>
+          <span>Small allocations (&lt;2h): {cap.smallAllocationCount}</span>
+          <span>Average allocation: {(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h</span>
+          <span>Largest task share: {Math.round((cap.largestAllocationShare ?? 0) * 100)}%</span>
+          <span>{rationale}</span>
+        </span>
+      )}
+    </span>
+  );
 }
 
 export function ScheduleGridHeader({
@@ -77,19 +157,23 @@ export function ScheduleGridHeader({
           </button>
         )}
       </div>
-      {calendar.map((day, index) => {
+      {calendar.map((day) => {
         const cap = dayByDate.get(day.date);
         const isOver = cap?.isOverAllocated ?? false;
+        const utilizationPct = cap && cap.availableCrew > 0 ? (cap.assignedCrewTotal / cap.availableCrew) * 100 : 0;
+        const showOverStaffedWarning = (cap?.isOverStaffed ?? false) && utilizationPct < OVER_STAFFED_AMBER_THRESHOLD;
         const isFragmented = cap?.fragmentationRisk === 'moderate' || cap?.fragmentationRisk === 'high';
-        const showFragmentedTone = isFragmented && !isOver && !cap?.isOverWorkerCapacity && !cap?.isOverStaffed;
         return (
           <span
             key={day.date}
             role="columnheader"
-            className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${cap?.isOverStaffed ? ' schedule-grid__day-col--over-staffed' : ''}${showFragmentedTone ? ' schedule-grid__day-col--fragmented' : ''}`}
+            className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${showOverStaffedWarning ? ' schedule-grid__day-col--over-staffed' : ''}`}
             title={buildDayTitle(cap, day.isWorkDay)}
           >
-            <span className="schedule-grid__day-label">{formatDayLabel(day.date, index)}</span>
+            <span className="schedule-grid__day-label-row">
+              <span className="schedule-grid__day-label">{formatDayLabel(day.date)}</span>
+              {isFragmented && cap && <FragmentationWarningIcon cap={cap} />}
+            </span>
             {cap && day.isWorkDay && (
               <>
                 {(() => {
@@ -97,7 +181,7 @@ export function ScheduleGridHeader({
                   const pct = Math.min(Math.round((cap.assignedCrewTotal / cap.availableCrew) * 100), 100);
                   const fillClass = cap.isOverAllocated
                     ? ' schedule-grid__day-bar-fill--over'
-                    : cap.isOverStaffed
+                    : showOverStaffedWarning
                       ? ' schedule-grid__day-bar-fill--under'
                       : '';
                   return (
@@ -116,7 +200,7 @@ export function ScheduleGridHeader({
                     </span>
                   );
                 })()}
-                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${showFragmentedTone ? ' schedule-grid__day-util--fragmented' : ''}`}>
+                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${isFragmented && !isOver && !cap.isOverWorkerCapacity && !showOverStaffedWarning ? ' schedule-grid__day-util--fragmented' : ''}`}>
                   {formatUtilBadge(cap)}
                 </span>
                 {cap.assignedCrewTotal > 0 && (

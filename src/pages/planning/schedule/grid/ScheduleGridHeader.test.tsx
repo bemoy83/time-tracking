@@ -1,11 +1,15 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { WorkCalendarDay } from '../../../../lib/planning/plan-model';
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
 import { ScheduleGridHeader } from './ScheduleGridHeader';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function makeDay(overrides: Partial<WorkCalendarDay> = {}): WorkCalendarDay {
   return {
@@ -52,7 +56,9 @@ function makeCapacity(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
 }
 
 describe('ScheduleGridHeader', () => {
-  it('adds an advisory fragmentation class and tooltip details for surfaced days', () => {
+  it('renders a fragmentation warning icon with a delayed custom tooltip for surfaced days', () => {
+    vi.useFakeTimers();
+
     const { container } = render(
       <ScheduleGridHeader
         calendar={[makeDay()]}
@@ -63,8 +69,36 @@ describe('ScheduleGridHeader', () => {
     );
 
     const dayCol = container.querySelector('.schedule-grid__day-col');
-    expect(dayCol?.className).toContain('schedule-grid__day-col--fragmented');
-    expect(dayCol?.getAttribute('title')).toContain('Fragmentation: moderate');
-    expect(dayCol?.getAttribute('title')).toContain('5 assigned rows');
+    expect(dayCol?.getAttribute('title')).toContain('Usable time: 16.0h');
+
+    const icon = container.querySelector('.schedule-grid__day-warning-icon') as HTMLButtonElement | null;
+    expect(icon).toBeTruthy();
+    expect(screen.queryByRole('tooltip')).toBeNull();
+
+    fireEvent.mouseEnter(icon!);
+    act(() => {
+      vi.advanceTimersByTime(160);
+    });
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip.textContent).toContain('Fragmentation risk: Moderate');
+    expect(tooltip.textContent).toContain('Assigned rows: 5');
+    expect(tooltip.textContent).toContain('Largest task share: 33%');
+  });
+
+  it('uses stronger icon styling for high fragmentation', () => {
+    const { container } = render(
+      <ScheduleGridHeader
+        calendar={[makeDay()]}
+        dayByDate={new Map([[ '2026-03-24', makeCapacity({ fragmentationRisk: 'high', fragmentationScore: 5 }) ]])}
+        gridColumns="220px 144px"
+        label="Schedule"
+      />,
+    );
+
+    const icon = container.querySelector('.schedule-grid__day-warning-icon');
+    const dayCol = container.querySelector('.schedule-grid__day-col');
+    expect(icon?.className).toContain('schedule-grid__day-warning-icon--high');
+    expect(dayCol?.className).not.toContain('schedule-grid__day-col--fragmented');
   });
 });
