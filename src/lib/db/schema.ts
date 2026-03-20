@@ -17,7 +17,7 @@ import type {
   ImportedExecutionReturnRecord,
   ImportedExecutionReturnUnplannedTaskRecord,
 } from '../interop/data-transfer/contracts';
-import type { Tag, TagCategory } from '../tags';
+import type { Tag, TagCategory, GlobalTagSequence } from '../tags';
 
 /**
  * Database schema for idb type safety.
@@ -150,5 +150,10 @@ export interface TimeTrackingDBSchema extends DBSchema {
     indexes: {
       'by-category': string;
     };
+  };
+  // Singleton record holding the user-defined execution order for sequencable tags
+  globalTagSequence: {
+    key: string;
+    value: GlobalTagSequence;
   };
 }

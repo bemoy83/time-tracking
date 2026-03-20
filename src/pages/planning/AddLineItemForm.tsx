@@ -66,6 +66,7 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
       selectedWorkType.dismantleRate || rate,
       'template',
       selectedWorkType.id,
+      selectedWorkType.tagIds ?? [],
     );
     onAdd(item);
     setTitle('');

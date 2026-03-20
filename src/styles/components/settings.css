@@ -311,6 +311,43 @@ button.settings-view__row:active {
   transform: rotate(180deg);
 }
 
+.settings-view__row-label--with-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Tags settings — category groups with nested unit lists */
+.settings-view__tag-category-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-view__tag-category {
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-view__tag-category:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-view__list--nested {
+  margin-left: var(--space-md);
+}
+
+.settings-view__nested-empty {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-xs) 0 var(--space-sm);
+  margin-left: var(--space-md);
+}
+
 .settings-view__list > *:not(:first-child) {
   position: relative;
 }

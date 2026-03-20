@@ -176,6 +176,7 @@ export interface CreateTagInput {
   categoryId: string;
   name: string;
   color?: string;
+  sequencable?: boolean;
 }
 
 export async function createTag(input: CreateTagInput): Promise<Tag> {
@@ -203,7 +204,7 @@ export async function createTag(input: CreateTagInput): Promise<Tag> {
     categoryId: input.categoryId,
     name: input.name.trim(),
     color: input.color ?? TAG_COLOR_DEFAULT,
-    sequencable: false,
+    sequencable: input.sequencable ?? false,
     createdAt: now,
     updatedAt: now,
   };

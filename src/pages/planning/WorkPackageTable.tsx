@@ -18,7 +18,7 @@ import {
 import type { LineItemSuggestion, PhaseSuggestion } from '../../lib/planning/plan-suggestions';
 import { DuplicateIcon, SparklesIcon, TrashIcon } from '../../components/icons';
 import { TagPillGroup } from '../../components/TagPillGroup';
-import { TagPickerSheet } from '../../components/TagPickerSheet';
+import { TagPickerModal } from '../../components/TagPickerModal';
 
 interface WorkPackageTableProps {
   lineItems: PlanLineItem[];
@@ -592,9 +592,12 @@ export function WorkPackageTable({
       </table>
     </div>
 
-    {/* Tag picker for line item tag assignment */}
+    {/* Tag picker modal for line item tag assignment.
+        Rendered via createPortal (inside TagPickerModal) to escape the
+        planning-workspace__main transform ancestor, which would otherwise
+        clip any position:fixed overlay. */}
     {onSetItemTagIds && (
-      <TagPickerSheet
+      <TagPickerModal
         isOpen={tagPickerItemId != null}
         onClose={() => setTagPickerItemId(null)}
         selectedTagIds={tagPickerItem?.tagIds ?? []}

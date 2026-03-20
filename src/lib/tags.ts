@@ -101,6 +101,30 @@ export function resolveEffectiveTagIds(
   return [...base, ...extra];
 }
 
+// ============================================================
+// Global Tag Sequence
+// ============================================================
+
+/**
+ * Singleton record that stores the user-defined execution order for
+ * sequencable tags. Stored in the `globalTagSequence` IDB object store
+ * under the key `'global'`.
+ *
+ * `tagIds` is an explicit ordered list of tag IDs. Tags with
+ * `sequencable: true` that appear in this list are displayed in the
+ * defined order in the Sequence Settings view. Tags not present in
+ * this list (newly made sequencable) appear at the end.
+ */
+export interface GlobalTagSequence {
+  id: 'global';
+  tagIds: string[];
+  updatedAt: string;
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+
 /**
  * Given the effective tag IDs for a task and the available tags from the store,
  * return the tags grouped by category, sorted by category sortOrder then tag name.

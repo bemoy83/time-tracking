@@ -838,4 +838,26 @@ export const applyDbMigrations: DbUpgradeCallback = (
             });
           }
         }
+
+        // Version 36: Add sequencing support.
+        // Creates globalTagSequence object store.
+        // Backfills sequencable: false on all existing tags.
+        if (oldVersion < 36) {
+          // Create globalTagSequence singleton store
+          if (!db.objectStoreNames.contains('globalTagSequence')) {
+            db.createObjectStore('globalTagSequence', { keyPath: 'id' });
+          }
+
+          // Backfill sequencable: false on all existing tags
+          if (db.objectStoreNames.contains('tags')) {
+            backfillStore('tags', (tag) => {
+              const t = tag as unknown as Record<string, unknown>;
+              if (t['sequencable'] === undefined) {
+                t['sequencable'] = false;
+                return true;
+              }
+              return false;
+            });
+          }
+        }
 };

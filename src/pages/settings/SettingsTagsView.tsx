@@ -55,11 +55,11 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
     setShowTagForm(true);
   }
 
-  async function handleTagSubmit(values: { name: string; color: string; categoryId: string }) {
+  async function handleTagSubmit(values: { name: string; color: string; categoryId: string; sequencable: boolean }) {
     if (editingTag) {
-      await updateTagFields(editingTag.id, { name: values.name, color: values.color });
+      await updateTagFields(editingTag.id, { name: values.name, color: values.color, sequencable: values.sequencable });
     } else {
-      await createTag({ name: values.name, color: values.color, categoryId: values.categoryId });
+      await createTag({ name: values.name, color: values.color, categoryId: values.categoryId, sequencable: values.sequencable });
     }
   }
 
@@ -112,39 +112,63 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
 
   return (
     <SettingsDetailLayout title="Tags" onBack={onBack}>
-      <div className="settings-section">
-        <p className="settings-section__description">
-          Tags classify work types and tasks for filtering and grouping. Organize tags
-          into categories such as Resource, Location, or Team.
+      <div className="settings-view__card">
+        <div className="settings-view__card-header">
+          <h2 className="settings-view__sub-header">Tags</h2>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm btn--circle"
+            onClick={openNewCategory}
+          >
+            +
+          </button>
+        </div>
+        <p className="settings-view__helper">
+          Tags classify work types and tasks for filtering and grouping. Organize tags into categories such as
+          Resource, Location, or Team.
         </p>
 
-        {/* Categories + their tags */}
         {categoriesWithTags.length === 0 ? (
-          <div className="settings-empty">
-            <p>No tag categories yet. Create a category to get started.</p>
+          <div className="empty-state">
+            <PencilIcon className="empty-state__icon" aria-hidden />
+            <p className="empty-state__heading">No tag categories yet</p>
+            <p className="empty-state__text">Add a category to organize tags.</p>
           </div>
         ) : (
-          <div className="tag-settings__list">
+          <div className="settings-view__tag-category-list">
             {categoriesWithTags.map(({ category, tags }) => (
-              <div key={category.id} className="tag-settings__category">
-                <div className="tag-settings__category-header">
-                  <span className="tag-settings__category-name">{category.name}</span>
-                  <div style={{ display: 'flex', gap: 4 }}>
+              <div key={category.id} className="settings-view__tag-category">
+                <div className="settings-view__list-item">
+                  <button
+                    type="button"
+                    className="settings-view__row"
+                    onClick={() => openEditCategory(category)}
+                  >
+                    <div className="settings-view__template-info">
+                      <span className="settings-view__row-label">{category.name}</span>
+                      <span className="settings-view__row-detail">
+                        {tags.length === 0
+                          ? 'No tags in this category'
+                          : `${tags.length} tag${tags.length === 1 ? '' : 's'}`}
+                      </span>
+                    </div>
+                  </button>
+                  <div className="settings-view__list-item-actions">
                     <button
                       type="button"
-                      className="btn btn--ghost btn--sm"
+                      className="btn btn--secondary btn--sm"
                       onClick={() => openNewTag(category.id)}
                     >
                       + Tag
                     </button>
                     <IconButton
-                      icon={<PencilIcon />}
+                      icon={<PencilIcon className="settings-detail__icon" />}
                       ariaLabel={`Edit category ${category.name}`}
                       onClick={() => openEditCategory(category)}
                       variant="ghost"
                     />
                     <IconButton
-                      icon={<TrashIcon />}
+                      icon={<TrashIcon className="settings-detail__icon" />}
                       ariaLabel={`Delete category ${category.name}`}
                       onClick={() => setDeleteCategoryTarget(category)}
                       variant="ghost"
@@ -153,49 +177,48 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
                 </div>
 
                 {tags.length === 0 ? (
-                  <div className="tag-settings__tag-row" style={{ color: 'var(--color-text-secondary)' }}>
-                    <span style={{ fontSize: 13, fontStyle: 'italic' }}>No tags yet</span>
-                  </div>
+                  <p className="settings-view__nested-empty">No tags in this category yet.</p>
                 ) : (
-                  tags.map((tag) => (
-                    <div key={tag.id} className="tag-settings__tag-row">
-                      <span
-                        className="tag-settings__tag-dot"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      <span className="tag-settings__tag-name">{tag.name}</span>
-                      <div className="tag-settings__tag-actions">
-                        <IconButton
-                          icon={<PencilIcon />}
-                          ariaLabel={`Edit tag ${tag.name}`}
+                  <div className="settings-view__list settings-view__list--nested">
+                    {tags.map((tag) => (
+                      <div key={tag.id} className="settings-view__list-item">
+                        <button
+                          type="button"
+                          className="settings-view__row"
                           onClick={() => openEditTag(tag)}
-                          variant="ghost"
-                        />
-                        <IconButton
-                          icon={<TrashIcon />}
-                          ariaLabel={`Delete tag ${tag.name}`}
-                          onClick={() => setDeleteTagTarget(tag)}
-                          variant="ghost"
-                        />
+                        >
+                          <div className="settings-view__template-info">
+                            <span className="settings-view__row-label settings-view__row-label--with-dot">
+                              <span
+                                className="tag-settings__tag-dot"
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name}
+                            </span>
+                          </div>
+                        </button>
+                        <div className="settings-view__list-item-actions">
+                          <IconButton
+                            icon={<PencilIcon className="settings-detail__icon" />}
+                            ariaLabel={`Edit tag ${tag.name}`}
+                            onClick={() => openEditTag(tag)}
+                            variant="ghost"
+                          />
+                          <IconButton
+                            icon={<TrashIcon className="settings-detail__icon" />}
+                            ariaLabel={`Delete tag ${tag.name}`}
+                            onClick={() => setDeleteTagTarget(tag)}
+                            variant="ghost"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
           </div>
         )}
-
-        {/* Add category */}
-        <div className="settings-add-row" style={{ marginTop: 16 }}>
-          <button
-            type="button"
-            className="btn btn--secondary"
-            onClick={openNewCategory}
-          >
-            + Add Category
-          </button>
-        </div>
       </div>
 
       {/* Tag form */}

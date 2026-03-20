@@ -12,3 +12,4 @@ export * from './db/execution-returns-repo';
 export * from './db/work-types-repo';
 export * from './db/work-unit-definitions-repo';
 export * from './db/tags-repo';
+export * from './db/tag-sequence-repo';

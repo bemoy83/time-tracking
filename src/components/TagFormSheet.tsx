@@ -11,7 +11,7 @@ interface TagFormSheetProps {
   editTag?: Tag;
   /** Pre-selected category for create mode */
   defaultCategoryId?: string;
-  onSubmit: (values: { name: string; color: string; categoryId: string }) => Promise<void>;
+  onSubmit: (values: { name: string; color: string; categoryId: string; sequencable: boolean }) => Promise<void>;
 }
 
 /**
@@ -30,6 +30,7 @@ export function TagFormSheet({
   const [name, setName] = useState('');
   const [color, setColor] = useState(TAG_COLOR_DEFAULT);
   const [categoryId, setCategoryId] = useState('');
+  const [sequencable, setSequencable] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,6 +42,7 @@ export function TagFormSheet({
       setName(editTag?.name ?? '');
       setColor(editTag?.color ?? TAG_COLOR_DEFAULT);
       setCategoryId(editTag?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? '');
+      setSequencable(editTag?.sequencable ?? false);
       setError('');
       setSubmitting(false);
     }
@@ -59,7 +61,7 @@ export function TagFormSheet({
     setError('');
     setSubmitting(true);
     try {
-      await onSubmit({ name: name.trim(), color, categoryId });
+      await onSubmit({ name: name.trim(), color, categoryId, sequencable });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save tag');
@@ -134,6 +136,20 @@ export function TagFormSheet({
               />
             ))}
           </div>
+        </div>
+
+        {/* Sequencable toggle */}
+        <div className="tag-form__field tag-form__field--row">
+          <label className="tag-form__label tag-form__label--inline" htmlFor="tag-sequencable">
+            Include in execution sequence
+          </label>
+          <input
+            id="tag-sequencable"
+            type="checkbox"
+            checked={sequencable}
+            onChange={(e) => setSequencable(e.target.checked)}
+            className="tag-form__checkbox"
+          />
         </div>
 
         {error && (

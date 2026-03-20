@@ -235,6 +235,7 @@ export function PlanEditor({
         newWorkType.dismantleRate,
         'template',
         newWorkType.id,
+        newWorkType.tagIds ?? [],
       ),
     );
     setNewTitle('');
