@@ -1,0 +1,14 @@
+/* ============================================================
+   Task Tags Section — content only; shell from ExpandableSection
+   ============================================================ */
+
+.task-tags__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.task-tags__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
