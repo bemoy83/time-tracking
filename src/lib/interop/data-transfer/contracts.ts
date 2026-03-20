@@ -1,5 +1,6 @@
 import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
 import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnitDefinition } from '../../types';
+import type { Tag, TagCategory } from '../../tags';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
 export const DATA_TRANSFER_SCHEMA_VERSION = '4.0';
@@ -24,6 +25,14 @@ export interface PlanPackagePayload {
   workUnitDefinitions?: WorkUnitDefinition[];
   /** Projects referenced by the plan; optional for backward compatibility. */
   projects?: Project[];
+  /**
+   * Tag definitions referenced by this plan's workTypes and lineItems.
+   * Optional for backward compatibility with older packages.
+   * Field devices use this to display tag names without a network call.
+   */
+  tags?: Tag[];
+  /** Tag categories for the included tags. Optional for backward compatibility. */
+  tagCategories?: TagCategory[];
   lastModifiedAt: string;
 }
 

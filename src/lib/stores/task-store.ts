@@ -121,6 +121,8 @@ export interface CreateTaskInput {
   targetProductivity?: number | null;
   phase?: BuildPhase | null;
   workTypeId?: string | null;
+  /** Additional tag IDs added specifically to this task beyond WorkType defaults. */
+  additionalTagIds?: string[];
 }
 
 /**
@@ -144,6 +146,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     targetProductivity: input.targetProductivity ?? null,
     phase: input.phase ?? null,
     workTypeId: input.workTypeId ?? null,
+    additionalTagIds: input.additionalTagIds ?? [],
     createdAt: now,
     updatedAt: now,
     archivedAt: null,

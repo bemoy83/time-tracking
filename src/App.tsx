@@ -4,6 +4,7 @@ import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeTemplateStore } from './lib/stores/template-store';
 import { initializeWorkUnitStore } from './lib/stores/work-unit-store';
 import { initializeWorkTypeStore } from './lib/stores/work-type-store';
+import { initializeTagStore } from './lib/stores/tag-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { runWorkTypeLinkBackfill } from './lib/migrations/backfill-worktype-link';
 import type { Project, Task } from './lib/types';
@@ -20,6 +21,7 @@ type SettingsSection =
   | 'projects'
   | 'workUnits'
   | 'workTypes'
+  | 'tags'
   | 'templates'
   | 'planLineItems'
   | 'productivity'
@@ -49,6 +51,7 @@ const SettingsPlanLineItemsView = lazyNamedExport(() => import('./pages/settings
 const SettingsProductivityView = lazyNamedExport(() => import('./pages/settings/SettingsProductivityView'), 'SettingsProductivityView');
 const SettingsAttributionView = lazyNamedExport(() => import('./pages/settings/SettingsAttributionView'), 'SettingsAttributionView');
 const SettingsRemediationView = lazyNamedExport(() => import('./pages/settings/SettingsRemediationView'), 'SettingsRemediationView');
+const SettingsTagsView = lazyNamedExport(() => import('./pages/settings/SettingsTagsView'), 'SettingsTagsView');
 const SettingsTelemetryView = lazyNamedExport(() => import('./pages/settings/SettingsTelemetryView'), 'SettingsTelemetryView');
 const SettingsDataTransferView = lazyNamedExport(() => import('./pages/settings/SettingsDataTransferView'), 'SettingsDataTransferView');
 const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlanView'), 'FieldPlanView');
@@ -83,6 +86,7 @@ function App() {
             initializeTemplateStore(),
             initializeWorkUnitStore(),
             initializeWorkTypeStore(),
+            initializeTagStore(),
             initializeSyncQueue(),
           ]),
           timeout,
@@ -242,6 +246,9 @@ function App() {
           onBack={handleBack}
           onManageUnits={() => setView({ type: 'settingsDetail', section: 'workUnits', returnTab: 'settings' })}
         />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'tags' && (
+        <SettingsTagsView onBack={handleBack} />
       )}
       {view.type === 'settingsDetail' && view.section === 'workUnits' && (
         <SettingsWorkUnitsView onBack={handleBack} />

@@ -73,6 +73,8 @@ export interface CreateWorkTypeInput {
   dismantleRate: number;
   readOnly?: boolean;
   importedForPlanId?: string | null;
+  /** Tag IDs to assign to this work type. */
+  tagIds?: string[];
 }
 
 /**
@@ -117,6 +119,7 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
     dismantleRate: input.dismantleRate,
     readOnly: input.readOnly ?? false,
     importedForPlanId: input.importedForPlanId ?? null,
+    tagIds: input.tagIds ?? [],
     createdAt: now,
     updatedAt: now,
   };

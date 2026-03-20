@@ -4,7 +4,7 @@
  * CountBadge section headings, and FAB + sheet create flow.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Task,
   TaskTemplate,
@@ -13,6 +13,9 @@ import {
   getProjectDisplayColor,
 } from '../lib/types';
 import { TrashIcon, WarningIcon, CheckIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../components/icons';
+import { useTagStore } from '../lib/stores/tag-store';
+import { useWorkTypeStore } from '../lib/stores/work-type-store';
+import { resolveEffectiveTagIds } from '../lib/tags';
 import { Fab } from '../components/Fab';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import { ProjectColorDot } from '../components/ProjectColorDot';
@@ -70,8 +73,22 @@ export function ProjectDetail({
   const { templates } = useTemplateStore();
   const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
   const { activeTimers } = useTimerStore();
+  const { tags } = useTagStore();
+  const { workTypes } = useWorkTypeStore();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
+
+  // Tag filter state — set of active tag ID filters (OR logic: show task if it has any active tag)
+  const [activeTagFilters, setActiveTagFilters] = useState<Set<string>>(new Set());
+
+  const toggleTagFilter = useCallback((tagId: string) => {
+    setActiveTagFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  }, []);
 
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -138,9 +155,33 @@ export function ProjectDetail({
     );
   }
 
-  const activeTasks = projectTasks.filter((t) => t.status === 'active');
+  const workTypeById = useMemo(
+    () => new Map(workTypes.map((wt) => [wt.id, wt])),
+    [workTypes],
+  );
+
+  // Collect all unique tag IDs across project tasks for the filter bar
+  const availableFilterTags = useMemo(() => {
+    const tagIdSet = new Set<string>();
+    for (const task of projectTasks) {
+      const wt = task.workTypeId ? workTypeById.get(task.workTypeId) : undefined;
+      const effective = resolveEffectiveTagIds(wt?.tagIds ?? [], task.additionalTagIds ?? []);
+      effective.forEach((id) => tagIdSet.add(id));
+    }
+    return tags.filter((t) => tagIdSet.has(t.id));
+  }, [projectTasks, workTypeById, tags]);
+
+  function taskMatchesTagFilters(task: Task): boolean {
+    if (activeTagFilters.size === 0) return true;
+    const wt = task.workTypeId ? workTypeById.get(task.workTypeId) : undefined;
+    const effective = resolveEffectiveTagIds(wt?.tagIds ?? [], task.additionalTagIds ?? []);
+    return effective.some((id) => activeTagFilters.has(id));
+  }
+
+  const allActiveTasks = projectTasks.filter((t) => t.status === 'active');
+  const activeTasks = allActiveTasks.filter(taskMatchesTagFilters);
   const completedTasks = projectTasks.filter((t) => t.status === 'completed');
-  const blockedTasks = projectTasks.filter((t) => t.status === 'blocked');
+  const blockedTasks = projectTasks.filter((t) => t.status === 'blocked').filter(taskMatchesTagFilters);
 
   const handleColorChange = async (color: string) => {
     await updateProjectColor(project.id, color);
@@ -325,6 +366,23 @@ export function ProjectDetail({
         projectId={projectId}
         template={selectedTemplate}
       />
+
+      {/* Tag filter bar — shown when project tasks have tags */}
+      {availableFilterTags.length > 0 && (
+        <div className="tag-filter-bar">
+          {availableFilterTags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              className={`tag-filter-bar__chip${activeTagFilters.has(tag.id) ? ' tag-filter-bar__chip--active' : ''}`}
+              style={{ '--tag-color': tag.color } as React.CSSProperties}
+              onClick={() => toggleTagFilter(tag.id)}
+            >
+              {tag.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Active tasks */}
       {activeTasks.length > 0 && (

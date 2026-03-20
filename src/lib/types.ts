@@ -71,6 +71,8 @@ export interface WorkType {
   readOnly?: boolean;
   /** Source plan ID for imported read-only work types. null/undefined for regular library types. */
   importedForPlanId?: string | null;
+  /** Tag IDs assigned to this work type. Flow to every task created from this work type. */
+  tagIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -171,6 +173,11 @@ export interface Task {
   sourceLineItemId?: string | null;
   /** Excluded from KPI computation by review flow. */
   excludeFromKpi?: boolean;
+  /**
+   * Additional tag IDs assigned specifically to this task, beyond what the WorkType carries.
+   * WorkType tags always flow through and cannot be removed at the task level.
+   */
+  additionalTagIds?: string[];
 }
 
 /**

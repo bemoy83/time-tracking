@@ -688,6 +688,11 @@ export function PlanEditor({
               onBatchApplySuggestions={readOnly || isLocked ? undefined : handleBatchApplySuggestions}
               onDuplicate={handleDuplicateItem}
               onRemove={handleRemoveItem}
+              onSetItemTagIds={
+                readOnly || isLocked
+                  ? undefined
+                  : (itemId, tagIds) => handleUpdateItem(itemId, { tagIds })
+              }
             />
           </div>
         </div>

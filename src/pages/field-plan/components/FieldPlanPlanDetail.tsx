@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { CountBadge } from '../../../components/CountBadge';
 import { ProjectColorDot } from '../../../components/ProjectColorDot';
 import {
@@ -12,6 +13,7 @@ import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/typ
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
+import { useTagStore } from '../../../lib/stores/tag-store';
 
 interface LineItemStatusSummary {
   completed: number;
@@ -65,6 +67,46 @@ export function FieldPlanPlanDetail({
   onOpenActions,
   onExportExecutionReturn,
 }: FieldPlanPlanDetailProps) {
+  const { tags } = useTagStore();
+  const [activeTagFilters, setActiveTagFilters] = useState<Set<string>>(new Set());
+
+  // Collect tag IDs present across all line items for the filter bar
+  const availableFilterTags = useMemo(() => {
+    const tagIdSet = new Set<string>();
+    for (const li of lineItems) {
+      for (const id of li.item.tagIds ?? []) tagIdSet.add(id);
+    }
+    return tags.filter((t) => tagIdSet.has(t.id));
+  }, [lineItems, tags]);
+
+  function toggleTagFilter(tagId: string) {
+    setActiveTagFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  }
+
+  function filterByTag<T extends FieldPlanLineItemSummary>(items: T[]): T[] {
+    if (activeTagFilters.size === 0) return items;
+    return items.filter((li) =>
+      (li.item.tagIds ?? []).some((id) => activeTagFilters.has(id)),
+    );
+  }
+
+  const filteredStatusGroups: FieldPlanStatusGroups = useMemo(
+    () => ({
+      inProgress: filterByTag(filteredStatusGroups.inProgress),
+      blocked: filterByTag(filteredStatusGroups.blocked),
+      pending: filterByTag(filteredStatusGroups.pending),
+      completed: filterByTag(filteredStatusGroups.completed),
+      deferred: filterByTag(filteredStatusGroups.deferred),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [statusGroups, activeTagFilters],
+  );
+
   return (
     <>
       <section className="field-plan__header-card">
@@ -115,15 +157,32 @@ export function FieldPlanPlanDetail({
         </div>
       </section>
 
-      {statusGroups.inProgress.length > 0 && (
+      {/* Tag filter bar */}
+      {availableFilterTags.length > 0 && (
+        <div className="tag-filter-bar" style={{ padding: '4px 16px 0' }}>
+          {availableFilterTags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              className={`tag-filter-bar__chip${activeTagFilters.has(tag.id) ? ' tag-filter-bar__chip--active' : ''}`}
+              style={{ '--tag-color': tag.color } as React.CSSProperties}
+              onClick={() => toggleTagFilter(tag.id)}
+            >
+              {tag.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filteredStatusGroups.inProgress.length > 0 && (
         <section className="field-plan__section">
           <h2 className="field-plan__section-title section-heading">
             <PlayIcon className="field-plan__icon" />
             In Progress
-            <CountBadge count={statusGroups.inProgress.length} variant="muted" />
+            <CountBadge count={filteredStatusGroups.inProgress.length} variant="muted" />
           </h2>
           <div className="field-plan__task-list field-plan__task-list--active">
-            {statusGroups.inProgress.map((li) => (
+            {filteredStatusGroups.inProgress.map((li) => (
               <FieldPlanLineItemRow
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
@@ -137,15 +196,15 @@ export function FieldPlanPlanDetail({
         </section>
       )}
 
-      {statusGroups.blocked.length > 0 && (
+      {filteredStatusGroups.blocked.length > 0 && (
         <section className="field-plan__section">
           <h2 className="field-plan__section-title section-heading section-heading--blocked">
             <WarningIcon className="field-plan__icon" />
             Blocked
-            <CountBadge count={statusGroups.blocked.length} variant="muted" />
+            <CountBadge count={filteredStatusGroups.blocked.length} variant="muted" />
           </h2>
           <div className="field-plan__task-list field-plan__task-list--blocked">
-            {statusGroups.blocked.map((li) => (
+            {filteredStatusGroups.blocked.map((li) => (
               <FieldPlanLineItemRow
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
@@ -159,15 +218,15 @@ export function FieldPlanPlanDetail({
         </section>
       )}
 
-      {statusGroups.pending.length > 0 && (
+      {filteredStatusGroups.pending.length > 0 && (
         <section className="field-plan__section">
           <h2 className="field-plan__section-title section-heading">
             <TaskListIcon className="field-plan__icon" />
             Pending
-            <CountBadge count={statusGroups.pending.length} variant="muted" />
+            <CountBadge count={filteredStatusGroups.pending.length} variant="muted" />
           </h2>
           <div className="field-plan__task-list">
-            {statusGroups.pending.map((li) => (
+            {filteredStatusGroups.pending.map((li) => (
               <FieldPlanLineItemRow
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
@@ -181,7 +240,7 @@ export function FieldPlanPlanDetail({
         </section>
       )}
 
-      {statusGroups.completed.length > 0 && (
+      {filteredStatusGroups.completed.length > 0 && (
         <section className="field-plan__section field-plan__section--completed">
           <button
             type="button"
@@ -191,14 +250,14 @@ export function FieldPlanPlanDetail({
           >
             <CheckIcon className="field-plan__toggle-icon field-plan__toggle-icon--ready" />
             <span>Completed</span>
-            <CountBadge count={statusGroups.completed.length} variant="muted" />
+            <CountBadge count={filteredStatusGroups.completed.length} variant="muted" />
             <ExpandChevronIcon
               className={`field-plan__toggle-chevron${completedExpanded ? ' field-plan__toggle-chevron--expanded' : ''}`}
             />
           </button>
           {completedExpanded && (
             <div className="field-plan__task-list field-plan__task-list--completed">
-              {statusGroups.completed.map((li) => (
+              {filteredStatusGroups.completed.map((li) => (
                 <FieldPlanLineItemRow
                   key={`${li.item.id}:${li.phase}`}
                   lineItem={li}
@@ -213,7 +272,7 @@ export function FieldPlanPlanDetail({
         </section>
       )}
 
-      {statusGroups.deferred.length > 0 && (
+      {filteredStatusGroups.deferred.length > 0 && (
         <section className="field-plan__section field-plan__section--deferred">
           <button
             type="button"
@@ -222,14 +281,14 @@ export function FieldPlanPlanDetail({
             aria-expanded={deferredExpanded}
           >
             <span>Deferred</span>
-            <CountBadge count={statusGroups.deferred.length} variant="muted" />
+            <CountBadge count={filteredStatusGroups.deferred.length} variant="muted" />
             <ExpandChevronIcon
               className={`field-plan__toggle-chevron${deferredExpanded ? ' field-plan__toggle-chevron--expanded' : ''}`}
             />
           </button>
           {deferredExpanded && (
             <div className="field-plan__task-list field-plan__task-list--deferred">
-              {statusGroups.deferred.map((li) => (
+              {filteredStatusGroups.deferred.map((li) => (
                 <FieldPlanLineItemRow
                   key={`${li.item.id}:${li.phase}`}
                   lineItem={li}

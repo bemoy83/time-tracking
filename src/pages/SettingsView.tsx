@@ -17,6 +17,7 @@ type SettingsSection =
   | 'projects'
   | 'workUnits'
   | 'workTypes'
+  | 'tags'
   | 'templates'
   | 'planLineItems'
   | 'productivity'
@@ -57,6 +58,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'projects', label: 'Projects / Events', helper: 'Import event schedule and manage project phase dates' },
     { key: 'workUnits', label: 'Quantity Units', helper: 'Manage the global catalog of measurable quantity units' },
     { key: 'workTypes', label: 'Work Types', helper: 'Add and manage reusable work-type definitions' },
+    { key: 'tags', label: 'Tags', helper: 'Manage global tags and categories for filtering and grouping work' },
     { key: 'templates', label: 'Templates', helper: 'Create reusable presets for faster task creation' },
     { key: 'planLineItems', label: 'Plan Work Packages', helper: 'Download the CSV template and validate files for plan import' },
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },

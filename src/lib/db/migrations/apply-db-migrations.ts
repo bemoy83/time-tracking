@@ -778,4 +778,64 @@ export const applyDbMigrations: DbUpgradeCallback = (
             });
           }
         }
+
+        // Version 34: Bump only. Aligns with browsers that already upgraded from a prior build;
+        // 33→34 upgrades need this step so `openDB` can advance the version.
+        if (oldVersion < 34) {
+          // no structural changes
+        }
+
+        // Version 35: Add global tag system.
+        // Creates tagCategories and tags object stores.
+        // Backfills tagIds: [] on existing workTypes, tasks, and plan lineItems.
+        if (oldVersion < 35) {
+          // Create tagCategories store
+          const tagCategoriesStore = db.createObjectStore('tagCategories', { keyPath: 'id' });
+          tagCategoriesStore.createIndex('by-sort-order', 'sortOrder');
+
+          // Create tags store
+          const tagsStore = db.createObjectStore('tags', { keyPath: 'id' });
+          tagsStore.createIndex('by-category', 'categoryId');
+
+          // Backfill tagIds: [] on all existing workTypes
+          if (db.objectStoreNames.contains('workTypes')) {
+            backfillStore('workTypes', (workType) => {
+              const wt = workType as unknown as Record<string, unknown>;
+              if (!Array.isArray(wt['tagIds'])) {
+                wt['tagIds'] = [];
+                return true;
+              }
+              return false;
+            });
+          }
+
+          // Backfill additionalTagIds: [] on all existing tasks
+          if (db.objectStoreNames.contains('tasks')) {
+            backfillStore('tasks', (task) => {
+              const t = task as unknown as Record<string, unknown>;
+              if (!Array.isArray(t['additionalTagIds'])) {
+                t['additionalTagIds'] = [];
+                return true;
+              }
+              return false;
+            });
+          }
+
+          // Backfill tagIds: [] on all existing plan lineItems
+          if (db.objectStoreNames.contains('plans')) {
+            backfillStore('plans', (plan) => {
+              const p = plan as unknown as Record<string, unknown>;
+              const lineItems = p['lineItems'];
+              if (!Array.isArray(lineItems)) return false;
+              let changed = false;
+              for (const item of lineItems as Array<Record<string, unknown>>) {
+                if (!Array.isArray(item['tagIds'])) {
+                  item['tagIds'] = [];
+                  changed = true;
+                }
+              }
+              return changed;
+            });
+          }
+        }
 };

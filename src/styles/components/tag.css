@@ -1,0 +1,316 @@
+/* ============================================================
+   Tag System — shared styles
+   TagPill, TagPillGroup, TagPickerSheet, TagFormSheet
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   Tag Pill
+   Usage: <span class="tag-pill" style="--tag-color: #2563eb">...</span>
+   ---------------------------------------------------------- */
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  background-color: color-mix(in srgb, var(--tag-color, #2563eb) 15%, transparent);
+  color: var(--tag-color, #2563eb);
+  border: 1px solid color-mix(in srgb, var(--tag-color, #2563eb) 30%, transparent);
+  cursor: default;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.tag-pill--removable {
+  cursor: default;
+}
+
+.tag-pill__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tag-pill__remove:hover {
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--tag-color, #2563eb) 20%, transparent);
+}
+
+/* ----------------------------------------------------------
+   Tag Pill Group — wrapping row of pills
+   ---------------------------------------------------------- */
+
+.tag-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tag-pill-group--compact {
+  gap: 3px;
+}
+
+.tag-pill-group__add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  border: 1px dashed var(--color-border, #d1d5db);
+  background: none;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tag-pill-group__add-btn:hover {
+  border-color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text, #111827);
+}
+
+/* ----------------------------------------------------------
+   Tag Filter Bar — horizontal filter chip row
+   ---------------------------------------------------------- */
+
+.tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 0 4px;
+}
+
+.tag-filter-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--color-border, #d1d5db);
+  background: none;
+  color: var(--color-text-secondary, #6b7280);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+}
+
+.tag-filter-bar__chip:hover {
+  border-color: var(--tag-color, #2563eb);
+  color: var(--tag-color, #2563eb);
+}
+
+.tag-filter-bar__chip--active {
+  background-color: color-mix(in srgb, var(--tag-color, #2563eb) 12%, transparent);
+  border-color: var(--tag-color, #2563eb);
+  color: var(--tag-color, #2563eb);
+}
+
+/* ----------------------------------------------------------
+   Tag Picker Sheet
+   ---------------------------------------------------------- */
+
+.tag-picker__categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tag-picker__category {
+  padding: 0;
+}
+
+.tag-picker__category-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 12px 16px 6px;
+}
+
+.tag-picker__options {
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text, #111827);
+  transition: background-color 0.1s ease;
+}
+
+.tag-picker__option:hover {
+  background-color: var(--color-surface-hover, #f9fafb);
+}
+
+.tag-picker__option--selected {
+  background-color: color-mix(in srgb, var(--tag-option-color, #2563eb) 8%, transparent);
+}
+
+.tag-picker__option--disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.tag-picker__option-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: var(--tag-option-color, #2563eb);
+}
+
+.tag-picker__option-name {
+  flex: 1;
+}
+
+.tag-picker__option-check {
+  font-size: 14px;
+  color: var(--tag-option-color, #2563eb);
+  font-weight: 700;
+}
+
+.tag-picker__inherited-note {
+  font-size: 11px;
+  color: var(--color-text-secondary, #6b7280);
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.tag-picker__empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 14px;
+}
+
+/* ----------------------------------------------------------
+   Tag Form Sheet (create / edit a tag)
+   ---------------------------------------------------------- */
+
+.tag-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.tag-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tag-form__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.tag-form__color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-form__color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.tag-form__color-btn:hover {
+  transform: scale(1.15);
+}
+
+.tag-form__color-btn--selected {
+  border-color: var(--color-text, #111827);
+  transform: scale(1.15);
+}
+
+/* ----------------------------------------------------------
+   Tag Settings List (in SettingsTagsView)
+   ---------------------------------------------------------- */
+
+.tag-settings__category {
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.tag-settings__category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: var(--color-surface-secondary, #f9fafb);
+}
+
+.tag-settings__category-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tag-settings__tag-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.tag-settings__tag-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-settings__tag-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--color-text, #111827);
+}
+
+.tag-settings__tag-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}

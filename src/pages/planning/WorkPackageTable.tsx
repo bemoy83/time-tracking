@@ -1,4 +1,4 @@
-import { useMemo, type KeyboardEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 import {
   BUILD_PHASES,
   formatWorkTypeWithUnit,
@@ -17,6 +17,8 @@ import {
 } from '../../lib/planning/plan-model';
 import type { LineItemSuggestion, PhaseSuggestion } from '../../lib/planning/plan-suggestions';
 import { DuplicateIcon, SparklesIcon, TrashIcon } from '../../components/icons';
+import { TagPillGroup } from '../../components/TagPillGroup';
+import { TagPickerSheet } from '../../components/TagPickerSheet';
 
 interface WorkPackageTableProps {
   lineItems: PlanLineItem[];
@@ -28,6 +30,7 @@ interface WorkPackageTableProps {
   ) => void;
   onDuplicate: (item: PlanLineItem) => void;
   onRemove: (lineItemId: string) => void;
+  onSetItemTagIds?: (lineItemId: string, tagIds: string[]) => void;
 }
 
 function parseInputNumber(value: string): number {
@@ -104,7 +107,10 @@ export function WorkPackageTable({
   onBatchApplySuggestions,
   onDuplicate,
   onRemove,
+  onSetItemTagIds,
 }: WorkPackageTableProps) {
+  const [tagPickerItemId, setTagPickerItemId] = useState<string | null>(null);
+  const tagPickerItem = tagPickerItemId ? lineItems.find((i) => i.id === tagPickerItemId) : null;
   const { workTypes } = useWorkTypeStore();
   const selectableWorkTypes = useMemo(
     () => workTypes.filter((wt) => wt.readOnly !== true),
@@ -203,6 +209,7 @@ export function WorkPackageTable({
   };
 
   return (
+    <>
     <div className="planning-view__work-package-table-wrap">
       <table className="planning-view__work-package-table">
         <caption className="sr-only">
@@ -328,6 +335,27 @@ export function WorkPackageTable({
                       aria-label={`Title for ${item.title}`}
                     />
                   )}
+                  {/* Tag chips below title */}
+                  {(item.tagIds?.length ?? 0) > 0 || (!isLocked && onSetItemTagIds) ? (
+                    <TagPillGroup
+                      tagIds={item.tagIds ?? []}
+                      onRemoveTag={
+                        !isLocked && onSetItemTagIds
+                          ? (tagId) =>
+                              onSetItemTagIds(
+                                item.id,
+                                (item.tagIds ?? []).filter((id) => id !== tagId),
+                              )
+                          : undefined
+                      }
+                      onAddTag={
+                        !isLocked && onSetItemTagIds
+                          ? () => setTagPickerItemId(item.id)
+                          : undefined
+                      }
+                      compact
+                    />
+                  ) : null}
                 </td>
 
                 <td className="planning-view__wp-cell">
@@ -563,5 +591,19 @@ export function WorkPackageTable({
         </tbody>
       </table>
     </div>
+
+    {/* Tag picker for line item tag assignment */}
+    {onSetItemTagIds && (
+      <TagPickerSheet
+        isOpen={tagPickerItemId != null}
+        onClose={() => setTagPickerItemId(null)}
+        selectedTagIds={tagPickerItem?.tagIds ?? []}
+        onChange={(tagIds) => {
+          if (tagPickerItemId) onSetItemTagIds(tagPickerItemId, tagIds);
+        }}
+        title="Assign Tags"
+      />
+    )}
+    </>
   );
 }

@@ -8,6 +8,10 @@ import {
   getPlan,
   getProject,
   updatePlan,
+  getAllTags,
+  getAllTagCategories,
+  addTag,
+  addTagCategory,
 } from '../../db';
 import {
   type Plan,
@@ -328,6 +332,27 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
   const workUnitDefinitions = allWorkUnitDefinitions
     .filter((definition) => referencedWorkUnitIds.has(definition.id));
 
+  // Collect all tag IDs referenced by exported workTypes and lineItems
+  const referencedTagIds = new Set<string>();
+  for (const wt of workTypes) {
+    for (const tagId of wt.tagIds ?? []) referencedTagIds.add(tagId);
+  }
+  for (const item of remappedLineItems) {
+    for (const tagId of item.tagIds ?? []) referencedTagIds.add(tagId);
+  }
+
+  let exportedTags: import('../../tags').Tag[] | undefined;
+  let exportedTagCategories: import('../../tags').TagCategory[] | undefined;
+  if (referencedTagIds.size > 0) {
+    const allTags = await getAllTags();
+    const allCategories = await getAllTagCategories();
+    const filteredTags = allTags.filter((t) => referencedTagIds.has(t.id));
+    const referencedCategoryIds = new Set(filteredTags.map((t) => t.categoryId));
+    const filteredCategories = allCategories.filter((c) => referencedCategoryIds.has(c.id));
+    exportedTags = filteredTags.length > 0 ? filteredTags : undefined;
+    exportedTagCategories = filteredCategories.length > 0 ? filteredCategories : undefined;
+  }
+
   return {
     plan: {
       ...plan,
@@ -336,6 +361,8 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
     workTypes,
     workUnitDefinitions: workUnitDefinitions.length > 0 ? workUnitDefinitions : undefined,
     projects: projects.length > 0 ? projects : undefined,
+    tags: exportedTags,
+    tagCategories: exportedTagCategories,
     lastModifiedAt: plan.updatedAt,
   };
 }
@@ -647,6 +674,27 @@ export async function applyPlanPackageImport(
     { applyLabelToExisting: options.applyLabelToExistingWorkUnits },
     ensureImportedWorkUnits,
   );
+
+  // Upsert tag categories and tags from the package into the local store.
+  // Only inserts if an ID does not already exist — never overwrites local edits.
+  if (envelope.payload.tagCategories?.length) {
+    const existingCategories = await getAllTagCategories();
+    const existingCategoryIds = new Set(existingCategories.map((c) => c.id));
+    for (const category of envelope.payload.tagCategories) {
+      if (!existingCategoryIds.has(category.id)) {
+        await addTagCategory(category);
+      }
+    }
+  }
+  if (envelope.payload.tags?.length) {
+    const existingTags = await getAllTags();
+    const existingTagIds = new Set(existingTags.map((t) => t.id));
+    for (const tag of envelope.payload.tags) {
+      if (!existingTagIds.has(tag.id)) {
+        await addTag(tag);
+      }
+    }
+  }
 
   const workTypeIdMap = await resolveImportedWorkTypeIds(importedPlan.id, envelope.payload.workTypes);
   const remappedLineItems = importedPlan.lineItems.map((item) => ({

@@ -131,6 +131,12 @@ export interface PlanLineItem {
   amendmentNote: string | null;
   /** Timestamp when schedule was amended after baseline. */
   amendedAt: string | null;
+  /**
+   * Tag IDs snapshotted from the WorkType at line item creation time.
+   * Self-contained so plan packages carry tag context to field devices.
+   * Editable in the planner before the plan is released.
+   */
+  tagIds?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -525,6 +531,7 @@ export function createLineItem(
   dismantleRate: number,
   rateSource: RateSource = 'manual',
   workTypeId: string | null = null,
+  tagIds: string[] = [],
 ): PlanLineItem {
   const assemblyTimeHours = assemblyRate > 0 ? workQuantity / assemblyRate : 0;
   const dismantleTimeHours = dismantleRate > 0 ? workQuantity / dismantleRate : 0;
@@ -574,6 +581,7 @@ export function createLineItem(
     removedFromSource: false,
     amendmentNote: null,
     amendedAt: null,
+    tagIds,
   };
 }
 
@@ -613,6 +621,7 @@ export function duplicateLineItem(item: PlanLineItem): PlanLineItem {
     removedFromSource: item.removedFromSource,
     amendmentNote: item.amendmentNote,
     amendedAt: item.amendedAt,
+    tagIds: item.tagIds ? [...item.tagIds] : [],
   };
 }
 

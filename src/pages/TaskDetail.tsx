@@ -23,6 +23,7 @@ import { DeleteTaskConfirm } from '../components/DeleteTaskConfirm';
 import { ProjectPicker } from '../components/ProjectPicker';
 import { CompleteParentConfirm } from '../components/CompleteParentConfirm';
 import { CompleteParentPrompt } from '../components/CompleteParentPrompt';
+import { TaskTagsSection } from '../components/TaskTagsSection';
 
 interface TaskDetailProps {
   taskId: string;
@@ -97,7 +98,10 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       {/* 7b. Attribution breakdown (expandable, default closed) */}
       <TaskAttributionBreakdown taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
 
-      {/* 8. Notes (expandable, default closed) */}
+      {/* 8. Tags (inline, shown when task has a work type or existing tags) */}
+      <TaskTagsSection task={task} />
+
+      {/* 9. Notes (expandable, default closed) */}
       <TaskNotes taskId={task.id} />
 
       {/* 7. Subtasks (expandable, default open, parent tasks only) */}

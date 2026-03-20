@@ -11,6 +11,9 @@ import { createWorkType, updateWorkTypeFields } from '../lib/stores/work-type-st
 import { useSelectableWorkUnits } from '../lib/hooks/useSelectableWorkUnits';
 import { ActionSheet } from './ActionSheet';
 import { WorkUnitPillGroup } from './WorkUnitPillGroup';
+import { TagPillGroup } from './TagPillGroup';
+import { TagPickerSheet } from './TagPickerSheet';
+import { useTagStore } from '../lib/stores/tag-store';
 
 interface WorkTypeFormSheetProps {
   isOpen: boolean;
@@ -27,11 +30,14 @@ export function WorkTypeFormSheet({
 }: WorkTypeFormSheetProps) {
   const isEdit = !!workType;
   const { selectableUnits, defaultUnitId } = useSelectableWorkUnits(workType?.workUnit ?? null);
+  useTagStore(); // subscribe for tag data
 
   const [title, setTitle] = useState('');
   const [workUnit, setWorkUnit] = useState(defaultUnitId);
   const [assemblyRate, setAssemblyRate] = useState('');
   const [dismantleRate, setDismantleRate] = useState('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [showTagPicker, setShowTagPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,11 +49,13 @@ export function WorkTypeFormSheet({
         setWorkUnit(workType.workUnit);
         setAssemblyRate(String(workType.assemblyRate));
         setDismantleRate(String(workType.dismantleRate));
+        setTagIds(workType.tagIds ?? []);
       } else {
         setTitle('');
         setWorkUnit(defaultUnitId);
         setAssemblyRate('');
         setDismantleRate('');
+        setTagIds([]);
       }
     }
   }, [defaultUnitId, isOpen, workType]);
@@ -68,6 +76,7 @@ export function WorkTypeFormSheet({
           workUnit,
           assemblyRate: parsedAssemblyRate,
           dismantleRate: parsedDismantleRate,
+          tagIds,
         });
       } else {
         await createWorkType({
@@ -75,6 +84,7 @@ export function WorkTypeFormSheet({
           workUnit,
           assemblyRate: parsedAssemblyRate,
           dismantleRate: parsedDismantleRate,
+          tagIds,
         });
       }
       onClose();
@@ -86,6 +96,7 @@ export function WorkTypeFormSheet({
   };
 
   return (
+    <>
     <ActionSheet isOpen={isOpen} title={isEdit ? 'Edit Work Type' : 'New Work Type'} onClose={onClose}>
       <div className="create-task-sheet__form">
         {error && (
@@ -153,6 +164,16 @@ export function WorkTypeFormSheet({
           </div>
         </div>
 
+        {/* Tags */}
+        <div className="create-task-sheet__section">
+          <label className="entry-modal__label">Tags</label>
+          <TagPillGroup
+            tagIds={tagIds}
+            onRemoveTag={(id) => setTagIds(tagIds.filter((t) => t !== id))}
+            onAddTag={() => setShowTagPicker(true)}
+          />
+        </div>
+
         {/* Actions */}
         <div className="action-sheet__actions">
           {isEdit && onDelete && (
@@ -176,5 +197,14 @@ export function WorkTypeFormSheet({
         </div>
       </div>
     </ActionSheet>
+
+    <TagPickerSheet
+      isOpen={showTagPicker}
+      onClose={() => setShowTagPicker(false)}
+      selectedTagIds={tagIds}
+      onChange={setTagIds}
+      title="Assign Tags to Work Type"
+    />
+    </>
   );
 }

@@ -17,6 +17,7 @@ import type {
   ImportedExecutionReturnRecord,
   ImportedExecutionReturnUnplannedTaskRecord,
 } from '../interop/data-transfer/contracts';
+import type { Tag, TagCategory } from '../tags';
 
 /**
  * Database schema for idb type safety.
@@ -132,6 +133,22 @@ export interface TimeTrackingDBSchema extends DBSchema {
       'by-plan': string;
       'by-return': string;
       'by-imported-at': string;
+    };
+  };
+  // Tag categories (e.g. "Resource", "Location", "Team")
+  tagCategories: {
+    key: string;
+    value: TagCategory;
+    indexes: {
+      'by-sort-order': number;
+    };
+  };
+  // Tags (e.g. "Furniture", "Hall A", "Crew 1")
+  tags: {
+    key: string;
+    value: Tag;
+    indexes: {
+      'by-category': string;
     };
   };
 }
