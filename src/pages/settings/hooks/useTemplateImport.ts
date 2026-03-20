@@ -2,6 +2,7 @@ import { useCallback, useState, type ChangeEvent } from 'react';
 import { generateImportPreview, type ImportPreview } from '../../../lib/interop/import-preview';
 import { parseWorkPackageCsv } from '../../../lib/interop/import';
 import { applyWorkPackageImportItems } from '../../../lib/interop/work-package-import-apply';
+import { ensureImportedWorkUnits } from '../../../lib/stores/work-unit-store';
 import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 import type { Task, TaskTemplate } from '../../../lib/types';
 
@@ -55,7 +56,7 @@ export function useTemplateImport({
     [tasks, templates, workTypeTitleById],
   );
 
-  const handleApply = useCallback(async () => {
+  const handleApply = useCallback(async (applyImportedUnitLabels: boolean = false) => {
     if (!preview || preview.duplicateKeys.length > 0) return;
 
     setIsApplying(true);
@@ -79,9 +80,18 @@ export function useTemplateImport({
         return;
       }
 
-      const { created, updated, skipped } = await applyWorkPackageImportItems(revalidated.items);
+      const { created, updated, skipped, unitsCreated, unitLabelsUpdated } = await applyWorkPackageImportItems(
+        revalidated.items,
+        {
+          ensureImportedWorkUnitsFn: (items, options) =>
+            ensureImportedWorkUnits(items, {
+              ...options,
+              applyLabelToExisting: applyImportedUnitLabels,
+            }),
+        },
+      );
       setApplySummary(
-        `Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${conflicts} conflicts.`,
+        `Applied import: ${created} created, ${updated} updated, ${skipped} skipped, ${unitsCreated} unit${unitsCreated === 1 ? '' : 's'} added, ${unitLabelsUpdated} unit label${unitLabelsUpdated === 1 ? '' : 's'} updated, ${conflicts} conflicts.`,
       );
       trackTelemetryEvent('interop_import_apply');
       setPreview(null);

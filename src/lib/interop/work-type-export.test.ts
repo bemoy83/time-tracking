@@ -20,9 +20,9 @@ describe('exportWorkTypesCsv', () => {
     const csv = exportWorkTypesCsv([makeWorkType()]);
     const lines = csv.split('\n');
 
-    expect(lines[0]).toBe('mappingKey,title,workUnit,assemblyRate,dismantleRate');
+    expect(lines[0]).toBe('mappingKey,title,workUnit,workUnitLabel,assemblyRate,dismantleRate');
     expect(lines[1]).toContain('carpet tiles:m2');
-    expect(lines[1]).toContain('Carpet Tiles,m2,9.5,0');
+    expect(lines[1]).toContain('Carpet Tiles,m2,m²,9.5,0');
   });
 
   it('escapes CSV values with commas and quotes', () => {
@@ -42,6 +42,6 @@ describe('exportWorkTypesCsv', () => {
   });
 
   it('returns header-only CSV for empty list', () => {
-    expect(exportWorkTypesCsv([])).toBe('mappingKey,title,workUnit,assemblyRate,dismantleRate');
+    expect(exportWorkTypesCsv([])).toBe('mappingKey,title,workUnit,workUnitLabel,assemblyRate,dismantleRate');
   });
 });

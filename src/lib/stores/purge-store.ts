@@ -11,6 +11,7 @@ import {
   deleteAllTemplateNotes,
   deleteAllExecutionReturnImports,
   deleteAllPlans,
+  deleteAllWorkUnitDefinitions,
   deleteAllWorkTypes,
   getAllActiveTimers,
   removeActiveTimer,
@@ -18,6 +19,7 @@ import {
 import { getPendingCount } from '../sync/sync-queue';
 import { setState as setTaskState } from './task-store';
 import { resetTemplateState } from './template-store';
+import { resetWorkUnitState, reseedBuiltInWorkUnits } from './work-unit-store';
 import { resetWorkTypeState } from './work-type-store';
 import { invalidateAttributionCache } from '../attribution/cache';
 
@@ -49,11 +51,14 @@ export async function resetAllData(): Promise<void> {
   await deleteAllExecutionReturnImports();
   await deleteAllPlans();
   await deleteAllWorkTypes();
+  await deleteAllWorkUnitDefinitions();
+  await reseedBuiltInWorkUnits();
 
   await invalidateAttributionCache();
 
   setTaskState({ tasks: [], projects: [] });
   resetTemplateState();
+  resetWorkUnitState();
   resetWorkTypeState();
   try {
     localStorage.removeItem(PLANNING_SESSION_KEY);

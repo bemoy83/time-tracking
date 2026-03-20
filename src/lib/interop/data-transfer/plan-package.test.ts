@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Plan, PlanLineItem } from '../../planning/plan-model';
-import type { WorkType } from '../../types';
-import { getAllWorkTypes, getProject } from '../../db';
+import type { WorkType, WorkUnitDefinition } from '../../types';
+import { getAllWorkTypes, getAllWorkUnitDefinitions, getProject } from '../../db';
 import { nowUtc } from '../../types';
 import { downloadJson } from '../download-json';
 import { buildPlanPackagePayload, exportPlanPackage, parsePlanPackageJson } from './plan-package';
@@ -12,6 +12,7 @@ vi.mock('../../db', () => ({
   getAllProjects: vi.fn(),
   getAllTasks: vi.fn(),
   getAllWorkTypes: vi.fn(),
+  getAllWorkUnitDefinitions: vi.fn(),
   getPlan: vi.fn(),
   getProject: vi.fn(),
   updatePlan: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('../download-json', () => ({
 }));
 
 const mockGetAllWorkTypes = vi.mocked(getAllWorkTypes);
+const mockGetAllWorkUnitDefinitions = vi.mocked(getAllWorkUnitDefinitions);
 const mockGetProject = vi.mocked(getProject);
 const mockNowUtc = vi.mocked(nowUtc);
 const mockDownloadJson = vi.mocked(downloadJson);
@@ -107,11 +109,41 @@ function makePlan(lineItems: PlanLineItem[]): Plan {
 describe('plan-package export', () => {
   beforeEach(() => {
     mockGetAllWorkTypes.mockReset();
+    mockGetAllWorkUnitDefinitions.mockReset();
     mockGetProject.mockReset();
     mockGetProject.mockResolvedValue(null);
     mockNowUtc.mockReset();
     mockDownloadJson.mockReset();
     mockNowUtc.mockReturnValue('2026-02-28T10:00:00.000Z');
+    mockGetAllWorkUnitDefinitions.mockResolvedValue([
+      {
+        id: 'm2',
+        label: 'm²',
+        sortIndex: 0,
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+        archivedAt: null,
+        builtIn: true,
+      } satisfies WorkUnitDefinition,
+      {
+        id: 'm',
+        label: 'm',
+        sortIndex: 1,
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+        archivedAt: null,
+        builtIn: true,
+      } satisfies WorkUnitDefinition,
+      {
+        id: 'pcs',
+        label: 'pcs',
+        sortIndex: 2,
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+        archivedAt: null,
+        builtIn: true,
+      } satisfies WorkUnitDefinition,
+    ]);
   });
 
   it('builds payload with referenced existing work types only', async () => {

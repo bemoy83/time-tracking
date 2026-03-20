@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { PeopleIcon, UndoIcon, WarningIcon } from '../../../../components/icons';
 import { getPhaseFields } from '../../../../lib/planning/plan-model';
 import { getCrewEquivalentForDate, resolveEffectiveAccessHours } from '../../../../lib/planning/scheduling/capacity-math';
-import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../../lib/types';
+import { BUILD_PHASE_LABELS, formatQuantityWithUnit } from '../../../../lib/types';
 import {
   getLastDayBreakdown,
   getScheduledHours,
@@ -128,7 +128,7 @@ export function ScheduleGridItemRow({
             )}
           </span>
           <span className="schedule-grid__line-item-meta">
-            {item.workQuantity} {WORK_UNIT_LABELS[item.workUnit]}
+            {formatQuantityWithUnit(item.workQuantity, item.workUnit)}
             {metaPrefix ? ` · ${metaPrefix}` : ''} ·{' '}
             {hasAssignments ? (
               <>

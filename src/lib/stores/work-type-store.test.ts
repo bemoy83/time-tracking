@@ -15,6 +15,10 @@ vi.mock('../db', () => ({
   deleteWorkType: dbMocks.deleteWorkType,
 }));
 
+vi.mock('./work-unit-store', () => ({
+  ensureImportedWorkUnits: vi.fn(async () => ({ created: [], relabeled: [] })),
+}));
+
 function makeWorkType(overrides: Partial<WorkType> = {}): WorkType {
   return {
     id: 'wt-1',

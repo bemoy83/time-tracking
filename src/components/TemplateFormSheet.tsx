@@ -5,8 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import {
-  WORK_UNIT_LABELS,
   TaskTemplate,
+  formatProductivity,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
 } from '../lib/types';
 import { createTemplate, updateTemplate } from '../lib/stores/template-store';
 import { useWorkTypeStore } from '../lib/stores/work-type-store';
@@ -140,7 +142,7 @@ export function TemplateFormSheet({
             >
               {workTypes.map((wt) => (
                 <option key={wt.id} value={wt.id}>
-                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                  {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
                 </option>
               ))}
             </select>
@@ -151,7 +153,7 @@ export function TemplateFormSheet({
         {selectedWorkType && (
           <div className="create-task-sheet__section">
             <div className="settings-view__row-detail">
-              Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+              Assembly: {selectedWorkType.assemblyRate} · Dismantle: {formatProductivity(selectedWorkType.dismantleRate, selectedWorkType.workUnit)}
             </div>
           </div>
         )}
@@ -170,7 +172,7 @@ export function TemplateFormSheet({
                 style={{ width: `${Math.max(String(quantity || '0').length, 1)}ch` }}
               />
               <span className="task-work-quantity__input-unit" aria-hidden="true">
-                {WORK_UNIT_LABELS[selectedWorkType.workUnit]}
+                {resolveWorkUnitLabel(selectedWorkType.workUnit)}
               </span>
             </div>
           </div>

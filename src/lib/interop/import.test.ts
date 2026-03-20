@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseWorkPackageCsv, workPackageMappingKey } from './import';
 
-const VALID_HEADER = 'title,workTypeTitle,workUnit,phase,workQuantity,estimatedMinutes,crew,targetProductivity';
+const VALID_HEADER = 'title,workTypeTitle,workUnit,workUnitLabel,phase,workQuantity,estimatedMinutes,crew,targetProductivity';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -17,7 +17,7 @@ describe('workPackageMappingKey', () => {
 describe('parseWorkPackageCsv', () => {
   it('parses valid CSV row', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,assembly,100,60,2,10',
+      'Install carpet,Carpet Tiles,m2,m²,assembly,100,60,2,10',
     ]));
 
     expect(result.valid).toBe(true);
@@ -25,6 +25,7 @@ describe('parseWorkPackageCsv', () => {
     expect(result.items[0].title).toBe('Install carpet');
     expect(result.items[0].workTypeTitle).toBe('Carpet Tiles');
     expect(result.items[0].workUnit).toBe('m2');
+    expect(result.items[0].workUnitLabel).toBe('m²');
     expect(result.items[0].phase).toBe('assembly');
     expect(result.items[0].workQuantity).toBe(100);
     expect(result.items[0].estimatedMinutes).toBe(60);
@@ -34,7 +35,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('handles optional fields as null', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,assembly,,,,',
+      'Install carpet,Carpet Tiles,m2,m²,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -46,7 +47,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('generates mapping key for round-trip', () => {
     const result = parseWorkPackageCsv(csv([
-      'Install carpet,Carpet Tiles,m2,assembly,100,,,',
+      'Install carpet,Carpet Tiles,m2,m²,assembly,100,,,',
     ]));
 
     expect(result.items[0].mappingKey).toBe('Install carpet::Carpet Tiles:m2:assembly');
@@ -54,8 +55,8 @@ describe('parseWorkPackageCsv', () => {
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
-      'title;workTypeTitle;workUnit;phase;workQuantity;estimatedMinutes;crew;targetProductivity',
-      'Install carpet;Carpet Tiles;m2;assembly;100;60;2;10',
+      'title;workTypeTitle;workUnit;workUnitLabel;phase;workQuantity;estimatedMinutes;crew;targetProductivity',
+      'Install carpet;Carpet Tiles;m2;m²;assembly;100;60;2;10',
     ].join('\n');
     const result = parseWorkPackageCsv(semicolonCsv);
 
@@ -97,9 +98,9 @@ describe('parseWorkPackageCsv', () => {
     expect(result.errors[0].field).toBe('headers');
   });
 
-  it('rejects invalid workUnit', () => {
+  it('rejects malformed workUnit ids', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,invalid,assembly,,,,',
+      'Task,Carpet Tiles,Bad Unit,,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -108,7 +109,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects invalid phase', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,invalid-phase,,,,',
+      'Task,Carpet Tiles,m2,m²,invalid-phase,,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -117,7 +118,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects non-numeric values for numeric fields', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,assembly,abc,,,',
+      'Task,Carpet Tiles,m2,m²,assembly,abc,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -127,7 +128,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects negative workQuantity', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,assembly,-10,,,',
+      'Task,Carpet Tiles,m2,m²,assembly,-10,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -136,7 +137,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects crew out of range', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task,Carpet Tiles,m2,assembly,100,,25,',
+      'Task,Carpet Tiles,m2,m²,assembly,100,,25,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -145,7 +146,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('rejects missing title', () => {
     const result = parseWorkPackageCsv(csv([
-      ',Carpet Tiles,m2,assembly,,,,',
+      ',Carpet Tiles,m2,m²,assembly,,,,',
     ]));
 
     expect(result.valid).toBe(false);
@@ -154,8 +155,8 @@ describe('parseWorkPackageCsv', () => {
 
   it('parses multiple rows', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task A,Carpet Tiles,m2,assembly,100,,,',
-      'Task B,Furniture,pcs,assembly,50,,,',
+      'Task A,Carpet Tiles,m2,m²,assembly,100,,,',
+      'Task B,Furniture,pcs,pcs,assembly,50,,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -164,9 +165,9 @@ describe('parseWorkPackageCsv', () => {
 
   it('skips empty lines', () => {
     const result = parseWorkPackageCsv(csv([
-      'Task A,Carpet Tiles,m2,assembly,100,,,',
+      'Task A,Carpet Tiles,m2,m²,assembly,100,,,',
       '',
-      'Task B,Furniture,pcs,assembly,50,,,',
+      'Task B,Furniture,pcs,pcs,assembly,50,,,',
     ]));
 
     expect(result.items).toHaveLength(2);
@@ -174,7 +175,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('handles quoted fields with commas', () => {
     const result = parseWorkPackageCsv(csv([
-      '"Install carpet, phase 1",Carpet Tiles,m2,assembly,100,,,',
+      '"Install carpet, phase 1",Carpet Tiles,m2,m²,assembly,100,,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -190,7 +191,7 @@ describe('parseWorkPackageCsv', () => {
 
   it('collects multiple errors per row', () => {
     const result = parseWorkPackageCsv(csv([
-      ',invalid,bad-unit,bad-phase,,,,',
+      ',invalid,Bad Unit,,bad-phase,,,,',
     ]));
 
     expect(result.errors.length).toBeGreaterThanOrEqual(3);

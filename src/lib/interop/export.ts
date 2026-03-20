@@ -12,7 +12,7 @@
 
 import type { WorkTypeKpi } from '../kpi';
 import { workTypeKeyString } from '../kpi';
-import { WORK_UNIT_LABELS } from '../types';
+import { resolveWorkUnitLabel } from '../types';
 import { csvRow } from './csv-utils';
 
 export type ExportProfile = 'ops_summary' | 'estimator_summary' | 'phase_summary';
@@ -31,7 +31,7 @@ export function exportOpsSummary(kpis: WorkTypeKpi[]): string {
     csvRow([
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
-      WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
+      resolveWorkUnitLabel(kpi.key.workUnit),
       kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
@@ -56,7 +56,7 @@ export function exportEstimatorSummary(kpis: WorkTypeKpi[]): string {
     csvRow([
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
-      WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
+      resolveWorkUnitLabel(kpi.key.workUnit),
       kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),
@@ -88,7 +88,7 @@ export function exportPhaseSummary(kpis: WorkTypeKpi[]): string {
     csvRow([
       workTypeKeyString(kpi.key),
       kpi.key.workTypeTitle,
-      WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit,
+      resolveWorkUnitLabel(kpi.key.workUnit),
       kpi.key.workTypeId ?? '',
       kpi.sampleCount,
       round(kpi.avgProductivity, 2),

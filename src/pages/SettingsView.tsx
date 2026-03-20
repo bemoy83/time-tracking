@@ -15,6 +15,7 @@ import './settings/settings-styles';
 
 type SettingsSection =
   | 'projects'
+  | 'workUnits'
   | 'workTypes'
   | 'templates'
   | 'planLineItems'
@@ -54,6 +55,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
 
   const drillDownSections: { key: SettingsSection; label: string; helper: string }[] = [
     { key: 'projects', label: 'Projects / Events', helper: 'Import event schedule and manage project phase dates' },
+    { key: 'workUnits', label: 'Quantity Units', helper: 'Manage the global catalog of measurable quantity units' },
     { key: 'workTypes', label: 'Work Types', helper: 'Add and manage reusable work-type definitions' },
     { key: 'templates', label: 'Templates', helper: 'Create reusable presets for faster task creation' },
     { key: 'planLineItems', label: 'Plan Work Packages', helper: 'Download the CSV template and validate files for plan import' },

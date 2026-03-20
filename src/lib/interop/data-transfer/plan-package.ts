@@ -1,4 +1,14 @@
-import { addPlan, addProject, getAllProjects, getAllTasks, getAllWorkTypes, getPlan, getProject, updatePlan } from '../../db';
+import {
+  addPlan,
+  addProject,
+  getAllProjects,
+  getAllTasks,
+  getAllWorkTypes,
+  getAllWorkUnitDefinitions,
+  getPlan,
+  getProject,
+  updatePlan,
+} from '../../db';
 import {
   type Plan,
   type PlanLineItem,
@@ -6,9 +16,10 @@ import {
   getPhaseFields,
   normalizePlanEfficiency,
 } from '../../planning/plan-model';
+import { ensureImportedWorkUnits } from '../../stores/work-unit-store';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { nowUtc } from '../../types';
-import type { Project, WorkType } from '../../types';
+import type { Project, WorkType, WorkUnit } from '../../types';
 import { BUILD_PHASES, generateId } from '../../types';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
@@ -27,6 +38,7 @@ import {
 } from './schema-version';
 import { sanitizeFileNameSegment } from '../../utils/sanitize-filename';
 import { downloadJson } from '../download-json';
+import { provisionWorkUnitsForImport } from '../work-unit-import';
 import { isPlanInPlannerState } from '../../planning/plan-lifecycle';
 import { refreshProjectsInTaskStore } from '../../stores/task-store-project-sync';
 
@@ -265,6 +277,7 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
 
   const workTypes: WorkType[] = [];
   const exportedWorkTypeIds = new Set<string>();
+  const referencedWorkUnitIds = new Set<string>(plan.lineItems.map((item) => item.workUnit));
   const syntheticTimestamp = nowUtc();
 
   const remappedLineItems = plan.lineItems.map((item) => {
@@ -277,6 +290,7 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
       if (!exportedWorkTypeIds.has(existing.id)) {
         workTypes.push(existing);
         exportedWorkTypeIds.add(existing.id);
+        referencedWorkUnitIds.add(existing.workUnit);
       }
       return item;
     }
@@ -293,6 +307,7 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
         updatedAt: syntheticTimestamp,
       });
       exportedWorkTypeIds.add(syntheticId);
+      referencedWorkUnitIds.add(item.workUnit);
     }
 
     return {
@@ -309,12 +324,17 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
     }
   }
 
+  const allWorkUnitDefinitions = await getAllWorkUnitDefinitions();
+  const workUnitDefinitions = allWorkUnitDefinitions
+    .filter((definition) => referencedWorkUnitIds.has(definition.id));
+
   return {
     plan: {
       ...plan,
       lineItems: remappedLineItems,
     },
     workTypes,
+    workUnitDefinitions: workUnitDefinitions.length > 0 ? workUnitDefinitions : undefined,
     projects: projects.length > 0 ? projects : undefined,
     lastModifiedAt: plan.updatedAt,
   };
@@ -558,6 +578,7 @@ export async function previewPlanPackageImport(
     title: importedPlan.title,
     lineItemCount: importedPlan.lineItems.length,
     workTypeCount: envelope.payload.workTypes.length,
+    workUnitCount: envelope.payload.workUnitDefinitions?.length ?? 0,
     lastModifiedAt: envelope.payload.lastModifiedAt ?? importedPlan.updatedAt,
     conflict,
     existingStatus,
@@ -577,6 +598,7 @@ export interface PlanPackageMergeSummary {
 export async function applyPlanPackageImport(
   preview: PlanPackageImportPreview,
   resolution: 'replace' | 'skip' = 'replace',
+  options: { applyLabelToExistingWorkUnits?: boolean } = {},
 ): Promise<{ applied: boolean; merged: boolean; reason: string; mergeSummary?: PlanPackageMergeSummary }> {
   const envelope = preview.envelope;
   const importedPlan = normalizeIncomingPlan(envelope.payload.plan);
@@ -601,6 +623,30 @@ export async function applyPlanPackageImport(
       };
     }
   }
+
+  const inferredUnits = new Map<string, string>();
+  for (const lineItem of importedPlan.lineItems) {
+    inferredUnits.set(lineItem.workUnit, lineItem.workUnit);
+  }
+  for (const workType of envelope.payload.workTypes) {
+    inferredUnits.set(workType.workUnit, workType.workUnit);
+  }
+  const importedUnits = envelope.payload.workUnitDefinitions?.map((definition) => ({
+    id: definition.id,
+    label: definition.label,
+  })) ?? Array.from(inferredUnits.values()).map((unitId) => ({
+    id: unitId,
+    label: unitId,
+  }));
+  await provisionWorkUnitsForImport(
+    importedUnits,
+    (item) => ({
+      workUnit: item.id as WorkUnit,
+      workUnitLabel: item.label ?? null,
+    }),
+    { applyLabelToExisting: options.applyLabelToExistingWorkUnits },
+    ensureImportedWorkUnits,
+  );
 
   const workTypeIdMap = await resolveImportedWorkTypeIds(importedPlan.id, envelope.payload.workTypes);
   const remappedLineItems = importedPlan.lineItems.map((item) => ({

@@ -1,12 +1,17 @@
 import { ImportIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
+import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import type { WorkTypeImportPreview } from '../../lib/interop/work-type-import';
+import type { WorkUnitImportPreview } from '../../lib/interop/work-unit-import-preview';
 
 interface WorkTypeImportCardProps {
   summaryMessage: string | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   preview: WorkTypeImportPreview | null;
+  workUnitPreview?: WorkUnitImportPreview | null;
+  applyImportedUnitLabels?: boolean;
+  onToggleApplyImportedUnitLabels?: (value: boolean) => void;
   isLoadingPreview: boolean;
   isApplying: boolean;
   onApply: () => void;
@@ -17,6 +22,9 @@ export function WorkTypeImportCard({
   fileInputRef,
   onFileChange,
   preview,
+  workUnitPreview = null,
+  applyImportedUnitLabels = false,
+  onToggleApplyImportedUnitLabels,
   isLoadingPreview,
   isApplying,
   onApply,
@@ -53,6 +61,14 @@ export function WorkTypeImportCard({
             <p className="field-plan-import-card__meta">
               Duplicate mapping keys: {preview.duplicateKeys.length}. Resolve before apply.
             </p>
+          )}
+          {workUnitPreview && onToggleApplyImportedUnitLabels && (
+            <WorkUnitImportPreviewPanel
+              preview={workUnitPreview}
+              applyImportedLabels={applyImportedUnitLabels}
+              onApplyImportedLabelsChange={onToggleApplyImportedUnitLabels}
+              toggleStyle={{ marginTop: 8 }}
+            />
           )}
           <div className="field-plan-import-card__actions">
             <button

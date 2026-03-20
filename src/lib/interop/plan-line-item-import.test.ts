@@ -12,7 +12,7 @@ vi.mock('../stores/work-type-store', () => ({
 
 const mockFindWorkTypeByKey = vi.mocked(findWorkTypeByKey);
 
-const VALID_HEADER = 'title,workTypeTitle,workUnit,workQuantity,assemblyRate,assemblyCrew,assemblyEstimatedMinutes,dismantleRate,dismantleCrew,dismantleEstimatedMinutes';
+const VALID_HEADER = 'title,workTypeTitle,workUnit,workUnitLabel,workQuantity,assemblyRate,assemblyCrew,assemblyEstimatedMinutes,dismantleRate,dismantleCrew,dismantleEstimatedMinutes';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -62,7 +62,7 @@ describe('parsePlanLineItemCsv', () => {
   it('parses a valid dual-phase row', () => {
     mockFindWorkTypeByKey.mockReturnValue({ id: 'wt-1' } as never);
     const result = parsePlanLineItemCsv(csv([
-      'Flooring,Carpet Tiles,m2,100,10,3,600,5,2,300',
+      'Flooring,Carpet Tiles,m2,m²,100,10,3,600,5,2,300',
     ]));
 
     expect(result.valid).toBe(true);
@@ -71,6 +71,7 @@ describe('parsePlanLineItemCsv', () => {
       title: 'Flooring',
       workTypeTitle: 'Carpet Tiles',
       workUnit: 'm2',
+      workUnitLabel: 'm²',
       workQuantity: 100,
       assemblyRate: 10,
       assemblyCrew: 3,
@@ -84,7 +85,7 @@ describe('parsePlanLineItemCsv', () => {
 
   it('parses an assembly-only row (dismantle fields absent)', () => {
     const result = parsePlanLineItemCsv(
-      'title,workTypeTitle,workUnit,workQuantity,assemblyRate\nFlooring,Carpet Tiles,m2,100,10',
+      'title,workTypeTitle,workUnit,workUnitLabel,workQuantity,assemblyRate\nFlooring,Carpet Tiles,m2,m²,100,10',
     );
 
     expect(result.valid).toBe(true);
@@ -100,29 +101,29 @@ describe('parsePlanLineItemCsv', () => {
 
   it('sets workTypeId to null when work type not found', () => {
     mockFindWorkTypeByKey.mockReturnValue(undefined);
-    const result = parsePlanLineItemCsv(csv(['Flooring,Carpet Tiles,m2,100,10,,,5,,']));
+    const result = parsePlanLineItemCsv(csv(['Flooring,Carpet Tiles,m2,m²,100,10,,,5,,']));
 
     expect(result.valid).toBe(true);
     expect(result.items[0].workTypeId).toBeNull();
   });
 
-  it('rejects an invalid work unit', () => {
-    const result = parsePlanLineItemCsv(csv(['Flooring,Carpet Tiles,badunit,100,10,,,5,,']));
+  it('rejects a malformed work unit id', () => {
+    const result = parsePlanLineItemCsv(csv(['Flooring,Carpet Tiles,Bad Unit,,100,10,,,5,,']));
     expect(result.valid).toBe(false);
     expect(result.errors[0].field).toBe('workUnit');
   });
 
   it('rejects a missing title', () => {
-    const result = parsePlanLineItemCsv(csv([',Carpet Tiles,m2,100,10,,,5,,']));
+    const result = parsePlanLineItemCsv(csv([',Carpet Tiles,m2,m²,100,10,,,5,,']));
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.field === 'title')).toBe(true);
   });
 
   it('skips blank lines', () => {
     const result = parsePlanLineItemCsv(csv([
-      'Flooring,Carpet Tiles,m2,100,10,,,5,,',
+      'Flooring,Carpet Tiles,m2,m²,100,10,,,5,,',
       '',
-      'Staging,Staging,pcs,50,8,,,4,,',
+      'Staging,Staging,pcs,pcs,50,8,,,4,,',
     ]));
 
     expect(result.valid).toBe(true);
@@ -130,7 +131,7 @@ describe('parsePlanLineItemCsv', () => {
   });
 
   it('auto-detects semicolon delimiter', () => {
-    const semicolonCsv = 'title;workTypeTitle;workUnit;workQuantity;assemblyRate\nFlooring;Carpet Tiles;m2;100;10';
+    const semicolonCsv = 'title;workTypeTitle;workUnit;workUnitLabel;workQuantity;assemblyRate\nFlooring;Carpet Tiles;m2;m²;100;10';
     const result = parsePlanLineItemCsv(semicolonCsv);
     expect(result.valid).toBe(true);
     expect(result.items[0].assemblyRate).toBe(10);

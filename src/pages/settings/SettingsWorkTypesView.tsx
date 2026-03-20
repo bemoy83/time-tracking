@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import type { WorkType } from '../../lib/types';
-import { WORK_UNIT_LABELS } from '../../lib/types';
+import { resolveWorkUnitLabel } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { ExportIcon, RulerIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
@@ -15,14 +15,18 @@ import {
   type WorkTypeImportPreview,
 } from '../../lib/interop/work-type-import';
 import { WorkTypeImportCard } from './WorkTypeImportCard';
+import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
+import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 import './settings-styles';
 
 interface SettingsWorkTypesViewProps {
   onBack: () => void;
+  onManageUnits?: () => void;
 }
 
-export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
+export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTypesViewProps) {
   const { workTypes } = useWorkTypeStore();
+  const { definitions: workUnitDefinitions } = useWorkUnitStore();
   const editableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
@@ -32,6 +36,17 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
   const [isApplyingImport, setIsApplyingImport] = useState(false);
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    preview: workUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    workTypePreview?.items.map(({ item }) => ({
+      id: item.workUnit,
+      label: item.workUnitLabel,
+    })) ?? null,
+    workUnitDefinitions,
+  );
 
   const handleAddWorkType = () => {
     setEditingWorkType(null);
@@ -97,8 +112,13 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
     if (!workTypePreview) return;
     setIsApplyingImport(true);
     try {
-      const result = await applyWorkTypeImport(workTypePreview.items.map((item) => item.item));
-      setImportSummary(`Applied import: ${result.created} created, ${result.updated} updated.`);
+      const result = await applyWorkTypeImport(
+        workTypePreview.items.map((item) => item.item),
+        { applyLabelToExisting: applyImportedUnitLabels },
+      );
+      setImportSummary(
+        `Applied import: ${result.created} created, ${result.updated} updated, ${result.unitsCreated} unit${result.unitsCreated === 1 ? '' : 's'} added, ${result.unitLabelsUpdated} unit label${result.unitLabelsUpdated === 1 ? '' : 's'} updated.`,
+      );
       setWorkTypePreview(null);
     } finally {
       setIsApplyingImport(false);
@@ -119,6 +139,16 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
           </button>
         </div>
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
+        {onManageUnits && (
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={onManageUnits}
+            style={{ marginBottom: 12 }}
+          >
+            Manage units
+          </button>
+        )}
 
         {editableWorkTypes.length === 0 ? (
           <div className="empty-state">
@@ -137,7 +167,7 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
                 <div className="settings-view__template-info">
                   <span className="settings-view__row-label">{wt.title}</span>
                   <span className="settings-view__row-detail">
-                    {WORK_UNIT_LABELS[wt.workUnit]} · Assembly {wt.assemblyRate} · Dismantle {wt.dismantleRate} {WORK_UNIT_LABELS[wt.workUnit]}/person-hr
+                    {resolveWorkUnitLabel(wt.workUnit)} · Assembly {wt.assemblyRate} · Dismantle {wt.dismantleRate} {resolveWorkUnitLabel(wt.workUnit)}/person-hr
                   </span>
                 </div>
               </button>
@@ -164,6 +194,9 @@ export function SettingsWorkTypesView({ onBack }: SettingsWorkTypesViewProps) {
         fileInputRef={fileInputRef}
         onFileChange={handleFileChange}
         preview={workTypePreview}
+        workUnitPreview={workUnitPreview}
+        applyImportedUnitLabels={applyImportedUnitLabels}
+        onToggleApplyImportedUnitLabels={setApplyImportedUnitLabels}
         isLoadingPreview={isLoadingPreview}
         isApplying={isApplyingImport}
         onApply={() => {

@@ -1,6 +1,8 @@
 import { ImportIcon } from '../../../components/icons';
 import { IconButton } from '../../../components/IconButton';
+import { WorkUnitImportPreviewPanel } from '../../../components/WorkUnitImportPreviewPanel';
 import type { ImportPreview } from '../../../lib/interop/import-preview';
+import type { WorkUnitImportPreview } from '../../../lib/interop/work-unit-import-preview';
 
 interface WorkPackageImportCardProps {
   title?: string;
@@ -12,6 +14,9 @@ interface WorkPackageImportCardProps {
   importApplyGateOpen: boolean;
   onApply: () => void;
   applySummary: string | null;
+  workUnitPreview?: WorkUnitImportPreview | null;
+  applyImportedUnitLabels?: boolean;
+  onToggleApplyImportedUnitLabels?: (value: boolean) => void;
 }
 
 export function WorkPackageImportCard({
@@ -24,6 +29,9 @@ export function WorkPackageImportCard({
   importApplyGateOpen,
   onApply,
   applySummary,
+  workUnitPreview = null,
+  applyImportedUnitLabels = false,
+  onToggleApplyImportedUnitLabels,
 }: WorkPackageImportCardProps) {
   return (
     <div className="settings-view__card">
@@ -59,6 +67,14 @@ export function WorkPackageImportCard({
             <p className="field-plan-import-card__meta">
               Duplicate mapping keys: {preview.duplicateKeys.length}. Resolve before apply.
             </p>
+          )}
+          {workUnitPreview && onToggleApplyImportedUnitLabels && (
+            <WorkUnitImportPreviewPanel
+              preview={workUnitPreview}
+              applyImportedLabels={applyImportedUnitLabels}
+              onApplyImportedLabelsChange={onToggleApplyImportedUnitLabels}
+              toggleStyle={{ marginTop: 8 }}
+            />
           )}
           <div className="field-plan-import-card__actions">
             <button

@@ -3,7 +3,7 @@ import { useTaskStore } from '../../lib/stores/task-store';
 import { useTemplateStore, deleteTemplate } from '../../lib/stores/template-store';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import type { TaskTemplate } from '../../lib/types';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS } from '../../lib/types';
+import { BUILD_PHASE_LABELS, formatWorkTypeWithUnit, resolveWorkUnitLabel } from '../../lib/types';
 import { TemplateFormSheet } from '../../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../../components/DeleteTemplateConfirm';
 import { ExportIcon, PencilIcon } from '../../components/icons';
@@ -13,6 +13,8 @@ import { exportTemplatesCsv } from '../../lib/interop/template-export';
 import { downloadCsv } from '../../lib/interop/download-csv';
 import { WorkPackageImportCard } from './cards/WorkPackageImportCard';
 import { useTemplateImport } from './hooks/useTemplateImport';
+import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
+import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 import './settings-styles';
 
 interface SettingsTemplatesViewProps {
@@ -23,6 +25,7 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
   const { tasks } = useTaskStore();
   const { templates } = useTemplateStore();
   const { workTypes } = useWorkTypeStore();
+  const { definitions: workUnitDefinitions } = useWorkUnitStore();
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<TaskTemplate | null>(null);
@@ -45,6 +48,17 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
     templates,
     workTypeTitleById,
   });
+  const {
+    preview: workUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    templateImport.preview?.items.map(({ item }) => ({
+      id: item.workUnit,
+      label: item.workUnitLabel,
+    })) ?? null,
+    workUnitDefinitions,
+  );
 
   const handleEditTemplate = (template: TaskTemplate) => {
     setEditingTemplate(template);
@@ -116,8 +130,8 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
                     {(() => {
                       const workType = template.workTypeId ? workTypeById.get(template.workTypeId) : null;
                       return workType
-                        ? `${workType.title} · ${WORK_UNIT_LABELS[workType.workUnit]}`
-                        : `${BUILD_PHASE_LABELS[template.phase]} · ${WORK_UNIT_LABELS[template.workUnit]}`;
+                        ? formatWorkTypeWithUnit(workType.title, workType.workUnit)
+                        : `${BUILD_PHASE_LABELS[template.phase]} · ${resolveWorkUnitLabel(template.workUnit)}`;
                     })()}
                   </span>
                 </div>
@@ -154,9 +168,12 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
         isApplying={templateImport.isApplying}
         importApplyGateOpen={templateImport.importApplyGateOpen}
         onApply={() => {
-          void templateImport.handleApply();
+          void templateImport.handleApply(applyImportedUnitLabels);
         }}
         applySummary={templateImport.applySummary}
+        workUnitPreview={workUnitPreview}
+        applyImportedUnitLabels={applyImportedUnitLabels}
+        onToggleApplyImportedUnitLabels={setApplyImportedUnitLabels}
       />
 
       <TemplateFormSheet

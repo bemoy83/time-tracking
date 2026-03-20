@@ -23,7 +23,7 @@ describe('exportTemplatesCsv', () => {
   it('exports work package-compatible headers', () => {
     const csv = exportTemplatesCsv([], new Map());
     expect(csv).toBe(
-      'title,workTypeTitle,workUnit,phase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
+      'title,workTypeTitle,workUnit,workUnitLabel,phase,workQuantity,estimatedMinutes,defaultWorkers,targetProductivity',
     );
   });
 
@@ -34,7 +34,7 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toContain('Install carpet,Carpet Tiles,m2,assembly,100,60,2,10');
+    expect(row).toContain('Install carpet,Carpet Tiles,m2,m²,assembly,100,60,2,10');
   });
 
   it('exports empty workTypeTitle when workTypeId is null', () => {
@@ -44,7 +44,7 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toMatch(/^Install carpet,,m2,assembly/);
+    expect(row).toMatch(/^Install carpet,,m2,m²,assembly/);
   });
 
   it('exports empty workTypeTitle when id is missing in map', () => {
@@ -54,6 +54,6 @@ describe('exportTemplatesCsv', () => {
     );
 
     const row = csv.split('\n')[1];
-    expect(row).toMatch(/^Install carpet,,m2,assembly/);
+    expect(row).toMatch(/^Install carpet,,m2,m²,assembly/);
   });
 });

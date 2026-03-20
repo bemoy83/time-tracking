@@ -10,7 +10,7 @@ import { getAllPlans } from '../lib/db';
 import type { Plan } from '../lib/planning/plan-model';
 import { getPhaseFields, getPlanDisplayName, isPhaseActive } from '../lib/planning/plan-model';
 import { createTask, useTaskStore } from '../lib/stores/task-store';
-import { WORK_UNIT_LABELS, BUILD_PHASE_LABELS, BUILD_PHASES, type BuildPhase } from '../lib/types';
+import { BUILD_PHASE_LABELS, BUILD_PHASES, formatQuantityWithUnit, type BuildPhase } from '../lib/types';
 import {
   encodePlanLineItemPhaseSelection,
   selectedPlanItemsToCreateTaskInputs,
@@ -227,7 +227,7 @@ export function AddFromPlanSheet({ isOpen, onClose }: AddFromPlanSheetProps) {
                         const detail = [
                           phases.length > 0 ? phases.join(' / ') : null,
                           item.workQuantity > 0
-                            ? `${item.workQuantity} ${WORK_UNIT_LABELS[item.workUnit]}`
+                            ? formatQuantityWithUnit(item.workQuantity, item.workUnit)
                             : null,
                         ]
                           .filter(Boolean)

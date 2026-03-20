@@ -61,6 +61,9 @@ export function useFieldPlanModel() {
   const {
     isLoadingPreview,
     preview,
+    workUnitPreview,
+    applyImportedUnitLabels,
+    setApplyImportedUnitLabels,
     isApplyingImport,
     handleFileChange,
     handleApplyImport,
@@ -331,6 +334,9 @@ export function useFieldPlanModel() {
   return {
     isLoadingPreview,
     preview,
+    workUnitPreview,
+    applyImportedUnitLabels,
+    setApplyImportedUnitLabels,
     isApplyingImport,
     handleFileChange,
     handleApplyImport,

@@ -10,7 +10,7 @@ import {
   updatePlan,
   updateTask,
 } from '../../db';
-import { durationMs, generateId, nowUtc, type BuildPhase, type Task } from '../../types';
+import { durationMs, generateId, nowUtc, type BuildPhase, type Task, type WorkUnit } from '../../types';
 import { refreshTasks } from '../../stores/task-store';
 import { notifyExecutionReturnImported } from '../../planning/execution-return-import-events';
 import { phaseFieldUpdates } from '../../planning/plan-model';
@@ -29,6 +29,8 @@ import {
   unsupportedSchemaVersionMessage,
 } from './schema-version';
 import { resolveImportedWorkTypeIds } from './plan-package';
+import { ensureImportedWorkUnits } from '../../stores/work-unit-store';
+import { provisionWorkUnitsForImport } from '../work-unit-import';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -153,6 +155,7 @@ export async function previewExecutionReturnImport(
     conflicts: duplicateTimeEntryIds.length > 0 ? ['duplicate-time-entry-id'] : [],
     unplannedTaskCount: envelope.payload.unplannedTasks.length,
     lineItemCount: envelope.payload.lineItems.length,
+    workUnitCount: envelope.payload.workUnitDefinitions?.length ?? 0,
     dateRangeStart: range.start,
     dateRangeEnd: range.end,
     envelope,
@@ -353,6 +356,7 @@ async function upsertTasksFromPayload(tasks: Task[]): Promise<number> {
 
 export async function applyExecutionReturnImport(
   preview: ExecutionReturnImportPreview,
+  options: { applyLabelToExistingWorkUnits?: boolean } = {},
 ): Promise<ExecutionReturnImportResult> {
   const existingEntries = await getAllTimeEntries();
   const existingIds = new Set(existingEntries.map((entry) => entry.id));
@@ -389,6 +393,32 @@ export async function applyExecutionReturnImport(
   const planTasksWithSyncedStatus = applyImportedLineItemStatusToTasks(
     normalizedPlanTasks,
     normalizedPayloadLineItems,
+  );
+
+  const inferredUnits = new Map<string, string>();
+  for (const task of [...planTasksWithSyncedStatus, ...normalizedUnplannedTasks]) {
+    if (task.workUnit) {
+      inferredUnits.set(task.workUnit, task.workUnit);
+    }
+  }
+  for (const workType of payloadWorkTypes ?? []) {
+    inferredUnits.set(workType.workUnit, workType.workUnit);
+  }
+  const importedUnits = preview.envelope.payload.workUnitDefinitions?.map((definition) => ({
+    id: definition.id,
+    label: definition.label,
+  })) ?? Array.from(inferredUnits.values()).map((unitId) => ({
+    id: unitId,
+    label: unitId,
+  }));
+  await provisionWorkUnitsForImport(
+    importedUnits,
+    (item) => ({
+      workUnit: item.id as WorkUnit,
+      workUnitLabel: item.label ?? null,
+    }),
+    { applyLabelToExisting: options.applyLabelToExistingWorkUnits },
+    ensureImportedWorkUnits,
   );
 
   const workTypeIdMap =

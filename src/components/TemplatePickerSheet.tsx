@@ -10,8 +10,9 @@
 import { useState, useEffect } from 'react';
 import {
   TaskTemplate,
-  WORK_UNIT_LABELS,
   BUILD_PHASE_LABELS,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
 } from '../lib/types';
 import { useTemplateStore } from '../lib/stores/template-store';
 import { useWorkTypeStore, getWorkTypeById } from '../lib/stores/work-type-store';
@@ -117,8 +118,8 @@ export function TemplatePickerSheet({
             templates.map((t) => {
               const wt = t.workTypeId ? getWorkTypeById(t.workTypeId) : null;
               const detail = wt
-                ? `${wt.title} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-                : `${BUILD_PHASE_LABELS[t.phase]} · ${WORK_UNIT_LABELS[t.workUnit]}`;
+                ? formatWorkTypeWithUnit(wt.title, wt.workUnit)
+                : `${BUILD_PHASE_LABELS[t.phase]} · ${resolveWorkUnitLabel(t.workUnit)}`;
               return (
                 <button
                   key={t.id}

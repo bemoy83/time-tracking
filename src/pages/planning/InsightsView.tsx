@@ -11,7 +11,7 @@ import {
 import { LoadingBlock } from '../../components/LoadingBlock';
 import { getPlanDisplayName, type Plan } from '../../lib/planning/plan-model';
 import type { Project, Task, WorkType } from '../../lib/types';
-import { WORK_UNIT_LABELS } from '../../lib/types';
+import { formatUnitRate, resolveWorkUnitLabel } from '../../lib/types';
 
 export type InsightsWindow = 'this-month' | 'last-3-months' | 'last-6-months' | 'all-time';
 
@@ -51,8 +51,7 @@ function formatTrend(row: InsightsRow): string {
 }
 
 function formatRate(kpi: WorkTypeKpi): string {
-  const unit = WORK_UNIT_LABELS[kpi.key.workUnit] ?? kpi.key.workUnit;
-  return `${kpi.avgProductivity.toFixed(1)} ${unit}/person-hr`;
+  return formatUnitRate(kpi.avgProductivity.toFixed(1), kpi.key.workUnit, 'person-hr');
 }
 
 function needsCautionLabel(kpi: WorkTypeKpi): boolean {
@@ -292,7 +291,7 @@ export function InsightsView({
                       )}
                     </h3>
                     <p className="insights-view__meta">
-                      {WORK_UNIT_LABELS[row.kpi.key.workUnit]}
+                      {resolveWorkUnitLabel(row.kpi.key.workUnit)}
                     </p>
                   </div>
                   <div className="insights-view__stats">
@@ -332,7 +331,7 @@ export function InsightsView({
                           )}
                         </h3>
                         <p className="insights-view__meta">
-                          {WORK_UNIT_LABELS[row.kpi.key.workUnit]}
+                          {resolveWorkUnitLabel(row.kpi.key.workUnit)}
                         </p>
                       </div>
                       <div className="insights-view__stats">

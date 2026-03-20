@@ -16,8 +16,8 @@ import {
 import { findWorkTypeByKey } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
 import { normalizeNumberString } from './number-parse';
+import { parseWorkUnitReference } from './work-unit-import';
 
-const VALID_WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 const VALID_BUILD_PHASES: BuildPhase[] = ['assembly', 'dismantle'];
 
 export interface ImportedWorkPackage {
@@ -26,6 +26,7 @@ export interface ImportedWorkPackage {
   title: string;
   workTypeTitle: string;
   workUnit: WorkUnit;
+  workUnitLabel?: string | null;
   phase: BuildPhase;
   /** Resolved workTypeId from (title, workUnit, phase). null if no match found. */
   workTypeId: string | null;
@@ -107,12 +108,12 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
       rowErrors.push({ row: rowNum, field: 'workTypeTitle', message: 'Work type title is required' });
     }
 
-    const workUnit = row['workunit'];
-    if (!workUnit) {
-      rowErrors.push({ row: rowNum, field: 'workUnit', message: 'Work unit is required' });
-    } else if (!VALID_WORK_UNITS.includes(workUnit as WorkUnit)) {
-      rowErrors.push({ row: rowNum, field: 'workUnit', message: `Invalid work unit: "${workUnit}". Valid: ${VALID_WORK_UNITS.join(', ')}` });
-    }
+    const workUnitReference = parseWorkUnitReference(
+      row['workunit'],
+      row['workunitlabel'],
+      rowNum,
+      rowErrors,
+    );
 
     const phase = row['phase'];
     if (!phase) {
@@ -143,14 +144,15 @@ export function parseWorkPackageCsv(csvText: string): ImportParseResult {
     // Resolve WorkType by key (title + unit)
     const resolvedWorkType = findWorkTypeByKey(
       workTypeTitle,
-      workUnit as WorkUnit,
+      workUnitReference!.workUnit,
     );
 
     items.push({
-      mappingKey: workPackageMappingKey(title, workTypeTitle, workUnit, phase),
+      mappingKey: workPackageMappingKey(title, workTypeTitle, workUnitReference!.workUnit, phase),
       title,
       workTypeTitle,
-      workUnit: workUnit as WorkUnit,
+      workUnit: workUnitReference!.workUnit,
+      workUnitLabel: workUnitReference!.workUnitLabel,
       phase: phase as BuildPhase,
       workTypeId: resolvedWorkType?.id ?? null,
       workQuantity,

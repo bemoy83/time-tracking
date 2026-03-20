@@ -9,6 +9,7 @@ import type {
   TaskTemplate,
   AttributionSnapshot,
   WorkType,
+  WorkUnitDefinition,
 } from '../types';
 import type { Plan } from '../planning/plan-model';
 import type {
@@ -94,6 +95,14 @@ export interface TimeTrackingDBSchema extends DBSchema {
     value: WorkType;
     indexes: {
       'by-title-unit': [string, string];
+    };
+  };
+  // Work unit catalog definitions
+  workUnitDefinitions: {
+    key: string;
+    value: WorkUnitDefinition;
+    indexes: {
+      'by-sort-index': number;
     };
   };
   // Imported execution-return envelopes (planner-side)

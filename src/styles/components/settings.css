@@ -287,6 +287,30 @@ button.settings-view__row:active {
   flex-direction: column;
 }
 
+/* Row + trailing actions (e.g. quantity unit reorder) — primary tap target matches full .settings-view__row */
+.settings-view__list-item {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+}
+
+.settings-view__list-item > button.settings-view__row {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+.settings-view__list-item-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.settings-view__reorder-chevron--down {
+  transform: rotate(180deg);
+}
+
 .settings-view__list > *:not(:first-child) {
   position: relative;
 }

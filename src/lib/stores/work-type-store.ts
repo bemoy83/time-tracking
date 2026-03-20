@@ -10,8 +10,14 @@ import {
   deleteWorkType as dbDeleteWorkType,
 } from '../db';
 import type { WorkType, WorkUnit } from '../types';
-import { generateId, nowUtc, normalizeWorkTypeTitle } from '../types';
+import {
+  generateId,
+  isValidWorkUnitId,
+  nowUtc,
+  normalizeWorkTypeTitle,
+} from '../types';
 import { useSyncExternalStore } from 'react';
+import { ensureImportedWorkUnits } from './work-unit-store';
 
 // ============================================================
 // Store State
@@ -74,6 +80,10 @@ export interface CreateWorkTypeInput {
  * Throws if duplicate exists.
  */
 export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkType> {
+  if (!isValidWorkUnitId(input.workUnit)) {
+    throw new Error(`Invalid work unit id: "${input.workUnit}"`);
+  }
+
   const normalizedTitle = normalizeWorkTypeTitle(input.title);
   const importedPlanId = input.importedForPlanId ?? null;
   const isReadOnlyImport = input.readOnly === true;
@@ -111,6 +121,7 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
     updatedAt: now,
   };
 
+  await ensureImportedWorkUnits([{ id: input.workUnit }]);
   await dbAddWorkType(workType);
   setState({ workTypes: [...state.workTypes, workType] });
   return workType;
@@ -129,6 +140,9 @@ export async function updateWorkTypeFields(
   // If title/unit are changing, check uniqueness
   const newTitle = updates.title ?? workType.title;
   const newUnit = updates.workUnit ?? workType.workUnit;
+  if (!isValidWorkUnitId(newUnit)) {
+    throw new Error(`Invalid work unit id: "${newUnit}"`);
+  }
 
   const duplicate = state.workTypes.find((wt) => {
     if (wt.id === id) return false;
@@ -143,6 +157,7 @@ export async function updateWorkTypeFields(
   }
 
   const updated: WorkType = { ...workType, ...updates, id, createdAt: workType.createdAt, updatedAt: nowUtc() };
+  await ensureImportedWorkUnits([{ id: updated.workUnit }]);
   await dbUpdateWorkType(updated);
   setState({
     workTypes: state.workTypes.map((wt) => (wt.id === id ? updated : wt)),

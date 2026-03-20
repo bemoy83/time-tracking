@@ -1,9 +1,9 @@
 import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
-import type { BuildPhase, Project, Task, TimeEntry, WorkType } from '../../types';
+import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnitDefinition } from '../../types';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
-export const DATA_TRANSFER_SCHEMA_VERSION = '3.0';
-export const DATA_TRANSFER_SCHEMA_COMPAT = ['3.0'] as const;
+export const DATA_TRANSFER_SCHEMA_VERSION = '4.0';
+export const DATA_TRANSFER_SCHEMA_COMPAT = ['3.0', '4.0'] as const;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -21,6 +21,7 @@ export interface DataTransferEnvelope<TPayload> {
 export interface PlanPackagePayload {
   plan: PlanPackageSerializedPlan;
   workTypes: WorkType[];
+  workUnitDefinitions?: WorkUnitDefinition[];
   /** Projects referenced by the plan; optional for backward compatibility. */
   projects?: Project[];
   lastModifiedAt: string;
@@ -97,6 +98,8 @@ export interface ExecutionReturnPayload {
   timeEntries: TimeEntry[];
   /** Work types for ID remapping on planner import. Omitted in older exports. */
   workTypes?: WorkType[];
+  /** Referenced quantity units for label preservation. Omitted in older exports. */
+  workUnitDefinitions?: WorkUnitDefinition[];
 }
 
 export type ExecutionReturnImportConflict = 'duplicate-time-entry-id';
@@ -110,6 +113,7 @@ export interface ExecutionReturnImportPreview {
   conflicts: ExecutionReturnImportConflict[];
   unplannedTaskCount: number;
   lineItemCount: number;
+  workUnitCount: number;
   dateRangeStart: string | null;
   dateRangeEnd: string | null;
   envelope: DataTransferEnvelope<ExecutionReturnPayload>;
@@ -177,6 +181,7 @@ export interface PlanPackageImportPreview {
   title: string;
   lineItemCount: number;
   workTypeCount: number;
+  workUnitCount: number;
   lastModifiedAt: string;
   conflict: 'none' | 'replace-or-skip' | 'merge' | 'planner-plan';
   existingStatus: Plan['status'] | null;

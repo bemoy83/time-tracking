@@ -9,17 +9,18 @@
 import { useState, useEffect } from 'react';
 import {
   WorkUnit,
-  WORK_UNITS,
-  WORK_UNIT_LABELS,
+  resolveWorkUnitLabel,
   TaskTemplate,
   formatProductivity,
 } from '../lib/types';
 import { createTask } from '../lib/stores/task-store';
 import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
+import { useSelectableWorkUnits } from '../lib/hooks/useSelectableWorkUnits';
 import { computeProductivityResult } from '../lib/calculator';
 import { ActionSheet } from './ActionSheet';
 import { WorkTypePicker } from './WorkTypePicker';
 import { WorkersStepper } from './WorkersStepper';
+import { WorkUnitPillGroup } from './WorkUnitPillGroup';
 import { CalculatorIcon } from './icons';
 
 
@@ -58,6 +59,7 @@ export function CreateTaskSheet({
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string | null>(null);
 
   const { workTypes } = useWorkTypeStore();
+  const { selectableUnits, defaultUnitId } = useSelectableWorkUnits(unit);
 
   const hasTemplate = !!template;
   const workType = hasTemplate
@@ -78,14 +80,14 @@ export function CreateTaskSheet({
       } else {
         setTitle('');
         setQuantity('');
-        setUnit('m2');
+        setUnit(defaultUnitId);
         setEstHours(0);
         setEstMinutes(0);
         setWorkers(1);
         setSelectedWorkTypeId(null);
       }
     }
-  }, [isOpen, template]);
+  }, [defaultUnitId, isOpen, template, workType?.workUnit]);
 
   const canCreate = title.trim().length > 0 && !isSaving;
 
@@ -166,10 +168,10 @@ export function CreateTaskSheet({
           <div className="create-task-sheet__section">
             <label className="entry-modal__label">Work Type</label>
             <div className="settings-view__row-detail">
-              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]}
+              {workType.title} · {resolveWorkUnitLabel(workType.workUnit)}
             </div>
             <div className="settings-view__row-detail">
-              Assembly: {workType.assemblyRate} · Dismantle: {workType.dismantleRate} {WORK_UNIT_LABELS[workType.workUnit]}/person-hr
+              Assembly: {workType.assemblyRate} · Dismantle: {workType.dismantleRate} {resolveWorkUnitLabel(workType.workUnit)}/person-hr
             </div>
           </div>
         )}
@@ -207,25 +209,17 @@ export function CreateTaskSheet({
                 style={{ width: `${Math.max(String(quantity || '0').length, 1)}ch` }}
               />
               <span className="task-work-quantity__input-unit" aria-hidden="true">
-                {WORK_UNIT_LABELS[unit]}
+                {resolveWorkUnitLabel(unit)}
               </span>
             </div>
             {/* Unit pills only when no template and no WorkType selected (both lock unit) */}
             {!hasTemplate && !workType && (
-              <div className="task-work-quantity__unit-pills" role="group" aria-label="Unit">
-                {WORK_UNITS.map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    role="radio"
-                    aria-checked={unit === u}
-                    className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                    onClick={() => setUnit(u)}
-                  >
-                    {WORK_UNIT_LABELS[u]}
-                  </button>
-                ))}
-              </div>
+              <WorkUnitPillGroup
+                units={selectableUnits}
+                value={unit}
+                onChange={(nextUnit) => setUnit(nextUnit as WorkUnit)}
+                ariaLabel="Unit"
+              />
             )}
           </div>
         )}

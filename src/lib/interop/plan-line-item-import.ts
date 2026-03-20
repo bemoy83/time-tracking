@@ -10,17 +10,22 @@
  *   dismantleEstimatedMinutes
  */
 
-import { type WorkUnit, WORK_UNITS, workTypeKeyString } from '../types';
+import {
+  type WorkUnit,
+  workTypeKeyString,
+} from '../types';
 import { findWorkTypeByKey } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine, csvRow } from './csv-utils';
 import { normalizeNumberString } from './number-parse';
 import { type PlanLineItem } from '../planning/plan-model';
 import { createLineItem } from '../planning/plan-model';
+import { parseWorkUnitReference } from './work-unit-import';
 
 const PLAN_LINE_ITEM_CSV_HEADERS = [
   'title',
   'workTypeTitle',
   'workUnit',
+  'workUnitLabel',
   'workQuantity',
   'assemblyRate',
   'assemblyCrew',
@@ -38,6 +43,7 @@ export function exportPlanLineItemCsvSample(): string {
       'Carpet Tiles Hall A',
       'Carpet Tiles',
       'm2',
+      'm²',
       500,
       12,
       2,
@@ -49,6 +55,7 @@ export function exportPlanLineItemCsvSample(): string {
     csvRow([
       'Staging Risers',
       'Staging',
+      'pcs',
       'pcs',
       80,
       8,
@@ -67,6 +74,7 @@ export interface ImportedPlanLineItem {
   title: string;
   workTypeTitle: string;
   workUnit: WorkUnit;
+  workUnitLabel?: string | null;
   /** Resolved from findWorkTypeByKey; null if no match. */
   workTypeId: string | null;
   workQuantity: number;
@@ -154,23 +162,19 @@ export function parsePlanLineItemCsv(csvText: string): PlanLineItemImportParseRe
       rowErrors.push({ row: rowNum, field: 'workTypeTitle', message: 'Work type title is required' });
     }
 
-    const workUnitRaw = row['workunit'] ?? '';
-    if (!workUnitRaw) {
-      rowErrors.push({ row: rowNum, field: 'workUnit', message: 'Work unit is required' });
-    } else if (!WORK_UNITS.includes(workUnitRaw as WorkUnit)) {
-      rowErrors.push({
-        row: rowNum,
-        field: 'workUnit',
-        message: `Invalid work unit: "${workUnitRaw}". Valid: ${WORK_UNITS.join(', ')}`,
-      });
-    }
+    const workUnitReference = parseWorkUnitReference(
+      row['workunit'],
+      row['workunitlabel'],
+      rowNum,
+      rowErrors,
+    );
 
     if (rowErrors.length > 0) {
       errors.push(...rowErrors);
       continue;
     }
 
-    const workUnit = workUnitRaw as WorkUnit;
+    const workUnit = workUnitReference!.workUnit;
     const workQuantity = parseOptionalNumber(row['workquantity'], rowNum, 'workQuantity', errors) ?? 0;
     if (workQuantity === 0) continue; // skip zero-quantity rows (not applicable to this event)
 
@@ -188,6 +192,7 @@ export function parsePlanLineItemCsv(csvText: string): PlanLineItemImportParseRe
       title,
       workTypeTitle,
       workUnit,
+      workUnitLabel: workUnitReference!.workUnitLabel,
       workTypeId,
       workQuantity,
       assemblyRate,

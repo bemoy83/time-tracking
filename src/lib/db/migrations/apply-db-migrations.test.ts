@@ -34,6 +34,21 @@ function createObjectStore(records: FakeRecord[], indexes: string[] = []) {
   };
 }
 
+function createFakeDb(stores: Record<string, ReturnType<typeof createObjectStore>>) {
+  return {
+    objectStoreNames: {
+      contains(name: string) {
+        return name in stores;
+      },
+    },
+    createObjectStore(name: string) {
+      const store = createObjectStore([]);
+      stores[name] = store;
+      return store;
+    },
+  };
+}
+
 function flushMicrotasks() {
   return Promise.resolve();
 }
@@ -56,13 +71,7 @@ describe('applyDbMigrations', () => {
       executionReturnUnplannedTasks: unplannedTaskStore,
     };
 
-    const db = {
-      objectStoreNames: {
-        contains(name: string) {
-          return name in stores;
-        },
-      },
-    };
+    const db = createFakeDb(stores);
 
     const transaction = {
       objectStore(name: keyof typeof stores) {
@@ -119,13 +128,7 @@ describe('applyDbMigrations', () => {
       plans: plansStore,
     };
 
-    const db = {
-      objectStoreNames: {
-        contains(name: string) {
-          return name in stores;
-        },
-      },
-    };
+    const db = createFakeDb(stores);
 
     const transaction = {
       objectStore(name: keyof typeof stores) {

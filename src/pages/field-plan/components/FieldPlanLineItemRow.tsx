@@ -9,7 +9,7 @@ import { SwipeableRow } from '../../../components/SwipeableRow';
 import { TaskProjectDot } from '../../../components/TaskItemMeta';
 import { formatDeadlineStatusLabel } from '../../../lib/planning/scheduling/deadline-label';
 import { getPhaseQuantity } from '../../../lib/planning/plan-model';
-import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS } from '../../../lib/types';
+import { BUILD_PHASE_LABELS, formatQuantityWithUnit, formatWorkTypeWithUnit } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 
 interface FieldPlanLineItemRowProps {
@@ -80,7 +80,7 @@ export function FieldPlanLineItemRow({
             <span className="field-plan-row__plan-label">{lineItem.planTitle}</span>
           )}
           <span className="field-plan-row__meta">
-            {item.workTypeTitle} · {quantity} {WORK_UNIT_LABELS[item.workUnit]} · {pf.crew} crew · {pf.timeHours.toFixed(1)}h
+            {formatWorkTypeWithUnit(item.workTypeTitle, item.workUnit)} · {formatQuantityWithUnit(quantity, item.workUnit)} · {pf.crew} crew · {pf.timeHours.toFixed(1)}h
           </span>
           {pf.blockReason && (
             <span className="field-plan-row__chip field-plan-row__chip--blocked">

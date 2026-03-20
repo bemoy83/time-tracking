@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { initializeTimerStore, useTimerStore } from './lib/stores/timer-store';
 import { initializeTaskStore, useTaskStore } from './lib/stores/task-store';
 import { initializeTemplateStore } from './lib/stores/template-store';
+import { initializeWorkUnitStore } from './lib/stores/work-unit-store';
 import { initializeWorkTypeStore } from './lib/stores/work-type-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { runWorkTypeLinkBackfill } from './lib/migrations/backfill-worktype-link';
@@ -17,6 +18,7 @@ import { lazyNamedExport } from './lib/react/lazy-named-export';
 type Tab = 'today' | 'projects' | 'planning' | 'fieldPlan' | 'settings';
 type SettingsSection =
   | 'projects'
+  | 'workUnits'
   | 'workTypes'
   | 'templates'
   | 'planLineItems'
@@ -40,6 +42,7 @@ const ProjectDetail = lazyNamedExport(() => import('./pages/ProjectDetail'), 'Pr
 const SettingsView = lazyNamedExport(() => import('./pages/SettingsView'), 'SettingsView');
 const PlanningView = lazyNamedExport(() => import('./pages/PlanningView'), 'PlanningView');
 const SettingsProjectsView = lazyNamedExport(() => import('./pages/settings/SettingsProjectsView'), 'SettingsProjectsView');
+const SettingsWorkUnitsView = lazyNamedExport(() => import('./pages/settings/SettingsWorkUnitsView'), 'SettingsWorkUnitsView');
 const SettingsWorkTypesView = lazyNamedExport(() => import('./pages/settings/SettingsWorkTypesView'), 'SettingsWorkTypesView');
 const SettingsTemplatesView = lazyNamedExport(() => import('./pages/settings/SettingsTemplatesView'), 'SettingsTemplatesView');
 const SettingsPlanLineItemsView = lazyNamedExport(() => import('./pages/settings/SettingsPlanLineItemsView'), 'SettingsPlanLineItemsView');
@@ -78,6 +81,7 @@ function App() {
             initializeTimerStore(),
             initializeTaskStore(),
             initializeTemplateStore(),
+            initializeWorkUnitStore(),
             initializeWorkTypeStore(),
             initializeSyncQueue(),
           ]),
@@ -234,7 +238,13 @@ function App() {
         />
       )}
       {view.type === 'settingsDetail' && view.section === 'workTypes' && (
-        <SettingsWorkTypesView onBack={handleBack} />
+        <SettingsWorkTypesView
+          onBack={handleBack}
+          onManageUnits={() => setView({ type: 'settingsDetail', section: 'workUnits', returnTab: 'settings' })}
+        />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'workUnits' && (
+        <SettingsWorkUnitsView onBack={handleBack} />
       )}
       {view.type === 'settingsDetail' && view.section === 'projects' && (
         <SettingsProjectsView onBack={handleBack} />

@@ -6,8 +6,9 @@
 import { useState, useEffect } from 'react';
 import {
   Task,
-  WORK_UNIT_LABELS,
+  formatQuantityWithUnit,
   formatProductivity,
+  formatWorkTypeWithUnit,
 } from '../lib/types';
 import {
   computeWorkTypeKpis,
@@ -113,12 +114,7 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
     <div className="productivity__kpi-list">
       {kpis.map((kpi) => {
         const { key } = kpi;
-        const label = [
-          key.workTypeTitle,
-          WORK_UNIT_LABELS[key.workUnit],
-        ]
-          .filter(Boolean)
-          .join(' · ');
+        const label = formatWorkTypeWithUnit(key.workTypeTitle, key.workUnit);
 
         const isInsufficient = kpi.confidence === 'insufficient';
         const trend = trends.get(workTypeKeyString(key));
@@ -143,7 +139,7 @@ export function KpiSection({ tasks, outlierMode }: KpiSectionProps) {
                 </span>
                 <div className="productivity__kpi-meta">
                   <span className="productivity__kpi-stat">
-                    {pluralize(kpi.sampleCount, 'task')} · {Math.round(kpi.totalQuantity)} {WORK_UNIT_LABELS[key.workUnit]} completed
+                    {pluralize(kpi.sampleCount, 'task')} · {formatQuantityWithUnit(Math.round(kpi.totalQuantity), key.workUnit)} completed
                   </span>
                   {(kpi.cv != null && kpi.cv > 0 || trend?.direction != null) && (
                     <span className="productivity__kpi-stat">

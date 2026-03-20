@@ -1,7 +1,8 @@
 import { useMemo, type KeyboardEvent } from 'react';
 import {
   BUILD_PHASES,
-  WORK_UNIT_LABELS,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
   type BuildPhase,
   type WorkType,
 } from '../../lib/types';
@@ -310,7 +311,7 @@ export function WorkPackageTable({
             const dismantleFields = getPhaseFields(item, 'dismantle');
             const assemblyInactive = !isPhaseActive(item, 'assembly');
             const dismantleInactive = !isPhaseActive(item, 'dismantle');
-            const currentWorkTypeLabel = `${resolveLineItemWorkTypeTitle(item)} · ${WORK_UNIT_LABELS[item.workUnit]}`;
+            const currentWorkTypeLabel = formatWorkTypeWithUnit(resolveLineItemWorkTypeTitle(item), item.workUnit);
             const assemblyActivationProps = getPhaseActivationProps(item, 'assembly', assemblyInactive);
             const dismantleActivationProps = getPhaseActivationProps(item, 'dismantle', dismantleInactive);
 
@@ -350,7 +351,7 @@ export function WorkPackageTable({
                         )}
                       {selectableWorkTypes.map((wt) => (
                         <option key={wt.id} value={wt.id}>
-                          {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                          {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
                         </option>
                       ))}
                     </select>
@@ -373,7 +374,7 @@ export function WorkPackageTable({
                 </td>
 
                 <td className="planning-view__wp-cell planning-view__wp-unit-cell">
-                  <span className="planning-view__wp-static">{WORK_UNIT_LABELS[item.workUnit]}</span>
+                  <span className="planning-view__wp-static">{resolveWorkUnitLabel(item.workUnit)}</span>
                 </td>
 
                 <td

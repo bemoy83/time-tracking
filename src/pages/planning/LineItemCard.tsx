@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
-  WORK_UNIT_LABELS,
+  formatUnitRate,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
   type WorkUnit,
 } from '../../lib/types';
 import { getWorkTypeById, useWorkTypeStore } from '../../lib/stores/work-type-store';
@@ -101,8 +103,8 @@ export function LineItemCard({
   const workTypeLabel = (() => {
     const wt = item.workTypeId ? getWorkTypeById(item.workTypeId) : null;
     return wt
-      ? `${wt.title} · ${WORK_UNIT_LABELS[wt.workUnit]}`
-      : `${resolveLineItemWorkTypeTitle(item)} · ${WORK_UNIT_LABELS[item.workUnit]}`;
+      ? formatWorkTypeWithUnit(wt.title, wt.workUnit)
+      : formatWorkTypeWithUnit(resolveLineItemWorkTypeTitle(item), item.workUnit);
   })();
 
   const handleWorkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -147,7 +149,7 @@ export function LineItemCard({
                 <option value="" disabled>Select work type…</option>
                 {workTypes.map((wt) => (
                   <option key={wt.id} value={wt.id}>
-                    {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                    {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
                   </option>
                 ))}
               </select>
@@ -189,8 +191,8 @@ export function LineItemCard({
       {unitChangeWarning && (
         <div className="planning-view__unit-warning">
           <span>
-            Unit changed from {WORK_UNIT_LABELS[unitChangeWarning.from]} to{' '}
-            {WORK_UNIT_LABELS[unitChangeWarning.to]}. Verify quantity.
+            Unit changed from {resolveWorkUnitLabel(unitChangeWarning.from)} to{' '}
+            {resolveWorkUnitLabel(unitChangeWarning.to)}. Verify quantity.
           </span>
           <button
             type="button"
@@ -213,7 +215,7 @@ export function LineItemCard({
             <div className="planning-view__field">
               <span className="planning-view__field-label">Rate</span>
               <span className="planning-view__field-value">
-                {pf.rate} {WORK_UNIT_LABELS[item.workUnit]}/ph
+                {formatUnitRate(pf.rate, item.workUnit)}
               </span>
             </div>
           </div>
@@ -240,11 +242,11 @@ export function LineItemCard({
                 onChange={(e) => onUpdate({ workQuantity: Number(e.target.value) })}
                 onFocus={selectOnFocus}
               />
-              <span className="planning-view__field-help">Total in {WORK_UNIT_LABELS[item.workUnit]}</span>
+              <span className="planning-view__field-help">Total in {resolveWorkUnitLabel(item.workUnit)}</span>
             </div>
             <div className="planning-view__field">
               <span className="planning-view__field-label">
-                Rate ({WORK_UNIT_LABELS[item.workUnit]}/ph)
+                Rate ({resolveWorkUnitLabel(item.workUnit)}/ph)
               </span>
               <input
                 type="number"
@@ -318,7 +320,7 @@ export function LineItemCard({
           <span className="planning-view__suggestion-text">
             KPI suggests{' '}
             <span className="planning-view__suggestion-rate">
-              {phaseSuggestion.suggestedRate.toFixed(1)} {WORK_UNIT_LABELS[item.workUnit]}/ph
+              {formatUnitRate(phaseSuggestion.suggestedRate.toFixed(1), item.workUnit)}
             </span>
           </span>
           {suggestion?.confidence && suggestion.confidence !== 'insufficient' && (

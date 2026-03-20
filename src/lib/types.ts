@@ -1,3 +1,10 @@
+import type { WorkUnit } from './work-units';
+import { BUILT_IN_WORK_UNIT_IDS } from './work-units';
+import {
+  formatQuantityWithUnit,
+  formatUnitRate,
+} from './work-unit-formatting';
+
 /**
  * Core type definitions for the time-tracking app.
  * All timestamps are UTC ISO strings for consistency.
@@ -13,17 +20,31 @@ export type TimerSource = 'manual' | 'resumed' | 'logged';
 // Task status
 export type TaskStatus = 'active' | 'completed' | 'blocked';
 
-// Work unit types for quantity tracking
-export type WorkUnit = 'm2' | 'm' | 'pcs' | 'orders';
+export type { WorkUnit, WorkUnitDefinition } from './work-units';
+export {
+  BUILT_IN_WORK_UNIT_DEFINITIONS,
+  BUILT_IN_WORK_UNIT_IDS,
+  WORK_UNIT_LABELS,
+  WORK_UNIT_ID_MAX_LENGTH,
+  WORK_UNIT_ID_PATTERN,
+  buildSeededWorkUnitDefinitions,
+  generateWorkUnitIdFromLabel,
+  getBuiltInWorkUnitLabel,
+  isBuiltInWorkUnit,
+  isValidWorkUnitId,
+  normalizeWorkUnitId,
+  resolveWorkUnitLabel,
+  sanitizeWorkUnitIdCandidate,
+  syncWorkUnitLabelRegistry,
+} from './work-units';
+export {
+  formatQuantityWithUnit,
+  formatUnitRate,
+  formatWorkTypeWithUnit,
+} from './work-unit-formatting';
 
-export const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
-
-export const WORK_UNIT_LABELS: Record<WorkUnit, string> = {
-  m2: 'm\u00B2',
-  m: 'm',
-  pcs: 'pcs',
-  orders: 'orders',
-};
+// Legacy compatibility export; dynamic picker flows should use the work unit store.
+export const WORK_UNITS: WorkUnit[] = [...BUILT_IN_WORK_UNIT_IDS];
 
 // Phases for task templates
 export type BuildPhase = 'assembly' | 'dismantle';
@@ -81,14 +102,12 @@ export function workTypeKeyString(title: string, workUnit: WorkUnit): string {
 }
 
 export function formatWorkQuantity(quantity: number, unit: WorkUnit): string {
-  const label = WORK_UNIT_LABELS[unit] ?? unit;
-  return `${quantity} ${label}`;
+  return formatQuantityWithUnit(quantity, unit);
 }
 
 export function formatProductivity(rate: number, unit: WorkUnit): string {
-  const label = WORK_UNIT_LABELS[unit] ?? unit;
   const rounded = rate >= 10 ? Math.round(rate).toString() : rate.toFixed(1);
-  return `${rounded} ${label}/person-hr`;
+  return formatUnitRate(rounded, unit, 'person-hr');
 }
 
 /**

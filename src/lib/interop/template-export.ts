@@ -1,3 +1,4 @@
+import { resolveWorkUnitLabel } from '../types';
 import type { TaskTemplate } from '../types';
 import { csvRow } from './csv-utils';
 
@@ -12,6 +13,7 @@ export function exportTemplatesCsv(
     'title',
     'workTypeTitle',
     'workUnit',
+    'workUnitLabel',
     'phase',
     'workQuantity',
     'estimatedMinutes',
@@ -24,6 +26,7 @@ export function exportTemplatesCsv(
       template.title,
       template.workTypeId ? (workTypeTitleById.get(template.workTypeId) ?? '') : '',
       template.workUnit,
+      resolveWorkUnitLabel(template.workUnit),
       template.phase,
       template.workQuantity,
       template.estimatedMinutes,

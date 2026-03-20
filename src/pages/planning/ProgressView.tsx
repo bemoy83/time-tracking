@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import { ChevronLeftIcon } from '../../components/icons';
 import { PlanKpiRow } from './PlanKpiRow';
 import { getProgressViewMetrics } from './workspace/workspace-metrics';
 import type { Plan } from '../../lib/planning/plan-model';
 import type { Task, TimeEntry } from '../../lib/types';
-import { BUILD_PHASE_LABELS, WORK_UNIT_LABELS, formatDurationShort } from '../../lib/types';
+import { BUILD_PHASE_LABELS, resolveWorkUnitLabel, formatDurationShort } from '../../lib/types';
 import { computePlanProgress } from '../../lib/planning/plan-progress';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { formatDeadlineStatusLabel } from '../../lib/planning/scheduling/deadline-label';
@@ -15,6 +16,8 @@ import {
   applyExecutionReturnImport,
 } from '../../lib/interop/data-transfer/execution-return-import';
 import type { ExecutionReturnImportPreview } from '../../lib/interop/data-transfer/contracts';
+import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
+import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 
 interface ProgressViewProps {
   plan: Plan;
@@ -51,9 +54,21 @@ export function ProgressView({
 }: ProgressViewProps) {
   const importedExecutionStatus = useExecutionReturnForProgress(plan.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { definitions } = useWorkUnitStore();
   const [filePreview, setFilePreview] = useState<ExecutionReturnImportPreview | null>(null);
   const [importMsg, setImportMsg] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+  const {
+    preview: importWorkUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    filePreview?.envelope.payload.workUnitDefinitions?.map((definition) => ({
+      id: definition.id,
+      label: definition.label,
+    })) ?? null,
+    definitions,
+  );
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,7 +85,9 @@ export function ProgressView({
   async function handleApply() {
     if (!filePreview) return;
     setIsApplying(true);
-    const result = await applyExecutionReturnImport(filePreview);
+    const result = await applyExecutionReturnImport(filePreview, {
+      applyLabelToExistingWorkUnits: applyImportedUnitLabels,
+    });
     setFilePreview(null);
     setImportMsg(result.reason);
     setIsApplying(false);
@@ -175,7 +192,7 @@ export function ProgressView({
         <section className="progress-view__import-section">
           <div className="progress-view__import-card">
             <p className="progress-view__import-title">
-              <strong>{filePreview.planTitle}</strong> · {filePreview.lineItemCount} items · {filePreview.timeEntryCount} time entries
+              <strong>{filePreview.planTitle}</strong> · {filePreview.lineItemCount} items · {filePreview.timeEntryCount} time entries · {filePreview.workUnitCount} units
             </p>
             {filePreview.dateRangeStart && (
               <p className="progress-view__import-meta">
@@ -187,6 +204,12 @@ export function ProgressView({
                 {filePreview.duplicateTimeEntryIds.length} duplicate time {filePreview.duplicateTimeEntryIds.length === 1 ? 'entry' : 'entries'} will be skipped.
               </p>
             )}
+            <WorkUnitImportPreviewPanel
+              preview={importWorkUnitPreview}
+              applyImportedLabels={applyImportedUnitLabels}
+              onApplyImportedLabelsChange={setApplyImportedUnitLabels}
+              summaryClassName="progress-view__import-meta"
+            />
             <div className="progress-view__import-actions">
               <button
                 type="button"
@@ -215,7 +238,7 @@ export function ProgressView({
       {progress.lineItems.length > 0 && (
         <section className="progress-view__list" aria-label="Plan line item progress">
           {progress.lineItems.map((item) => {
-          const unitLabel = WORK_UNIT_LABELS[item.workUnit] ?? item.workUnit;
+          const unitLabel = resolveWorkUnitLabel(item.workUnit);
           const varianceText =
             item.variancePercent == null
               ? '—'

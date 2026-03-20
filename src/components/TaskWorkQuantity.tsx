@@ -11,14 +11,15 @@ import { useSubtaskTimeRollupMode } from '../lib/stores/subtask-time-rollup-sett
 import { getWorkTypeById, useWorkTypeStore } from '../lib/stores/work-type-store';
 import {
   WorkUnit,
-  WORK_UNITS,
-  WORK_UNIT_LABELS,
   formatWorkQuantity,
+  resolveWorkUnitLabel,
 } from '../lib/types';
 import type { Task } from '../lib/types';
+import { useSelectableWorkUnits } from '../lib/hooks/useSelectableWorkUnits';
 import { ExpandableSection } from './ExpandableSection';
 import { ActionSheet } from './ActionSheet';
 import { WorkTypePicker } from './WorkTypePicker';
+import { WorkUnitPillGroup } from './WorkUnitPillGroup';
 import { RulerIcon, PencilIcon } from './icons';
 
 
@@ -32,12 +33,12 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
   const { workTypes } = useWorkTypeStore();
   const [showSheet, setShowSheet] = useState(false);
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState<WorkUnit>('m2');
+  const { selectableUnits, defaultUnitId } = useSelectableWorkUnits(task?.workUnit ?? null);
+  const [unit, setUnit] = useState<WorkUnit>(defaultUnitId);
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState<string | null>(null);
 
   const hasWork = task?.workQuantity != null && task?.workUnit != null;
   const selectedWorkType = selectedWorkTypeId ? getWorkTypeById(selectedWorkTypeId) : null;
-
   // Filter work types by task's existing unit, or show all if no unit set
   const filteredWorkTypes = task?.workUnit
     ? workTypes.filter((wt) => wt.workUnit === task.workUnit)
@@ -49,7 +50,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
       setUnit(task.workUnit);
     } else {
       setQuantity('');
-      setUnit('m2');
+      setUnit(defaultUnitId);
     }
     setSelectedWorkTypeId(task?.workTypeId ?? null);
     setShowSheet(true);
@@ -163,7 +164,7 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
             emptyMessage={
               workTypes.length === 0
                 ? 'No work types yet. Create work types in Settings.'
-                : `No work types for ${WORK_UNIT_LABELS[unit]}.`
+                : `No work types for ${resolveWorkUnitLabel(unit)}.`
             }
             showRate
             className="task-work-quantity__section"
@@ -183,30 +184,18 @@ export function TaskWorkQuantity({ taskId }: TaskWorkQuantityProps) {
               }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
-              {WORK_UNIT_LABELS[unit]}
+              {resolveWorkUnitLabel(unit)}
             </span>
           </div>
 
           {/* Unit pills — hidden when WorkType selected (unit is locked) */}
           {!selectedWorkType && (
-            <div
-              className="task-work-quantity__unit-pills"
-              role="group"
-              aria-label="Unit"
-            >
-              {WORK_UNITS.map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  role="radio"
-                  aria-checked={unit === u}
-                  className={`task-work-quantity__unit-pill${unit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                  onClick={() => setUnit(u)}
-                >
-                  {WORK_UNIT_LABELS[u]}
-                </button>
-              ))}
-            </div>
+            <WorkUnitPillGroup
+              units={selectableUnits}
+              value={unit}
+              onChange={(nextUnit) => setUnit(nextUnit as WorkUnit)}
+              ariaLabel="Unit"
+            />
           )}
 
           {/* Actions */}

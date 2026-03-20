@@ -17,11 +17,15 @@ vi.mock('../stores/work-type-store', () => ({
   updateWorkTypeFields: vi.fn(),
 }));
 
+vi.mock('../stores/work-unit-store', () => ({
+  ensureImportedWorkUnits: vi.fn(async () => ({ created: [], relabeled: [] })),
+}));
+
 const mockCreateWorkType = vi.mocked(createWorkType);
 const mockFindWorkTypeByKey = vi.mocked(findWorkTypeByKey);
 const mockUpdateWorkTypeFields = vi.mocked(updateWorkTypeFields);
 
-const VALID_HEADER = 'title,workUnit,assemblyRate,dismantleRate';
+const VALID_HEADER = 'title,workUnit,workUnitLabel,assemblyRate,dismantleRate';
 
 function csv(rows: string[]): string {
   return [VALID_HEADER, ...rows].join('\n');
@@ -49,7 +53,7 @@ beforeEach(() => {
 describe('parseWorkTypeCsv', () => {
   it('parses a valid row with mapping key', () => {
     const result = parseWorkTypeCsv(csv([
-      'Carpet Tiles,m2,11.5,3',
+      'Carpet Tiles,m2,m²,11.5,3',
     ]));
 
     expect(result.valid).toBe(true);
@@ -59,6 +63,7 @@ describe('parseWorkTypeCsv', () => {
       mappingKey: 'carpet tiles:m2',
       title: 'Carpet Tiles',
       workUnit: 'm2',
+      workUnitLabel: 'm²',
       assemblyRate: 11.5,
       dismantleRate: 3,
     });
@@ -72,9 +77,9 @@ describe('parseWorkTypeCsv', () => {
     expect(result.errors[0].message).toContain('assemblyrate');
   });
 
-  it('validates enum fields and rates', () => {
+  it('rejects malformed ids and rates', () => {
     const result = parseWorkTypeCsv(csv([
-      'Carpet Tiles,invalid,-2,-3',
+      'Carpet Tiles,Bad Unit,, -2,-3',
     ]));
 
     expect(result.valid).toBe(false);
@@ -84,7 +89,7 @@ describe('parseWorkTypeCsv', () => {
 
   it('handles quoted values', () => {
     const result = parseWorkTypeCsv(csv([
-      '"Walls, phase 1",m,4,2',
+      '"Walls, phase 1",m,m,4,2',
     ]));
 
     expect(result.valid).toBe(true);
@@ -93,8 +98,8 @@ describe('parseWorkTypeCsv', () => {
 
   it('parses semicolon-delimited CSV (e.g. European Excel)', () => {
     const semicolonCsv = [
-      'title;workUnit;assemblyRate;dismantleRate',
-      'Carpet Tiles;m2;11.5;3',
+      'title;workUnit;workUnitLabel;assemblyRate;dismantleRate',
+      'Carpet Tiles;m2;m²;11.5;3',
     ].join('\n');
     const result = parseWorkTypeCsv(semicolonCsv);
 
@@ -110,8 +115,8 @@ describe('parseWorkTypeCsv', () => {
 
   it('accepts European decimal format (comma as decimal separator)', () => {
     const semicolonCsv = [
-      'title;workUnit;assemblyRate;dismantleRate',
-      'Carpet Tiles;m2;11,5;3',
+      'title;workUnit;workUnitLabel;assemblyRate;dismantleRate',
+      'Carpet Tiles;m2;m²;11,5;3',
     ].join('\n');
     const result = parseWorkTypeCsv(semicolonCsv);
 
@@ -129,8 +134,8 @@ describe('parseWorkTypeCsv', () => {
 describe('generateWorkTypeImportPreview', () => {
   it('marks create and update actions by composite key', () => {
     const parsed = parseWorkTypeCsv(csv([
-      'Carpet Tiles,m2,12,3',
-      'Furniture,pcs,5,2',
+      'Carpet Tiles,m2,m²,12,3',
+      'Furniture,pcs,pcs,5,2',
     ]));
 
     const existing = [makeWorkType({ title: 'Carpet Tiles', workUnit: 'm2' })];
@@ -144,9 +149,9 @@ describe('generateWorkTypeImportPreview', () => {
 
   it('detects duplicate mapping keys within import set', () => {
     const parsed = parseWorkTypeCsv(csv([
-      'Carpet Tiles,m2,12,3',
-      'Carpet Tiles,m2,14,5',
-      'Furniture,pcs,5,2',
+      'Carpet Tiles,m2,m²,12,3',
+      'Carpet Tiles,m2,m²,14,5',
+      'Furniture,pcs,pcs,5,2',
     ]));
 
     const preview = generateWorkTypeImportPreview(parsed.items, []);
@@ -159,8 +164,8 @@ describe('generateWorkTypeImportPreview', () => {
 describe('applyWorkTypeImport', () => {
   it('updates when key exists and creates when missing', async () => {
     const parsed = parseWorkTypeCsv(csv([
-      'Carpet Tiles,m2,14,3',
-      'Furniture,pcs,6,2',
+      'Carpet Tiles,m2,m²,14,3',
+      'Furniture,pcs,pcs,6,2',
     ]));
 
     mockFindWorkTypeByKey
@@ -170,7 +175,12 @@ describe('applyWorkTypeImport', () => {
 
     const result = await applyWorkTypeImport(parsed.items);
 
-    expect(result).toEqual({ created: 1, updated: 1 });
+    expect(result).toEqual({
+      created: 1,
+      updated: 1,
+      unitsCreated: 0,
+      unitLabelsUpdated: 0,
+    });
     expect(mockUpdateWorkTypeFields).toHaveBeenCalledWith('wt-existing', {
       title: 'Carpet Tiles',
       workUnit: 'm2',

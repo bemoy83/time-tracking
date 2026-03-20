@@ -6,7 +6,11 @@ import {
   importedPlanLineItemsToLineItems,
   type ImportedPlanLineItem,
 } from '../../../lib/interop/plan-line-item-import';
+import type { WorkUnitImportPreview } from '../../../lib/interop/work-unit-import-preview';
+import { useWorkUnitStore } from '../../../lib/stores/work-unit-store';
 import { ensureWorkTypeExistsOrCreate } from '../../../lib/stores/work-type-store';
+import { useWorkUnitImportPreview } from '../../../lib/hooks/useWorkUnitImportPreview';
+import { provisionWorkUnitsForImport } from '../../../lib/interop/work-unit-import';
 
 interface UsePlanLineItemImportOptions {
   mutatePlan: (updater: (prev: Plan) => Plan) => void;
@@ -19,6 +23,9 @@ interface UsePlanLineItemImportResult {
   handleCancel: () => void;
   /** Number of items staged for import. null when nothing is pending. */
   pendingCount: number | null;
+  pendingWorkUnitPreview: WorkUnitImportPreview | null;
+  applyImportedUnitLabels: boolean;
+  setApplyImportedUnitLabels: (value: boolean) => void;
   isApplying: boolean;
 }
 
@@ -26,8 +33,20 @@ export function usePlanLineItemImport({
   mutatePlan,
 }: UsePlanLineItemImportOptions): UsePlanLineItemImportResult {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingItems, setPendingItems] = useState<PlanLineItem[] | null>(null);
+  const { definitions } = useWorkUnitStore();
+  const [pendingImportedItems, setPendingImportedItems] = useState<ImportedPlanLineItem[] | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const {
+    preview: pendingWorkUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    pendingImportedItems?.map((item) => ({
+      id: item.workUnit,
+      label: item.workUnitLabel,
+    })) ?? null,
+    definitions,
+  );
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,34 +64,45 @@ export function usePlanLineItemImport({
       }
       return;
     }
-
-    // Resolve any unknown work types by creating them.
-    const resolved: ImportedPlanLineItem[] = await Promise.all(
-      result.items.map(async (item) => {
-        if (item.workTypeId !== null) return item;
-        const workTypeId = await ensureWorkTypeExistsOrCreate(
-          item.workTypeTitle,
-          item.workUnit,
-          item.assemblyRate,
-          item.dismantleRate,
-        );
-        return { ...item, workTypeId };
-      }),
-    );
-
-    setPendingItems(importedPlanLineItemsToLineItems(resolved));
+    setPendingImportedItems(result.items);
   };
 
-  const handleConfirm = () => {
-    if (!pendingItems || pendingItems.length === 0) return;
+  const handleConfirm = async () => {
+    if (!pendingImportedItems || pendingImportedItems.length === 0) return;
     setIsApplying(true);
-    mutatePlan((prev) => addLineItemsToPlan(prev, pendingItems));
-    setPendingItems(null);
-    setIsApplying(false);
+    try {
+      await provisionWorkUnitsForImport(
+        pendingImportedItems,
+        (item) => ({
+          workUnit: item.workUnit,
+          workUnitLabel: item.workUnitLabel ?? null,
+        }),
+        { applyLabelToExisting: applyImportedUnitLabels },
+      );
+
+      const resolved: ImportedPlanLineItem[] = await Promise.all(
+        pendingImportedItems.map(async (item) => {
+          if (item.workTypeId !== null) return item;
+          const workTypeId = await ensureWorkTypeExistsOrCreate(
+            item.workTypeTitle,
+            item.workUnit,
+            item.assemblyRate,
+            item.dismantleRate,
+          );
+          return { ...item, workTypeId };
+        }),
+      );
+
+      const nextItems: PlanLineItem[] = importedPlanLineItemsToLineItems(resolved);
+      mutatePlan((prev) => addLineItemsToPlan(prev, nextItems));
+      setPendingImportedItems(null);
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const handleCancel = () => {
-    setPendingItems(null);
+    setPendingImportedItems(null);
   };
 
   return {
@@ -80,7 +110,10 @@ export function usePlanLineItemImport({
     handleFileChange,
     handleConfirm,
     handleCancel,
-    pendingCount: pendingItems !== null ? pendingItems.length : null,
+    pendingCount: pendingImportedItems !== null ? pendingImportedItems.length : null,
+    pendingWorkUnitPreview,
+    applyImportedUnitLabels,
+    setApplyImportedUnitLabels,
     isApplying,
   };
 }

@@ -1,16 +1,21 @@
 import { updateTaskFields } from '../stores/task-store';
 import { createTemplate, updateTemplate } from '../stores/template-store';
+import { ensureImportedWorkUnits } from '../stores/work-unit-store';
 import { ensureWorkTypeExistsOrCreate } from '../stores/work-type-store';
 import type { ImportedWorkPackage } from './import';
 import type { ImportPreviewItem } from './import-preview';
+import { provisionWorkUnitsForImport } from './work-unit-import';
 
 export interface WorkPackageImportApplyResult {
   created: number;
   updated: number;
   skipped: number;
+  unitsCreated: number;
+  unitLabelsUpdated: number;
 }
 
 export interface WorkPackageImportApplyDeps {
+  ensureImportedWorkUnitsFn?: typeof ensureImportedWorkUnits;
   ensureWorkTypeExistsOrCreateFn?: (
     title: string,
     workUnit: ImportedWorkPackage['workUnit'],
@@ -26,6 +31,7 @@ export async function applyWorkPackageImportItems(
   items: ImportPreviewItem[],
   deps: WorkPackageImportApplyDeps = {},
 ): Promise<WorkPackageImportApplyResult> {
+  const ensureImportedWorkUnitsFn = deps.ensureImportedWorkUnitsFn ?? ensureImportedWorkUnits;
   const ensureWorkTypeExistsOrCreateFn = deps.ensureWorkTypeExistsOrCreateFn ?? ensureWorkTypeExistsOrCreate;
   const updateTemplateFn = deps.updateTemplateFn ?? updateTemplate;
   const updateTaskFieldsFn = deps.updateTaskFieldsFn ?? updateTaskFields;
@@ -34,6 +40,16 @@ export async function applyWorkPackageImportItems(
   let created = 0;
   let updated = 0;
   let skipped = 0;
+
+  const units = await provisionWorkUnitsForImport(
+    items.map(({ item }) => item),
+    (item) => ({
+      workUnit: item.workUnit,
+      workUnitLabel: item.workUnitLabel ?? null,
+    }),
+    {},
+    ensureImportedWorkUnitsFn,
+  );
 
   for (const item of items) {
     const payload = item.item;
@@ -91,5 +107,11 @@ export async function applyWorkPackageImportItems(
     created += 1;
   }
 
-  return { created, updated, skipped };
+  return {
+    created,
+    updated,
+    skipped,
+    unitsCreated: units.created.length,
+    unitLabelsUpdated: units.relabeled.length,
+  };
 }

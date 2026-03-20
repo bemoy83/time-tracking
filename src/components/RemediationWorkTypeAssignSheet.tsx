@@ -11,9 +11,11 @@ import {
 } from '../lib/remediation/worktype-classify';
 import {
   BUILD_PHASE_LABELS,
-  WORK_UNIT_LABELS,
+  resolveWorkUnitLabel,
 } from '../lib/types';
 import type { WorkUnit } from '../lib/types';
+import { useSelectableWorkUnits } from '../lib/hooks/useSelectableWorkUnits';
+import { WorkUnitPillGroup } from './WorkUnitPillGroup';
 
 type AssignMode = 'existing' | 'create';
 
@@ -26,8 +28,6 @@ interface RemediationWorkTypeAssignSheetProps {
   initialMode?: AssignMode;
   onAssigned: (result: ClassifyTaskToWorkTypeResult | CreateAndClassifyTaskResult) => void;
 }
-
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
 
 export function RemediationWorkTypeAssignSheet({
   isOpen,
@@ -46,7 +46,8 @@ export function RemediationWorkTypeAssignSheet({
   const [selectedWorkTypeId, setSelectedWorkTypeId] = useState('');
   const [reason, setReason] = useState('');
   const [createTitle, setCreateTitle] = useState('');
-  const [createWorkUnit, setCreateWorkUnit] = useState<WorkUnit>('m2');
+  const { selectableUnits, defaultUnitId } = useSelectableWorkUnits(task?.workUnit ?? null);
+  const [createWorkUnit, setCreateWorkUnit] = useState<WorkUnit>(defaultUnitId);
   const [createBuildUpRate, setCreateBuildUpRate] = useState('10');
   const [createTearDownRate, setCreateTearDownRate] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,7 +68,7 @@ export function RemediationWorkTypeAssignSheet({
     setSelectedWorkTypeId(preferred);
     setReason('');
     setCreateTitle(task?.title ?? '');
-    setCreateWorkUnit(task?.workUnit ?? 'm2');
+    setCreateWorkUnit(task?.workUnit ?? defaultUnitId);
     setCreateBuildUpRate(String(task?.phase !== 'dismantle' ? defaultRate : 0));
     setCreateTearDownRate(String(task?.phase === 'dismantle' ? defaultRate : 0));
     setError(null);
@@ -82,6 +83,7 @@ export function RemediationWorkTypeAssignSheet({
     task?.title,
     task?.workTypeId,
     task?.workUnit,
+    defaultUnitId,
     workTypes,
   ]);
 
@@ -161,7 +163,7 @@ export function RemediationWorkTypeAssignSheet({
               <span className="settings-view__row-label">{task?.title ?? taskId}</span>
               <span className="settings-view__row-detail">
                 Quantity: {task?.workQuantity != null ? task.workQuantity : 'not set'} ·
-                Unit: {task?.workUnit != null ? WORK_UNIT_LABELS[task.workUnit] : 'not set'} ·
+                Unit: {task?.workUnit != null ? resolveWorkUnitLabel(task.workUnit) : 'not set'} ·
                 Phase: {task?.phase != null ? BUILD_PHASE_LABELS[task.phase] : 'not set'}
               </span>
             </div>
@@ -205,13 +207,13 @@ export function RemediationWorkTypeAssignSheet({
               <option value="">Select WorkType...</option>
               {workTypes.map((wt) => (
                 <option key={wt.id} value={wt.id}>
-                  {wt.title} ({WORK_UNIT_LABELS[wt.workUnit]})
+                  {wt.title} ({resolveWorkUnitLabel(wt.workUnit)})
                 </option>
               ))}
             </select>
             {selectedWorkType && (
               <p className="settings-view__helper">
-                Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+                Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {resolveWorkUnitLabel(selectedWorkType.workUnit)}/person-hr
               </p>
             )}
           </div>
@@ -232,18 +234,12 @@ export function RemediationWorkTypeAssignSheet({
 
             <div className="create-task-sheet__section">
               <label className="entry-modal__label">Work Unit</label>
-              <div className="task-work-quantity__unit-pills" role="group" aria-label="Work unit">
-                {WORK_UNITS.map((unit) => (
-                  <button
-                    key={unit}
-                    type="button"
-                    className={`task-work-quantity__unit-pill${createWorkUnit === unit ? ' task-work-quantity__unit-pill--active' : ''}`}
-                    onClick={() => setCreateWorkUnit(unit)}
-                  >
-                    {WORK_UNIT_LABELS[unit]}
-                  </button>
-                ))}
-              </div>
+              <WorkUnitPillGroup
+                units={selectableUnits}
+                value={createWorkUnit}
+                onChange={(value) => setCreateWorkUnit(value as WorkUnit)}
+                ariaLabel="Work unit"
+              />
             </div>
 
             <div className="create-task-sheet__section">
@@ -258,7 +254,7 @@ export function RemediationWorkTypeAssignSheet({
                   style={{ width: `${Math.max(String(createBuildUpRate || '0').length, 1)}ch` }}
                 />
                 <span className="task-work-quantity__input-unit" aria-hidden="true">
-                  {WORK_UNIT_LABELS[createWorkUnit]}/person-hr
+                  {resolveWorkUnitLabel(createWorkUnit)}/person-hr
                 </span>
               </div>
             </div>
@@ -275,7 +271,7 @@ export function RemediationWorkTypeAssignSheet({
                   style={{ width: `${Math.max(String(createTearDownRate || '0').length, 1)}ch` }}
                 />
                 <span className="task-work-quantity__input-unit" aria-hidden="true">
-                  {WORK_UNIT_LABELS[createWorkUnit]}/person-hr
+                  {resolveWorkUnitLabel(createWorkUnit)}/person-hr
                 </span>
               </div>
             </div>

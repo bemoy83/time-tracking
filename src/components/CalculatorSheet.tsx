@@ -5,7 +5,12 @@
  * Uses WorkType selector for expected rate. Historical rate from KPIs.
  */
 
-import { type Task, WORK_UNIT_LABELS, formatProductivity } from '../lib/types';
+import {
+  type Task,
+  formatProductivity,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
+} from '../lib/types';
 import { type OutlierHandlingMode } from '../lib/kpi';
 import { ActionSheet } from './ActionSheet';
 import { WorkersStepper } from './WorkersStepper';
@@ -39,7 +44,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks, outlierMode }: Calcula
             >
               {model.workTypes.map((wt) => (
                 <option key={wt.id} value={wt.id}>
-                  {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                  {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
                 </option>
               ))}
             </select>
@@ -95,7 +100,7 @@ export function CalculatorSheet({ isOpen, onClose, tasks, outlierMode }: Calcula
                   style={{ width: `${Math.max(String(model.quantity || '0').length, 1)}ch` }}
                 />
                 <span className="task-work-quantity__input-unit" aria-hidden="true">
-                  {WORK_UNIT_LABELS[model.workUnit]}
+                  {resolveWorkUnitLabel(model.workUnit)}
                 </span>
               </div>
             </div>

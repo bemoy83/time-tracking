@@ -8,7 +8,7 @@ import { getCrewEquivalentForDate } from '../../planning/scheduling/capacity-mat
 import type { Task, TimeEntry, WorkType } from '../../types';
 import { BUILD_PHASES, durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
-import { getAllWorkTypes } from '../../db';
+import { getAllWorkTypes, getAllWorkUnitDefinitions } from '../../db';
 import {
   DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
@@ -131,6 +131,7 @@ export async function buildExecutionReturnEnvelope(
     if (task.workTypeId != null) referencedWorkTypeIds.add(task.workTypeId);
   }
   const allWorkTypes = await getAllWorkTypes();
+  const allWorkUnitDefinitions = await getAllWorkUnitDefinitions();
   const workTypeById = new Map(
     allWorkTypes
       .filter((wt) => referencedWorkTypeIds.has(wt.id))
@@ -138,6 +139,7 @@ export async function buildExecutionReturnEnvelope(
   );
   const planLineItemBySourceId = new Map(plan.lineItems.map((item) => [item.id, item]));
   const workTypes: WorkType[] = [];
+  const referencedWorkUnitIds = new Set<string>();
   const exportedIds = new Set<string>();
   const syntheticById = new Map<string, string>();
   const syntheticTimestamp = nowUtc();
@@ -150,6 +152,7 @@ export async function buildExecutionReturnEnvelope(
     if (existing) {
       workTypes.push(existing);
       exportedIds.add(task.workTypeId);
+      referencedWorkUnitIds.add(existing.workUnit);
       continue;
     }
 
@@ -168,6 +171,7 @@ export async function buildExecutionReturnEnvelope(
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
+      referencedWorkUnitIds.add(lineItem.workUnit);
     } else {
       const isTearDown = task.phase === 'dismantle';
       workTypes.push({
@@ -179,8 +183,20 @@ export async function buildExecutionReturnEnvelope(
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
+      if (task.workUnit) {
+        referencedWorkUnitIds.add(task.workUnit);
+      }
     }
   }
+
+  for (const task of [...planTasks, ...unplannedTasks]) {
+    if (task.workUnit) {
+      referencedWorkUnitIds.add(task.workUnit);
+    }
+  }
+  const workUnitDefinitions = allWorkUnitDefinitions.filter((definition) =>
+    referencedWorkUnitIds.has(definition.id),
+  );
 
   const remappedPlanTasks = planTasks.map((task) => {
     if (task.workTypeId == null) return task;
@@ -216,6 +232,7 @@ export async function buildExecutionReturnEnvelope(
     unplannedTasks: remappedUnplannedTasks,
     timeEntries: relevantEntries,
     workTypes,
+    workUnitDefinitions: workUnitDefinitions.length > 0 ? workUnitDefinitions : undefined,
   };
 
   return {

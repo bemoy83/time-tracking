@@ -5,7 +5,9 @@ import {
   previewPlanPackageImport,
 } from '../../lib/interop/data-transfer/plan-package';
 import type { PlanPackageImportPreview } from '../../lib/interop/data-transfer/contracts';
+import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 
 interface UseFieldPlanImportParams {
   onMessage: (message: string | null) => void;
@@ -19,6 +21,18 @@ export function useFieldPlanImport({
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [preview, setPreview] = useState<PlanPackageImportPreview | null>(null);
   const [isApplyingImport, setIsApplyingImport] = useState(false);
+  const { definitions } = useWorkUnitStore();
+  const {
+    preview: workUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    preview?.envelope.payload.workUnitDefinitions?.map((definition) => ({
+      id: definition.id,
+      label: definition.label,
+    })) ?? null,
+    definitions,
+  );
 
   const resetImportPreview = useCallback(() => {
     setPreview(null);
@@ -53,7 +67,9 @@ export function useFieldPlanImport({
     setIsApplyingImport(true);
 
     try {
-      const result = await applyPlanPackageImport(preview, resolution);
+      const result = await applyPlanPackageImport(preview, resolution, {
+        applyLabelToExistingWorkUnits: applyImportedUnitLabels,
+      });
       let message = result.reason;
       if (result.mergeSummary) {
         const { newCount, updatedCount, unchangedCount, removedCount } = result.mergeSummary;
@@ -77,6 +93,9 @@ export function useFieldPlanImport({
   return {
     isLoadingPreview,
     preview,
+    workUnitPreview,
+    applyImportedUnitLabels,
+    setApplyImportedUnitLabels,
     isApplyingImport,
     handleFileChange,
     handleApplyImport,

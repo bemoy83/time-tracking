@@ -1,4 +1,4 @@
-import { type WorkUnit, WORK_UNIT_LABELS, formatProductivity } from '../../lib/types';
+import { type WorkUnit, formatProductivity, formatQuantityWithUnit } from '../../lib/types';
 import type { CalcResult, RateInfo } from './types';
 
 function sourceLabelFromResult(result: CalcResult, activeRate: RateInfo): string {
@@ -21,10 +21,11 @@ export function ProvenanceDisplay({
   workUnit: WorkUnit;
 }) {
   const sourceLabel = sourceLabelFromResult(result, activeRate);
+  const quantityLabel = formatQuantityWithUnit(result.quantityUsed, workUnit);
 
   const equation = result.type === 'crew'
-    ? `${result.quantityUsed} ${WORK_UNIT_LABELS[workUnit]} / (time × ${formatProductivity(result.rateUsed, workUnit)})`
-    : `${result.quantityUsed} ${WORK_UNIT_LABELS[workUnit]} / (crew × ${formatProductivity(result.rateUsed, workUnit)})`;
+    ? `${quantityLabel} / (time × ${formatProductivity(result.rateUsed, workUnit)})`
+    : `${quantityLabel} / (crew × ${formatProductivity(result.rateUsed, workUnit)})`;
 
   return (
     <div className="calculator__provenance">

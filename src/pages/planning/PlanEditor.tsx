@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { usePlanLineItemImport } from './hooks/usePlanLineItemImport';
 import {
-  WORK_UNIT_LABELS,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
   type Project,
 } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
@@ -32,6 +33,7 @@ import {
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
 import { ChevronLeftIcon, ChevronRightIcon, FolderIcon, PencilIcon } from '../../components/icons';
+import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectColorDot } from '../../components/ProjectColorDot';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -87,6 +89,9 @@ export function PlanEditor({
     handleConfirm: handleImportConfirm,
     handleCancel: handleImportCancel,
     pendingCount: importPendingCount,
+    pendingWorkUnitPreview: importWorkUnitPreview,
+    applyImportedUnitLabels,
+    setApplyImportedUnitLabels,
     isApplying: isImportApplying,
   } = usePlanLineItemImport({ mutatePlan });
   const [title, setTitle] = useState(plan.title);
@@ -505,22 +510,33 @@ export function PlanEditor({
               <div className="planning-view__wp-add-bar">
                 {importPendingCount !== null ? (
                   <div className="planning-view__wp-add-mode planning-view__wp-add-mode--csv-confirm">
-                    <span className="planning-view__import-confirm">
-                      Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
-                        <button
-                          className="btn btn--primary btn--sm"
-                          onClick={() => {
-                            handleImportConfirm();
-                            setAddMode('manual');
-                          }}
-                          disabled={isImportApplying}
-                        >
+                    <div className="planning-view__import-confirm">
+                      <span>
+                        Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
+                      </span>
+                      <WorkUnitImportPreviewPanel
+                        preview={importWorkUnitPreview}
+                        applyImportedLabels={applyImportedUnitLabels}
+                        onApplyImportedLabelsChange={setApplyImportedUnitLabels}
+                        summaryElement="span"
+                        summaryClassName=""
+                        toggleStyle={{ display: 'inline-flex', marginLeft: 12 }}
+                        toggleLabel="Apply file labels"
+                      />
+                      <button
+                        className="btn btn--primary btn--sm"
+                        onClick={() => {
+                          void handleImportConfirm();
+                          setAddMode('manual');
+                        }}
+                        disabled={isImportApplying}
+                      >
                         Confirm
                       </button>
                       <button className="btn btn--ghost btn--sm" onClick={handleImportCancel}>
                         Cancel
                       </button>
-                    </span>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -587,9 +603,9 @@ export function PlanEditor({
                       {selectableWorkTypes.length === 0 && (
                         <option value="">No work types. Add in Settings.</option>
                       )}
-                      {selectableWorkTypes.map((wt) => (
+                        {selectableWorkTypes.map((wt) => (
                         <option key={wt.id} value={wt.id}>
-                          {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                          {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
                         </option>
                       ))}
                     </select>
@@ -618,7 +634,7 @@ export function PlanEditor({
                   <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--unit">
                     <span className="planning-view__wp-add-bar-label">Unit</span>
                     <span className="planning-view__wp-add-bar-unit">
-                      {newWorkType ? WORK_UNIT_LABELS[newWorkType.workUnit] : '—'}
+                      {newWorkType ? resolveWorkUnitLabel(newWorkType.workUnit) : '—'}
                     </span>
                   </div>
 

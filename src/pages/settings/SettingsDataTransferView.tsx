@@ -16,7 +16,10 @@ import type {
   ExecutionReturnImportPreview,
   PlanPackageImportPreview,
 } from '../../lib/interop/data-transfer/contracts';
+import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
+import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
+import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 import './settings-styles';
 
 interface SettingsDataTransferViewProps {
@@ -24,6 +27,7 @@ interface SettingsDataTransferViewProps {
 }
 
 export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewProps) {
+  const { definitions: workUnitDefinitions } = useWorkUnitStore();
   const planFileInputRef = useRef<HTMLInputElement>(null);
   const executionFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +40,28 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
   const [executionPreview, setExecutionPreview] = useState<ExecutionReturnImportPreview | null>(null);
   const [executionImportMessage, setExecutionImportMessage] = useState<string | null>(null);
   const [isApplyingExecutionImport, setIsApplyingExecutionImport] = useState(false);
+  const {
+    preview: planWorkUnitPreview,
+    applyImportedLabels: applyPlanUnitLabels,
+    setApplyImportedLabels: setApplyPlanUnitLabels,
+  } = useWorkUnitImportPreview(
+    planPreview?.envelope.payload.workUnitDefinitions?.map((definition) => ({
+      id: definition.id,
+      label: definition.label,
+    })) ?? null,
+    workUnitDefinitions,
+  );
+  const {
+    preview: executionWorkUnitPreview,
+    applyImportedLabels: applyExecutionUnitLabels,
+    setApplyImportedLabels: setApplyExecutionUnitLabels,
+  } = useWorkUnitImportPreview(
+    executionPreview?.envelope.payload.workUnitDefinitions?.map((definition) => ({
+      id: definition.id,
+      label: definition.label,
+    })) ?? null,
+    workUnitDefinitions,
+  );
 
   const handlePlanFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -64,7 +90,9 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
     if (!planPreview) return;
     setIsApplyingPlanImport(true);
     try {
-      const result = await applyPlanPackageImport(planPreview, resolution);
+      const result = await applyPlanPackageImport(planPreview, resolution, {
+        applyLabelToExistingWorkUnits: applyPlanUnitLabels,
+      });
       let msg = result.reason;
       if (result.mergeSummary) {
         const { newCount, updatedCount, unchangedCount, removedCount } = result.mergeSummary;
@@ -113,7 +141,9 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
     setIsApplyingExecutionImport(true);
 
     try {
-      const result = await applyExecutionReturnImport(executionPreview);
+      const result = await applyExecutionReturnImport(executionPreview, {
+        applyLabelToExistingWorkUnits: applyExecutionUnitLabels,
+      });
       setExecutionImportMessage(result.reason);
       setExecutionPreview(null);
       trackTelemetryEvent('interop_execution_return_import');
@@ -151,7 +181,7 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
         {planPreview && (
           <div className="settings-view__list" style={{ marginTop: 12 }}>
             <div className="settings-view__row-detail">
-              <strong>{planPreview.title}</strong> · {planPreview.lineItemCount} line items · {planPreview.workTypeCount} work types
+              <strong>{planPreview.title}</strong> · {planPreview.lineItemCount} line items · {planPreview.workTypeCount} work types · {planPreview.workUnitCount} units
             </div>
             <div className="settings-view__row-detail">
               Last modified: {new Date(planPreview.lastModifiedAt).toLocaleString()}
@@ -196,6 +226,13 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
                 )}
               </div>
             )}
+            <WorkUnitImportPreviewPanel
+              preview={planWorkUnitPreview}
+              applyImportedLabels={applyPlanUnitLabels}
+              onApplyImportedLabelsChange={setApplyPlanUnitLabels}
+              summaryElement="div"
+              summaryClassName="settings-view__row-detail"
+            />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -254,11 +291,18 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
         {executionPreview && (
           <div className="settings-view__list" style={{ marginTop: 12 }}>
             <div className="settings-view__row-detail">
-              <strong>{executionPreview.planTitle}</strong> · {executionPreview.lineItemCount} line items · {executionPreview.timeEntryCount} time entries
+              <strong>{executionPreview.planTitle}</strong> · {executionPreview.lineItemCount} line items · {executionPreview.timeEntryCount} time entries · {executionPreview.workUnitCount} units
             </div>
             <div className="settings-view__row-detail">
               Session closed: {new Date(executionPreview.closedAt).toLocaleString()}
             </div>
+            <WorkUnitImportPreviewPanel
+              preview={executionWorkUnitPreview}
+              applyImportedLabels={applyExecutionUnitLabels}
+              onApplyImportedLabelsChange={setApplyExecutionUnitLabels}
+              summaryElement="div"
+              summaryClassName="settings-view__row-detail"
+            />
             <div className="settings-view__row-detail">
               Date range: {executionPreview.dateRangeStart ? new Date(executionPreview.dateRangeStart).toLocaleString() : '—'} → {executionPreview.dateRangeEnd ? new Date(executionPreview.dateRangeEnd).toLocaleString() : '—'}
             </div>

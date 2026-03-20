@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '../../types';
 import type { Plan } from '../../planning/plan-model';
 import { createLineItem, createPlan } from '../../planning/plan-model';
-import { getAllWorkTypes } from '../../db';
+import { getAllWorkTypes, getAllWorkUnitDefinitions } from '../../db';
 import { buildExecutionReturnEnvelope } from './execution-return';
 
 vi.mock('../../db', () => ({
   getAllWorkTypes: vi.fn(),
+  getAllWorkUnitDefinitions: vi.fn(),
 }));
 
 const mockGetAllWorkTypes = vi.mocked(getAllWorkTypes);
+const mockGetAllWorkUnitDefinitions = vi.mocked(getAllWorkUnitDefinitions);
 
 function makePlan(): Plan {
   const base = createPlan('Execution Plan');
@@ -58,6 +60,18 @@ describe('buildExecutionReturnEnvelope', () => {
   beforeEach(() => {
     mockGetAllWorkTypes.mockReset();
     mockGetAllWorkTypes.mockResolvedValue([]);
+    mockGetAllWorkUnitDefinitions.mockReset();
+    mockGetAllWorkUnitDefinitions.mockResolvedValue([
+      {
+        id: 'm2',
+        label: 'm²',
+        sortIndex: 0,
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+        archivedAt: null,
+        builtIn: true,
+      },
+    ]);
   });
 
   it('derives blocked line-item status and block reason from linked blocked tasks', async () => {

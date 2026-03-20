@@ -5,7 +5,8 @@
  */
 
 import type { WorkType } from '../lib/types';
-import { WORK_UNIT_LABELS } from '../lib/types';
+import { resolveWorkUnitLabel } from '../lib/types';
+import { useWorkUnitStore } from '../lib/stores/work-unit-store';
 
 interface WorkTypePickerProps {
   workTypes: WorkType[];
@@ -26,6 +27,7 @@ export function WorkTypePicker({
   showRate = false,
   className,
 }: WorkTypePickerProps) {
+  useWorkUnitStore();
   const selectedWorkType = selectedId
     ? workTypes.find((wt) => wt.id === selectedId) ?? null
     : null;
@@ -45,14 +47,14 @@ export function WorkTypePicker({
           <option value="">{placeholder}</option>
           {workTypes.map((wt) => (
             <option key={wt.id} value={wt.id}>
-              {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+              {wt.title} · {resolveWorkUnitLabel(wt.workUnit)}
             </option>
           ))}
         </select>
       )}
       {showRate && selectedWorkType && (
         <div className="task-work-quantity__hint">
-          Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {WORK_UNIT_LABELS[selectedWorkType.workUnit]}/person-hr
+          Assembly: {selectedWorkType.assemblyRate} · Dismantle: {selectedWorkType.dismantleRate} {resolveWorkUnitLabel(selectedWorkType.workUnit)}/person-hr
         </div>
       )}
     </div>

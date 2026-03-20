@@ -1,5 +1,9 @@
 import { openDB } from 'idb';
-import { PROJECT_COLORS, type ActiveTimer } from '../../types';
+import {
+  PROJECT_COLORS,
+  buildSeededWorkUnitDefinitions,
+  type ActiveTimer,
+} from '../../types';
 import type { TimeTrackingDBSchema } from '../schema';
 
 /** Legacy placeholder task ID - removed; migration cleans up any existing instances. */
@@ -714,5 +718,64 @@ export const applyDbMigrations: DbUpgradeCallback = (
 
             return changed;
           });
+        }
+
+        // Version 33: Add work unit catalog definitions and seed built-ins.
+        if (oldVersion < 33) {
+          const now = new Date().toISOString();
+          const seeds = buildSeededWorkUnitDefinitions(now);
+
+          if (!db.objectStoreNames.contains('workUnitDefinitions')) {
+            const store = db.createObjectStore('workUnitDefinitions', { keyPath: 'id' });
+            store.createIndex('by-sort-index', 'sortIndex');
+            seeds.forEach((definition) => {
+              store.put(definition);
+            });
+          } else {
+            const store = transaction.objectStore('workUnitDefinitions');
+            store.getAll().then((definitions) => {
+              const existingById = new Map(
+                definitions.map((definition) => [String(definition.id), definition as unknown as Record<string, unknown>]),
+              );
+
+              for (const [index, seed] of seeds.entries()) {
+                const existing = existingById.get(seed.id);
+                if (!existing) {
+                  store.put(seed as never);
+                  continue;
+                }
+
+                let changed = false;
+                if (existing.builtIn !== true) {
+                  existing.builtIn = true;
+                  changed = true;
+                }
+                if (existing.archivedAt !== null) {
+                  existing.archivedAt = null;
+                  changed = true;
+                }
+                if (typeof existing.sortIndex !== 'number') {
+                  existing.sortIndex = index;
+                  changed = true;
+                }
+                if (typeof existing.createdAt !== 'string') {
+                  existing.createdAt = seed.createdAt;
+                  changed = true;
+                }
+                if (typeof existing.updatedAt !== 'string') {
+                  existing.updatedAt = seed.updatedAt;
+                  changed = true;
+                }
+                if (typeof existing.label !== 'string' || existing.label.trim() === '') {
+                  existing.label = seed.label;
+                  changed = true;
+                }
+
+                if (changed) {
+                  store.put(existing as never);
+                }
+              }
+            });
+          }
         }
 };

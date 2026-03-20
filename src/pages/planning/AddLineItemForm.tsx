@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
 import {
-  WORK_UNIT_LABELS,
+  formatWorkTypeWithUnit,
+  resolveWorkUnitLabel,
 } from '../../lib/types';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import {
@@ -98,14 +99,14 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
             {filteredWorkTypes.length === 0 && <option value="">{noWorkTypesMessage}</option>}
             {filteredWorkTypes.map((wt) => (
               <option key={wt.id} value={wt.id}>
-                {wt.title} · {WORK_UNIT_LABELS[wt.workUnit]}
+                {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
               </option>
             ))}
           </select>
         </div>
         <div className="planning-view__field">
           <span className="planning-view__field-label">
-            Qty{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]})` : ''}
+            Qty{selectedWorkType ? ` (${resolveWorkUnitLabel(selectedWorkType.workUnit)})` : ''}
           </span>
           <input
             className="input"
@@ -117,7 +118,7 @@ export function AddLineItemForm({ onAdd, onCancel }: AddLineItemFormProps) {
         </div>
         <div className="planning-view__field">
           <span className="planning-view__field-label">
-            Rate{selectedWorkType ? ` (${WORK_UNIT_LABELS[selectedWorkType.workUnit]}/ph)` : ''}
+            Rate{selectedWorkType ? ` (${resolveWorkUnitLabel(selectedWorkType.workUnit)}/ph)` : ''}
           </span>
           <input
             className="input"

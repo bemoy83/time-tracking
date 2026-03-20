@@ -10,3 +10,4 @@ export * from './db/attribution-repo';
 export * from './db/plans-repo';
 export * from './db/execution-returns-repo';
 export * from './db/work-types-repo';
+export * from './db/work-unit-definitions-repo';

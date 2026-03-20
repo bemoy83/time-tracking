@@ -4,14 +4,13 @@
 
 import { useState, useEffect } from 'react';
 import {
-  WorkUnit,
-  WORK_UNIT_LABELS,
+  resolveWorkUnitLabel,
   WorkType,
 } from '../lib/types';
 import { createWorkType, updateWorkTypeFields } from '../lib/stores/work-type-store';
+import { useSelectableWorkUnits } from '../lib/hooks/useSelectableWorkUnits';
 import { ActionSheet } from './ActionSheet';
-
-const WORK_UNITS: WorkUnit[] = ['m2', 'm', 'pcs', 'orders'];
+import { WorkUnitPillGroup } from './WorkUnitPillGroup';
 
 interface WorkTypeFormSheetProps {
   isOpen: boolean;
@@ -27,9 +26,10 @@ export function WorkTypeFormSheet({
   onDelete,
 }: WorkTypeFormSheetProps) {
   const isEdit = !!workType;
+  const { selectableUnits, defaultUnitId } = useSelectableWorkUnits(workType?.workUnit ?? null);
 
   const [title, setTitle] = useState('');
-  const [workUnit, setWorkUnit] = useState<WorkUnit>('m2');
+  const [workUnit, setWorkUnit] = useState(defaultUnitId);
   const [assemblyRate, setAssemblyRate] = useState('');
   const [dismantleRate, setDismantleRate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -45,12 +45,12 @@ export function WorkTypeFormSheet({
         setDismantleRate(String(workType.dismantleRate));
       } else {
         setTitle('');
-        setWorkUnit('m2');
+        setWorkUnit(defaultUnitId);
         setAssemblyRate('');
         setDismantleRate('');
       }
     }
-  }, [isOpen, workType]);
+  }, [defaultUnitId, isOpen, workType]);
 
   const parsedAssemblyRate = parseFloat(assemblyRate) || 0;
   const parsedDismantleRate = parseFloat(dismantleRate) || 0;
@@ -109,20 +109,12 @@ export function WorkTypeFormSheet({
         {/* Work Unit */}
         <div className="create-task-sheet__section">
           <label className="entry-modal__label">Work Unit</label>
-          <div className="task-work-quantity__unit-pills" role="group" aria-label="Unit">
-            {WORK_UNITS.map((u) => (
-              <button
-                key={u}
-                type="button"
-                role="radio"
-                aria-checked={workUnit === u}
-                className={`task-work-quantity__unit-pill${workUnit === u ? ' task-work-quantity__unit-pill--active' : ''}`}
-                onClick={() => setWorkUnit(u)}
-              >
-                {WORK_UNIT_LABELS[u]}
-              </button>
-            ))}
-          </div>
+          <WorkUnitPillGroup
+            units={selectableUnits}
+            value={workUnit}
+            onChange={setWorkUnit}
+            ariaLabel="Unit"
+          />
         </div>
 
         {/* Assembly Rate */}
@@ -138,7 +130,7 @@ export function WorkTypeFormSheet({
               style={{ width: `${Math.max(String(assemblyRate || '0').length, 1)}ch` }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
-              {WORK_UNIT_LABELS[workUnit]}/person-hr
+              {resolveWorkUnitLabel(workUnit)}/person-hr
             </span>
           </div>
         </div>
@@ -156,7 +148,7 @@ export function WorkTypeFormSheet({
               style={{ width: `${Math.max(String(dismantleRate || '0').length, 1)}ch` }}
             />
             <span className="task-work-quantity__input-unit" aria-hidden="true">
-              {WORK_UNIT_LABELS[workUnit]}/person-hr
+              {resolveWorkUnitLabel(workUnit)}/person-hr
             </span>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import {
   type WorkType,
   type WorkUnit,
-  WORK_UNITS,
   workTypeKeyString,
 } from '../types';
 import {
@@ -11,11 +10,13 @@ import {
 } from '../stores/work-type-store';
 import { detectCsvDelimiter, parseCsvLine } from './csv-utils';
 import { normalizeNumberString } from './number-parse';
+import { parseWorkUnitReference, provisionWorkUnitsForImport } from './work-unit-import';
 
 export interface ImportedWorkType {
   mappingKey: string;
   title: string;
   workUnit: WorkUnit;
+  workUnitLabel?: string | null;
   assemblyRate: number;
   dismantleRate: number;
 }
@@ -48,6 +49,17 @@ export interface WorkTypeImportPreview {
   };
   /** Duplicate mapping keys within the import set. Resolve before apply. */
   duplicateKeys: string[];
+}
+
+export interface ApplyWorkTypeImportOptions {
+  applyLabelToExisting?: boolean;
+}
+
+export interface ApplyWorkTypeImportResult {
+  created: number;
+  updated: number;
+  unitsCreated: number;
+  unitLabelsUpdated: number;
 }
 
 /**
@@ -97,16 +109,12 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
       rowErrors.push({ row: rowNum, field: 'title', message: 'Title is required' });
     }
 
-    const workUnitRaw = row.workunit;
-    if (!workUnitRaw) {
-      rowErrors.push({ row: rowNum, field: 'workUnit', message: 'Work unit is required' });
-    } else if (!WORK_UNITS.includes(workUnitRaw as WorkUnit)) {
-      rowErrors.push({
-        row: rowNum,
-        field: 'workUnit',
-        message: `Invalid work unit: "${workUnitRaw}". Valid: ${WORK_UNITS.join(', ')}`,
-      });
-    }
+    const workUnitReference = parseWorkUnitReference(
+      row.workunit,
+      row.workunitlabel,
+      rowNum,
+      rowErrors,
+    );
 
     const assemblyRate = parseOptionalNumber(row.assemblyrate, rowNum, 'assemblyRate', rowErrors);
     const dismantleRate = parseOptionalNumber(row.dismantlerate, rowNum, 'dismantleRate', rowErrors);
@@ -127,9 +135,10 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     }
 
     items.push({
-      mappingKey: workTypeKeyString(title, workUnitRaw as WorkUnit),
+      mappingKey: workTypeKeyString(title, workUnitReference!.workUnit),
       title,
-      workUnit: workUnitRaw as WorkUnit,
+      workUnit: workUnitReference!.workUnit,
+      workUnitLabel: workUnitReference!.workUnitLabel,
       assemblyRate: assemblyRate ?? 0,
       dismantleRate: dismantleRate ?? 0,
     });
@@ -183,9 +192,19 @@ export function generateWorkTypeImportPreview(
 
 export async function applyWorkTypeImport(
   items: ImportedWorkType[],
-): Promise<{ created: number; updated: number }> {
+  options: ApplyWorkTypeImportOptions = {},
+): Promise<ApplyWorkTypeImportResult> {
   let created = 0;
   let updated = 0;
+
+  const units = await provisionWorkUnitsForImport(
+    items,
+    (item) => ({
+      workUnit: item.workUnit,
+      workUnitLabel: item.workUnitLabel ?? null,
+    }),
+    { applyLabelToExisting: options.applyLabelToExisting },
+  );
 
   for (const item of items) {
     const existing = findWorkTypeByKey(item.title, item.workUnit);
@@ -210,7 +229,12 @@ export async function applyWorkTypeImport(
     created += 1;
   }
 
-  return { created, updated };
+  return {
+    created,
+    updated,
+    unitsCreated: units.created.length,
+    unitLabelsUpdated: units.relabeled.length,
+  };
 }
 
 function parseOptionalNumber(

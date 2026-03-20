@@ -47,10 +47,10 @@ export function SettingsPlanLineItemsView({ onBack }: SettingsPlanLineItemsViewP
           One row per work package. Both assembly and dismantle phases in a single row.
         </p>
         <p className="settings-view__helper">
-          Required: <code>title</code>, <code>workTypeTitle</code>, <code>workUnit</code> (<code>m2</code> / <code>m</code> / <code>pcs</code> / <code>orders</code>)
+          Required: <code>title</code>, <code>workTypeTitle</code>, <code>workUnit</code> (lowercase slug id, for example <code>m2</code> or <code>pallets</code>)
         </p>
         <p className="settings-view__helper">
-          Optional: <code>workQuantity</code>, <code>assemblyRate</code>, <code>assemblyCrew</code>, <code>assemblyEstimatedMinutes</code>, <code>dismantleRate</code>, <code>dismantleCrew</code>, <code>dismantleEstimatedMinutes</code>
+          Optional: <code>workUnitLabel</code>, <code>workQuantity</code>, <code>assemblyRate</code>, <code>assemblyCrew</code>, <code>assemblyEstimatedMinutes</code>, <code>dismantleRate</code>, <code>dismantleCrew</code>, <code>dismantleEstimatedMinutes</code>
         </p>
         <button type="button" className="btn btn--secondary btn--sm" onClick={handleDownloadSample}>
           Download Sample CSV

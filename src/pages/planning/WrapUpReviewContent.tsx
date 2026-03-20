@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { LoadingBlock } from '../../components/LoadingBlock';
 import { getPhaseFields, isPhaseActive } from '../../lib/planning/plan-model';
 import type { WorkType } from '../../lib/types';
-import { BUILD_PHASE_LABELS, BUILD_PHASES, WORK_UNIT_LABELS } from '../../lib/types';
+import { BUILD_PHASE_LABELS, BUILD_PHASES, formatWorkTypeWithUnit } from '../../lib/types';
 import type { UseWrapUpSheetModelV2Result } from './hooks/useWrapUpSheetModelV2';
 
 interface WrapUpReviewContentProps {
@@ -70,7 +70,7 @@ export function WrapUpReviewContent({
                       <div>
                         <h4 className="wrap-up-sheet__row-title">{item.lineItem.title}</h4>
                         <p className="wrap-up-sheet__row-meta">
-                          Work type: {item.lineItem.workTypeTitle} · {WORK_UNIT_LABELS[item.lineItem.workUnit] ?? item.lineItem.workUnit} · {phaseLabels}
+                          Work type: {formatWorkTypeWithUnit(item.lineItem.workTypeTitle, item.lineItem.workUnit)} · {phaseLabels}
                         </p>
                         <p className="wrap-up-sheet__row-meta">
                           Status: {decision.executionStatus} · Planned {item.plannedPersonHours.toFixed(1)}h · Actual {item.actualPersonHours.toFixed(1)}h · Variance {item.variancePersonHours.toFixed(1)}h
@@ -213,10 +213,10 @@ export function WrapUpReviewContent({
                         {workTypes
                           .filter((workType) => workType.readOnly !== true)
                           .map((workType) => (
-                            <option key={workType.id} value={workType.id}>
-                              {workType.title} · {WORK_UNIT_LABELS[workType.workUnit]}
-                            </option>
-                          ))}
+                              <option key={workType.id} value={workType.id}>
+                              {formatWorkTypeWithUnit(workType.title, workType.workUnit)}
+                              </option>
+                            ))}
                       </select>
                       {hasUnplannedError && decision.includeInKpi && (decision.assignedWorkTypeId == null || item.isImportedOnly) && (
                         <span className="wrap-up-sheet__card-hint" role="status">

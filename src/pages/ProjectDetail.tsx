@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Task,
   TaskTemplate,
-  WORK_UNIT_LABELS,
+  formatQuantityWithUnit,
   formatDurationShort,
   getProjectDisplayColor,
 } from '../lib/types';
@@ -110,7 +110,7 @@ export function ProjectDetail({
       const rounded = Number.isInteger(quantity)
         ? quantity.toString()
         : quantity.toFixed(2).replace(/\.?0+$/, '');
-      return `${rounded} ${WORK_UNIT_LABELS[unit]}`;
+      return formatQuantityWithUnit(rounded, unit);
     })
     .join(', ');
 

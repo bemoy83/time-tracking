@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { BreadcrumbNav } from '../../components/BreadcrumbNav';
 import { Fab } from '../../components/Fab';
 import { ImportIcon, TaskListIcon } from '../../components/icons';
+import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import { FieldPlanActionSheet } from './components/FieldPlanActionSheet';
 import { FieldPlanPhaseView } from './components/FieldPlanPhaseView';
 import { FieldPlanPlanDetail } from './components/FieldPlanPlanDetail';
@@ -43,7 +44,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
         {model.preview && (
           <section className="field-plan-import-card">
             <p className="field-plan-import-card__title">
-              <strong>{model.preview.title}</strong> · {model.preview.lineItemCount} items · {model.preview.workTypeCount} work types
+              <strong>{model.preview.title}</strong> · {model.preview.lineItemCount} items · {model.preview.workTypeCount} work types · {model.preview.workUnitCount} units
             </p>
             <p className="field-plan-import-card__meta">
               Last modified {new Date(model.preview.lastModifiedAt).toLocaleString()}
@@ -82,6 +83,11 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
                 )}
               </div>
             )}
+            <WorkUnitImportPreviewPanel
+              preview={model.workUnitPreview}
+              applyImportedLabels={model.applyImportedUnitLabels}
+              onApplyImportedLabelsChange={model.setApplyImportedUnitLabels}
+            />
             <div className="field-plan-import-card__actions">
               <button
                 type="button"
