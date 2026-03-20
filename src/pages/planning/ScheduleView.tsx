@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTagSequenceStore } from '../../lib/stores/tag-sequence-store';
+import { useTagStore } from '../../lib/stores/tag-store';
 import { ChevronLeftIcon } from '../../components/icons';
 import { PlanKpiRow } from './PlanKpiRow';
 import { buildScheduleCoverageMetric, getScheduleViewMetrics } from './workspace/workspace-metrics';
@@ -69,6 +71,26 @@ export function ScheduleView({
   readOnly,
 }: ScheduleViewProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
+  const { tags } = useTagStore();
+  const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
+
+  // Build the full execution sequence: explicitly-ordered tags first, then any
+  // sequencable tags not yet saved to the sequence (alphabetical). This mirrors
+  // SettingsTagSequenceView so the assistant always respects all sequencable tags
+  // even when the user hasn't visited the sequence settings view yet.
+  const sequenceTagIds = useMemo(() => {
+    const sequencableTags = tags.filter((t) => t.sequencable);
+    if (sequencableTags.length === 0) return [];
+    const sequenceSet = new Set(storedSequenceTagIds);
+    const positionMap = new Map(storedSequenceTagIds.map((id, i) => [id, i]));
+    const inSequence = sequencableTags
+      .filter((t) => sequenceSet.has(t.id))
+      .sort((a, b) => (positionMap.get(a.id) ?? 0) - (positionMap.get(b.id) ?? 0));
+    const notInSequence = sequencableTags
+      .filter((t) => !sequenceSet.has(t.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...inSequence, ...notInSequence].map((t) => t.id);
+  }, [tags, storedSequenceTagIds]);
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
@@ -401,9 +423,15 @@ export function ScheduleView({
 
   const handleAutoSchedule = useCallback(() => {
     const rerunFromStale = assistantReportStale;
+    const tagSequence = sequenceTagIds.length > 0
+      ? { id: 'global' as const, tagIds: sequenceTagIds, updatedAt: '' }
+      : undefined;
     const { plan: scheduledPlan, report } = runAutoSchedule(
       currentPlan,
-      rerunFromStale ? { includeScheduled: true } : undefined,
+      {
+        ...(rerunFromStale ? { includeScheduled: true } : {}),
+        tagSequence,
+      },
     );
 
     let nextPlan = scheduledPlan;
@@ -435,7 +463,7 @@ export function ScheduleView({
       over_capacity_days_before: report.before.overCapacityDays,
       over_capacity_days_after: report.after.overCapacityDays,
     });
-  }, [assistantReportStale, applyAssistantRunReport, currentPlan, mutatePlan]);
+  }, [assistantReportStale, applyAssistantRunReport, currentPlan, mutatePlan, sequenceTagIds]);
 
   const isLocked = currentPlan.status === 'active';
 

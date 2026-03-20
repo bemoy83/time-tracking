@@ -24,11 +24,18 @@ import type {
   AutoScheduleUnresolvedReason,
 } from './auto-schedule';
 import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
+import type { GlobalTagSequence } from '../../tags';
+import { resolveTagSequencePosition } from '../../tags';
 
 export interface SharedAutoScheduleInput {
   plans: Plan[];
   calendar: WorkCalendarDay[];
   defaultCrewSize: number;
+  /**
+   * When provided, line items across all plans are sorted by their earliest
+   * sequencable tag position before size-based ordering.
+   */
+  tagSequence?: GlobalTagSequence;
 }
 
 export interface SharedAutoScheduleChangedRow {
@@ -162,7 +169,15 @@ export function runSharedAutoSchedule(
       requiredPH: resolveRequiredPersonHoursForPhase(item, phase),
       span: getPhaseSpan(plan, phase),
     }))
-    .sort((a, b) => (b.requiredPH ?? 0) - (a.requiredPH ?? 0) || a.item.id.localeCompare(b.item.id));
+    .sort((a, b) => {
+      if (input.tagSequence) {
+        const seqIds = input.tagSequence.tagIds;
+        const posA = resolveTagSequencePosition(a.item.tagIds ?? [], seqIds);
+        const posB = resolveTagSequencePosition(b.item.tagIds ?? [], seqIds);
+        if (posA !== posB) return posA - posB;
+      }
+      return (b.requiredPH ?? 0) - (a.requiredPH ?? 0) || a.item.id.localeCompare(b.item.id);
+    });
 
   for (const candidate of candidates) {
     if (candidate.requiredPH == null || candidate.requiredPH <= 0) {

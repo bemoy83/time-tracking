@@ -5,6 +5,8 @@
 
 import type { BuildPhase } from '../../types';
 import type { Plan, PlanLineItem, PhaseFields } from '../plan-model';
+import type { GlobalTagSequence } from '../../tags';
+import { resolveTagSequencePosition } from '../../tags';
 import {
   getPhaseFields,
   getPhaseQuantity,
@@ -32,6 +34,12 @@ export interface AutoScheduleOptions {
   rebalance?: AutoScheduleRebalanceMode;
   includeScheduled?: boolean;
   allowOverAllocation?: boolean;
+  /**
+   * When provided, line items are sorted by their earliest sequencable tag
+   * position before size-based ordering. Items with no sequencable tags
+   * sort after those that have tags but before items that are fully unsequenced.
+   */
+  tagSequence?: GlobalTagSequence;
 }
 
 export interface AutoScheduleChangedRow {
@@ -68,6 +76,7 @@ interface NormalizedOptions {
   rebalance: AutoScheduleRebalanceMode;
   includeScheduled: boolean;
   allowOverAllocation: boolean;
+  tagSequence: GlobalTagSequence | undefined;
 }
 
 interface RequiredWorkResolution {
@@ -89,6 +98,7 @@ const DEFAULT_OPTIONS: NormalizedOptions = {
   rebalance: 'local',
   includeScheduled: false,
   allowOverAllocation: false,
+  tagSequence: undefined,
 };
 
 function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
@@ -97,6 +107,7 @@ function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
     rebalance: options?.rebalance ?? DEFAULT_OPTIONS.rebalance,
     includeScheduled: options?.includeScheduled ?? DEFAULT_OPTIONS.includeScheduled,
     allowOverAllocation: options?.allowOverAllocation ?? DEFAULT_OPTIONS.allowOverAllocation,
+    tagSequence: options?.tagSequence,
   };
 }
 
@@ -246,7 +257,15 @@ function schedulePhase(
       };
     })
     .filter((row): row is { item: PlanLineItem; pf: PhaseFields; requiredPH: number; preferredCrew: number } => row != null)
-    .sort((a, b) => b.requiredPH - a.requiredPH || a.item.id.localeCompare(b.item.id));
+    .sort((a, b) => {
+      if (options.tagSequence) {
+        const seqIds = options.tagSequence.tagIds;
+        const posA = resolveTagSequencePosition(a.item.tagIds ?? [], seqIds);
+        const posB = resolveTagSequencePosition(b.item.tagIds ?? [], seqIds);
+        if (posA !== posB) return posA - posB;
+      }
+      return b.requiredPH - a.requiredPH || a.item.id.localeCompare(b.item.id);
+    });
 
   for (const row of schedulable) {
     const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation);

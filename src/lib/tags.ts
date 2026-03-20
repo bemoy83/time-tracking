@@ -126,6 +126,32 @@ export interface GlobalTagSequence {
 // ============================================================
 
 /**
+ * Returns the earliest (highest-priority) position a line item or task occupies
+ * in the global tag execution sequence.
+ *
+ * Lower index = higher priority = scheduled first.
+ * Items with no overlap with the sequence return `Infinity` — they are still
+ * scheduled, just after all sequenced items.
+ *
+ * When a line item carries multiple sequencable tags (e.g. "Zone A" at index 0
+ * and "Crew 2" at index 4), the minimum index wins so the item is treated as
+ * belonging to the highest-priority group it participates in.
+ */
+export function resolveTagSequencePosition(
+  itemTagIds: string[],
+  sequenceTagIds: string[],
+): number {
+  if (sequenceTagIds.length === 0 || itemTagIds.length === 0) return Infinity;
+  const positionMap = new Map(sequenceTagIds.map((id, i) => [id, i]));
+  let best = Infinity;
+  for (const id of itemTagIds) {
+    const pos = positionMap.get(id);
+    if (pos !== undefined && pos < best) best = pos;
+  }
+  return best;
+}
+
+/**
  * Given the effective tag IDs for a task and the available tags from the store,
  * return the tags grouped by category, sorted by category sortOrder then tag name.
  */

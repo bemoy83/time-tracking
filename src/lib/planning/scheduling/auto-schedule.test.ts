@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createLineItem, createPlan, getPhaseFields } from '../plan-model';
 import { runAutoSchedule } from './auto-schedule';
+import type { GlobalTagSequence } from '../../tags';
 
 function makePlan() {
   const plan = createPlan('Auto');
@@ -77,6 +78,68 @@ describe('defaultCrewSize floor for preferredCrew', () => {
     // With plan crew floor, 48h available/day → fits in 1 day
     expect(daysUsed).toBe(1);
     expect(pf.scheduledStart).toBe('2026-04-01');
+  });
+});
+
+describe('tag sequence ordering', () => {
+  it('schedules items in tag sequence order, not just by size', () => {
+    // Two items with identical person-hours requirements.
+    // Item A has a tag at sequence position 2 (lower priority).
+    // Item B has a tag at sequence position 0 (highest priority).
+    // Without tag sequence: A and B sort by ID — alphabetically A comes first.
+    // With tag sequence: B must be scheduled first (position 0 < position 2).
+    const plan = createPlan('TagSeq');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-04';
+    plan.defaultCrewSize = 2;
+    plan.workCalendar = [
+      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+      { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
+      { date: '2026-03-04', isWorkDay: true, accessStart: '08:00', accessEnd: '12:00', crewSize: 2 },
+    ];
+
+    const itemA = createLineItem('Alpha', 'Alpha', 'pcs', 1, 1, 0);
+    itemA.assemblyCrew = 1;
+    itemA.assemblyTimeHours = 8; // 8 ph required
+    itemA.tagIds = ['tag-low-priority']; // sequence position 2
+
+    const itemB = createLineItem('Beta', 'Beta', 'pcs', 1, 1, 0);
+    itemB.assemblyCrew = 1;
+    itemB.assemblyTimeHours = 8; // 8 ph required (same as A)
+    itemB.tagIds = ['tag-high-priority']; // sequence position 0
+
+    plan.lineItems = [itemA, itemB];
+
+    const tagSeq: GlobalTagSequence = {
+      id: 'global',
+      tagIds: ['tag-high-priority', 'tag-mid', 'tag-low-priority'],
+      updatedAt: '',
+    };
+
+    const { report } = runAutoSchedule(plan, { tagSequence: tagSeq });
+
+    // B (high-priority tag) must appear before A (low-priority tag) in changed[]
+    const changedIds = report.changed.map((r) => r.lineItemId);
+    expect(changedIds.indexOf(itemB.id)).toBeLessThan(changedIds.indexOf(itemA.id));
+  });
+
+  it('falls back to requiredPH ordering when no tagSequence is provided', () => {
+    // Existing behavior: larger items are scheduled first.
+    const plan = makePlan();
+    const small = createLineItem('Small', 'Small', 'pcs', 1, 1, 0);
+    small.assemblyCrew = 1;
+    small.assemblyTimeHours = 4; // 4 ph
+
+    const large = createLineItem('Large', 'Large', 'pcs', 1, 1, 0);
+    large.assemblyCrew = 2;
+    large.assemblyTimeHours = 4; // 8 ph — must schedule first
+
+    plan.lineItems = [small, large];
+
+    const { report } = runAutoSchedule(plan); // no tagSequence
+
+    const changedIds = report.changed.map((r) => r.lineItemId);
+    expect(changedIds.indexOf(large.id)).toBeLessThan(changedIds.indexOf(small.id));
   });
 });
 

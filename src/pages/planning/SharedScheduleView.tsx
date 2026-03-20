@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTagSequenceStore } from '../../lib/stores/tag-sequence-store';
+import { useTagStore } from '../../lib/stores/tag-store';
 import type { BuildPhase, Project } from '../../lib/types';
 import { getPlanDisplayName, type Plan, type PlanLineItem, type WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
@@ -71,6 +73,26 @@ export function SharedScheduleView({
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
   const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
+  const { tags } = useTagStore();
+  const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
+
+  // Build the full execution sequence: explicitly-ordered tags first, then any
+  // sequencable tags not yet saved to the sequence (alphabetical). This mirrors
+  // SettingsTagSequenceView so the assistant always respects all sequencable tags
+  // even when the user hasn't visited the sequence settings view yet.
+  const sequenceTagIds = useMemo(() => {
+    const sequencableTags = tags.filter((t) => t.sequencable);
+    if (sequencableTags.length === 0) return [];
+    const sequenceSet = new Set(storedSequenceTagIds);
+    const positionMap = new Map(storedSequenceTagIds.map((id, i) => [id, i]));
+    const inSequence = sequencableTags
+      .filter((t) => sequenceSet.has(t.id))
+      .sort((a, b) => (positionMap.get(a.id) ?? 0) - (positionMap.get(b.id) ?? 0));
+    const notInSequence = sequencableTags
+      .filter((t) => !sequenceSet.has(t.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...inSequence, ...notInSequence].map((t) => t.id);
+  }, [tags, storedSequenceTagIds]);
 
   const selectablePlans = useMemo(
     () => plans.filter(isPlanInPlannerState),
@@ -272,10 +294,14 @@ export function SharedScheduleView({
     const mutablePlans = selectedPlans.filter((plan) => !isPlanArchived(plan));
     if (mutablePlans.length === 0) return;
 
+    const tagSequence = sequenceTagIds.length > 0
+      ? { id: 'global' as const, tagIds: sequenceTagIds, updatedAt: '' }
+      : undefined;
     const { planUpdatesById, report } = runSharedAutoSchedule({
       plans: mutablePlans,
       calendar: crewPoolCalendar,
       defaultCrewSize: crewPoolDefaultCrewSize,
+      tagSequence,
     });
 
     if (report.changed.length === 0) {
