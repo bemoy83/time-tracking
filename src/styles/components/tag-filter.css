@@ -139,14 +139,20 @@
   display: none;
 }
 
+/*
+ * Tag filter chips — same chroma language as .tag-pill: neutral label, tag-tinted
+ * surfaces. Inactive = outline; hover = light tint; active = stronger fill (matches
+ * tag pill light/dark mixes). Keeps WCAG-friendly text vs colored fills.
+ */
 .tag-filter__tag-chip {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 4px 10px;
   border-radius: var(--radius-full);
   font-size: var(--font-small);
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid var(--color-border);
   background: none;
   color: var(--color-text-muted);
@@ -157,14 +163,29 @@
 }
 
 .tag-filter__tag-chip:hover:not(.tag-filter__tag-chip--active) {
-  border-color: var(--tag-color, var(--color-primary));
-  color: var(--tag-color, var(--color-primary));
+  border-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 35%, var(--color-border));
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 10%, transparent);
 }
 
 .tag-filter__tag-chip--active {
-  background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 12%, transparent);
-  border-color: var(--tag-color, var(--color-primary));
-  color: var(--tag-color, var(--color-primary));
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 16%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 32%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tag-filter__tag-chip:hover:not(.tag-filter__tag-chip--active) {
+    border-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 42%, var(--surface-contained-border));
+    color: var(--color-text);
+    background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 22%, var(--surface-contained-bg));
+  }
+
+  .tag-filter__tag-chip--active {
+    background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 50%, var(--surface-elevated-bg));
+    border-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 58%, var(--surface-contained-border));
+    color: var(--color-text);
+  }
 }
 
 /* ----------------------------------------------------------

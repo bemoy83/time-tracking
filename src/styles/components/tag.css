@@ -6,6 +6,7 @@
 /* ----------------------------------------------------------
    Tag Pill — compact colored chip (reusable)
    Usage: <span class="tag-pill" style="--tag-color: #2563eb">...</span>
+   Fill/border use --tag-color; label text uses neutral --color-text for contrast.
    Optional sizing: override --tag-pill-fs / --tag-pill-pad-* on a parent or element.
    ---------------------------------------------------------- */
 
@@ -30,7 +31,7 @@
   line-height: 1.2;
   white-space: nowrap;
   background-color: var(--tag-pill-bg);
-  color: var(--tag-color, #2563eb);
+  color: var(--color-text);
   border: 1px solid var(--tag-pill-border);
   cursor: default;
   user-select: none;
@@ -80,6 +81,26 @@
   opacity: 1;
   outline: 2px solid color-mix(in srgb, var(--tag-color, #2563eb) 55%, transparent);
   outline-offset: 1px;
+}
+
+/*
+ * Dark mode: mixing tag color with `transparent` yields mud on dark surfaces.
+ * Blend with an elevated surface instead for a stronger, lighter-feeling tint
+ * behind --color-text (light) labels.
+ */
+@media (prefers-color-scheme: dark) {
+  .tag-pill {
+    --tag-pill-bg: color-mix(in srgb, var(--tag-color, #2563eb) 50%, var(--surface-elevated-bg));
+    --tag-pill-border: color-mix(in srgb, var(--tag-color, #2563eb) 58%, var(--surface-contained-border));
+  }
+
+  .tag-pill__remove:hover {
+    background-color: color-mix(in srgb, var(--tag-color, #2563eb) 35%, var(--surface-contained-hover));
+  }
+
+  .tag-pill__remove:focus-visible {
+    outline-color: color-mix(in srgb, var(--tag-color, #2563eb) 60%, var(--surface-elevated-border));
+  }
 }
 
 /* Slightly larger chip for low-density layouts (optional) */

@@ -44,7 +44,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
         {model.preview && (
           <section className="field-plan-import-card">
             <p className="field-plan-import-card__title">
-              <strong>{model.preview.title}</strong> · {model.preview.lineItemCount} items · {model.preview.workTypeCount} work types · {model.preview.workUnitCount} units
+              <strong>{model.preview.title}</strong> · {model.preview.lineItemCount} items · {model.preview.workTypeCount} work types · {model.preview.workUnitCount} units · {model.preview.projectCount} projects · {model.preview.tagCount} tags
             </p>
             <p className="field-plan-import-card__meta">
               Last modified {new Date(model.preview.lastModifiedAt).toLocaleString()}

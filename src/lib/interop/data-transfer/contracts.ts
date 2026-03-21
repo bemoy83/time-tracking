@@ -191,6 +191,8 @@ export interface PlanPackageImportPreview {
   lineItemCount: number;
   workTypeCount: number;
   workUnitCount: number;
+  projectCount: number;
+  tagCount: number;
   lastModifiedAt: string;
   conflict: 'none' | 'replace-or-skip' | 'merge' | 'planner-plan';
   existingStatus: Plan['status'] | null;

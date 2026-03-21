@@ -617,6 +617,8 @@ export async function previewPlanPackageImport(
     lineItemCount: importedPlan.lineItems.length,
     workTypeCount: envelope.payload.workTypes.length,
     workUnitCount: envelope.payload.workUnitDefinitions?.length ?? 0,
+    projectCount: envelope.payload.projects?.length ?? 0,
+    tagCount: envelope.payload.tags?.length ?? 0,
     lastModifiedAt: envelope.payload.lastModifiedAt ?? importedPlan.updatedAt,
     conflict,
     existingStatus,

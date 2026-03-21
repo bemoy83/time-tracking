@@ -131,30 +131,50 @@ export function FieldPlanPlanDetail({
             </span>
           )}
         </div>
-        <div className="field-plan__phase-filter">
-          {(['all', 'assembly', 'dismantle'] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              className={`field-plan__phase-filter-btn${phaseFilter === f ? ' field-plan__phase-filter-btn--active' : ''}`}
-              onClick={() => onPhaseFilterChange(f)}
-            >
-              {f === 'all' ? 'All' : BUILD_PHASE_LABELS[f]}
-            </button>
-          ))}
+        <div
+          className="field-plan__filter-group"
+          role="group"
+          aria-labelledby="field-plan-phase-filter-label"
+        >
+          <h4 className="field-plan__filter-heading" id="field-plan-phase-filter-label">
+            Filter by phase
+          </h4>
+          <div className="field-plan__phase-filter">
+            {(['all', 'assembly', 'dismantle'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`field-plan__phase-filter-btn${phaseFilter === f ? ' field-plan__phase-filter-btn--active' : ''}`}
+                onClick={() => onPhaseFilterChange(f)}
+              >
+                {f === 'all' ? 'All' : BUILD_PHASE_LABELS[f]}
+              </button>
+            ))}
+          </div>
         </div>
-        <TagFilterPanel
-          activeTagFilters={tagFilter.activeTagFilters}
-          tagSearchQuery={tagFilter.tagSearchQuery}
-          selectedCategoryId={tagFilter.selectedCategoryId}
-          availableCategories={tagFilter.availableCategories}
-          displayedTags={tagFilter.displayedTags}
-          hasActiveFilters={tagFilter.hasActiveFilters}
-          onToggleTag={tagFilter.toggleTagFilter}
-          onSearchChange={tagFilter.setTagSearchQuery}
-          onCategoryChange={tagFilter.setSelectedCategoryId}
-          onClearFilters={tagFilter.clearTagFilters}
-        />
+        {tagFilter.availableCategories.length > 0 && (
+          <div
+            className="field-plan__filter-group"
+            role="group"
+            aria-labelledby="field-plan-tag-filter-label"
+          >
+            <h4 className="field-plan__filter-heading" id="field-plan-tag-filter-label">
+              Filter by tags
+            </h4>
+            <TagFilterPanel
+              activeTagFilters={tagFilter.activeTagFilters}
+              tagSearchQuery={tagFilter.tagSearchQuery}
+              selectedCategoryId={tagFilter.selectedCategoryId}
+              availableCategories={tagFilter.availableCategories}
+              displayedTags={tagFilter.displayedTags}
+              hasActiveFilters={tagFilter.hasActiveFilters}
+              onToggleTag={tagFilter.toggleTagFilter}
+              onSearchChange={tagFilter.setTagSearchQuery}
+              onCategoryChange={tagFilter.setSelectedCategoryId}
+              onClearFilters={tagFilter.clearTagFilters}
+            />
+          </div>
+        )}
       </section>
 
       {filteredStatusGroups.inProgress.length > 0 && (

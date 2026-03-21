@@ -273,6 +273,20 @@
   height: 14px;
 }
 
+.field-plan__filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-plan__filter-heading {
+  margin: 0;
+  font-size: var(--font-label);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
 .field-plan__phase-filter {
   display: flex;
   gap: 0;
@@ -597,16 +611,26 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   width: fit-content;
+  color: var(--color-text);
 }
 
+/* Same idea as .tag-pill: neutral label on a phase-tinted fill */
 .field-plan-row__phase-badge--assembly {
-  background: var(--wp-phase-assembly-header-bg);
-  color: var(--phase-assembly-fg);
+  background: color-mix(in srgb, var(--phase-assembly-fg) 16%, transparent);
 }
 
 .field-plan-row__phase-badge--dismantle {
-  background: var(--wp-phase-dismantle-header-bg);
-  color: var(--phase-dismantle-fg);
+  background: color-mix(in srgb, var(--phase-dismantle-fg) 16%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .field-plan-row__phase-badge--assembly {
+    background: color-mix(in srgb, var(--phase-assembly-fg) 50%, var(--surface-elevated-bg));
+  }
+
+  .field-plan-row__phase-badge--dismantle {
+    background: color-mix(in srgb, var(--phase-dismantle-fg) 50%, var(--surface-elevated-bg));
+  }
 }
 
 .field-plan-row__badges {
@@ -614,6 +638,17 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+}
+
+/* Match phase badge chip metrics; borderless like phase badges */
+.field-plan-row__badges .tag-pill {
+  --tag-pill-fs: var(--font-caption);
+  --tag-pill-pad-y: 2px;
+  --tag-pill-pad-x: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+  border: none;
 }
 
 .field-plan-row__chip {

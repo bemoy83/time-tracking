@@ -181,7 +181,7 @@ export function SettingsDataTransferView({ onBack }: SettingsDataTransferViewPro
         {planPreview && (
           <div className="settings-view__list" style={{ marginTop: 12 }}>
             <div className="settings-view__row-detail">
-              <strong>{planPreview.title}</strong> · {planPreview.lineItemCount} line items · {planPreview.workTypeCount} work types · {planPreview.workUnitCount} units
+              <strong>{planPreview.title}</strong> · {planPreview.lineItemCount} line items · {planPreview.workTypeCount} work types · {planPreview.workUnitCount} units · {planPreview.projectCount} projects · {planPreview.tagCount} tags
             </div>
             <div className="settings-view__row-detail">
               Last modified: {new Date(planPreview.lastModifiedAt).toLocaleString()}
