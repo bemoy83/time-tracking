@@ -19,12 +19,14 @@ import { nowUtc } from '../types';
 
 type CrewPoolState = {
   defaultCrewSize: number | null;
+  taskSwitchingFactor: number | null;
   allocations: Record<string, number>;
   isLoading: boolean;
 };
 
 let state: CrewPoolState = {
   defaultCrewSize: null,
+  taskSwitchingFactor: null,
   allocations: {},
   isLoading: true,
 };
@@ -52,6 +54,7 @@ export async function initializeCrewPoolStore(): Promise<void> {
     const pool = await getCrewPool();
     setState({
       defaultCrewSize: pool?.defaultCrewSize ?? null,
+      taskSwitchingFactor: pool?.taskSwitchingFactor ?? null,
       allocations: pool?.allocations ?? {},
       isLoading: false,
     });
@@ -63,7 +66,7 @@ export async function initializeCrewPoolStore(): Promise<void> {
 
 export function resetCrewPoolStoreState(): void {
   initialized = false;
-  setState({ defaultCrewSize: null, allocations: {}, isLoading: true });
+  setState({ defaultCrewSize: null, taskSwitchingFactor: null, allocations: {}, isLoading: true });
 }
 
 // ============================================================
@@ -84,6 +87,7 @@ export async function setSkillCrewCount(tagId: string, count: number): Promise<v
   const pool = {
     id: 'global' as const,
     defaultCrewSize: state.defaultCrewSize,
+    taskSwitchingFactor: state.taskSwitchingFactor,
     allocations: next,
     updatedAt: nowUtc(),
   };
@@ -99,11 +103,29 @@ export async function setSystemDefaultCrewSize(count: number | null): Promise<vo
   const pool = {
     id: 'global' as const,
     defaultCrewSize: count,
+    taskSwitchingFactor: state.taskSwitchingFactor,
     allocations: state.allocations,
     updatedAt: nowUtc(),
   };
   await putCrewPool(pool);
   setState({ defaultCrewSize: count });
+}
+
+/**
+ * Set the task-switching (fragmentation) factor.
+ * Exponential decay base applied per additional skill group beyond the first on any day.
+ * Range 0.80–1.00. Pass null to use the default of 0.95.
+ */
+export async function setTaskSwitchingFactor(factor: number | null): Promise<void> {
+  const pool = {
+    id: 'global' as const,
+    defaultCrewSize: state.defaultCrewSize,
+    taskSwitchingFactor: factor,
+    allocations: state.allocations,
+    updatedAt: nowUtc(),
+  };
+  await putCrewPool(pool);
+  setState({ taskSwitchingFactor: factor });
 }
 
 /**
@@ -117,6 +139,7 @@ export async function removeSkillCrewEntry(tagId: string): Promise<void> {
   const pool = {
     id: 'global' as const,
     defaultCrewSize: state.defaultCrewSize,
+    taskSwitchingFactor: state.taskSwitchingFactor,
     allocations: next,
     updatedAt: nowUtc(),
   };

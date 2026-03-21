@@ -16,8 +16,8 @@ function makeCalendar(dates: string[]) {
 describe('simulatePlacement', () => {
   it('places all work in one day when capacity allows', () => {
     const days: DayState[] = [
-      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 64 },
-      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 64 },
+      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 64, baseEffectivePersonHours: 64 },
+      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 64, baseEffectivePersonHours: 64 },
     ];
     const result = simulatePlacement(days, 32, 4, false);
     expect(result).not.toBeNull();
@@ -28,9 +28,9 @@ describe('simulatePlacement', () => {
 
   it('spans multiple days when single day is insufficient', () => {
     const days: DayState[] = [
-      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 16 },
-      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 16 },
-      { date: '2026-03-03', accessHours: 8, remainingPersonHours: 16 },
+      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 16, baseEffectivePersonHours: 16 },
+      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 16, baseEffectivePersonHours: 16 },
+      { date: '2026-03-03', accessHours: 8, remainingPersonHours: 16, baseEffectivePersonHours: 16 },
     ];
     const result = simulatePlacement(days, 40, 2, false);
     expect(result).not.toBeNull();
@@ -40,7 +40,7 @@ describe('simulatePlacement', () => {
 
   it('returns null when no capacity available', () => {
     const days: DayState[] = [
-      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 0 },
+      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 0, baseEffectivePersonHours: 0 },
     ];
     const result = simulatePlacement(days, 8, 1, false);
     expect(result).toBeNull();
@@ -48,8 +48,8 @@ describe('simulatePlacement', () => {
 
   it('respects preferredDayTarget as chunking cap', () => {
     const days: DayState[] = [
-      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 64 },
-      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 64 },
+      { date: '2026-03-01', accessHours: 8, remainingPersonHours: 64, baseEffectivePersonHours: 64 },
+      { date: '2026-03-02', accessHours: 8, remainingPersonHours: 64, baseEffectivePersonHours: 64 },
     ];
     // preferredCrew=2 → preferredDayTarget = 16h/day
     const result = simulatePlacement(days, 20, 2, false);

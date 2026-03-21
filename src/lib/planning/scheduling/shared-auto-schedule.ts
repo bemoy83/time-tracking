@@ -17,7 +17,7 @@ import {
 } from '../plan-model';
 import { round2, sameEffortMap } from './capacity-math';
 import { computeSharedCapacitySummary } from './capacity';
-import { buildDayStates, simulatePlacement } from './placement';
+import { buildDayStates, simulatePlacement, recomputeDayRemaining } from './placement';
 import type {
   AutoScheduleOptions,
   AutoScheduleMetrics,
@@ -191,14 +191,26 @@ export function runSharedAutoSchedule(
   // Shared schedule always uses the fixed DEFAULT_PLAN_EFFICIENCY — no per-plan override.
   const crewPoolAllocations = input.crewPool?.allocations;
   const effectiveDefaultCrew = input.crewPool?.defaultCrewSize ?? input.defaultCrewSize;
+  const taskSwitchingFactor = input.crewPool?.taskSwitchingFactor ?? 0.95;
+  const initialCommitted = buildCommitted(input.plans, normalized);
+  const skillCommitted = input.workTypes ? buildSkillCommitted(input.plans, input.workTypes, normalized) : undefined;
   const dayStates = buildDayStates(
     input.calendar,
     effectiveDefaultCrew,
     DEFAULT_PLAN_EFFICIENCY,
-    buildCommitted(input.plans, normalized),
+    initialCommitted,
     crewPoolAllocations,
-    input.workTypes ? buildSkillCommitted(input.plans, input.workTypes, normalized) : undefined,
+    skillCommitted,
+    taskSwitchingFactor,
   );
+  // Live committed maps — grow with each placement to drive incremental fragmentation updates.
+  const liveCommitted = new Map(initialCommitted);
+  const liveSkillCommitted = new Map<string, Map<string, number>>();
+  if (skillCommitted) {
+    for (const [skillId, dateMap] of skillCommitted) {
+      liveSkillCommitted.set(skillId, new Map(dateMap));
+    }
+  }
 
   const candidates = input.plans
     .flatMap((plan) => plan.lineItems.map((item) => ({ plan, item })))
@@ -275,6 +287,9 @@ export function runSharedAutoSchedule(
       candidate.preferredCrew,
       normalized.allowOverAllocation,
       candidate.skillTagId,
+      liveCommitted,
+      input.workTypes ? liveSkillCommitted : undefined,
+      taskSwitchingFactor,
     );
     if (!placement) {
       unresolved.push({
@@ -291,7 +306,13 @@ export function runSharedAutoSchedule(
     for (const [date, hours] of Object.entries(placement.personHoursByDate)) {
       const day = dayStates.find((entry) => entry.date === date);
       if (!day) continue;
-      day.remainingPersonHours = round2(day.remainingPersonHours - hours);
+      liveCommitted.set(date, (liveCommitted.get(date) ?? 0) + hours);
+      if (candidate.skillTagId && input.workTypes) {
+        let dm = liveSkillCommitted.get(candidate.skillTagId);
+        if (!dm) { dm = new Map(); liveSkillCommitted.set(candidate.skillTagId, dm); }
+        dm.set(date, (dm.get(date) ?? 0) + hours);
+      }
+      recomputeDayRemaining(day, date, liveCommitted, input.workTypes ? liveSkillCommitted : undefined, taskSwitchingFactor);
     }
 
     const plan = plansById.get(candidate.planId);

@@ -41,6 +41,8 @@ export interface CapacityComputationInput {
   scheduledEntries: NormalizedScheduledEntry[];
   unscheduledLineItemCount: number;
   scheduledLineItemCount: number;
+  /** Per-day fragmentation penalty factors (date → factor ≤ 1.0). Applied to effective available hours. */
+  fragmentationFactors?: Map<string, number>;
 }
 
 type FragmentationRisk = DailyCapacity['fragmentationRisk'];
@@ -101,10 +103,11 @@ function createDayAccumulator(
   day: WorkCalendarDay,
   defaultCrewSize: number | null,
   planEfficiency: number,
+  fragmentationFactor = 1,
 ): DayAccumulator {
   const dayEfficiency = resolveDayEfficiency(day, planEfficiency);
   const rawAvailablePersonHours = round2(dayAvailablePersonHours(day, defaultCrewSize));
-  const effectiveAvailablePersonHours = round2(rawAvailablePersonHours * dayEfficiency);
+  const effectiveAvailablePersonHours = round2(rawAvailablePersonHours * dayEfficiency * fragmentationFactor);
   const availableCrew = dayCrewSize(day, defaultCrewSize);
 
   return {
@@ -133,10 +136,12 @@ function createDayAccumulatorMap(
   calendar: WorkCalendarDay[],
   defaultCrewSize: number | null,
   planEfficiency: number,
+  fragmentationFactors?: Map<string, number>,
 ): Map<string, DayAccumulator> {
   const dayMap = new Map<string, DayAccumulator>();
   for (const day of calendar) {
-    dayMap.set(day.date, createDayAccumulator(day, defaultCrewSize, planEfficiency));
+    const ff = fragmentationFactors?.get(day.date) ?? 1;
+    dayMap.set(day.date, createDayAccumulator(day, defaultCrewSize, planEfficiency, ff));
   }
   return dayMap;
 }
@@ -318,7 +323,7 @@ export function computeCapacityFromNormalizedInput(
   input: CapacityComputationInput,
 ): CapacitySummary {
   const efficiency = input.efficiency ?? 1.0;
-  const dayMap = createDayAccumulatorMap(input.calendar, input.defaultCrewSize, efficiency);
+  const dayMap = createDayAccumulatorMap(input.calendar, input.defaultCrewSize, efficiency, input.fragmentationFactors);
 
   for (const entry of input.scheduledEntries) {
     accumulateScheduledEntry(dayMap, entry);

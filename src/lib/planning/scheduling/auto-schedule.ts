@@ -20,7 +20,7 @@ import { BUILD_PHASES } from '../../types';
 import { round2, sameEffortMap } from './capacity-math';
 import { resolvePlanEfficiency } from '../plan-model';
 import { computeCapacitySummary } from './capacity';
-import { buildDayStates, simulatePlacement, type DayState, type Placement } from './placement';
+import { buildDayStates, simulatePlacement, recomputeDayRemaining, type DayState, type Placement } from './placement';
 
 export type AutoScheduleRequiredWorkMode = 'time_hours_first' | 'rate_first';
 export type AutoScheduleRebalanceMode = 'none' | 'local';
@@ -264,14 +264,26 @@ function schedulePhase(
   const efficiency = resolvePlanEfficiency(plan);
   const crewPoolAllocations = options.crewPool?.allocations;
   const effectiveDefaultCrew = options.crewPool?.defaultCrewSize ?? plan.defaultCrewSize;
+  const taskSwitchingFactor = options.crewPool?.taskSwitchingFactor ?? 0.95;
+  const initialCommitted = buildCommitted(plan, options);
+  const skillCommitted = options.workTypes ? buildSkillCommitted(plan, options) : undefined;
   const allCandidates = buildDayStates(
     plan.workCalendar,
     effectiveDefaultCrew,
     efficiency,
-    buildCommitted(plan, options),
+    initialCommitted,
     crewPoolAllocations,
-    options.workTypes ? buildSkillCommitted(plan, options) : undefined,
+    skillCommitted,
+    taskSwitchingFactor,
   );
+  // Live committed maps — grow with each placement to drive incremental fragmentation updates.
+  const liveCommitted = new Map(initialCommitted);
+  const liveSkillCommitted = new Map<string, Map<string, number>>();
+  if (skillCommitted) {
+    for (const [skillId, dateMap] of skillCommitted) {
+      liveSkillCommitted.set(skillId, new Map(dateMap));
+    }
+  }
   const candidates = phaseSpan
     ? allCandidates.filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end)
     : allCandidates;
@@ -332,7 +344,7 @@ function schedulePhase(
     });
 
   for (const row of schedulable) {
-    const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation, row.skillTagId);
+    const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation, row.skillTagId, liveCommitted, options.workTypes ? liveSkillCommitted : undefined, taskSwitchingFactor);
     if (!placement) {
       unresolved.push({
         lineItemId: row.item.id,
@@ -347,7 +359,13 @@ function schedulePhase(
     for (const [date, hours] of Object.entries(placement.personHoursByDate)) {
       const day = candidates.find((candidate) => candidate.date === date);
       if (!day) continue;
-      day.remainingPersonHours = round2(day.remainingPersonHours - hours);
+      liveCommitted.set(date, (liveCommitted.get(date) ?? 0) + hours);
+      if (row.skillTagId && options.workTypes) {
+        let dm = liveSkillCommitted.get(row.skillTagId);
+        if (!dm) { dm = new Map(); liveSkillCommitted.set(row.skillTagId, dm); }
+        dm.set(date, (dm.get(date) ?? 0) + hours);
+      }
+      recomputeDayRemaining(day, date, liveCommitted, options.workTypes ? liveSkillCommitted : undefined, taskSwitchingFactor);
     }
 
     const span = recomputeScheduledSpanFromEffortMap(placement.personHoursByDate);

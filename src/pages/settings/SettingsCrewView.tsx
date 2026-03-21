@@ -16,6 +16,7 @@ import {
   useCrewPoolStore,
   setSkillCrewCount,
   setSystemDefaultCrewSize,
+  setTaskSwitchingFactor,
 } from '../../lib/stores/crew-pool-store';
 import './settings-styles';
 
@@ -26,7 +27,7 @@ interface SettingsCrewViewProps {
 export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
   useTagStore(); // subscribe for tag data
   const { tags } = useTagStore();
-  const { allocations, defaultCrewSize } = useCrewPoolStore();
+  const { allocations, defaultCrewSize, taskSwitchingFactor } = useCrewPoolStore();
 
   const skillTags = useMemo(
     () => tags.filter((t) => t.skillTag).sort((a, b) => a.name.localeCompare(b.name)),
@@ -64,6 +65,32 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
             <span style={{ fontSize: 13, color: 'var(--color-secondary, #6b7280)' }}>
               workers
             </span>
+          </div>
+        </div>
+        <div className="settings-view__row" style={{ cursor: 'default', marginTop: 8 }}>
+          <div className="settings-view__template-info">
+            <span className="settings-view__row-label">Task-switching factor</span>
+            <span className="settings-view__row-detail">
+              Capacity multiplier per extra skill group per day. Default 0.95 — e.g. 3 skill groups = ×0.95² ≈ 90%
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="number"
+              className="input"
+              min={0.80}
+              max={1.00}
+              step={0.01}
+              value={taskSwitchingFactor ?? ''}
+              placeholder="0.95"
+              onChange={(e) => {
+                const raw = parseFloat(e.target.value);
+                const clamped = Number.isFinite(raw) ? Math.min(1.0, Math.max(0.80, raw)) : null;
+                void setTaskSwitchingFactor(clamped);
+              }}
+              style={{ width: 72, textAlign: 'right' }}
+              aria-label="Task-switching factor"
+            />
           </div>
         </div>
       </div>

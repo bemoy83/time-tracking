@@ -149,6 +149,14 @@ export interface CrewPool {
    * Replaces plan-level `defaultCrewSize` as the system-level source of truth.
    */
   defaultCrewSize?: number | null;
+  /**
+   * Exponential decay base for the fragmentation penalty.
+   * Each distinct skill group beyond the first on a day multiplies effective capacity
+   * by this factor: effectivePH × baseFactor ^ max(0, skillGroupCount - 1).
+   * Range 0.80–1.00. Null means no fragmentation penalty (factor = 1.0).
+   * Default when null: 0.95.
+   */
+  taskSwitchingFactor?: number | null;
   /** tagId → crew headcount */
   allocations: Record<string, number>;
   updatedAt: string;

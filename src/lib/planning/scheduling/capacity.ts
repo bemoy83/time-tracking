@@ -1,6 +1,9 @@
 import { BUILD_PHASES } from '../../types';
+import type { WorkType } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive, resolvePlanEfficiency, DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
+import type { CrewPool } from '../../tags';
+import { resolveFragmentationFactor } from './placement';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import { getAssignedDates } from './assignment';
 import {
@@ -157,16 +160,52 @@ function buildSharedEntries(input: SharedScheduleInput): {
   };
 }
 
-export function computeCapacitySummary(plan: Plan, defaultCrewSizeOverride?: number | null): CapacitySummary {
+export function computeCapacitySummary(
+  plan: Plan,
+  defaultCrewSizeOverride?: number | null,
+  crewPool?: CrewPool,
+  workTypes?: Map<string, WorkType>,
+): CapacitySummary {
   const effectiveCrewSize = defaultCrewSizeOverride ?? plan.defaultCrewSize;
   const entries = buildSinglePlanEntries(plan);
+  const calendar = createPlanCapacityCalendar(plan, effectiveCrewSize);
+
+  let fragmentationFactors: Map<string, number> | undefined;
+  if (workTypes) {
+    const committed = new Map<string, number>();
+    const skillCommitted = new Map<string, Map<string, number>>();
+    for (const item of plan.lineItems) {
+      const skillTagId = item.workTypeId ? workTypes.get(item.workTypeId)?.skillTagId : undefined;
+      for (const phase of BUILD_PHASES) {
+        if (!isPhaseActive(item, phase)) continue;
+        for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
+          committed.set(date, (committed.get(date) ?? 0) + hours);
+          if (skillTagId) {
+            let dm = skillCommitted.get(skillTagId);
+            if (!dm) { dm = new Map(); skillCommitted.set(skillTagId, dm); }
+            dm.set(date, (dm.get(date) ?? 0) + hours);
+          }
+        }
+      }
+    }
+    const taskSwitchingFactor = crewPool?.taskSwitchingFactor ?? 0.95;
+    fragmentationFactors = new Map();
+    for (const day of calendar) {
+      if (!day.isWorkDay) continue;
+      const ff = resolveFragmentationFactor(day.date, committed, skillCommitted, taskSwitchingFactor);
+      if (ff < 1) fragmentationFactors.set(day.date, ff);
+    }
+    if (fragmentationFactors.size === 0) fragmentationFactors = undefined;
+  }
+
   return computeCapacityFromNormalizedInput({
-    calendar: createPlanCapacityCalendar(plan, effectiveCrewSize),
+    calendar,
     defaultCrewSize: effectiveCrewSize,
     efficiency: resolvePlanEfficiency(plan),
     scheduledEntries: entries.scheduledEntries,
     scheduledLineItemCount: entries.scheduledLineItemCount,
     unscheduledLineItemCount: entries.unscheduledLineItemCount,
+    fragmentationFactors,
   });
 }
 
