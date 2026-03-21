@@ -64,6 +64,7 @@
 @import './styles/components/calculator.css';
 @import './styles/components/task-attribution-breakdown.css';
 @import './styles/components/tag.css';
+@import './styles/components/tag-filter.css';
 
 /* Dark mode overrides (must come last) */
 @import './styles/_dark.css';

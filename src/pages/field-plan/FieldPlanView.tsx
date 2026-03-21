@@ -158,6 +158,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
 
                 {model.selectedPlan && (
                   <FieldPlanPlanDetail
+                    planId={model.selectedPlan.id}
                     planDisplayName={model.selectedPlanDisplayName ?? 'Plan'}
                     projectColor={model.projectColor}
                     progressPercent={model.progressPercent}

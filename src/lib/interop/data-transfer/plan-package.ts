@@ -10,9 +10,12 @@ import {
   updatePlan,
   getAllTags,
   getAllTagCategories,
-  addTag,
-  addTagCategory,
 } from '../../db';
+import {
+  createTag,
+  createTagCategory,
+} from '../../stores/tag-store';
+import { normalizeTagName, normalizeTagCategoryName } from '../../tags';
 import {
   type Plan,
   type PlanLineItem,
@@ -22,7 +25,7 @@ import {
 } from '../../planning/plan-model';
 import { ensureImportedWorkUnits } from '../../stores/work-unit-store';
 import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
-import { nowUtc } from '../../types';
+import { normalizeProjectName, nowUtc } from '../../types';
 import type { Project, WorkType, WorkUnit } from '../../types';
 import { BUILD_PHASES, generateId } from '../../types';
 import {
@@ -307,6 +310,7 @@ export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePa
         workUnit: item.workUnit,
         assemblyRate: item.assemblyRate,
         dismantleRate: item.dismantleRate,
+        tagIds: item.tagIds?.length ? [...item.tagIds] : [],
         createdAt: syntheticTimestamp,
         updatedAt: syntheticTimestamp,
       });
@@ -375,23 +379,29 @@ export async function exportPlanPackage(plan: Plan): Promise<void> {
 }
 
 export async function resolveImportedWorkTypeIds(
-  planId: string,
+  _planId: string,
   workTypes: WorkType[],
+  tagIdRemap?: Map<string, string>,
 ): Promise<Map<string, string>> {
   const mapping = new Map<string, string>();
   for (const imported of workTypes) {
+    // Any existing match (editable or readOnly phantom) — remap, no duplicate created.
     const existing = findWorkTypeByKey(imported.title, imported.workUnit);
-    if (existing && (existing.readOnly !== true || existing.importedForPlanId === planId)) {
+    if (existing) {
       mapping.set(imported.id, existing.id);
       continue;
     }
+    // Remap tag IDs if a tag remap table was provided (from the package's tag import).
+    const remappedTagIds = imported.tagIds?.length
+      ? imported.tagIds.map((id) => tagIdRemap?.get(id) ?? id)
+      : undefined;
+    // Genuinely new — create as a regular editable work type so it appears in the library.
     const created = await createWorkType({
       title: imported.title,
       workUnit: imported.workUnit,
       assemblyRate: imported.assemblyRate ?? 0,
       dismantleRate: imported.dismantleRate ?? 0,
-      readOnly: true,
-      importedForPlanId: planId,
+      tagIds: remappedTagIds,
     });
     mapping.set(imported.id, created.id);
   }
@@ -409,8 +419,9 @@ async function resolveImportedProjectId(
   if (!importedProject) return null;
 
   const existingProjects = await getAllProjects();
+  const normalizedName = normalizeProjectName(importedProject.name);
   const match = existingProjects.find(
-    (p) => p.name === importedProject.name && p.color === importedProject.color,
+    (p) => normalizeProjectName(p.name) === normalizedName,
   );
   if (match) return match.id;
 
@@ -676,30 +687,73 @@ export async function applyPlanPackageImport(
   );
 
   // Upsert tag categories and tags from the package into the local store.
-  // Only inserts if an ID does not already exist — never overwrites local edits.
+  // Uses name-based deduplication: if a category/tag with the same normalized
+  // name already exists locally, the package ID is remapped to the local ID
+  // rather than creating a duplicate. This mirrors the resolveImportedWorkTypeIds
+  // pattern and handles independent creation of the same tags on different devices.
+  const categoryIdRemap = new Map<string, string>(); // packageId → localId
+  const tagIdRemap = new Map<string, string>();       // packageId → localId
+
   if (envelope.payload.tagCategories?.length) {
     const existingCategories = await getAllTagCategories();
-    const existingCategoryIds = new Set(existingCategories.map((c) => c.id));
     for (const category of envelope.payload.tagCategories) {
-      if (!existingCategoryIds.has(category.id)) {
-        await addTagCategory(category);
+      // 1. Exact ID match — already present, record identity
+      if (existingCategories.some((c) => c.id === category.id)) {
+        categoryIdRemap.set(category.id, category.id);
+        continue;
       }
-    }
-  }
-  if (envelope.payload.tags?.length) {
-    const existingTags = await getAllTags();
-    const existingTagIds = new Set(existingTags.map((t) => t.id));
-    for (const tag of envelope.payload.tags) {
-      if (!existingTagIds.has(tag.id)) {
-        await addTag(tag);
+      // 2. Name match — remap to the existing local category, no insert
+      const normalized = normalizeTagCategoryName(category.name);
+      const existing = existingCategories.find(
+        (c) => normalizeTagCategoryName(c.name) === normalized,
+      );
+      if (existing) {
+        categoryIdRemap.set(category.id, existing.id);
+        continue;
       }
+      // 3. Genuinely new category — use store action to keep in-memory state in sync
+      const created = await createTagCategory({ name: category.name });
+      categoryIdRemap.set(category.id, created.id);
+      existingCategories.push(created);
     }
   }
 
-  const workTypeIdMap = await resolveImportedWorkTypeIds(importedPlan.id, envelope.payload.workTypes);
+  if (envelope.payload.tags?.length) {
+    const existingTags = await getAllTags();
+    for (const tag of envelope.payload.tags) {
+      // 1. Exact ID match — already present
+      if (existingTags.some((t) => t.id === tag.id)) {
+        tagIdRemap.set(tag.id, tag.id);
+        continue;
+      }
+      // 2. Name match within the (possibly remapped) local category — remap, no insert
+      const localCategoryId = categoryIdRemap.get(tag.categoryId) ?? tag.categoryId;
+      const normalized = normalizeTagName(tag.name);
+      const existing = existingTags.find(
+        (t) => t.categoryId === localCategoryId && normalizeTagName(t.name) === normalized,
+      );
+      if (existing) {
+        tagIdRemap.set(tag.id, existing.id);
+        continue;
+      }
+      // 3. Genuinely new tag — use store action to keep in-memory state in sync
+      const created = await createTag({
+        categoryId: localCategoryId,
+        name: tag.name,
+        color: tag.color,
+        sequencable: tag.sequencable,
+      });
+      tagIdRemap.set(tag.id, created.id);
+      existingTags.push(created);
+    }
+  }
+
+  const workTypeIdMap = await resolveImportedWorkTypeIds(importedPlan.id, envelope.payload.workTypes, tagIdRemap);
   const remappedLineItems = importedPlan.lineItems.map((item) => ({
     ...item,
     workTypeId: item.workTypeId ? (workTypeIdMap.get(item.workTypeId) ?? item.workTypeId) : null,
+    // Remap tag IDs so the plan references local tags (handles ID divergence across devices)
+    tagIds: item.tagIds?.map((id) => tagIdRemap.get(id) ?? id),
   }));
   const resolvedProjectId = await resolveImportedProjectId(
     importedPlan.projectId,

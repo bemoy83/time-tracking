@@ -1,0 +1,180 @@
+/* ============================================================
+   Tag Filter Panel
+   Reusable across any view that needs tag-based filtering.
+   CSS namespace: .tag-filter
+   ============================================================ */
+
+/* Container — stacks search row, category strip, and tag strip */
+.tag-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ----------------------------------------------------------
+   Search row (search input + optional clear button)
+   ---------------------------------------------------------- */
+
+.tag-filter__search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-filter__search {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px var(--space-md);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--font-small);
+  font-family: inherit;
+  background: var(--surface-contained-inset);
+  color: var(--color-text);
+  transition: border-color 0.15s ease;
+}
+
+.tag-filter__search:hover {
+  border-color: var(--surface-border-hover);
+}
+
+.tag-filter__search:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Remove default search field decoration in WebKit */
+.tag-filter__search::-webkit-search-cancel-button,
+.tag-filter__search::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+.tag-filter__clear {
+  flex-shrink: 0;
+  padding: 0 var(--space-sm);
+  height: 36px;
+  border: none;
+  background: none;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: color 0.1s ease, background 0.1s ease;
+  white-space: nowrap;
+}
+
+.tag-filter__clear:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* ----------------------------------------------------------
+   Category chip strip — horizontally scrollable, no wrap
+   ---------------------------------------------------------- */
+
+.tag-filter__category-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  overflow-x: auto;
+  /* Prevent strip from contributing to page scroll */
+  overscroll-behavior-x: contain;
+  /* Hide scrollbar — gesture-driven scroll on touch devices */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Breathing room for the last chip */
+  padding-bottom: 2px;
+}
+
+.tag-filter__category-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-filter__category-chip {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  min-height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.1s ease, color 0.1s ease, background 0.1s ease;
+}
+
+.tag-filter__category-chip:hover:not(.tag-filter__category-chip--active) {
+  border-color: var(--surface-border-hover);
+  color: var(--color-text);
+}
+
+.tag-filter__category-chip--active {
+  background: var(--surface-contained-active);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+/* ----------------------------------------------------------
+   Tag chip strip — horizontally scrollable, no wrap
+   Each chip is color-coded via --tag-color custom property.
+   ---------------------------------------------------------- */
+
+.tag-filter__tag-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.tag-filter__tag-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-filter__tag-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-small);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.1s ease, color 0.1s ease, background-color 0.1s ease;
+}
+
+.tag-filter__tag-chip:hover:not(.tag-filter__tag-chip--active) {
+  border-color: var(--tag-color, var(--color-primary));
+  color: var(--tag-color, var(--color-primary));
+}
+
+.tag-filter__tag-chip--active {
+  background-color: color-mix(in srgb, var(--tag-color, var(--color-primary)) 12%, transparent);
+  border-color: var(--tag-color, var(--color-primary));
+  color: var(--tag-color, var(--color-primary));
+}
+
+/* ----------------------------------------------------------
+   Empty state
+   ---------------------------------------------------------- */
+
+.tag-filter__empty {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 2px 0;
+}

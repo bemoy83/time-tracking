@@ -13,9 +13,10 @@ import {
   getProjectDisplayColor,
 } from '../lib/types';
 import { TrashIcon, WarningIcon, CheckIcon, ClockIcon, PeopleIcon, TaskListIcon } from '../components/icons';
-import { useTagStore } from '../lib/stores/tag-store';
 import { useWorkTypeStore } from '../lib/stores/work-type-store';
 import { resolveEffectiveTagIds } from '../lib/tags';
+import { TagFilterPanel } from '../components/TagFilterPanel';
+import { useTagFilter } from '../components/useTagFilter';
 import { Fab } from '../components/Fab';
 import { ProjectColorPicker } from '../components/ProjectColorPicker';
 import { ProjectColorDot } from '../components/ProjectColorDot';
@@ -73,22 +74,9 @@ export function ProjectDetail({
   const { templates } = useTemplateStore();
   const isWideScreen = useMediaQuery(WORKSPACE_MIN_WIDTH);
   const { activeTimers } = useTimerStore();
-  const { tags } = useTagStore();
   const { workTypes } = useWorkTypeStore();
   const project = projects.find((p) => p.id === projectId);
   const projectTasks = useProjectTasks(projectId);
-
-  // Tag filter state — set of active tag ID filters (OR logic: show task if it has any active tag)
-  const [activeTagFilters, setActiveTagFilters] = useState<Set<string>>(new Set());
-
-  const toggleTagFilter = useCallback((tagId: string) => {
-    setActiveTagFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(tagId)) next.delete(tagId);
-      else next.add(tagId);
-      return next;
-    });
-  }, []);
 
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
@@ -160,23 +148,25 @@ export function ProjectDetail({
     [workTypes],
   );
 
-  // Collect all unique tag IDs across project tasks for the filter bar
-  const availableFilterTags = useMemo(() => {
-    const tagIdSet = new Set<string>();
+  // Collect effective tag IDs across all project tasks for the filter panel
+  const availableTagIds = useMemo(() => {
+    const set = new Set<string>();
     for (const task of projectTasks) {
       const wt = task.workTypeId ? workTypeById.get(task.workTypeId) : undefined;
       const effective = resolveEffectiveTagIds(wt?.tagIds ?? [], task.additionalTagIds ?? []);
-      effective.forEach((id) => tagIdSet.add(id));
+      effective.forEach((id) => set.add(id));
     }
-    return tags.filter((t) => tagIdSet.has(t.id));
-  }, [projectTasks, workTypeById, tags]);
+    return [...set];
+  }, [projectTasks, workTypeById]);
 
-  function taskMatchesTagFilters(task: Task): boolean {
-    if (activeTagFilters.size === 0) return true;
+  const tagFilter = useTagFilter(availableTagIds, { resetKey: projectId });
+
+  const taskMatchesTagFilters = useCallback((task: Task): boolean => {
+    if (tagFilter.activeTagFilters.size === 0) return true;
     const wt = task.workTypeId ? workTypeById.get(task.workTypeId) : undefined;
     const effective = resolveEffectiveTagIds(wt?.tagIds ?? [], task.additionalTagIds ?? []);
-    return effective.some((id) => activeTagFilters.has(id));
-  }
+    return effective.some((id) => tagFilter.activeTagFilters.has(id));
+  }, [tagFilter.activeTagFilters, workTypeById]);
 
   const allActiveTasks = projectTasks.filter((t) => t.status === 'active');
   const activeTasks = allActiveTasks.filter(taskMatchesTagFilters);
@@ -367,22 +357,19 @@ export function ProjectDetail({
         template={selectedTemplate}
       />
 
-      {/* Tag filter bar — shown when project tasks have tags */}
-      {availableFilterTags.length > 0 && (
-        <div className="tag-filter-bar">
-          {availableFilterTags.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              className={`tag-filter-bar__chip${activeTagFilters.has(tag.id) ? ' tag-filter-bar__chip--active' : ''}`}
-              style={{ '--tag-color': tag.color } as React.CSSProperties}
-              onClick={() => toggleTagFilter(tag.id)}
-            >
-              {tag.name}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Tag filter panel — shown when project tasks have tags */}
+      <TagFilterPanel
+        activeTagFilters={tagFilter.activeTagFilters}
+        tagSearchQuery={tagFilter.tagSearchQuery}
+        selectedCategoryId={tagFilter.selectedCategoryId}
+        availableCategories={tagFilter.availableCategories}
+        displayedTags={tagFilter.displayedTags}
+        hasActiveFilters={tagFilter.hasActiveFilters}
+        onToggleTag={tagFilter.toggleTagFilter}
+        onSearchChange={tagFilter.setTagSearchQuery}
+        onCategoryChange={tagFilter.setSelectedCategoryId}
+        onClearFilters={tagFilter.clearTagFilters}
+      />
 
       {/* Active tasks */}
       {activeTasks.length > 0 && (

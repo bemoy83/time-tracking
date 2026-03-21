@@ -609,6 +609,13 @@
   color: var(--phase-dismantle-fg);
 }
 
+.field-plan-row__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
 .field-plan-row__chip {
   display: inline-flex;
   align-items: center;

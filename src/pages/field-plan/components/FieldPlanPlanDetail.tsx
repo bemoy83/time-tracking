@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { CountBadge } from '../../../components/CountBadge';
 import { ProjectColorDot } from '../../../components/ProjectColorDot';
+import { TagFilterPanel } from '../../../components/TagFilterPanel';
+import { useTagFilter } from '../../../components/useTagFilter';
 import {
   CheckIcon,
   ClockIcon,
@@ -13,7 +15,6 @@ import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/typ
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
-import { useTagStore } from '../../../lib/stores/tag-store';
 
 interface LineItemStatusSummary {
   completed: number;
@@ -25,6 +26,7 @@ interface DeadlineSummary {
 }
 
 interface FieldPlanPlanDetailProps {
+  planId: string;
   planDisplayName: string;
   projectColor?: string;
   progressPercent: number;
@@ -47,6 +49,7 @@ interface FieldPlanPlanDetailProps {
 }
 
 export function FieldPlanPlanDetail({
+  planId,
   planDisplayName,
   projectColor,
   progressPercent,
@@ -67,45 +70,30 @@ export function FieldPlanPlanDetail({
   onOpenActions,
   onExportExecutionReturn,
 }: FieldPlanPlanDetailProps) {
-  const { tags } = useTagStore();
-  const [activeTagFilters, setActiveTagFilters] = useState<Set<string>>(new Set());
-
-  // Collect tag IDs present across all line items for the filter bar
-  const availableFilterTags = useMemo(() => {
-    const tagIdSet = new Set<string>();
+  // Collect tag IDs present across all line items in this plan
+  const availableTagIds = useMemo(() => {
+    const set = new Set<string>();
     for (const li of lineItems) {
-      for (const id of li.item.tagIds ?? []) tagIdSet.add(id);
+      for (const id of li.item.tagIds ?? []) set.add(id);
     }
-    return tags.filter((t) => tagIdSet.has(t.id));
-  }, [lineItems, tags]);
+    return [...set];
+  }, [lineItems]);
 
-  function toggleTagFilter(tagId: string) {
-    setActiveTagFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(tagId)) next.delete(tagId);
-      else next.add(tagId);
-      return next;
-    });
-  }
+  const tagFilter = useTagFilter(availableTagIds, { resetKey: planId });
 
-  function filterByTag<T extends FieldPlanLineItemSummary>(items: T[]): T[] {
-    if (activeTagFilters.size === 0) return items;
-    return items.filter((li) =>
-      (li.item.tagIds ?? []).some((id) => activeTagFilters.has(id)),
-    );
-  }
-
-  const filteredStatusGroups: FieldPlanStatusGroups = useMemo(
-    () => ({
-      inProgress: filterByTag(statusGroups.inProgress),
-      blocked: filterByTag(statusGroups.blocked),
-      pending: filterByTag(statusGroups.pending),
-      completed: filterByTag(statusGroups.completed),
-      deferred: filterByTag(statusGroups.deferred),
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [statusGroups, activeTagFilters],
-  );
+  const filteredStatusGroups: FieldPlanStatusGroups = useMemo(() => {
+    const { activeTagFilters } = tagFilter;
+    if (activeTagFilters.size === 0) return statusGroups;
+    const filter = <T extends FieldPlanLineItemSummary>(items: T[]): T[] =>
+      items.filter((li) => (li.item.tagIds ?? []).some((id) => activeTagFilters.has(id)));
+    return {
+      inProgress: filter(statusGroups.inProgress),
+      blocked: filter(statusGroups.blocked),
+      pending: filter(statusGroups.pending),
+      completed: filter(statusGroups.completed),
+      deferred: filter(statusGroups.deferred),
+    };
+  }, [statusGroups, tagFilter]);
 
   return (
     <>
@@ -155,24 +143,19 @@ export function FieldPlanPlanDetail({
             </button>
           ))}
         </div>
+        <TagFilterPanel
+          activeTagFilters={tagFilter.activeTagFilters}
+          tagSearchQuery={tagFilter.tagSearchQuery}
+          selectedCategoryId={tagFilter.selectedCategoryId}
+          availableCategories={tagFilter.availableCategories}
+          displayedTags={tagFilter.displayedTags}
+          hasActiveFilters={tagFilter.hasActiveFilters}
+          onToggleTag={tagFilter.toggleTagFilter}
+          onSearchChange={tagFilter.setTagSearchQuery}
+          onCategoryChange={tagFilter.setSelectedCategoryId}
+          onClearFilters={tagFilter.clearTagFilters}
+        />
       </section>
-
-      {/* Tag filter bar */}
-      {availableFilterTags.length > 0 && (
-        <div className="tag-filter-bar" style={{ padding: '4px 16px 0' }}>
-          {availableFilterTags.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              className={`tag-filter-bar__chip${activeTagFilters.has(tag.id) ? ' tag-filter-bar__chip--active' : ''}`}
-              style={{ '--tag-color': tag.color } as React.CSSProperties}
-              onClick={() => toggleTagFilter(tag.id)}
-            >
-              {tag.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {filteredStatusGroups.inProgress.length > 0 && (
         <section className="field-plan__section">

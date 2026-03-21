@@ -6,9 +6,11 @@ import {
 } from '../../../components/icons';
 import { CountBadge } from '../../../components/CountBadge';
 import { SwipeableRow } from '../../../components/SwipeableRow';
+import { TagPill } from '../../../components/TagPill';
 import { TaskProjectDot } from '../../../components/TaskItemMeta';
 import { formatDeadlineStatusLabel } from '../../../lib/planning/scheduling/deadline-label';
 import { getPhaseQuantity } from '../../../lib/planning/plan-model';
+import { getTagsByIds } from '../../../lib/stores/tag-store';
 import { BUILD_PHASE_LABELS, formatQuantityWithUnit, formatWorkTypeWithUnit } from '../../../lib/types';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 
@@ -31,6 +33,7 @@ export function FieldPlanLineItemRow({
 }: FieldPlanLineItemRowProps) {
   const { item, phase, phaseFields: pf, status, tasks: linkedTasks } = lineItem;
   const quantity = getPhaseQuantity(item, phase);
+  const tags = getTagsByIds(item.tagIds ?? []);
   const canRelease = canExecute && !item.removedFromSource && status === 'pending' && linkedTasks.length === 0;
   const canAct = canExecute && !item.removedFromSource;
 
@@ -73,9 +76,14 @@ export function FieldPlanLineItemRow({
         </div>
         <div className="field-plan-row__content">
           <span className="field-plan-row__title">{item.title}</span>
-          <span className={`field-plan-row__phase-badge field-plan-row__phase-badge--${phase}`}>
-            {BUILD_PHASE_LABELS[phase]}
-          </span>
+          <div className="field-plan-row__badges">
+            <span className={`field-plan-row__phase-badge field-plan-row__phase-badge--${phase}`}>
+              {BUILD_PHASE_LABELS[phase]}
+            </span>
+            {tags.map((tag) => (
+              <TagPill key={tag.id} tag={tag} />
+            ))}
+          </div>
           {showPlanLabel && (
             <span className="field-plan-row__plan-label">{lineItem.planTitle}</span>
           )}
