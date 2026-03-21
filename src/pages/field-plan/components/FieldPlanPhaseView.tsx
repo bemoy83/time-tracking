@@ -2,15 +2,18 @@ import { CountBadge } from '../../../components/CountBadge';
 import { BUILD_PHASE_LABELS } from '../../../lib/types';
 import { STATUS_PRIORITY, type FieldPlanLineItemSummary } from '../field-plan-model';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
+import { FieldPlanReleaseBatchButton } from './FieldPlanReleaseBatchButton';
 
 interface FieldPlanPhaseViewProps {
   allLineItems: FieldPlanLineItemSummary[];
+  onReleaseEligibleBatch: (items: FieldPlanLineItemSummary[]) => void;
   onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
 }
 
 export function FieldPlanPhaseView({
   allLineItems,
+  onReleaseEligibleBatch,
   onReleaseToToday,
   onOpenActions,
 }: FieldPlanPhaseViewProps) {
@@ -40,12 +43,19 @@ export function FieldPlanPhaseView({
     <div className="field-plan__phase-view">
       {assemblyItems.length > 0 && (
         <section className="field-plan__phase-section">
-          <h2 className="field-plan__phase-section-title">
-            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--assembly">
-              {BUILD_PHASE_LABELS['assembly']}
-            </span>
-            <CountBadge count={assemblyItems.length} variant="muted" />
-          </h2>
+          <div className="field-plan__phase-section-header">
+            <h2 className="field-plan__phase-section-title">
+              <span className="field-plan-row__phase-badge field-plan-row__phase-badge--assembly">
+                {BUILD_PHASE_LABELS['assembly']}
+              </span>
+              <CountBadge count={assemblyItems.length} variant="muted" />
+            </h2>
+            <FieldPlanReleaseBatchButton
+              lineItems={assemblyItems}
+              scopeLabel={BUILD_PHASE_LABELS['assembly']}
+              onReleaseBatch={onReleaseEligibleBatch}
+            />
+          </div>
           <div className="field-plan__task-list">
             {assemblyItems.map((li) => (
               <FieldPlanLineItemRow
@@ -63,12 +73,19 @@ export function FieldPlanPhaseView({
 
       {dismantleItems.length > 0 && (
         <section className="field-plan__phase-section">
-          <h2 className="field-plan__phase-section-title">
-            <span className="field-plan-row__phase-badge field-plan-row__phase-badge--dismantle">
-              {BUILD_PHASE_LABELS['dismantle']}
-            </span>
-            <CountBadge count={dismantleItems.length} variant="muted" />
-          </h2>
+          <div className="field-plan__phase-section-header">
+            <h2 className="field-plan__phase-section-title">
+              <span className="field-plan-row__phase-badge field-plan-row__phase-badge--dismantle">
+                {BUILD_PHASE_LABELS['dismantle']}
+              </span>
+              <CountBadge count={dismantleItems.length} variant="muted" />
+            </h2>
+            <FieldPlanReleaseBatchButton
+              lineItems={dismantleItems}
+              scopeLabel={BUILD_PHASE_LABELS['dismantle']}
+              onReleaseBatch={onReleaseEligibleBatch}
+            />
+          </div>
           <div className="field-plan__task-list">
             {dismantleItems.map((li) => (
               <FieldPlanLineItemRow

@@ -15,6 +15,7 @@ import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/typ
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
+import { FieldPlanReleaseBatchButton } from './FieldPlanReleaseBatchButton';
 
 interface LineItemStatusSummary {
   completed: number;
@@ -43,6 +44,7 @@ interface FieldPlanPlanDetailProps {
   onPhaseFilterChange: (filter: 'all' | BuildPhase) => void;
   onToggleCompletedExpanded: () => void;
   onToggleDeferredExpanded: () => void;
+  onReleaseEligibleBatch: (items: FieldPlanLineItemSummary[]) => void;
   onReleaseToToday: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
   onExportExecutionReturn: () => void;
@@ -66,6 +68,7 @@ export function FieldPlanPlanDetail({
   onPhaseFilterChange,
   onToggleCompletedExpanded,
   onToggleDeferredExpanded,
+  onReleaseEligibleBatch,
   onReleaseToToday,
   onOpenActions,
   onExportExecutionReturn,
@@ -80,6 +83,14 @@ export function FieldPlanPlanDetail({
   }, [lineItems]);
 
   const tagFilter = useTagFilter(availableTagIds, { resetKey: planId });
+
+  const pendingScopeLabel = useMemo(() => {
+    let label = phaseFilter === 'all' ? 'Pending' : `Pending (${BUILD_PHASE_LABELS[phaseFilter]})`;
+    if (tagFilter.hasActiveFilters) {
+      label += ' · filtered by tags';
+    }
+    return label;
+  }, [phaseFilter, tagFilter.hasActiveFilters]);
 
   const filteredStatusGroups: FieldPlanStatusGroups = useMemo(() => {
     const { activeTagFilters } = tagFilter;
@@ -223,11 +234,18 @@ export function FieldPlanPlanDetail({
 
       {filteredStatusGroups.pending.length > 0 && (
         <section className="field-plan__section">
-          <h2 className="field-plan__section-title section-heading">
-            <TaskListIcon className="field-plan__icon" />
-            Pending
-            <CountBadge count={filteredStatusGroups.pending.length} variant="muted" />
-          </h2>
+          <div className="field-plan__section-heading-row">
+            <h2 className="field-plan__section-title section-heading">
+              <TaskListIcon className="field-plan__icon" />
+              Pending
+              <CountBadge count={filteredStatusGroups.pending.length} variant="muted" />
+            </h2>
+            <FieldPlanReleaseBatchButton
+              lineItems={filteredStatusGroups.pending}
+              scopeLabel={pendingScopeLabel}
+              onReleaseBatch={onReleaseEligibleBatch}
+            />
+          </div>
           <div className="field-plan__task-list">
             {filteredStatusGroups.pending.map((li) => (
               <FieldPlanLineItemRow

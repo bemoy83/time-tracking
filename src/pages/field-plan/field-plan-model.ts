@@ -53,6 +53,16 @@ export function deriveLineItemStatus(pf: PhaseFields, tasks: Task[]): LineItemEx
   return 'pending';
 }
 
+/** Same rules as FieldPlanLineItemRow swipe Release. */
+export function isLineItemEligibleForRelease(li: FieldPlanLineItemSummary): boolean {
+  return (
+    li.planCanExecute
+    && !li.item.removedFromSource
+    && li.status === 'pending'
+    && li.tasks.length === 0
+  );
+}
+
 export function buildFieldPlanLineItemSummaries(
   plan: Plan,
   tasks: Task[],

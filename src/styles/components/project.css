@@ -193,6 +193,14 @@
   color: var(--color-text-muted);
 }
 
+/* Tag filter — same card surface as metric cards */
+.project-detail__tag-filter-card {
+  padding: var(--space-md);
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
 /* Sections — today-view pattern */
 .project-detail__section {
   display: flex;

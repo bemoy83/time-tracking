@@ -141,6 +141,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
             {model.viewMode === 'by-phase' ? (
               <FieldPlanPhaseView
                 allLineItems={model.allActiveLineItems}
+                onReleaseEligibleBatch={model.handleReleaseEligibleBatch}
                 onReleaseToToday={model.handleReleaseToToday}
                 onOpenActions={model.openActions}
               />
@@ -175,6 +176,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
                     onPhaseFilterChange={model.setPhaseFilter}
                     onToggleCompletedExpanded={model.toggleCompletedExpanded}
                     onToggleDeferredExpanded={model.toggleDeferredExpanded}
+                    onReleaseEligibleBatch={model.handleReleaseEligibleBatch}
                     onReleaseToToday={model.handleReleaseToToday}
                     onOpenActions={model.openActions}
                     onExportExecutionReturn={() => { void model.handleExportExecutionReturn(); }}

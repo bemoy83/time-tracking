@@ -1,7 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import type { Task } from '../../lib/types';
 import { createLineItem, getPhaseFields } from '../../lib/planning/plan-model';
-import { deriveLineItemStatus } from './field-plan-model';
+import {
+  deriveLineItemStatus,
+  isLineItemEligibleForRelease,
+  type FieldPlanLineItemSummary,
+} from './field-plan-model';
+
+function makeSummary(overrides: Partial<FieldPlanLineItemSummary> = {}): FieldPlanLineItemSummary {
+  const item = createLineItem('Install', 'Type', 'pcs', 6, 6, 0);
+  const phase = 'assembly' as const;
+  return {
+    item,
+    phase,
+    phaseFields: getPhaseFields(item, phase),
+    tasks: [],
+    status: 'pending',
+    deadlineStatus: 'unscheduled',
+    dueDate: null,
+    planId: 'plan-1',
+    planTitle: 'Plan',
+    planProjectId: 'proj',
+    planCanExecute: true,
+    ...overrides,
+  };
+}
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -52,5 +75,44 @@ describe('deriveLineItemStatus', () => {
     ]);
 
     expect(status).toBe('deferred');
+  });
+});
+
+describe('isLineItemEligibleForRelease', () => {
+  it('returns true when pending, executable, not removed, and no linked tasks', () => {
+    expect(isLineItemEligibleForRelease(makeSummary())).toBe(true);
+  });
+
+  it('returns false when plan cannot execute', () => {
+    expect(isLineItemEligibleForRelease(makeSummary({ planCanExecute: false }))).toBe(false);
+  });
+
+  it('returns false when removed from source', () => {
+    const item = createLineItem('Install', 'Type', 'pcs', 6, 6, 0);
+    expect(
+      isLineItemEligibleForRelease(
+        makeSummary({ item: { ...item, removedFromSource: true } }),
+      ),
+    ).toBe(false);
+  });
+
+  it('returns false when status is not pending', () => {
+    expect(isLineItemEligibleForRelease(makeSummary({ status: 'blocked' }))).toBe(false);
+  });
+
+  it('returns false when there are linked tasks for the phase', () => {
+    const base = makeSummary();
+    expect(
+      isLineItemEligibleForRelease({
+        ...base,
+        tasks: [
+          makeTask({
+            sourcePlanId: base.planId,
+            sourceLineItemId: base.item.id,
+            phase: 'assembly',
+          }),
+        ],
+      }),
+    ).toBe(false);
   });
 });

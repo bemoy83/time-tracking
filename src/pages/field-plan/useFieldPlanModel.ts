@@ -229,6 +229,15 @@ export function useFieldPlanModel() {
     [tasks],
   );
 
+  const handleReleaseEligibleBatch = useCallback(
+    (items: FieldPlanLineItemSummary[]) => {
+      for (const lineItem of items) {
+        handleReleaseToToday(lineItem);
+      }
+    },
+    [handleReleaseToToday],
+  );
+
   const handleBlockSubmit = useCallback(
     async (lineItemId: string, phase: BuildPhase, planId: string, reason: string, category: BlockCategory | null) => {
       await patchLineItem(planId, lineItemId, phaseFieldUpdates(phase, {
@@ -401,6 +410,7 @@ export function useFieldPlanModel() {
     openActions,
     handleDeletePlan,
     handleReleaseToToday,
+    handleReleaseEligibleBatch,
     handleBlockSubmit,
     handleDeferSubmit,
     handleNoteSubmit,

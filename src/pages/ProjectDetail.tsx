@@ -358,18 +358,22 @@ export function ProjectDetail({
       />
 
       {/* Tag filter panel — shown when project tasks have tags */}
-      <TagFilterPanel
-        activeTagFilters={tagFilter.activeTagFilters}
-        tagSearchQuery={tagFilter.tagSearchQuery}
-        selectedCategoryId={tagFilter.selectedCategoryId}
-        availableCategories={tagFilter.availableCategories}
-        displayedTags={tagFilter.displayedTags}
-        hasActiveFilters={tagFilter.hasActiveFilters}
-        onToggleTag={tagFilter.toggleTagFilter}
-        onSearchChange={tagFilter.setTagSearchQuery}
-        onCategoryChange={tagFilter.setSelectedCategoryId}
-        onClearFilters={tagFilter.clearTagFilters}
-      />
+      {tagFilter.availableCategories.length > 0 && (
+        <div className="project-detail__tag-filter-card">
+          <TagFilterPanel
+            activeTagFilters={tagFilter.activeTagFilters}
+            tagSearchQuery={tagFilter.tagSearchQuery}
+            selectedCategoryId={tagFilter.selectedCategoryId}
+            availableCategories={tagFilter.availableCategories}
+            displayedTags={tagFilter.displayedTags}
+            hasActiveFilters={tagFilter.hasActiveFilters}
+            onToggleTag={tagFilter.toggleTagFilter}
+            onSearchChange={tagFilter.setTagSearchQuery}
+            onCategoryChange={tagFilter.setSelectedCategoryId}
+            onClearFilters={tagFilter.clearTagFilters}
+          />
+        </div>
+      )}
 
       {/* Active tasks */}
       {activeTasks.length > 0 && (

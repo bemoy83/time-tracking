@@ -377,6 +377,14 @@
   gap: var(--space-sm);
 }
 
+.field-plan__phase-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
 .field-plan__phase-section-title {
   display: flex;
   align-items: center;
@@ -384,6 +392,39 @@
   margin: 0;
   font-size: var(--font-base);
   font-weight: 700;
+}
+
+.field-plan__section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.field-plan__section-heading-row .field-plan__section-title {
+  flex: 1 1 auto;
+  min-width: min(100%, 200px);
+}
+
+/* Icon beside label in primary sm button */
+.field-plan__release-batch-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Match Planning editor Build Schedule (planning-workspace__editor-canvas .btn--primary) */
+.field-plan__phase-section-header .btn.btn--primary.btn--sm,
+.field-plan__section-heading-row .btn.btn--primary.btn--sm {
+  transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-blue);
+}
+
+.field-plan__phase-section-header .btn.btn--primary.btn--sm:hover:not(:disabled),
+.field-plan__section-heading-row .btn.btn--primary.btn--sm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.38);
 }
 
 .field-plan-row__plan-label {
