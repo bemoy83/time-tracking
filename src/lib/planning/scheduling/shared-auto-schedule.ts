@@ -228,7 +228,15 @@ export function runSharedAutoSchedule(
         const seqIds = input.tagSequence.tagIds;
         const posA = resolveTagSequencePosition(a.item.tagIds ?? [], seqIds);
         const posB = resolveTagSequencePosition(b.item.tagIds ?? [], seqIds);
-        if (posA !== posB) return posA - posB;
+        if (posA !== posB) {
+          // Dismantle is LIFO: last assembled → first dismantled.
+          // When both items are in the same phase, apply phase-specific ordering.
+          // Cross-phase items are separated by date windows so direction doesn't matter.
+          if (a.phase === b.phase) {
+            return a.phase === 'dismantle' ? posB - posA : posA - posB;
+          }
+          return posA - posB;
+        }
       }
       return (b.requiredPH ?? 0) - (a.requiredPH ?? 0) || a.item.id.localeCompare(b.item.id);
     });

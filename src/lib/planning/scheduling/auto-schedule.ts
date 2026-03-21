@@ -323,7 +323,10 @@ function schedulePhase(
         const seqIds = options.tagSequence.tagIds;
         const posA = resolveTagSequencePosition(a.item.tagIds ?? [], seqIds);
         const posB = resolveTagSequencePosition(b.item.tagIds ?? [], seqIds);
-        if (posA !== posB) return posA - posB;
+        if (posA !== posB) {
+          // Dismantle is LIFO: last assembled → first dismantled.
+          return phase === 'dismantle' ? posB - posA : posA - posB;
+        }
       }
       return b.requiredPH - a.requiredPH || a.item.id.localeCompare(b.item.id);
     });
