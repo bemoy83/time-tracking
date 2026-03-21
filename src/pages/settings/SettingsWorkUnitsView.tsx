@@ -176,6 +176,7 @@ export function SettingsWorkUnitsView({ onBack }: SettingsWorkUnitsViewProps) {
                     ariaLabel="Move unit up"
                     icon={<ChevronUpIcon className="settings-detail__icon" />}
                     disabled={index === 0}
+                    className="icon-btn--reorder"
                     onClick={() => {
                       void handleMove(definition, -1);
                     }}
@@ -187,6 +188,7 @@ export function SettingsWorkUnitsView({ onBack }: SettingsWorkUnitsViewProps) {
                       <ChevronUpIcon className="settings-detail__icon settings-view__reorder-chevron--down" />
                     }
                     disabled={index === orderedDefinitions.length - 1}
+                    className="icon-btn--reorder"
                     onClick={() => {
                       void handleMove(definition, 1);
                     }}

@@ -693,11 +693,26 @@ export function addLineItemsToPlan(plan: Plan, items: PlanLineItem[]): Plan {
   };
 }
 
+/** Duplicate all line items in a plan and append the copies in original order. */
+export function duplicateAllLineItemsInPlan(plan: Plan): Plan {
+  const copies = plan.lineItems.map(duplicateLineItem);
+  return addLineItemsToPlan(plan, copies);
+}
+
 /** Remove a line item from a plan. */
 export function removeLineItemFromPlan(plan: Plan, lineItemId: string): Plan {
   return {
     ...plan,
     lineItems: plan.lineItems.filter((item) => item.id !== lineItemId),
+    updatedAt: nowUtc(),
+  };
+}
+
+/** Remove all line items from a plan. */
+export function removeAllLineItemsFromPlan(plan: Plan): Plan {
+  return {
+    ...plan,
+    lineItems: [],
     updatedAt: nowUtc(),
   };
 }

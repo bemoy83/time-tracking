@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import type { WorkType } from '../../lib/types';
 import { resolveWorkUnitLabel } from '../../lib/types';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
-import { ExportIcon, RulerIcon } from '../../components/icons';
+import { DeleteWorkTypeConfirm } from '../../components/DeleteWorkTypeConfirm';
+import { ExportIcon, PencilIcon, RulerIcon, TrashIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
@@ -17,6 +18,8 @@ import {
 import { WorkTypeImportCard } from './WorkTypeImportCard';
 import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
 import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
+import { useTagStore } from '../../lib/stores/tag-store';
+import { TagPill } from '../../components/TagPill';
 import './settings-styles';
 
 interface SettingsWorkTypesViewProps {
@@ -27,9 +30,12 @@ interface SettingsWorkTypesViewProps {
 export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTypesViewProps) {
   const { workTypes } = useWorkTypeStore();
   const { definitions: workUnitDefinitions } = useWorkUnitStore();
+  const { tags } = useTagStore();
+  const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
   const editableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
+  const [deleteConfirmWorkType, setDeleteConfirmWorkType] = useState<WorkType | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [workTypePreview, setWorkTypePreview] = useState<WorkTypeImportPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -63,11 +69,14 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     setEditingWorkType(null);
   };
 
-  const handleDeleteWorkType = async () => {
-    if (!editingWorkType) return;
-    await removeWorkType(editingWorkType.id);
-    setShowWorkTypeForm(false);
-    setEditingWorkType(null);
+  const handleDeleteWorkTypeConfirmed = async () => {
+    if (!deleteConfirmWorkType) return;
+    await removeWorkType(deleteConfirmWorkType.id);
+    setDeleteConfirmWorkType(null);
+    if (editingWorkType?.id === deleteConfirmWorkType.id) {
+      setShowWorkTypeForm(false);
+      setEditingWorkType(null);
+    }
   };
 
   const handleExportWorkTypes = () => {
@@ -159,18 +168,44 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         ) : (
           <div className="settings-view__list">
             {editableWorkTypes.map((wt) => (
-              <button
-                key={wt.id}
-                className="settings-view__row"
-                onClick={() => handleEditWorkType(wt)}
-              >
-                <div className="settings-view__template-info">
-                  <span className="settings-view__row-label">{wt.title}</span>
-                  <span className="settings-view__row-detail">
-                    {resolveWorkUnitLabel(wt.workUnit)} · Assembly {wt.assemblyRate} · Dismantle {wt.dismantleRate} {resolveWorkUnitLabel(wt.workUnit)}/person-hr
-                  </span>
+              <div key={wt.id} className="settings-view__list-item">
+                <button
+                  className="settings-view__row"
+                  onClick={() => handleEditWorkType(wt)}
+                >
+                  <div className="settings-view__template-info">
+                    <span className="settings-view__row-label">{wt.title}</span>
+                    <span className="settings-view__row-detail">
+                      {resolveWorkUnitLabel(wt.workUnit)} · Assembly {wt.assemblyRate} · Dismantle{' '}
+                      {wt.dismantleRate} {resolveWorkUnitLabel(wt.workUnit)}/person-hr
+                    </span>
+                    {wt.tagIds && wt.tagIds.length > 0 && (
+                      <span className="settings-view__row-tags">
+                        {wt.tagIds.map((id) => {
+                          const tag = tagById.get(id);
+                          return tag ? <TagPill key={id} tag={tag} /> : null;
+                        })}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <div className="settings-view__list-item-actions">
+                  <IconButton
+                    icon={<PencilIcon className="settings-detail__icon" />}
+                    ariaLabel={`Edit work type ${wt.title}`}
+                    onClick={() => handleEditWorkType(wt)}
+                    variant="ghost"
+                    className="icon-btn--edit"
+                  />
+                  <IconButton
+                    icon={<TrashIcon className="settings-detail__icon" />}
+                    ariaLabel={`Delete work type ${wt.title}`}
+                    onClick={() => setDeleteConfirmWorkType(wt)}
+                    variant="ghost"
+                    className="icon-btn--danger"
+                  />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -208,7 +243,16 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         isOpen={showWorkTypeForm}
         onClose={handleCloseWorkTypeForm}
         workType={editingWorkType}
-        onDelete={editingWorkType ? handleDeleteWorkType : undefined}
+        onDelete={editingWorkType ? () => setDeleteConfirmWorkType(editingWorkType) : undefined}
+      />
+
+      <DeleteWorkTypeConfirm
+        isOpen={!!deleteConfirmWorkType}
+        workTypeTitle={deleteConfirmWorkType?.title ?? ''}
+        onConfirm={() => {
+          void handleDeleteWorkTypeConfirmed();
+        }}
+        onCancel={() => setDeleteConfirmWorkType(null)}
       />
     </SettingsDetailLayout>
   );

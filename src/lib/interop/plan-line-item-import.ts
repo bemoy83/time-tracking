@@ -229,6 +229,7 @@ export function importedPlanLineItemsToLineItems(
       dismantleRate,
       'manual',
       item.workTypeId,
+      storedWorkType?.tagIds ?? [],
     );
 
     // Patch with explicit CSV values where provided, overriding auto-computed defaults.

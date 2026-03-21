@@ -230,6 +230,13 @@
   text-align: left;
 }
 
+.planning-view__wp-batch-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .planning-view__wp-cell {
   height: 46px; /* acts as min-height in table layout */
   background: transparent;

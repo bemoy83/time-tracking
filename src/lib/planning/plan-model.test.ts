@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createPlan,
   createLineItem,
@@ -8,7 +8,9 @@ import {
   DEFAULT_PLAN_EFFICIENCY,
   revertToDraft,
   addLineItemToPlan,
+  duplicateAllLineItemsInPlan,
   removeLineItemFromPlan,
+  removeAllLineItemsFromPlan,
   updatePlanLineItem,
   planTotalPersonHours,
   planTotalsByUnit,
@@ -183,6 +185,88 @@ describe('duplicateLineItem', () => {
     const original = createLineItem('Install carpet (copy)', 'Carpet Tiles', 'm2', 100, 10, 0);
     const duplicate = duplicateLineItem(original);
     expect(duplicate.title).toBe('Install carpet (copy)');
+  });
+});
+
+describe('duplicateAllLineItemsInPlan', () => {
+  it('duplicates every line item once and appends the copies in original order', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+
+    let plan = createPlan('Test');
+    const originalA = createLineItem('Install carpet', 'Carpet Tiles', 'm2', 100, 10, 0);
+    const originalB = createLineItem('Install chairs (copy)', 'Furniture', 'pcs', 50, 5, 0);
+    plan = addLineItemToPlan(plan, originalA);
+    plan = addLineItemToPlan(plan, originalB);
+    vi.setSystemTime(new Date('2024-01-01T00:00:01.000Z'));
+
+    const duplicated = duplicateAllLineItemsInPlan(plan);
+
+    expect(duplicated.updatedAt).not.toBe(plan.updatedAt);
+    expect(duplicated.lineItems).toHaveLength(4);
+    expect(duplicated.lineItems[0]).toBe(originalA);
+    expect(duplicated.lineItems[1]).toBe(originalB);
+
+    const duplicateA = duplicated.lineItems[2];
+    const duplicateB = duplicated.lineItems[3];
+
+    expect(duplicateA.id).not.toBe(originalA.id);
+    expect(duplicateA.title).toBe('Install carpet (copy)');
+    expect(duplicateA.workTypeTitle).toBe(originalA.workTypeTitle);
+    expect(duplicateA.workQuantity).toBe(originalA.workQuantity);
+
+    expect(duplicateB.id).not.toBe(originalB.id);
+    expect(duplicateB.title).toBe('Install chairs (copy)');
+    expect(duplicateB.workTypeTitle).toBe(originalB.workTypeTitle);
+    expect(duplicateB.workQuantity).toBe(originalB.workQuantity);
+
+    vi.useRealTimers();
+  });
+
+  it('returns an empty plan with a fresh updatedAt when there are no line items', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+    const plan = createPlan('Empty');
+    vi.setSystemTime(new Date('2024-01-01T00:00:01.000Z'));
+
+    const duplicated = duplicateAllLineItemsInPlan(plan);
+
+    expect(duplicated.lineItems).toEqual([]);
+    expect(duplicated.updatedAt).not.toBe(plan.updatedAt);
+
+    vi.useRealTimers();
+  });
+});
+
+describe('removeAllLineItemsFromPlan', () => {
+  it('removes every line item and updates the timestamp', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+    let plan = createPlan('Test');
+    plan = addLineItemToPlan(plan, createLineItem('A', 'Carpet Tiles', 'm2', 100, 10, 0));
+    plan = addLineItemToPlan(plan, createLineItem('B', 'Furniture', 'pcs', 50, 5, 0));
+    vi.setSystemTime(new Date('2024-01-01T00:00:01.000Z'));
+
+    const cleared = removeAllLineItemsFromPlan(plan);
+
+    expect(cleared.lineItems).toEqual([]);
+    expect(cleared.updatedAt).not.toBe(plan.updatedAt);
+
+    vi.useRealTimers();
+  });
+
+  it('keeps an empty plan empty and still refreshes updatedAt', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
+    const plan = createPlan('Empty');
+    vi.setSystemTime(new Date('2024-01-01T00:00:01.000Z'));
+
+    const cleared = removeAllLineItemsFromPlan(plan);
+
+    expect(cleared.lineItems).toEqual([]);
+    expect(cleared.updatedAt).not.toBe(plan.updatedAt);
+
+    vi.useRealTimers();
   });
 });
 

@@ -13,6 +13,7 @@ A planning and execution workspace for exhibition and trade fair assembly/disman
 **Planner** — office or site manager, desktop-first
 - Creates work packages for upcoming events
 - Defines scope: work types, quantities, crew, phase schedules
+- Tags line items and defines execution sequence priority
 - Exports plan packages to field operators
 - Reviews execution returns and refines productivity benchmarks
 
@@ -53,7 +54,7 @@ The app introduces quantifiable task tracking integrated with time and personnel
 
 **All time computed from UTC timestamps** — no stored durations, no clock drift. Elapsed time is always derived fresh from `startUtc`/`endUtc` pairs.
 
-**WorkType is the only classification model** — no categories, no tags, no freeform grouping. All analytics flow through WorkType.
+**WorkType drives productivity analytics** — all KPI and attribution flows through WorkType. Tags are a separate, planner-side organisational and scheduling-priority layer and do not affect analytics.
 
 ---
 
@@ -64,6 +65,14 @@ WorkType (canonical classification)
 ├── title, workUnit (m²|m|pcs|orders)
 ├── assemblyRate, dismantleRate  (units/person-hour)
 └── readOnly flag  (for plan-scoped imported types)
+
+Tag (planner-side organisational label)
+├── name, color
+├── categoryId → TagCategory  (optional grouping)
+└── sequencable  (participates in global execution sequence)
+
+GlobalTagSequence (singleton, IDB key "global")
+└── tagIds[]  (ordered list of sequencable tag IDs — defines schedule priority)
 
 Task
 ├── title, status (active|completed|blocked), blockReason
@@ -87,6 +96,7 @@ Plan
 
 PlanLineItem
 ├── workTypeId, workQuantity, dismantleQuantity
+├── tagIds[]  → Tag  (planner labels; drive schedule-assistant priority)
 ├── Assembly: rate, crew, hours, scheduled dates, crew by date, execution state
 ├── Dismantle: rate, crew, hours, scheduled dates, crew by date, execution state
 └── shared notes and amendment metadata
@@ -113,6 +123,7 @@ Person-hours = duration (hours) × workers — consistent everywhere.
 | Task archive with integrity check | ✅ Live |
 | Append-only task notes with audit trail | ✅ Live |
 | Field Plan import (receive plan package) | ✅ Live (flagged) |
+| Field Plan deletion (remove received or past plans) | ✅ Live |
 | Execution return export | ✅ Live (flagged) |
 
 ### Planning (Planner)
@@ -129,6 +140,9 @@ Person-hours = duration (hours) × workers — consistent everywhere.
 | Schedule grid view | ✅ Live (flagged) |
 | Progress view | ✅ Live |
 | Insights view | ✅ Live |
+| Tags on plan line items | ✅ Live |
+| Tag execution sequence (schedule priority ordering) | ✅ Live |
+| Schedule assistant respects tag execution sequence | ✅ Live |
 
 ### Productivity & Analytics
 
@@ -150,6 +164,8 @@ Person-hours = duration (hours) × workers — consistent everywhere.
 |---|---|
 | WorkType library | ✅ Live |
 | Task template library | ✅ Live |
+| Tag library with categories | ✅ Live |
+| Tag execution sequence settings | ✅ Live |
 | CSV import/export | ✅ Live |
 | JSON backup/restore | ✅ Live |
 | Telemetry (local aggregate event counters) | ✅ Live |
@@ -209,13 +225,26 @@ Snapshots are cached with `computedAt` timestamp and engine version. Attribution
 
 ---
 
-## 9. Design Principles
+## 9. Tag Execution Sequence
+
+Tags marked `sequencable` define a global execution priority order stored as a `GlobalTagSequence` singleton in IDB. The schedule assistant uses this order as the primary sort key when allocating work across available days.
+
+**How it works:**
+- Each tag can be marked "Include in execution sequence" in tag settings
+- The sequence order is configured in Settings → Tag Execution Sequence
+- The schedule assistant resolves each line item's priority as the lowest (best) sequence position across all of its tags — a line item tagged with both a high- and low-priority tag is treated as high priority
+- Line items with no sequencable tags sort after all sequenced items, preserving their existing `requiredPH`-descending order
+- Applies to both single-plan and shared (crew pool) schedule assistant runs
+
+---
+
+## 10. Design Principles
 
 **Two surfaces, two priorities**
 The Today view (field operator) must stay fast, glanceable, and one-handed friendly. The planning workspace is designed for wide screens and deliberate work. Neither degrades the other.
 
-**WorkType is the only classification model**
-No categories, no tags. `findWorkTypeByKey(title, unit)` is the canonical lookup. Do not introduce `workCategory` or equivalent.
+**WorkType drives analytics; Tags drive scheduling priority**
+WorkType is the canonical classification for all KPI and attribution flows — `findWorkTypeByKey(title, unit)` is the canonical lookup, do not introduce `workCategory` or equivalent. Tags are a planner-side layer for organisational grouping and schedule-assistant priority ordering; they have no effect on productivity analytics.
 
 **Offline first, server optional**
 The app must function fully without connectivity. Server sync is a future enhancement, not a current dependency.
@@ -231,7 +260,7 @@ Templates pre-fill fields at task creation. The resulting task is indistinguisha
 
 ---
 
-## 10. Active Feature Flags / Toggles
+## 11. Active Feature Flags / Toggles
 
 | Flag | Feature |
 |---|---|

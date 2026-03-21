@@ -8,10 +8,12 @@ import {
   type Plan,
   type PlanLineItem,
   addLineItemToPlan,
+  duplicateAllLineItemsInPlan,
   duplicateLineItem,
   getPlanDisplayName,
   planPhasePersonHours,
   planTotalPersonHours,
+  removeAllLineItemsFromPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
 } from '../../lib/planning/plan-model';
@@ -251,6 +253,14 @@ export function PlanEditor({
     mutatePlan((prev) => addLineItemToPlan(prev, duplicateLineItem(item)));
   };
 
+  const handleDuplicateAll = () => {
+    mutatePlan((prev) => duplicateAllLineItemsInPlan(prev));
+  };
+
+  const handleRemoveAll = () => {
+    mutatePlan((prev) => removeAllLineItemsFromPlan(prev));
+  };
+
   useEffect(() => {
     if (!shouldClearPlanProjectId(currentPlan.projectId, projects)) return;
     mutatePlan((prev) => ({ ...prev, projectId: null }));
@@ -441,7 +451,9 @@ export function PlanEditor({
               isLocked={readOnly || isLocked}
               onUpdate={handleUpdateItem}
               onBatchApplySuggestions={readOnly || isLocked ? undefined : handleBatchApplySuggestions}
+              onDuplicateAll={readOnly || isLocked ? undefined : handleDuplicateAll}
               onDuplicate={handleDuplicateItem}
+              onRemoveAll={readOnly || isLocked ? undefined : handleRemoveAll}
               onRemove={handleRemoveItem}
               onSetItemTagIds={
                 readOnly || isLocked

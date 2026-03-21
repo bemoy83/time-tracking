@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
+import { deletePlan, getAllPlans, getAllTimeEntries, updatePlan } from '../../lib/db';
 import { buildExecutionReturnEnvelope } from '../../lib/interop/data-transfer/execution-return';
 import { downloadJson } from '../../lib/interop/download-json';
 import type { BlockCategory, Plan, PlanLineItem } from '../../lib/planning/plan-model';
@@ -324,6 +324,29 @@ export function useFieldPlanModel() {
     }
   }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
 
+  const handleDeletePlan = useCallback(
+    async (planId: string) => {
+      const target = plans.find((p) => p.id === planId);
+      if (!target) return;
+
+      const displayName = getPlanDisplayName(
+        target,
+        target.projectId ? projectById.get(target.projectId) ?? null : null,
+      );
+      const isActive = target.status === 'received';
+      const warning = isActive
+        ? `Delete "${displayName}"?\n\nThis plan has active execution data. Deleting it cannot be undone.`
+        : `Remove "${displayName}" from past events?\n\nThis cannot be undone.`;
+
+      if (!window.confirm(warning)) return;
+
+      await deletePlan(planId);
+      setPlans((prev) => prev.filter((p) => p.id !== planId));
+      if (selectedPlanId === planId) setSelectedPlanId(null);
+    },
+    [plans, projectById, selectedPlanId],
+  );
+
   const closeForm = useCallback(() => setFormMode(null), []);
 
   const openActions = useCallback(
@@ -376,6 +399,7 @@ export function useFieldPlanModel() {
 
     closeForm,
     openActions,
+    handleDeletePlan,
     handleReleaseToToday,
     handleBlockSubmit,
     handleDeferSubmit,

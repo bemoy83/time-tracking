@@ -6,7 +6,7 @@ import type { TaskTemplate } from '../../lib/types';
 import { BUILD_PHASE_LABELS, formatWorkTypeWithUnit, resolveWorkUnitLabel } from '../../lib/types';
 import { TemplateFormSheet } from '../../components/TemplateFormSheet';
 import { DeleteTemplateConfirm } from '../../components/DeleteTemplateConfirm';
-import { ExportIcon, PencilIcon } from '../../components/icons';
+import { ExportIcon, PencilIcon, TrashIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportTemplatesCsv } from '../../lib/interop/template-export';
@@ -119,23 +119,42 @@ export function SettingsTemplatesView({ onBack }: SettingsTemplatesViewProps) {
         ) : (
           <div className="settings-view__list">
             {templates.map((template) => (
-              <button
-                key={template.id}
-                className="settings-view__row"
-                onClick={() => handleEditTemplate(template)}
-              >
-                <div className="settings-view__template-info">
-                  <span className="settings-view__row-label">{template.title}</span>
-                  <span className="settings-view__row-detail">
-                    {(() => {
-                      const workType = template.workTypeId ? workTypeById.get(template.workTypeId) : null;
-                      return workType
-                        ? formatWorkTypeWithUnit(workType.title, workType.workUnit)
-                        : `${BUILD_PHASE_LABELS[template.phase]} · ${resolveWorkUnitLabel(template.workUnit)}`;
-                    })()}
-                  </span>
+              <div key={template.id} className="settings-view__list-item">
+                <button
+                  className="settings-view__row"
+                  onClick={() => handleEditTemplate(template)}
+                >
+                  <div className="settings-view__template-info">
+                    <span className="settings-view__row-label">{template.title}</span>
+                    <span className="settings-view__row-detail">
+                      {(() => {
+                        const workType = template.workTypeId
+                          ? workTypeById.get(template.workTypeId)
+                          : null;
+                        return workType
+                          ? formatWorkTypeWithUnit(workType.title, workType.workUnit)
+                          : `${BUILD_PHASE_LABELS[template.phase]} · ${resolveWorkUnitLabel(template.workUnit)}`;
+                      })()}
+                    </span>
+                  </div>
+                </button>
+                <div className="settings-view__list-item-actions">
+                  <IconButton
+                    icon={<PencilIcon className="settings-detail__icon" />}
+                    ariaLabel={`Edit template ${template.title}`}
+                    onClick={() => handleEditTemplate(template)}
+                    variant="ghost"
+                    className="icon-btn--edit"
+                  />
+                  <IconButton
+                    icon={<TrashIcon className="settings-detail__icon" />}
+                    ariaLabel={`Delete template ${template.title}`}
+                    onClick={() => setDeletingTemplate(template)}
+                    variant="ghost"
+                    className="icon-btn--danger"
+                  />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

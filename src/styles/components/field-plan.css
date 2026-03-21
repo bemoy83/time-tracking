@@ -53,26 +53,35 @@
   overflow: hidden;
 }
 
+/* Plan item: wraps the select button + hover-revealed delete */
+.field-plan__plan-item {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--color-border);
+}
+
+.field-plan__plan-item:first-child {
+  border-top: none;
+}
+
 .field-plan__plan-btn {
   border: none;
   background: var(--color-surface-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  flex: 1;
   min-height: var(--touch-min);
   padding: var(--space-sm) var(--space-md);
+  padding-inline-end: calc(var(--space-md) + 36px); /* reserve space for delete btn */
   cursor: pointer;
   font-size: var(--font-body);
   color: var(--color-text);
-  border-top: 1px solid var(--color-border);
 }
 
-.field-plan__plan-btn:first-child {
-  border-top: none;
-}
-
-.field-plan__plan-btn:hover {
+.field-plan__plan-item:hover .field-plan__plan-btn,
+.field-plan__plan-item:focus-within .field-plan__plan-btn {
   background: var(--color-surface-hover);
 }
 
@@ -83,14 +92,49 @@
 }
 
 /* Rounded corners wrapping the accent bar (matches task list) */
-.field-plan__plan-btn--active:first-child {
+.field-plan__plan-item:first-child .field-plan__plan-btn--active {
   border-start-start-radius: calc(var(--radius-xl) - 1px);
   border-start-end-radius: var(--radius-xl);
 }
 
-.field-plan__plan-btn--active:last-child {
+.field-plan__plan-item:last-child .field-plan__plan-btn--active {
   border-end-start-radius: calc(var(--radius-xl) - 1px);
   border-end-end-radius: var(--radius-xl);
+}
+
+/* Delete button — hover-revealed, absolute inside item */
+.field-plan__plan-delete {
+  position: absolute;
+  inset-inline-end: var(--space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.field-plan__plan-item:hover .field-plan__plan-delete,
+.field-plan__plan-item:focus-within .field-plan__plan-delete {
+  opacity: 1;
+}
+
+.field-plan__plan-delete:hover {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.field-plan__plan-delete-icon {
+  width: 15px;
+  height: 15px;
 }
 
 .field-plan__plan-name {

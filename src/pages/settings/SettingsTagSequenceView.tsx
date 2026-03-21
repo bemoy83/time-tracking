@@ -102,6 +102,7 @@ export function SettingsTagSequenceView({ onBack }: SettingsTagSequenceViewProps
                     ariaLabel="Move tag up"
                     icon={<ChevronUpIcon className="settings-detail__icon" />}
                     disabled={index === 0}
+                    className="icon-btn--reorder"
                     onClick={() => {
                       void handleMove(index, -1);
                     }}
@@ -113,6 +114,7 @@ export function SettingsTagSequenceView({ onBack }: SettingsTagSequenceViewProps
                       <ChevronUpIcon className="settings-detail__icon settings-view__reorder-chevron--down" />
                     }
                     disabled={index === orderedTags.length - 1}
+                    className="icon-btn--reorder"
                     onClick={() => {
                       void handleMove(index, 1);
                     }}

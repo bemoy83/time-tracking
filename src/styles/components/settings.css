@@ -164,6 +164,13 @@ button.settings-view__row:active {
   color: var(--color-text-muted);
 }
 
+.settings-view__row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 /* Toggle row variant */
 .settings-view__row--toggle {
   cursor: pointer;
@@ -306,6 +313,7 @@ button.settings-view__row:active {
   align-items: center;
   gap: var(--space-xs);
 }
+
 
 .settings-view__reorder-chevron--down {
   transform: rotate(180deg);

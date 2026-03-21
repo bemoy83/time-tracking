@@ -4,6 +4,7 @@ import {
   ChevronRightIcon,
   ExpandChevronIcon,
   TaskListIcon,
+  TrashIcon,
 } from '../../../components/icons';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
 import { useTaskStore } from '../../../lib/stores/task-store';
@@ -15,6 +16,7 @@ interface FieldPlanPlanSelectorProps {
   showPastEvents: boolean;
   onTogglePastEvents: () => void;
   onSelectPlan: (planId: string) => void;
+  onDeletePlan: (planId: string) => void;
 }
 
 export function FieldPlanPlanSelector({
@@ -24,9 +26,39 @@ export function FieldPlanPlanSelector({
   showPastEvents,
   onTogglePastEvents,
   onSelectPlan,
+  onDeletePlan,
 }: FieldPlanPlanSelectorProps) {
   const { projects } = useTaskStore();
   const projectById = new Map(projects.map((project) => [project.id, project]));
+
+  function renderPlanItem(plan: Plan) {
+    const isActive = selectedPlanId === plan.id;
+    return (
+      <div key={plan.id} className="field-plan__plan-item">
+        <button
+          type="button"
+          className={`field-plan__plan-btn${isActive ? ' field-plan__plan-btn--active' : ''}`}
+          onClick={() => onSelectPlan(plan.id)}
+        >
+          <span className="field-plan__plan-name">
+            {getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null)}
+          </span>
+          <ChevronRightIcon className="field-plan__plan-chevron" />
+        </button>
+        <button
+          type="button"
+          className="field-plan__plan-delete"
+          aria-label={`Delete plan ${getPlanDisplayName(plan, null)}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            void onDeletePlan(plan.id);
+          }}
+        >
+          <TrashIcon className="field-plan__plan-delete-icon" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <section className="field-plan__plan-selector">
@@ -39,19 +71,7 @@ export function FieldPlanPlanSelector({
         {receivedPlans.length === 0 && (
           <p className="field-plan__empty-text">No active received plans.</p>
         )}
-        {receivedPlans.map((plan) => (
-          <button
-            key={plan.id}
-            type="button"
-            className={`field-plan__plan-btn${selectedPlanId === plan.id ? ' field-plan__plan-btn--active' : ''}`}
-            onClick={() => onSelectPlan(plan.id)}
-          >
-            <span className="field-plan__plan-name">
-              {getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null)}
-            </span>
-            <ChevronRightIcon className="field-plan__plan-chevron" />
-          </button>
-        ))}
+        {receivedPlans.map(renderPlanItem)}
       </div>
 
       {closedPlans.length > 0 && (
@@ -71,19 +91,7 @@ export function FieldPlanPlanSelector({
           </button>
           {showPastEvents && (
             <div className="field-plan__plan-list">
-              {closedPlans.map((plan) => (
-                <button
-                  key={plan.id}
-                  type="button"
-                  className={`field-plan__plan-btn${selectedPlanId === plan.id ? ' field-plan__plan-btn--active' : ''}`}
-                  onClick={() => onSelectPlan(plan.id)}
-                >
-                  <span className="field-plan__plan-name">
-                    {getPlanDisplayName(plan, plan.projectId ? projectById.get(plan.projectId) ?? null : null)}
-                  </span>
-                  <ChevronRightIcon className="field-plan__plan-chevron" />
-                </button>
-              ))}
+              {closedPlans.map(renderPlanItem)}
             </div>
           )}
         </div>

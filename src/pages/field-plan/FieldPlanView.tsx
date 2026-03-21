@@ -153,6 +153,7 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
                   showPastEvents={model.showPastEvents}
                   onTogglePastEvents={model.togglePastEvents}
                   onSelectPlan={model.setSelectedPlanId}
+                  onDeletePlan={(id) => { void model.handleDeletePlan(id); }}
                 />
 
                 {model.selectedPlan && (

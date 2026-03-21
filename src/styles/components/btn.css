@@ -116,3 +116,33 @@
 .btn--full {
   width: 100%;
 }
+
+/* ---- Semantic icon button variants (grey at rest → colour on hover) ---- */
+
+.icon-btn--add,
+.icon-btn--edit,
+.icon-btn--danger,
+.icon-btn--reorder {
+  color: var(--color-text-muted);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.icon-btn--add:hover:not(:disabled) {
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.icon-btn--edit:hover:not(:disabled) {
+  color: var(--color-amber);
+  background: var(--color-amber-bg-hover);
+}
+
+.icon-btn--danger:hover:not(:disabled) {
+  color: var(--color-recording);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.icon-btn--reorder:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--hover-bg);
+}

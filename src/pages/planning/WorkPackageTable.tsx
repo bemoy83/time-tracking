@@ -19,6 +19,7 @@ import type { LineItemSuggestion, PhaseSuggestion } from '../../lib/planning/pla
 import { DuplicateIcon, SparklesIcon, TrashIcon } from '../../components/icons';
 import { TagPillGroup } from '../../components/TagPillGroup';
 import { TagPickerModal } from '../../components/TagPickerModal';
+import { AlertDialog } from '../../components/AlertDialog';
 
 interface WorkPackageTableProps {
   lineItems: PlanLineItem[];
@@ -28,7 +29,9 @@ interface WorkPackageTableProps {
   onBatchApplySuggestions?: (
     updates: Array<{ itemId: string; updates: Partial<PlanLineItem> }>,
   ) => void;
+  onDuplicateAll?: () => void;
   onDuplicate: (item: PlanLineItem) => void;
+  onRemoveAll?: () => void;
   onRemove: (lineItemId: string) => void;
   onSetItemTagIds?: (lineItemId: string, tagIds: string[]) => void;
 }
@@ -105,11 +108,14 @@ export function WorkPackageTable({
   isLocked,
   onUpdate,
   onBatchApplySuggestions,
+  onDuplicateAll,
   onDuplicate,
+  onRemoveAll,
   onRemove,
   onSetItemTagIds,
 }: WorkPackageTableProps) {
   const [tagPickerItemId, setTagPickerItemId] = useState<string | null>(null);
+  const [confirmKind, setConfirmKind] = useState<'duplicate' | 'delete' | null>(null);
   const tagPickerItem = tagPickerItemId ? lineItems.find((i) => i.id === tagPickerItemId) : null;
   const { workTypes } = useWorkTypeStore();
   const selectableWorkTypes = useMemo(
@@ -183,6 +189,30 @@ export function WorkPackageTable({
     if (isLocked || !onBatchApplySuggestions || batchApplyableCount === 0) return;
     onBatchApplySuggestions(batchApplyableUpdates);
   };
+  const workPackageCount = lineItems.length;
+  const hasBatchActions =
+    !isLocked
+    && (onBatchApplySuggestions != null || onDuplicateAll != null || onRemoveAll != null);
+  const closeConfirmDialog = () => setConfirmKind(null);
+  const openConfirmDialog = (kind: 'duplicate' | 'delete') => {
+    if (workPackageCount === 0) return;
+    setConfirmKind(kind);
+  };
+  const handleConfirmBatchAction = () => {
+    const currentConfirmKind = confirmKind;
+    closeConfirmDialog();
+    if (currentConfirmKind === 'duplicate') {
+      onDuplicateAll?.();
+      return;
+    }
+    if (currentConfirmKind === 'delete') {
+      onRemoveAll?.();
+    }
+  };
+  const confirmDescription =
+    confirmKind === 'duplicate'
+      ? `Are you sure you want to duplicate all. This will duplicate ${workPackageCount} work packages`
+      : `Are you sure you want to delete all. This will delete ${workPackageCount} work packages`;
 
   const getPhaseActivationProps = (
     item: PlanLineItem,
@@ -241,21 +271,57 @@ export function WorkPackageTable({
             <th rowSpan={2} className="planning-view__wp-actions-col" scope="col">
               <div className="planning-view__wp-actions-col-content">
                 <span className="planning-view__wp-actions-col-label">Actions</span>
-                {!isLocked && onBatchApplySuggestions && (
-                  <button
-                    type="button"
-                    className="planning-view__wp-action-btn planning-view__wp-action-btn--magic planning-view__wp-batch-apply"
-                    onClick={handleBatchMagicApply}
-                    aria-label="Apply suggestions to all applicable work packages"
-                    title={
-                      batchApplyableCount > 0
-                        ? 'Apply suggested values to all rows'
-                        : 'No suggestions to apply'
-                    }
-                    disabled={batchApplyableCount === 0}
-                  >
-                    <SparklesIcon className="planning-view__wp-action-icon" />
-                  </button>
+                {hasBatchActions && (
+                  <div className="planning-view__wp-batch-actions">
+                    {onBatchApplySuggestions && (
+                      <button
+                        type="button"
+                        className="planning-view__wp-action-btn planning-view__wp-action-btn--magic planning-view__wp-batch-apply"
+                        onClick={handleBatchMagicApply}
+                        aria-label="Apply suggestions to all applicable work packages"
+                        title={
+                          batchApplyableCount > 0
+                            ? 'Apply suggested values to all rows'
+                            : 'No suggestions to apply'
+                        }
+                        disabled={batchApplyableCount === 0}
+                      >
+                        <SparklesIcon className="planning-view__wp-action-icon" />
+                      </button>
+                    )}
+                    {onDuplicateAll && (
+                      <button
+                        type="button"
+                        className="planning-view__wp-action-btn"
+                        onClick={() => openConfirmDialog('duplicate')}
+                        aria-label="Duplicate all work packages"
+                        title={
+                          workPackageCount > 0
+                            ? 'Duplicate all work packages'
+                            : 'No work packages to duplicate'
+                        }
+                        disabled={workPackageCount === 0}
+                      >
+                        <DuplicateIcon className="planning-view__wp-action-icon" />
+                      </button>
+                    )}
+                    {onRemoveAll && (
+                      <button
+                        type="button"
+                        className="planning-view__wp-action-btn planning-view__wp-action-btn--danger"
+                        onClick={() => openConfirmDialog('delete')}
+                        aria-label="Delete all work packages"
+                        title={
+                          workPackageCount > 0
+                            ? 'Delete all work packages'
+                            : 'No work packages to delete'
+                        }
+                        disabled={workPackageCount === 0}
+                      >
+                        <TrashIcon className="planning-view__wp-action-icon" />
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </th>
@@ -594,6 +660,28 @@ export function WorkPackageTable({
         </tbody>
       </table>
     </div>
+
+    <AlertDialog
+      isOpen={confirmKind != null}
+      tone={confirmKind === 'delete' ? 'danger' : undefined}
+      title={
+        confirmKind === 'duplicate'
+          ? 'Duplicate all work packages?'
+          : 'Delete all work packages?'
+      }
+      description={confirmDescription}
+      onClose={closeConfirmDialog}
+      ariaLabelledBy="work-package-batch-confirm-title"
+      ariaDescribedBy="work-package-batch-confirm-desc"
+      actions={[
+        { label: 'Cancel', onClick: closeConfirmDialog, variant: 'secondary' },
+        {
+          label: 'Confirm',
+          onClick: handleConfirmBatchAction,
+          variant: confirmKind === 'delete' ? 'danger' : 'primary',
+        },
+      ]}
+    />
 
     {/* Tag picker modal for line item tag assignment.
         Rendered via createPortal (inside TagPickerModal) to escape the

@@ -97,11 +97,11 @@ export function FieldPlanPlanDetail({
 
   const filteredStatusGroups: FieldPlanStatusGroups = useMemo(
     () => ({
-      inProgress: filterByTag(filteredStatusGroups.inProgress),
-      blocked: filterByTag(filteredStatusGroups.blocked),
-      pending: filterByTag(filteredStatusGroups.pending),
-      completed: filterByTag(filteredStatusGroups.completed),
-      deferred: filterByTag(filteredStatusGroups.deferred),
+      inProgress: filterByTag(statusGroups.inProgress),
+      blocked: filterByTag(statusGroups.blocked),
+      pending: filterByTag(statusGroups.pending),
+      completed: filterByTag(statusGroups.completed),
+      deferred: filterByTag(statusGroups.deferred),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [statusGroups, activeTagFilters],

@@ -60,7 +60,6 @@ export function AlertDialog({
     <div
       className="delete-confirm-backdrop"
       onClick={onClose}
-      aria-hidden="true"
     >
       <div
         ref={dialogRef}

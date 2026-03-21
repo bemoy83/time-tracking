@@ -12,7 +12,7 @@ import {
 import type { Tag, TagCategory } from '../../lib/tags';
 import { TagFormSheet } from '../../components/TagFormSheet';
 import { IconButton } from '../../components/IconButton';
-import { PencilIcon, TrashIcon } from '../../components/icons';
+import { PencilIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { AlertDialog } from '../../components/AlertDialog';
 import './settings-styles';
@@ -154,24 +154,26 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
                     </div>
                   </button>
                   <div className="settings-view__list-item-actions">
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
+                    <IconButton
+                      icon={<PlusIcon className="settings-detail__icon" />}
+                      ariaLabel={`Add tag to ${category.name}`}
                       onClick={() => openNewTag(category.id)}
-                    >
-                      + Tag
-                    </button>
+                      variant="ghost"
+                      className="icon-btn--add"
+                    />
                     <IconButton
                       icon={<PencilIcon className="settings-detail__icon" />}
                       ariaLabel={`Edit category ${category.name}`}
                       onClick={() => openEditCategory(category)}
                       variant="ghost"
+                      className="icon-btn--edit"
                     />
                     <IconButton
                       icon={<TrashIcon className="settings-detail__icon" />}
                       ariaLabel={`Delete category ${category.name}`}
                       onClick={() => setDeleteCategoryTarget(category)}
                       variant="ghost"
+                      className="icon-btn--danger"
                     />
                   </div>
                 </div>
@@ -203,12 +205,14 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
                             ariaLabel={`Edit tag ${tag.name}`}
                             onClick={() => openEditTag(tag)}
                             variant="ghost"
+                            className="icon-btn--edit"
                           />
                           <IconButton
                             icon={<TrashIcon className="settings-detail__icon" />}
                             ariaLabel={`Delete tag ${tag.name}`}
                             onClick={() => setDeleteTagTarget(tag)}
                             variant="ghost"
+                            className="icon-btn--danger"
                           />
                         </div>
                       </div>

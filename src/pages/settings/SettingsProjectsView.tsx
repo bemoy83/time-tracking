@@ -2,7 +2,7 @@ import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { ProjectColorDot } from '../../components/ProjectColorDot';
 import { ProjectFormSheet } from '../../components/ProjectFormSheet';
 import { DeleteProjectConfirm } from '../../components/DeleteProjectConfirm';
-import { ExportIcon, TaskListIcon } from '../../components/icons';
+import { ExportIcon, PencilIcon, TaskListIcon, TrashIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { useTaskStore, deleteProjectWithMode, getDeleteProjectPreview } from '../../lib/stores/task-store';
 import type { DeleteProjectPreview } from '../../lib/stores/task-store';
@@ -162,21 +162,41 @@ export function SettingsProjectsView({ onBack }: SettingsProjectsViewProps) {
         ) : (
           <div className="settings-view__list">
             {projects.map((project) => (
-              <button
-                key={project.id}
-                className="settings-view__row"
-                onClick={() => handleEditProject(project)}
-              >
-                <div className="settings-view__template-info">
-                  <span className="settings-view__row-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <ProjectColorDot color={project.color} />
-                    {project.name}
-                  </span>
-                  <span className="settings-view__row-detail">
-                    {formatProjectDates(project) || 'No phase dates set'}
-                  </span>
+              <div key={project.id} className="settings-view__list-item">
+                <button
+                  className="settings-view__row"
+                  onClick={() => handleEditProject(project)}
+                >
+                  <div className="settings-view__template-info">
+                    <span
+                      className="settings-view__row-label"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <ProjectColorDot color={project.color} />
+                      {project.name}
+                    </span>
+                    <span className="settings-view__row-detail">
+                      {formatProjectDates(project) || 'No phase dates set'}
+                    </span>
+                  </div>
+                </button>
+                <div className="settings-view__list-item-actions">
+                  <IconButton
+                    icon={<PencilIcon className="settings-detail__icon" />}
+                    ariaLabel={`Edit project ${project.name}`}
+                    onClick={() => handleEditProject(project)}
+                    variant="ghost"
+                    className="icon-btn--edit"
+                  />
+                  <IconButton
+                    icon={<TrashIcon className="settings-detail__icon" />}
+                    ariaLabel={`Delete project ${project.name}`}
+                    onClick={() => void openDeleteConfirm(project)}
+                    variant="ghost"
+                    className="icon-btn--danger"
+                  />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -212,10 +232,14 @@ export function SettingsProjectsView({ onBack }: SettingsProjectsViewProps) {
         isOpen={showProjectForm}
         project={editingProject}
         onClose={closeProjectForm}
-        onDelete={editingProject ? () => {
-          setShowProjectForm(false);
-          void openDeleteConfirm(editingProject);
-        } : undefined}
+        onDelete={
+          editingProject
+            ? () => {
+                setShowProjectForm(false);
+                void openDeleteConfirm(editingProject);
+              }
+            : undefined
+        }
       />
 
       <DeleteProjectConfirm
