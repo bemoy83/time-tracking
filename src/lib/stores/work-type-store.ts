@@ -75,6 +75,8 @@ export interface CreateWorkTypeInput {
   importedForPlanId?: string | null;
   /** Tag IDs to assign to this work type. */
   tagIds?: string[];
+  /** Single skill tag ID declaring the crew skill required for this work type. */
+  skillTagId?: string | null;
 }
 
 /**
@@ -120,6 +122,7 @@ export async function createWorkType(input: CreateWorkTypeInput): Promise<WorkTy
     readOnly: input.readOnly ?? false,
     importedForPlanId: input.importedForPlanId ?? null,
     tagIds: input.tagIds ?? [],
+    skillTagId: input.skillTagId ?? null,
     createdAt: now,
     updatedAt: now,
   };

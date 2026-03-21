@@ -70,3 +70,10 @@ export async function deleteAllTags(): Promise<void> {
   await tx.store.clear();
   await tx.done;
 }
+
+export async function deleteAllTagCategories(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('tagCategories', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}

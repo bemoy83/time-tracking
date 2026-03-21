@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTagSequenceStore } from '../../lib/stores/tag-sequence-store';
 import { useTagStore } from '../../lib/stores/tag-store';
+import { useCrewPoolStore } from '../../lib/stores/crew-pool-store';
+import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { ChevronLeftIcon } from '../../components/icons';
 import { PlanKpiRow } from './PlanKpiRow';
 import { buildScheduleCoverageMetric, getScheduleViewMetrics } from './workspace/workspace-metrics';
@@ -73,6 +75,10 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
+  const { allocations: crewPoolAllocations, defaultCrewSize: systemDefaultCrewSize } = useCrewPoolStore();
+  const effectiveCrewSize = systemDefaultCrewSize ?? currentPlan.defaultCrewSize;
+  const { workTypes } = useWorkTypeStore();
+  const workTypesById = useMemo(() => new Map(workTypes.map((wt) => [wt.id, wt])), [workTypes]);
 
   // Build the full execution sequence: explicitly-ordered tags first, then any
   // sequencable tags not yet saved to the sequence (alphabetical). This mirrors
@@ -130,7 +136,7 @@ export function ScheduleView({
         workCalendar: reconcileWorkCalendarForSpans(
           prev.workCalendar,
           workCalendarPhaseSpans,
-          prev.defaultCrewSize,
+          systemDefaultCrewSize ?? prev.defaultCrewSize,
         ),
       }));
     }
@@ -141,8 +147,8 @@ export function ScheduleView({
   ]);
 
   const capacity = useMemo(
-    () => computeCapacitySummary(currentPlan),
-    [currentPlan],
+    () => computeCapacitySummary(currentPlan, effectiveCrewSize),
+    [currentPlan, effectiveCrewSize],
   );
   const scheduleCoverage = useMemo(
     () => buildScheduleCoverageMetric(
@@ -426,11 +432,16 @@ export function ScheduleView({
     const tagSequence = sequenceTagIds.length > 0
       ? { id: 'global' as const, tagIds: sequenceTagIds, updatedAt: '' }
       : undefined;
+    const crewPool = (Object.keys(crewPoolAllocations).length > 0 || systemDefaultCrewSize != null)
+      ? { id: 'global' as const, defaultCrewSize: systemDefaultCrewSize, allocations: crewPoolAllocations, updatedAt: '' }
+      : undefined;
     const { plan: scheduledPlan, report } = runAutoSchedule(
       currentPlan,
       {
         ...(rerunFromStale ? { includeScheduled: true } : {}),
         tagSequence,
+        crewPool,
+        workTypes: workTypesById,
       },
     );
 
@@ -463,7 +474,7 @@ export function ScheduleView({
       over_capacity_days_before: report.before.overCapacityDays,
       over_capacity_days_after: report.after.overCapacityDays,
     });
-  }, [assistantReportStale, applyAssistantRunReport, currentPlan, mutatePlan, sequenceTagIds]);
+  }, [assistantReportStale, applyAssistantRunReport, crewPoolAllocations, currentPlan, mutatePlan, sequenceTagIds, workTypesById]);
 
   const isLocked = currentPlan.status === 'active';
 
@@ -613,7 +624,7 @@ export function ScheduleView({
     {
       id: 'crew',
       label: 'Crew',
-      complete: currentPlan.workCalendar.length > 0 && currentPlan.defaultCrewSize != null,
+      complete: currentPlan.workCalendar.length > 0 && effectiveCrewSize != null,
       isCta: false,
     },
     {
@@ -713,7 +724,7 @@ export function ScheduleView({
             collapseWhenConfigured
             primaryRange={workCalendarRange ?? primaryRange}
             dayCount={currentPlan.workCalendar.length}
-            crewSize={currentPlan.defaultCrewSize ?? null}
+            crewSize={effectiveCrewSize ?? null}
             totalAvailable={capacity.totalEffectiveAvailablePersonHours}
             onPhaseDateChange={handlePlanPhaseDateChange}
             onEventDateChange={handlePlanDateChange}
@@ -728,7 +739,7 @@ export function ScheduleView({
           calendar={currentPlan.workCalendar}
           readOnly={readOnly}
           onUpdateDay={handleUpdateCalendarDay}
-          planDefaultCrewSize={currentPlan.defaultCrewSize}
+          planDefaultCrewSize={effectiveCrewSize ?? currentPlan.defaultCrewSize}
         />
       </div>
 

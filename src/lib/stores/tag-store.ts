@@ -23,6 +23,7 @@ import {
   updatePlan,
 } from '../db';
 import type { Tag, TagCategory } from '../tags';
+import { removeSkillCrewEntry } from './crew-pool-store';
 import {
   normalizeTagName,
   normalizeTagCategoryName,
@@ -177,6 +178,7 @@ export interface CreateTagInput {
   name: string;
   color?: string;
   sequencable?: boolean;
+  skillTag?: boolean;
 }
 
 export async function createTag(input: CreateTagInput): Promise<Tag> {
@@ -205,6 +207,7 @@ export async function createTag(input: CreateTagInput): Promise<Tag> {
     name: input.name.trim(),
     color: input.color ?? TAG_COLOR_DEFAULT,
     sequencable: input.sequencable ?? false,
+    skillTag: input.skillTag ?? false,
     createdAt: now,
     updatedAt: now,
   };
@@ -216,7 +219,7 @@ export async function createTag(input: CreateTagInput): Promise<Tag> {
 
 export async function updateTagFields(
   id: string,
-  updates: Partial<Pick<Tag, 'name' | 'color' | 'sequencable'>>,
+  updates: Partial<Pick<Tag, 'name' | 'color' | 'sequencable' | 'skillTag'>>,
 ): Promise<void> {
   const tag = state.tags.find((t) => t.id === id);
   if (!tag) return;
@@ -260,17 +263,23 @@ export async function removeTag(id: string): Promise<void> {
 // ============================================================
 
 async function _cascadeDeleteTag(tagId: string): Promise<void> {
-  // Remove from workTypes
+  // Remove from workTypes (tagIds and skillTagId)
   const workTypes = await getAllWorkTypes();
   for (const wt of workTypes) {
-    if (wt.tagIds?.includes(tagId)) {
+    const hasTagRef = wt.tagIds?.includes(tagId);
+    const hasSkillRef = wt.skillTagId === tagId;
+    if (hasTagRef || hasSkillRef) {
       await updateWorkType({
         ...wt,
-        tagIds: wt.tagIds.filter((id) => id !== tagId),
+        tagIds: hasTagRef ? wt.tagIds!.filter((id) => id !== tagId) : wt.tagIds,
+        skillTagId: hasSkillRef ? null : wt.skillTagId,
         updatedAt: nowUtc(),
       });
     }
   }
+
+  // Remove from crew pool
+  await removeSkillCrewEntry(tagId);
 
   // Remove from tasks (additionalTagIds)
   const tasks = await getAllTasks();

@@ -55,11 +55,11 @@ export function SettingsTagsView({ onBack }: SettingsTagsViewProps) {
     setShowTagForm(true);
   }
 
-  async function handleTagSubmit(values: { name: string; color: string; categoryId: string; sequencable: boolean }) {
+  async function handleTagSubmit(values: { name: string; color: string; categoryId: string; sequencable: boolean; skillTag: boolean }) {
     if (editingTag) {
-      await updateTagFields(editingTag.id, { name: values.name, color: values.color, sequencable: values.sequencable });
+      await updateTagFields(editingTag.id, { name: values.name, color: values.color, sequencable: values.sequencable, skillTag: values.skillTag });
     } else {
-      await createTag({ name: values.name, color: values.color, categoryId: values.categoryId, sequencable: values.sequencable });
+      await createTag({ name: values.name, color: values.color, categoryId: values.categoryId, sequencable: values.sequencable, skillTag: values.skillTag });
     }
   }
 

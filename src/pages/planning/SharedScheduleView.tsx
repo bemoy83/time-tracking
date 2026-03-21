@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTagSequenceStore } from '../../lib/stores/tag-sequence-store';
 import { useTagStore } from '../../lib/stores/tag-store';
+import { useCrewPoolStore } from '../../lib/stores/crew-pool-store';
+import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import type { BuildPhase, Project } from '../../lib/types';
 import { getPlanDisplayName, type Plan, type PlanLineItem, type WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
@@ -75,6 +77,9 @@ export function SharedScheduleView({
   const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
+  const { allocations: crewPoolAllocations, defaultCrewSize: crewPoolSystemDefaultCrewSize } = useCrewPoolStore();
+  const { workTypes } = useWorkTypeStore();
+  const workTypesById = useMemo(() => new Map(workTypes.map((wt) => [wt.id, wt])), [workTypes]);
 
   // Build the full execution sequence: explicitly-ordered tags first, then any
   // sequencable tags not yet saved to the sequence (alphabetical). This mirrors
@@ -297,11 +302,16 @@ export function SharedScheduleView({
     const tagSequence = sequenceTagIds.length > 0
       ? { id: 'global' as const, tagIds: sequenceTagIds, updatedAt: '' }
       : undefined;
+    const crewPool = (Object.keys(crewPoolAllocations).length > 0 || crewPoolSystemDefaultCrewSize != null)
+      ? { id: 'global' as const, defaultCrewSize: crewPoolSystemDefaultCrewSize, allocations: crewPoolAllocations, updatedAt: '' }
+      : undefined;
     const { planUpdatesById, report } = runSharedAutoSchedule({
       plans: mutablePlans,
       calendar: crewPoolCalendar,
       defaultCrewSize: crewPoolDefaultCrewSize,
       tagSequence,
+      crewPool,
+      workTypes: workTypesById,
     });
 
     if (report.changed.length === 0) {

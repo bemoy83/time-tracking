@@ -13,6 +13,10 @@ import {
   deleteAllPlans,
   deleteAllWorkUnitDefinitions,
   deleteAllWorkTypes,
+  deleteAllTags,
+  deleteAllTagCategories,
+  deleteGlobalTagSequence,
+  deleteCrewPool,
   getAllActiveTimers,
   removeActiveTimer,
 } from '../db';
@@ -21,6 +25,8 @@ import { setState as setTaskState } from './task-store';
 import { resetTemplateState } from './template-store';
 import { resetWorkUnitState, reseedBuiltInWorkUnits } from './work-unit-store';
 import { resetWorkTypeState } from './work-type-store';
+import { resetTagStoreState } from './tag-store';
+import { resetCrewPoolStoreState } from './crew-pool-store';
 import { invalidateAttributionCache } from '../attribution/cache';
 
 const PLANNING_SESSION_KEY = 'planning-workspace-session';
@@ -34,7 +40,8 @@ export async function purgeTimeEntries(): Promise<void> {
 }
 
 /**
- * Reset all app data: stop timer, delete entries, tasks, projects, plans, work types.
+ * Reset all app data: stop timer, delete entries, tasks, projects, plans, work types,
+ * tags (categories, sequence, crew pool), etc.
  * Refreshes all in-memory stores. Includes workspace plans and field plans alike.
  */
 export async function resetAllData(): Promise<void> {
@@ -51,6 +58,10 @@ export async function resetAllData(): Promise<void> {
   await deleteAllExecutionReturnImports();
   await deleteAllPlans();
   await deleteAllWorkTypes();
+  await deleteAllTags();
+  await deleteAllTagCategories();
+  await deleteGlobalTagSequence();
+  await deleteCrewPool();
   await deleteAllWorkUnitDefinitions();
   await reseedBuiltInWorkUnits();
 
@@ -60,6 +71,8 @@ export async function resetAllData(): Promise<void> {
   resetTemplateState();
   resetWorkUnitState();
   resetWorkTypeState();
+  resetTagStoreState();
+  resetCrewPoolStoreState();
   try {
     localStorage.removeItem(PLANNING_SESSION_KEY);
   } catch {

@@ -13,7 +13,7 @@ import { ActionSheet } from './ActionSheet';
 import { WorkUnitPillGroup } from './WorkUnitPillGroup';
 import { TagPillGroup } from './TagPillGroup';
 import { TagPickerSheet } from './TagPickerSheet';
-import { useTagStore } from '../lib/stores/tag-store';
+import { useTagStore, getSnapshot } from '../lib/stores/tag-store';
 
 interface WorkTypeFormSheetProps {
   isOpen: boolean;
@@ -37,7 +37,9 @@ export function WorkTypeFormSheet({
   const [assemblyRate, setAssemblyRate] = useState('');
   const [dismantleRate, setDismantleRate] = useState('');
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const [skillTagId, setSkillTagId] = useState<string | null>(null);
   const [showTagPicker, setShowTagPicker] = useState(false);
+  const skillTags = getSnapshot().tags.filter((t) => t.skillTag);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,12 +52,14 @@ export function WorkTypeFormSheet({
         setAssemblyRate(String(workType.assemblyRate));
         setDismantleRate(String(workType.dismantleRate));
         setTagIds(workType.tagIds ?? []);
+        setSkillTagId(workType.skillTagId ?? null);
       } else {
         setTitle('');
         setWorkUnit(defaultUnitId);
         setAssemblyRate('');
         setDismantleRate('');
         setTagIds([]);
+        setSkillTagId(null);
       }
     }
   }, [defaultUnitId, isOpen, workType]);
@@ -77,6 +81,7 @@ export function WorkTypeFormSheet({
           assemblyRate: parsedAssemblyRate,
           dismantleRate: parsedDismantleRate,
           tagIds,
+          skillTagId,
         });
       } else {
         await createWorkType({
@@ -85,6 +90,7 @@ export function WorkTypeFormSheet({
           assemblyRate: parsedAssemblyRate,
           dismantleRate: parsedDismantleRate,
           tagIds,
+          skillTagId,
         });
       }
       onClose();
@@ -172,6 +178,27 @@ export function WorkTypeFormSheet({
             onRemoveTag={(id) => setTagIds(tagIds.filter((t) => t !== id))}
             onAddTag={() => setShowTagPicker(true)}
           />
+        </div>
+
+        {/* Skill */}
+        <div className="create-task-sheet__section">
+          <label className="entry-modal__label">Skill</label>
+          {skillTags.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--color-secondary, #6b7280)', margin: 0 }}>
+              No skill tags — mark a tag as a skill in Settings → Tags.
+            </p>
+          ) : (
+            <select
+              className="input"
+              value={skillTagId ?? ''}
+              onChange={(e) => setSkillTagId(e.target.value || null)}
+            >
+              <option value="">None</option>
+              {skillTags.map((tag) => (
+                <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Actions */}

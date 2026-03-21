@@ -17,7 +17,7 @@ import type {
   ImportedExecutionReturnRecord,
   ImportedExecutionReturnUnplannedTaskRecord,
 } from '../interop/data-transfer/contracts';
-import type { Tag, TagCategory, GlobalTagSequence } from '../tags';
+import type { Tag, TagCategory, GlobalTagSequence, CrewPool } from '../tags';
 
 /**
  * Database schema for idb type safety.
@@ -155,5 +155,10 @@ export interface TimeTrackingDBSchema extends DBSchema {
   globalTagSequence: {
     key: string;
     value: GlobalTagSequence;
+  };
+  // Singleton record holding system-level crew headcounts per skill tag
+  crewPool: {
+    key: string;
+    value: CrewPool;
   };
 }

@@ -860,4 +860,26 @@ export const applyDbMigrations: DbUpgradeCallback = (
             });
           }
         }
+
+        // Version 37: Add skill-based crew capacity support.
+        // Creates crewPool object store.
+        // Backfills skillTag: false on all existing tags.
+        if (oldVersion < 37) {
+          // Create crewPool singleton store
+          if (!db.objectStoreNames.contains('crewPool')) {
+            db.createObjectStore('crewPool', { keyPath: 'id' });
+          }
+
+          // Backfill skillTag: false on all existing tags
+          if (db.objectStoreNames.contains('tags')) {
+            backfillStore('tags', (tag) => {
+              const t = tag as unknown as Record<string, unknown>;
+              if (t['skillTag'] === undefined) {
+                t['skillTag'] = false;
+                return true;
+              }
+              return false;
+            });
+          }
+        }
 };

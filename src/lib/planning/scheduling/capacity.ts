@@ -79,7 +79,7 @@ export interface CapacitySummary {
   highFragmentationDayCount: number;
 }
 
-function createPlanCapacityCalendar(plan: Plan): WorkCalendarDay[] {
+function createPlanCapacityCalendar(plan: Plan, defaultCrewSizeOverride?: number | null): WorkCalendarDay[] {
   if (hasSchedulingCalendar(plan)) {
     return plan.workCalendar;
   }
@@ -89,7 +89,8 @@ function createPlanCapacityCalendar(plan: Plan): WorkCalendarDay[] {
     return [];
   }
 
-  return generateDefaultWorkCalendarForSpans(phaseSpans, plan.defaultCrewSize);
+  const effectiveCrewSize = defaultCrewSizeOverride ?? plan.defaultCrewSize;
+  return generateDefaultWorkCalendarForSpans(phaseSpans, effectiveCrewSize);
 }
 
 function buildSinglePlanEntries(plan: Plan): {
@@ -156,11 +157,12 @@ function buildSharedEntries(input: SharedScheduleInput): {
   };
 }
 
-export function computeCapacitySummary(plan: Plan): CapacitySummary {
+export function computeCapacitySummary(plan: Plan, defaultCrewSizeOverride?: number | null): CapacitySummary {
+  const effectiveCrewSize = defaultCrewSizeOverride ?? plan.defaultCrewSize;
   const entries = buildSinglePlanEntries(plan);
   return computeCapacityFromNormalizedInput({
-    calendar: createPlanCapacityCalendar(plan),
-    defaultCrewSize: plan.defaultCrewSize,
+    calendar: createPlanCapacityCalendar(plan, effectiveCrewSize),
+    defaultCrewSize: effectiveCrewSize,
     efficiency: resolvePlanEfficiency(plan),
     scheduledEntries: entries.scheduledEntries,
     scheduledLineItemCount: entries.scheduledLineItemCount,

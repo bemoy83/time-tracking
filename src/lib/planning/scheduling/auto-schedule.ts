@@ -3,9 +3,9 @@
  * while respecting day effort capacity. Preferred crew is only a chunking hint.
  */
 
-import type { BuildPhase } from '../../types';
+import type { BuildPhase, WorkType } from '../../types';
 import type { Plan, PlanLineItem, PhaseFields } from '../plan-model';
-import type { GlobalTagSequence } from '../../tags';
+import type { GlobalTagSequence, CrewPool } from '../../tags';
 import { resolveTagSequencePosition } from '../../tags';
 import {
   getPhaseFields,
@@ -40,6 +40,17 @@ export interface AutoScheduleOptions {
    * sort after those that have tags but before items that are fully unsequenced.
    */
   tagSequence?: GlobalTagSequence;
+  /**
+   * System-level crew pool (tagId → headcount). When provided, the scheduler
+   * enforces per-skill capacity constraints alongside the aggregate person-hours limit.
+   */
+  crewPool?: CrewPool;
+  /**
+   * Work type definitions keyed by ID. Required for skill constraint resolution.
+   * When provided alongside crewPool, each line item's skillTagId is resolved
+   * from its associated WorkType.
+   */
+  workTypes?: Map<string, WorkType>;
 }
 
 export interface AutoScheduleChangedRow {
@@ -77,6 +88,8 @@ interface NormalizedOptions {
   includeScheduled: boolean;
   allowOverAllocation: boolean;
   tagSequence: GlobalTagSequence | undefined;
+  crewPool: CrewPool | undefined;
+  workTypes: Map<string, WorkType> | undefined;
 }
 
 interface RequiredWorkResolution {
@@ -99,6 +112,8 @@ const DEFAULT_OPTIONS: NormalizedOptions = {
   includeScheduled: false,
   allowOverAllocation: false,
   tagSequence: undefined,
+  crewPool: undefined,
+  workTypes: undefined,
 };
 
 function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
@@ -108,6 +123,8 @@ function normalizeOptions(options?: AutoScheduleOptions): NormalizedOptions {
     includeScheduled: options?.includeScheduled ?? DEFAULT_OPTIONS.includeScheduled,
     allowOverAllocation: options?.allowOverAllocation ?? DEFAULT_OPTIONS.allowOverAllocation,
     tagSequence: options?.tagSequence,
+    crewPool: options?.crewPool,
+    workTypes: options?.workTypes,
   };
 }
 
@@ -208,6 +225,34 @@ function buildCommitted(plan: Plan, options: NormalizedOptions): Map<string, num
   return committed;
 }
 
+/**
+ * Build per-skill committed person-hours from already-scheduled line items.
+ * Returns a map of skillTagId → (date → person-hours).
+ * Used to pre-reduce skillPersonHoursRemaining in buildDayStates.
+ */
+function buildSkillCommitted(
+  plan: Plan,
+  options: NormalizedOptions,
+): Map<string, Map<string, number>> {
+  const result = new Map<string, Map<string, number>>();
+  if (options.includeScheduled || !options.workTypes) return result;
+  for (const item of plan.lineItems) {
+    if (!item.workTypeId) continue;
+    const workType = options.workTypes.get(item.workTypeId);
+    const skillTagId = workType?.skillTagId;
+    if (!skillTagId) continue;
+    for (const phase of BUILD_PHASES) {
+      if (!isPhaseActive(item, phase)) continue;
+      for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
+        let dateMap = result.get(skillTagId);
+        if (!dateMap) { dateMap = new Map(); result.set(skillTagId, dateMap); }
+        dateMap.set(date, (dateMap.get(date) ?? 0) + hours);
+      }
+    }
+  }
+  return result;
+}
+
 function schedulePhase(
   plan: Plan,
   phase: BuildPhase,
@@ -217,7 +262,16 @@ function schedulePhase(
 
   const phaseSpan = getPhaseSpan(plan, phase);
   const efficiency = resolvePlanEfficiency(plan);
-  const allCandidates = buildDayStates(plan.workCalendar, plan.defaultCrewSize, efficiency, buildCommitted(plan, options));
+  const crewPoolAllocations = options.crewPool?.allocations;
+  const effectiveDefaultCrew = options.crewPool?.defaultCrewSize ?? plan.defaultCrewSize;
+  const allCandidates = buildDayStates(
+    plan.workCalendar,
+    effectiveDefaultCrew,
+    efficiency,
+    buildCommitted(plan, options),
+    crewPoolAllocations,
+    options.workTypes ? buildSkillCommitted(plan, options) : undefined,
+  );
   const candidates = phaseSpan
     ? allCandidates.filter((day) => day.date >= phaseSpan.start && day.date <= phaseSpan.end)
     : allCandidates;
@@ -249,14 +303,21 @@ function schedulePhase(
         });
         return null;
       }
+      const workType = item.workTypeId ? options.workTypes?.get(item.workTypeId) : undefined;
+      const skillTagId = workType?.skillTagId ?? undefined;
+      const skillCrew = skillTagId ? options.crewPool?.allocations[skillTagId] : undefined;
+      const effectiveDefaultCrew = options.crewPool?.defaultCrewSize ?? plan.defaultCrewSize ?? 1;
       return {
         item,
         pf,
         requiredPH: required.requiredPH,
-        preferredCrew: Math.max(pf.crew, plan.defaultCrewSize ?? 1, 1),
+        preferredCrew: skillCrew != null
+          ? Math.max(skillCrew, 1)
+          : Math.max(pf.crew, effectiveDefaultCrew, 1),
+        skillTagId: skillTagId ?? undefined,
       };
     })
-    .filter((row): row is { item: PlanLineItem; pf: PhaseFields; requiredPH: number; preferredCrew: number } => row != null)
+    .filter((row): row is { item: PlanLineItem; pf: PhaseFields; requiredPH: number; preferredCrew: number; skillTagId: string | undefined } => row != null)
     .sort((a, b) => {
       if (options.tagSequence) {
         const seqIds = options.tagSequence.tagIds;
@@ -268,7 +329,7 @@ function schedulePhase(
     });
 
   for (const row of schedulable) {
-    const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation);
+    const placement = simulatePlacement(candidates, row.requiredPH, row.preferredCrew, options.allowOverAllocation, row.skillTagId);
     if (!placement) {
       unresolved.push({
         lineItemId: row.item.id,

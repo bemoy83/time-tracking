@@ -25,8 +25,8 @@ export function PurgeResetConfirm({
   if (entryCount > 0) parts.push(pluralize(entryCount, 'time entry', 'time entries'));
 
   const summary = parts.length > 0
-    ? `This will permanently delete ${parts.join(', ')}, plus all plans (workspace and field), work types, templates, and execution returns.`
-    : 'This will reset all app data including plans, work types, and templates.';
+    ? `This will permanently delete ${parts.join(', ')}, plus all plans (workspace and field), work types, tags (and tag sequence / crew settings), templates, and execution returns.`
+    : 'This will reset all app data including plans, work types, tags, templates, and execution returns.';
 
   return (
     <AlertDialog

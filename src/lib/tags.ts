@@ -41,6 +41,12 @@ export interface Tag {
    * Backfilled as false for all existing tags at migration time.
    */
   sequencable: boolean;
+  /**
+   * When true, this tag represents a crew skill type. It can be assigned to
+   * a WorkType and its headcount configured in the system CrewPool.
+   * Backfilled as false for all existing tags at migration time.
+   */
+  skillTag: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -118,6 +124,33 @@ export function resolveEffectiveTagIds(
 export interface GlobalTagSequence {
   id: 'global';
   tagIds: string[];
+  updatedAt: string;
+}
+
+// ============================================================
+// Crew Pool
+// ============================================================
+
+/**
+ * Singleton record that stores system-level crew headcounts per skill tag.
+ * Stored in the `crewPool` IDB object store under the key `'global'`.
+ *
+ * Each entry maps a skill tag ID (where `tag.skillTag === true`) to the number
+ * of workers available with that skill. Used by the schedule assistant as a
+ * per-skill capacity constraint alongside the aggregate person-hours limit.
+ *
+ * `day.crewComposition` on a WorkCalendarDay overrides these values for
+ * specific days (e.g. when deploying a subset of the team to a smaller event).
+ */
+export interface CrewPool {
+  id: 'global';
+  /**
+   * Total crew on site used as the fallback for work types with no skill constraint.
+   * Replaces plan-level `defaultCrewSize` as the system-level source of truth.
+   */
+  defaultCrewSize?: number | null;
+  /** tagId → crew headcount */
+  allocations: Record<string, number>;
   updatedAt: string;
 }
 

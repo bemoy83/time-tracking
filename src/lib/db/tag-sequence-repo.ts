@@ -15,3 +15,8 @@ export async function putGlobalTagSequence(seq: GlobalTagSequence): Promise<void
   const db = await getDB();
   await db.put('globalTagSequence', seq);
 }
+
+export async function deleteGlobalTagSequence(): Promise<void> {
+  const db = await getDB();
+  await db.delete('globalTagSequence', 'global');
+}

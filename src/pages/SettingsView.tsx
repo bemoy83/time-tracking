@@ -19,6 +19,7 @@ type SettingsSection =
   | 'workTypes'
   | 'tags'
   | 'tagSequence'
+  | 'crew'
   | 'templates'
   | 'planLineItems'
   | 'productivity'
@@ -61,6 +62,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'workTypes', label: 'Work Types', helper: 'Add and manage reusable work-type definitions' },
     { key: 'tags', label: 'Tags', helper: 'Manage global tags and categories for filtering and grouping work' },
     { key: 'tagSequence', label: 'Tag Execution Sequence', helper: 'Define the global execution order for sequencable tags' },
+    { key: 'crew', label: 'Crew', helper: 'Set available headcounts per skill for schedule capacity constraints' },
     { key: 'templates', label: 'Templates', helper: 'Create reusable presets for faster task creation' },
     { key: 'planLineItems', label: 'Plan Work Packages', helper: 'Download the CSV template and validate files for plan import' },
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },

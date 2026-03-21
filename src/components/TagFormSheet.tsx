@@ -11,7 +11,7 @@ interface TagFormSheetProps {
   editTag?: Tag;
   /** Pre-selected category for create mode */
   defaultCategoryId?: string;
-  onSubmit: (values: { name: string; color: string; categoryId: string; sequencable: boolean }) => Promise<void>;
+  onSubmit: (values: { name: string; color: string; categoryId: string; sequencable: boolean; skillTag: boolean }) => Promise<void>;
 }
 
 /**
@@ -31,6 +31,7 @@ export function TagFormSheet({
   const [color, setColor] = useState(TAG_COLOR_DEFAULT);
   const [categoryId, setCategoryId] = useState('');
   const [sequencable, setSequencable] = useState(false);
+  const [skillTag, setSkillTag] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,6 +44,7 @@ export function TagFormSheet({
       setColor(editTag?.color ?? TAG_COLOR_DEFAULT);
       setCategoryId(editTag?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? '');
       setSequencable(editTag?.sequencable ?? false);
+      setSkillTag(editTag?.skillTag ?? false);
       setError('');
       setSubmitting(false);
     }
@@ -61,7 +63,7 @@ export function TagFormSheet({
     setError('');
     setSubmitting(true);
     try {
-      await onSubmit({ name: name.trim(), color, categoryId, sequencable });
+      await onSubmit({ name: name.trim(), color, categoryId, sequencable, skillTag });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save tag');
@@ -148,6 +150,20 @@ export function TagFormSheet({
             type="checkbox"
             checked={sequencable}
             onChange={(e) => setSequencable(e.target.checked)}
+            className="tag-form__checkbox"
+          />
+        </div>
+
+        {/* Skill tag toggle */}
+        <div className="tag-form__field tag-form__field--row">
+          <label className="tag-form__label tag-form__label--inline" htmlFor="tag-skill">
+            Include as skill
+          </label>
+          <input
+            id="tag-skill"
+            type="checkbox"
+            checked={skillTag}
+            onChange={(e) => setSkillTag(e.target.checked)}
             className="tag-form__checkbox"
           />
         </div>

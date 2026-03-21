@@ -6,6 +6,7 @@ import { initializeWorkUnitStore } from './lib/stores/work-unit-store';
 import { initializeWorkTypeStore } from './lib/stores/work-type-store';
 import { initializeTagStore } from './lib/stores/tag-store';
 import { initializeTagSequenceStore } from './lib/stores/tag-sequence-store';
+import { initializeCrewPoolStore } from './lib/stores/crew-pool-store';
 import { initializeSyncQueue } from './lib/sync/sync-queue';
 import { runWorkTypeLinkBackfill } from './lib/migrations/backfill-worktype-link';
 import type { Project, Task } from './lib/types';
@@ -24,6 +25,7 @@ type SettingsSection =
   | 'workTypes'
   | 'tags'
   | 'tagSequence'
+  | 'crew'
   | 'templates'
   | 'planLineItems'
   | 'productivity'
@@ -55,6 +57,7 @@ const SettingsAttributionView = lazyNamedExport(() => import('./pages/settings/S
 const SettingsRemediationView = lazyNamedExport(() => import('./pages/settings/SettingsRemediationView'), 'SettingsRemediationView');
 const SettingsTagsView = lazyNamedExport(() => import('./pages/settings/SettingsTagsView'), 'SettingsTagsView');
 const SettingsTagSequenceView = lazyNamedExport(() => import('./pages/settings/SettingsTagSequenceView'), 'SettingsTagSequenceView');
+const SettingsCrewView = lazyNamedExport(() => import('./pages/settings/SettingsCrewView'), 'SettingsCrewView');
 const SettingsTelemetryView = lazyNamedExport(() => import('./pages/settings/SettingsTelemetryView'), 'SettingsTelemetryView');
 const SettingsDataTransferView = lazyNamedExport(() => import('./pages/settings/SettingsDataTransferView'), 'SettingsDataTransferView');
 const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlanView'), 'FieldPlanView');
@@ -91,6 +94,7 @@ function App() {
             initializeWorkTypeStore(),
             initializeTagStore(),
             initializeTagSequenceStore(),
+            initializeCrewPoolStore(),
             initializeSyncQueue(),
           ]),
           timeout,
@@ -256,6 +260,9 @@ function App() {
       )}
       {view.type === 'settingsDetail' && view.section === 'tagSequence' && (
         <SettingsTagSequenceView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'crew' && (
+        <SettingsCrewView onBack={handleBack} />
       )}
       {view.type === 'settingsDetail' && view.section === 'workUnits' && (
         <SettingsWorkUnitsView onBack={handleBack} />

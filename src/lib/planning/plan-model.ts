@@ -58,6 +58,8 @@ export interface WorkCalendarDay {
   crewSize: number | null;
   /** Per-day efficiency override (0.5–1.0); null (or absent) falls back to plan defaultEfficiency. */
   efficiency?: number | null;
+  /** Per-day skill crew override: tagId → headcount. Overrides the system CrewPool for this day. */
+  crewComposition?: Record<string, number>;
 }
 
 export interface PlanLineItem {

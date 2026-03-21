@@ -3,7 +3,7 @@
  * against a shared crew-pool calendar using daily effort capacity.
  */
 
-import type { BuildPhase } from '../../types';
+import type { BuildPhase, WorkType } from '../../types';
 import { BUILD_PHASES } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
 import {
@@ -24,7 +24,7 @@ import type {
   AutoScheduleUnresolvedReason,
 } from './auto-schedule';
 import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
-import type { GlobalTagSequence } from '../../tags';
+import type { GlobalTagSequence, CrewPool } from '../../tags';
 import { resolveTagSequencePosition } from '../../tags';
 
 export interface SharedAutoScheduleInput {
@@ -36,6 +36,17 @@ export interface SharedAutoScheduleInput {
    * sequencable tag position before size-based ordering.
    */
   tagSequence?: GlobalTagSequence;
+  /**
+   * System-level crew pool (tagId → headcount). When provided, the scheduler
+   * enforces per-skill capacity constraints alongside the aggregate person-hours limit.
+   */
+  crewPool?: CrewPool;
+  /**
+   * Work type definitions keyed by ID. Required for skill constraint resolution.
+   * When provided alongside crewPool, each line item's skillTagId is resolved
+   * from its associated WorkType.
+   */
+  workTypes?: Map<string, WorkType>;
 }
 
 export interface SharedAutoScheduleChangedRow {
@@ -138,6 +149,35 @@ function buildCommitted(plans: Plan[], options: NormalizedOptions): Map<string, 
   return committed;
 }
 
+/**
+ * Build per-skill committed person-hours from already-scheduled line items across all plans.
+ * Returns a map of skillTagId → (date → person-hours).
+ */
+function buildSkillCommitted(
+  plans: Plan[],
+  workTypes: Map<string, WorkType>,
+  options: NormalizedOptions,
+): Map<string, Map<string, number>> {
+  const result = new Map<string, Map<string, number>>();
+  if (options.includeScheduled) return result;
+  for (const plan of plans) {
+    for (const item of plan.lineItems) {
+      if (!item.workTypeId) continue;
+      const skillTagId = workTypes.get(item.workTypeId)?.skillTagId;
+      if (!skillTagId) continue;
+      for (const phase of BUILD_PHASES) {
+        if (!isPhaseActive(item, phase)) continue;
+        for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
+          let dateMap = result.get(skillTagId);
+          if (!dateMap) { dateMap = new Map(); result.set(skillTagId, dateMap); }
+          dateMap.set(date, (dateMap.get(date) ?? 0) + hours);
+        }
+      }
+    }
+  }
+  return result;
+}
+
 export function runSharedAutoSchedule(
   input: SharedAutoScheduleInput,
   options?: AutoScheduleOptions,
@@ -149,11 +189,15 @@ export function runSharedAutoSchedule(
   const unresolved: SharedAutoScheduleUnresolvedRow[] = [];
 
   // Shared schedule always uses the fixed DEFAULT_PLAN_EFFICIENCY — no per-plan override.
+  const crewPoolAllocations = input.crewPool?.allocations;
+  const effectiveDefaultCrew = input.crewPool?.defaultCrewSize ?? input.defaultCrewSize;
   const dayStates = buildDayStates(
     input.calendar,
-    input.defaultCrewSize,
+    effectiveDefaultCrew,
     DEFAULT_PLAN_EFFICIENCY,
     buildCommitted(input.plans, normalized),
+    crewPoolAllocations,
+    input.workTypes ? buildSkillCommitted(input.plans, input.workTypes, normalized) : undefined,
   );
 
   const candidates = input.plans
@@ -161,14 +205,24 @@ export function runSharedAutoSchedule(
     .flatMap(({ plan, item }) => BUILD_PHASES.map((phase) => ({ plan, item, phase })))
     .filter(({ item, phase }) => isPhaseActive(item, phase))
     .filter(({ item, phase }) => normalized.includeScheduled || Object.keys(getPhaseFields(item, phase).personHoursByDate ?? {}).length === 0)
-    .map(({ plan, item, phase }) => ({
-      planId: plan.id,
-      item,
-      phase,
-      pf: getPhaseFields(item, phase),
-      requiredPH: resolveRequiredPersonHoursForPhase(item, phase),
-      span: getPhaseSpan(plan, phase),
-    }))
+    .map(({ plan, item, phase }) => {
+      const workType = item.workTypeId ? input.workTypes?.get(item.workTypeId) : undefined;
+      const skillTagId = workType?.skillTagId ?? undefined;
+      const skillCrew = skillTagId ? input.crewPool?.allocations[skillTagId] : undefined;
+      const pf = getPhaseFields(item, phase);
+      return {
+        planId: plan.id,
+        item,
+        phase,
+        pf,
+        requiredPH: resolveRequiredPersonHoursForPhase(item, phase),
+        span: getPhaseSpan(plan, phase),
+        skillTagId: skillTagId ?? undefined,
+        preferredCrew: skillCrew != null
+          ? Math.max(skillCrew, 1)
+          : Math.max(pf.crew, input.crewPool?.defaultCrewSize ?? input.defaultCrewSize, 1),
+      };
+    })
     .sort((a, b) => {
       if (input.tagSequence) {
         const seqIds = input.tagSequence.tagIds;
@@ -210,8 +264,9 @@ export function runSharedAutoSchedule(
     const placement = simulatePlacement(
       scopedDays,
       candidate.requiredPH,
-      Math.max(candidate.pf.crew, input.defaultCrewSize, 1),
+      candidate.preferredCrew,
       normalized.allowOverAllocation,
+      candidate.skillTagId,
     );
     if (!placement) {
       unresolved.push({

@@ -187,6 +187,14 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
                         })}
                       </span>
                     )}
+                    {wt.skillTagId && (() => {
+                      const skillTag = tagById.get(wt.skillTagId);
+                      return skillTag ? (
+                        <span className="settings-view__row-detail" style={{ fontSize: 12 }}>
+                          Skill: <TagPill tag={skillTag} />
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                 </button>
                 <div className="settings-view__list-item-actions">

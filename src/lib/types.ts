@@ -73,6 +73,8 @@ export interface WorkType {
   importedForPlanId?: string | null;
   /** Tag IDs assigned to this work type. Flow to every task created from this work type. */
   tagIds?: string[];
+  /** Single skill tag ID declaring the crew skill required for this work type. */
+  skillTagId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
