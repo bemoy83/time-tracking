@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { CheckIcon } from '../../components/icons';
 
-interface SetupStep {
+export interface SetupStep {
   id: string;
   label: string;
   /** Label override shown when this step is the active CTA */

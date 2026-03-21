@@ -1,25 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { usePlanLineItemImport } from './hooks/usePlanLineItemImport';
-import {
-  formatWorkTypeWithUnit,
-  resolveWorkUnitLabel,
-  type Project,
-} from '../../lib/types';
+import { type Project } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
-import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { generatePlanSuggestions, getPhaseWorkDayCount } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
   addLineItemToPlan,
-  createLineItem,
+  duplicateLineItem,
   getPlanDisplayName,
+  planPhasePersonHours,
+  planTotalPersonHours,
   removeLineItemFromPlan,
   updatePlanLineItem,
-  duplicateLineItem,
-  planTotalPersonHours,
-  planPhasePersonHours,
 } from '../../lib/planning/plan-model';
 import {
   applyProjectPhaseDatesToPlan,
@@ -29,16 +23,13 @@ import {
   setPlanPhaseDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
-  generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
+  generateDefaultWorkCalendarForSpans,
 } from '../../lib/planning/scheduling/work-calendar';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, FolderIcon, PencilIcon } from '../../components/icons';
-import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
+import { ChevronLeftIcon } from '../../components/icons';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
-import { ProjectColorDot } from '../../components/ProjectColorDot';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
-import { PlanSetupStepper } from './PlanSetupStepper';
 import { shouldClearPlanProjectId } from './plan-editor-state';
 import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import {
@@ -53,6 +44,9 @@ import {
   getProjectById,
   hasProjectPhaseDates,
 } from '../../lib/stores/task-store';
+import { PlanSummaryBar } from './PlanSummaryBar';
+import { PlanOverviewSection } from './PlanOverviewSection';
+import { AddWorkPackageBar } from './AddWorkPackageBar';
 
 interface PlanEditorProps {
   plan: Plan;
@@ -94,11 +88,11 @@ export function PlanEditor({
     setApplyImportedUnitLabels,
     isApplying: isImportApplying,
   } = usePlanLineItemImport({ mutatePlan });
+
   const [title, setTitle] = useState(plan.title);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
-  const [addMode, setAddMode] = useState<'manual' | 'csv'>('manual');
 
   useEffect(() => {
     setTitle(currentPlan.title);
@@ -184,66 +178,6 @@ export function PlanEditor({
     || title.trim().length > 0
     || currentPlan.title.trim().length > 0;
 
-  const { workTypes } = useWorkTypeStore();
-  const selectableWorkTypes = useMemo(
-    () => workTypes.filter((wt) => wt.readOnly !== true),
-    [workTypes],
-  );
-  const addTitleRef = useRef<HTMLInputElement>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newWorkTypeId, setNewWorkTypeId] = useState('');
-  const [newQuantity, setNewQuantity] = useState('');
-
-  useEffect(() => {
-    if (selectableWorkTypes.length === 0) {
-      if (newWorkTypeId) setNewWorkTypeId('');
-      return;
-    }
-    const isCurrentValid = selectableWorkTypes.some((wt) => wt.id === newWorkTypeId);
-    if (!isCurrentValid) {
-      setNewWorkTypeId(selectableWorkTypes[0].id);
-    }
-  }, [newWorkTypeId, selectableWorkTypes]);
-
-  const newWorkType = newWorkTypeId
-    ? selectableWorkTypes.find((wt) => wt.id === newWorkTypeId) ?? null
-    : null;
-  const newQuantityValue = (() => {
-    const parsed = Number(newQuantity);
-    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-  })();
-  const hasValidNewQuantity = newQuantity.trim() !== '' && newQuantityValue > 0;
-  const addDisabledReason = selectableWorkTypes.length === 0
-    ? 'No work types available'
-    : !newTitle.trim()
-    ? 'Title required'
-    : newWorkType == null
-      ? 'Type required'
-      : !hasValidNewQuantity
-        ? 'Quantity must be greater than 0'
-      : null;
-  const canAddWorkPackages = !(readOnly || isLocked);
-
-  const handleAddRow = () => {
-    if (!newWorkType || !newTitle.trim() || !hasValidNewQuantity) return;
-    handleAddLineItem(
-      createLineItem(
-        newTitle.trim(),
-        newWorkType.title,
-        newWorkType.workUnit,
-        newQuantityValue,
-        newWorkType.assemblyRate,
-        newWorkType.dismantleRate,
-        'template',
-        newWorkType.id,
-        newWorkType.tagIds ?? [],
-      ),
-    );
-    setNewTitle('');
-    setNewQuantity('');
-    addTitleRef.current?.focus();
-  };
-
   const handleSetTitle = (newTitle: string) => {
     setTitle(newTitle);
     setIdentityError(null);
@@ -299,6 +233,7 @@ export function PlanEditor({
   const handleUpdateItem = (itemId: string, updates: Partial<PlanLineItem>) => {
     mutatePlan((prev) => updatePlanLineItem(prev, itemId, updates));
   };
+
   const handleBatchApplySuggestions = (
     updates: Array<{ itemId: string; updates: Partial<PlanLineItem> }>,
   ) => {
@@ -344,12 +279,14 @@ export function PlanEditor({
     : isLocked
       ? 'This plan is live. Its event or project identity is locked while execution is in progress.'
       : 'Name the event or work you are planning, or link it to a project if delivery should follow that project.';
+
   const scheduleActionBlockedReason =
     summaryRange == null
       ? 'Set schedule dates before building schedule.'
       : currentPlan.lineItems.length === 0
         ? 'Add at least one work package before building schedule.'
         : null;
+
   const setupSteps = [
     {
       id: 'identity',
@@ -381,12 +318,12 @@ export function PlanEditor({
     },
   ];
 
-  const utilizationPct = availableScope && availableScope.totalAvailable > 0
-    ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
-    : null;
+  const utilizationPct =
+    availableScope && availableScope.totalAvailable > 0
+      ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
+      : null;
 
-  const formatSummaryDate = (iso: string) =>
-    new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  const canAddWorkPackages = !(readOnly || isLocked);
 
   return (
     <div className="planning-view planning-view--editor">
@@ -406,126 +343,38 @@ export function PlanEditor({
         </header>
       )}
 
-      <div className={`planning-view__sticky-summary${summaryCollapsed ? ' planning-view__sticky-summary--collapsed' : ''}`}>
+      <div
+        className={`planning-view__sticky-summary${summaryCollapsed ? ' planning-view__sticky-summary--collapsed' : ''}`}
+      >
         {summaryCollapsed && (
-          <div className="planning-view__summary-bar">
-            <span className="planning-view__summary-bar-name">
-              {selectedProject && (
-                <ProjectColorDot color={selectedProject.color} size="sm" className="planning-view__project-dot" />
-              )}
-              <span>{planDisplayName || 'Untitled plan'}</span>
-            </span>
-            {summaryRange && (
-              <span className="planning-view__summary-bar-dates">
-                {formatSummaryDate(summaryRange.start)} – {formatSummaryDate(summaryRange.end)}
-              </span>
-            )}
-            <div className="planning-view__summary-bar-actions">
-              {canOpenScheduleAction && (
-                <button
-                  type="button"
-                  className="btn btn--primary btn--sm"
-                  onClick={handleOpenSchedule}
-                  disabled={scheduleActionBlockedReason != null}
-                  title={scheduleActionBlockedReason ?? 'Build schedule'}
-                >
-                  Build Schedule
-                </button>
-              )}
-              <button
-                type="button"
-                className="planning-view__summary-collapse-btn"
-                onClick={() => setSummaryCollapsed(false)}
-                aria-label="Expand plan setup"
-                title="Expand plan setup"
-              >
-                <ChevronUpIcon className="planning-view__summary-collapse-icon planning-view__summary-collapse-icon--collapsed" />
-              </button>
-            </div>
-          </div>
+          <PlanSummaryBar
+            planDisplayName={planDisplayName}
+            selectedProject={selectedProject}
+            summaryRange={summaryRange}
+            canOpenScheduleAction={canOpenScheduleAction}
+            scheduleActionBlockedReason={scheduleActionBlockedReason}
+            onOpenSchedule={handleOpenSchedule}
+            onExpand={() => setSummaryCollapsed(false)}
+          />
         )}
-        <section
-          className={`planning-view__overview-block${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}
-          aria-label="Plan overview"
+
+        <PlanOverviewSection
+          title={title}
+          selectedProject={selectedProject}
+          planDisplayName={planDisplayName}
+          readOnly={readOnly}
+          isLocked={isLocked}
+          identityError={identityError}
+          overviewHelperText={overviewHelperText}
+          setupSteps={setupSteps}
+          collapsed={summaryCollapsed}
+          onCollapse={() => setSummaryCollapsed(true)}
+          onOpenProjectPicker={() => setShowProjectPicker(true)}
+        />
+
+        <div
+          className={`planning-view__schedule-inputs-wrap${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}
         >
-          <button
-            type="button"
-            className="planning-view__summary-collapse-btn planning-view__summary-collapse-btn--card"
-            onClick={() => setSummaryCollapsed(true)}
-            aria-label="Collapse plan setup"
-            title="Collapse plan setup"
-          >
-            <ChevronUpIcon className="planning-view__summary-collapse-icon" />
-          </button>
-          <div className="planning-view__overview-identity">
-            <div className="planning-view__overview-field planning-view__overview-field--identity">
-              <span className="planning-view__overview-label">Event/Project</span>
-              {readOnly || isLocked ? (
-                <div className="planning-view__identity-readonly" aria-live="polite">
-                  {selectedProject && (
-                    <ProjectColorDot color={selectedProject.color} size="md" className="planning-view__project-dot" />
-                  )}
-                  <span className="planning-view__identity-readonly-value">
-                    {planDisplayName || 'Untitled plan'}
-                  </span>
-                </div>
-              ) : selectedProject ? (
-                <div className="planning-view__identity-assigned-row">
-                  <button
-                    type="button"
-                    className="planning-view__project-button planning-view__project-button--selected"
-                    onClick={() => setShowProjectPicker(true)}
-                    aria-label={`Change project: ${selectedProject.name}`}
-                  >
-                    <span className="planning-view__project-selected">
-                      <ProjectColorDot color={selectedProject.color} size="md" className="planning-view__project-dot" />
-                      <span>{selectedProject.name}</span>
-                      <PencilIcon className="planning-view__project-edit-icon" />
-                    </span>
-                  </button>
-                </div>
-              ) : (
-                <div className="planning-view__identity-assigned-row">
-                  <button
-                    type="button"
-                    className={`planning-view__identity-trigger${title.trim() ? ' planning-view__identity-trigger--has-value' : ''}`}
-                    onClick={() => setShowProjectPicker(true)}
-                    aria-label={title.trim() ? `Edit plan name: ${title}` : 'Set event or project'}
-                  >
-                    {title.trim() ? (
-                      <>
-                        <span className="planning-view__identity-trigger-value">{title}</span>
-                        <PencilIcon className="planning-view__project-edit-icon" />
-                      </>
-                    ) : (
-                      <>
-                        <FolderIcon className="planning-view__identity-picker-icon" />
-                        <span className="planning-view__identity-trigger-placeholder">Set event or project…</span>
-                        <ChevronRightIcon className="planning-view__identity-picker-chevron" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-              {identityError && (
-                <span className="planning-view__overview-error" role="alert">
-                  {identityError}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="planning-view__overview-content">
-            <div className="planning-view__overview-context">
-              <p className="planning-view__overview-helper">{overviewHelperText}</p>
-            </div>
-
-          </div>
-
-          <PlanSetupStepper steps={setupSteps} readOnly={readOnly} />
-        </section>
-
-        <div className={`planning-view__schedule-inputs-wrap${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}>
           <PlanScheduleInputsPanel
             assemblyStartDate={phaseDates.assemblyStartDate}
             assemblyEndDate={phaseDates.assemblyEndDate}
@@ -548,189 +397,41 @@ export function PlanEditor({
         </div>
       </div>
 
-      <section className="planning-view__work-packages-section" aria-labelledby="work-packages-heading">
-        <div className={`planning-view__wp-surface${canAddWorkPackages ? ' planning-view__wp-surface--editable' : ''}`}>
+      <section
+        className="planning-view__work-packages-section"
+        aria-labelledby="work-packages-heading"
+      >
+        <div
+          className={`planning-view__wp-surface${canAddWorkPackages ? ' planning-view__wp-surface--editable' : ''}`}
+        >
           <div className="planning-view__items-header">
-            <h2 id="work-packages-heading" className="planning-view__items-title">Work Packages</h2>
+            <h2 id="work-packages-heading" className="planning-view__items-title">
+              Work Packages
+            </h2>
             <div className="planning-view__items-summary">
               <span>{currentPlan.lineItems.length} packages</span>
-              <span className="planning-view__items-summary-asm">Assembly {assemblyPersonHours.toFixed(1)} ph</span>
-              <span className="planning-view__items-summary-dis">Dismantle {dismantlePersonHours.toFixed(1)} ph</span>
+              <span className="planning-view__items-summary-asm">
+                Assembly {assemblyPersonHours.toFixed(1)} ph
+              </span>
+              <span className="planning-view__items-summary-dis">
+                Dismantle {dismantlePersonHours.toFixed(1)} ph
+              </span>
             </div>
           </div>
 
           {canAddWorkPackages && (
-            <div className="planning-view__wp-add-zone">
-              <div className="planning-view__wp-add-bar">
-                {importPendingCount !== null ? (
-                  <div className="planning-view__wp-add-mode planning-view__wp-add-mode--csv-confirm">
-                    <div className="planning-view__import-confirm">
-                      <span>
-                        Import {importPendingCount} package{importPendingCount !== 1 ? 's' : ''}
-                      </span>
-                      <WorkUnitImportPreviewPanel
-                        preview={importWorkUnitPreview}
-                        applyImportedLabels={applyImportedUnitLabels}
-                        onApplyImportedLabelsChange={setApplyImportedUnitLabels}
-                        summaryElement="span"
-                        summaryClassName=""
-                        toggleStyle={{ display: 'inline-flex', marginLeft: 12 }}
-                        toggleLabel="Apply file labels"
-                      />
-                      <button
-                        className="btn btn--primary btn--sm"
-                        onClick={() => {
-                          void handleImportConfirm();
-                          setAddMode('manual');
-                        }}
-                        disabled={isImportApplying}
-                      >
-                        Confirm
-                      </button>
-                      <button className="btn btn--ghost btn--sm" onClick={handleImportCancel}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div
-                      className="task-work-quantity__unit-pills planning-view__wp-add-segments"
-                      role="group"
-                      aria-label="Add work packages by"
-                    >
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={addMode === 'manual'}
-                        className={`task-work-quantity__unit-pill${addMode === 'manual' ? ' task-work-quantity__unit-pill--active' : ''}`}
-                        onClick={() => setAddMode('manual')}
-                      >
-                        Add manually
-                      </button>
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={addMode === 'csv'}
-                        className={`task-work-quantity__unit-pill${addMode === 'csv' ? ' task-work-quantity__unit-pill--active' : ''}`}
-                        onClick={() => setAddMode('csv')}
-                      >
-                        Import CSV
-                      </button>
-                    </div>
-
-                    {addMode === 'manual' ? (
-                      <>
-                        <p className="planning-view__wp-add-bar-help">
-                          List the work needed for this project/event. Start with title, type, and
-                          quantity, then adjust details in the table below.
-                        </p>
-
-                        <div className="planning-view__wp-add-bar-fields">
-                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--title">
-                    <span className="planning-view__wp-add-bar-label">Title</span>
-                    <input
-                      ref={addTitleRef}
-                      className="input planning-view__wp-add-bar-title"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddRow();
-                        }
-                      }}
-                      placeholder="Work package title"
-                      aria-label="New work package title"
-                    />
-                  </label>
-
-                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--type">
-                    <span className="planning-view__wp-add-bar-label">Type</span>
-                    <select
-                      className="input planning-view__wp-add-bar-type"
-                      value={newWorkTypeId}
-                      onChange={(e) => setNewWorkTypeId(e.target.value)}
-                      disabled={selectableWorkTypes.length === 0}
-                      aria-label="New work package type"
-                    >
-                      {selectableWorkTypes.length === 0 && (
-                        <option value="">No work types. Add in Settings.</option>
-                      )}
-                        {selectableWorkTypes.map((wt) => (
-                        <option key={wt.id} value={wt.id}>
-                          {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--qty">
-                    <span className="planning-view__wp-add-bar-label">Quantity</span>
-                    <input
-                      className="input planning-view__wp-add-bar-qty"
-                      type="number"
-                      min={0.01}
-                      step="any"
-                      value={newQuantity}
-                      onChange={(e) => setNewQuantity(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddRow();
-                        }
-                      }}
-                      placeholder="0"
-                      aria-label="New work package quantity"
-                    />
-                  </label>
-
-                  <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--unit">
-                    <span className="planning-view__wp-add-bar-label">Unit</span>
-                    <span className="planning-view__wp-add-bar-unit">
-                      {newWorkType ? resolveWorkUnitLabel(newWorkType.workUnit) : '—'}
-                    </span>
-                  </div>
-
-                  <div className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--action">
-                    <span className="planning-view__wp-add-bar-label planning-view__wp-add-bar-label--sr-only">Action</span>
-                    <button
-                      type="button"
-                      className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
-                      onClick={handleAddRow}
-                      disabled={addDisabledReason != null}
-                      title={addDisabledReason ?? 'Add work package'}
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-                      </>
-                    ) : (
-                      <div className="planning-view__wp-add-mode planning-view__wp-add-mode--csv">
-                        <p className="planning-view__wp-add-bar-help">
-                          Choose a CSV file with work package data (title, workTypeTitle, workUnit, phase, …)
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => importFileInputRef.current?.click()}
-                        >
-                          Choose file
-                        </button>
-                        <input
-                          ref={importFileInputRef}
-                          type="file"
-                          accept=".csv"
-                          hidden
-                          onChange={handleImportFileChange}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            <AddWorkPackageBar
+              onAdd={handleAddLineItem}
+              importPendingCount={importPendingCount}
+              importWorkUnitPreview={importWorkUnitPreview}
+              applyImportedUnitLabels={applyImportedUnitLabels}
+              onApplyImportedUnitLabelsChange={setApplyImportedUnitLabels}
+              isImportApplying={isImportApplying}
+              importFileInputRef={importFileInputRef}
+              onImportFileChange={handleImportFileChange}
+              onImportConfirm={handleImportConfirm}
+              onImportCancel={handleImportCancel}
+            />
           )}
 
           <div className="planning-view__wp-table-zone">

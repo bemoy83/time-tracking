@@ -4,40 +4,44 @@ overview: Add duplicate-all and delete-all for work packages with AlertDialog co
 todos:
   - id: plan-model-helpers
     content: Add duplicateAllLineItemsInPlan + removeAllLineItemsFromPlan in plan-model.ts and tests in plan-model.test.ts
+    status: pending
   - id: plan-editor-handlers
     content: Wire handlers + optional props from PlanEditor to WorkPackageTable with readOnly/isLocked guards
+    status: pending
   - id: work-package-table-ui
     content: Add header buttons and dual AlertDialogs (duplicate + delete) with shared copy pattern; CSS for header actions
+    status: pending
+isProject: false
 ---
 
 # Batch duplicate all / delete all (work packages)
 
 ## Current behavior (baseline)
 
-- **Single duplicate:** [`duplicateLineItem`](src/lib/planning/plan-model.ts) + [`addLineItemToPlan`](src/lib/planning/plan-model.ts).
-- **Single delete:** [`removeLineItemFromPlan`](src/lib/planning/plan-model.ts).
-- **Batch suggestions:** [`handleBatchApplySuggestions`](src/pages/planning/PlanEditor.tsx) in one `mutatePlan` callback.
-- **Import path:** [`addLineItemsToPlan`](src/lib/planning/plan-model.ts) in [`usePlanLineItemImport`](src/pages/planning/hooks/usePlanLineItemImport.ts).
+- **Single duplicate:** `[duplicateLineItem](src/lib/planning/plan-model.ts)` + `[addLineItemToPlan](src/lib/planning/plan-model.ts)`.
+- **Single delete:** `[removeLineItemFromPlan](src/lib/planning/plan-model.ts)`.
+- **Batch suggestions:** `[handleBatchApplySuggestions](src/pages/planning/PlanEditor.tsx)` in one `mutatePlan` callback.
+- **Import path:** `[addLineItemsToPlan](src/lib/planning/plan-model.ts)` in `[usePlanLineItemImport](src/pages/planning/hooks/usePlanLineItemImport.ts)`.
 
-## Domain layer ([`plan-model.ts`](src/lib/planning/plan-model.ts))
+## Domain layer (`[plan-model.ts](src/lib/planning/plan-model.ts)`)
 
-1. **`duplicateAllLineItemsInPlan(plan: Plan): Plan`** — `plan.lineItems.map(duplicateLineItem)` then `addLineItemsToPlan(plan, copies)`.
-2. **`removeAllLineItemsFromPlan(plan: Plan): Plan`** — `{ ...plan, lineItems: [], updatedAt: nowUtc() }`.
-3. **Tests** in [`plan-model.test.ts`](src/lib/planning/plan-model.test.ts).
+1. `**duplicateAllLineItemsInPlan(plan: Plan): Plan`** — `plan.lineItems.map(duplicateLineItem)` then `addLineItemsToPlan(plan, copies)`.
+2. `**removeAllLineItemsFromPlan(plan: Plan): Plan**` — `{ ...plan, lineItems: [], updatedAt: nowUtc() }`.
+3. **Tests** in `[plan-model.test.ts](src/lib/planning/plan-model.test.ts)`.
 
-## PlanEditor ([`PlanEditor.tsx`](src/pages/planning/PlanEditor.tsx))
+## PlanEditor (`[PlanEditor.tsx](src/pages/planning/PlanEditor.tsx)`)
 
 - `handleDuplicateAll` / `handleRemoveAll` call `mutatePlan` with the new helpers (only after confirmation from the table/dialog layer).
-- Pass optional callbacks when `!(readOnly || isLocked)`, same guard as [`onBatchApplySuggestions`](src/pages/planning/PlanEditor.tsx).
+- Pass optional callbacks when `!(readOnly || isLocked)`, same guard as `[onBatchApplySuggestions](src/pages/planning/PlanEditor.tsx)`.
 
-## WorkPackageTable ([`WorkPackageTable.tsx`](src/pages/planning/WorkPackageTable.tsx))
+## WorkPackageTable (`[WorkPackageTable.tsx](src/pages/planning/WorkPackageTable.tsx)`)
 
 - Optional `onDuplicateAll?: () => void` and `onRemoveAll?: () => void`.
 - Header: duplicate-all and delete-all icon buttons; `disabled` when `lineItems.length === 0`.
 
 ### Confirmation UX (both actions)
 
-Use [`AlertDialog`](src/components/AlertDialog.tsx) for **duplicate all** and **delete all** (not only delete).
+Use `[AlertDialog](src/components/AlertDialog.tsx)` for **duplicate all** and **delete all** (not only delete).
 
 **Copy pattern** (parameterize `action` verb and reuse `count = lineItems.length`):
 
@@ -54,7 +58,7 @@ Use [`AlertDialog`](src/components/AlertDialog.tsx) for **duplicate all** and **
 
 Implement with local state in `WorkPackageTable` (e.g. `confirmKind: 'duplicate' | 'delete' | null`) or two booleans; only one dialog open at a time.
 
-## Styles ([`work-package-table.css`](src/styles/components/planning/work-package-table.css))
+## Styles (`[work-package-table.css](src/styles/components/planning/work-package-table.css)`)
 
 - Header action row / flex for batch icon buttons; align with existing `planning-view__wp-action-btn` patterns.
 
@@ -67,3 +71,4 @@ Implement with local state in `WorkPackageTable` (e.g. `confirmKind: 'duplicate'
 
 - No row-selection batching.
 - Title collisions after duplicate-all follow existing `duplicateLineItem` behavior.
+
