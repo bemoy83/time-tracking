@@ -217,7 +217,7 @@ export function WorkPackageTable({
         </caption>
         <thead>
           <tr className="planning-view__wp-header-group">
-            <th colSpan={4} className="planning-view__wp-group-heading" scope="colgroup">
+            <th colSpan={5} className="planning-view__wp-group-heading" scope="colgroup">
               Work Package
             </th>
             <th
@@ -262,6 +262,7 @@ export function WorkPackageTable({
           </tr>
           <tr className="planning-view__wp-header-columns">
             <th className="planning-view__wp-title-col" scope="col">Title</th>
+            <th className="planning-view__wp-tags-col" scope="col">Tags</th>
             <th className="planning-view__wp-type-col" scope="col">Type</th>
             <th className="planning-view__wp-qty-col" scope="col">Qty</th>
             <th className="planning-view__wp-unit-col" scope="col">Unit</th>
@@ -306,7 +307,7 @@ export function WorkPackageTable({
         <tbody>
           {lineItems.length === 0 && (
             <tr>
-              <td colSpan={11} className="planning-view__wp-empty">
+              <td colSpan={12} className="planning-view__wp-empty">
                 No work packages yet.
               </td>
             </tr>
@@ -335,7 +336,9 @@ export function WorkPackageTable({
                       aria-label={`Title for ${item.title}`}
                     />
                   )}
-                  {/* Tag chips below title */}
+                </td>
+
+                <td className="planning-view__wp-cell planning-view__wp-tags-cell">
                   {(item.tagIds?.length ?? 0) > 0 || (!isLocked && onSetItemTagIds) ? (
                     <TagPillGroup
                       tagIds={item.tagIds ?? []}

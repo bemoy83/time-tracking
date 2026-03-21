@@ -235,7 +235,7 @@
 }
 
 .planning-view__wp-cell {
-  height: 46px;
+  height: 46px; /* acts as min-height in table layout */
   background: transparent;
   transition: background-color 0.15s ease;
 }
@@ -274,31 +274,53 @@
   min-width: 280px;
 }
 
-.planning-view__wp-type-col,
+.planning-view__wp-tags-col,
 .planning-view__wp-row td:nth-child(2) {
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.planning-view__wp-type-col,
+.planning-view__wp-row td:nth-child(3) {
   min-width: 190px;
 }
 
 .planning-view__wp-qty-col,
-.planning-view__wp-row td:nth-child(3) {
+.planning-view__wp-row td:nth-child(4) {
   min-width: 64px;
 }
 
 .planning-view__wp-rate-col,
-.planning-view__wp-row td:nth-child(5),
-.planning-view__wp-row td:nth-child(8),
-.planning-view__wp-crew-col,
 .planning-view__wp-row td:nth-child(6),
 .planning-view__wp-row td:nth-child(9),
-.planning-view__wp-hours-col,
+.planning-view__wp-crew-col,
 .planning-view__wp-row td:nth-child(7),
-.planning-view__wp-row td:nth-child(10) {
+.planning-view__wp-row td:nth-child(10),
+.planning-view__wp-hours-col,
+.planning-view__wp-row td:nth-child(8),
+.planning-view__wp-row td:nth-child(11) {
   min-width: 56px;
 }
 
 .planning-view__wp-unit-col,
-.planning-view__wp-row td:nth-child(4) {
+.planning-view__wp-row td:nth-child(5) {
   min-width: 52px;
+}
+
+.planning-view__wp-tags-cell {
+  vertical-align: middle;
+  white-space: normal;
+}
+
+/* Hide the + Tag button by default; reveal on row hover/focus */
+.planning-view__wp-tags-cell .tag-pill-group__add-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.planning-view__wp-row:hover .planning-view__wp-tags-cell .tag-pill-group__add-btn,
+.planning-view__wp-row:focus-within .planning-view__wp-tags-cell .tag-pill-group__add-btn {
+  opacity: 1;
 }
 
 .planning-view__wp-phase-group-start {
@@ -450,6 +472,23 @@
   justify-content: flex-end;
   gap: 4px;
   transition: opacity 0.15s ease;
+}
+
+/* Hide action buttons by default; reveal on row hover/focus.
+   Exception: magic button stays visible when it has an active suggestion (not disabled). */
+.planning-view__wp-actions .planning-view__wp-action-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.planning-view__wp-row:hover .planning-view__wp-actions .planning-view__wp-action-btn,
+.planning-view__wp-row:focus-within .planning-view__wp-actions .planning-view__wp-action-btn {
+  opacity: 1;
+}
+
+/* Keep an active (not disabled) magic button always visible as a signal */
+.planning-view__wp-actions .planning-view__wp-action-btn--magic:not(:disabled) {
+  opacity: 1;
 }
 
 .planning-view__wp-action-btn {
