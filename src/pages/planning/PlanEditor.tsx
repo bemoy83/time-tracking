@@ -32,7 +32,7 @@ import {
   generateDefaultWorkCalendarForSpans,
   dayAvailablePersonHours,
 } from '../../lib/planning/scheduling/work-calendar';
-import { ChevronLeftIcon, ChevronRightIcon, FolderIcon, PencilIcon } from '../../components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, FolderIcon, PencilIcon } from '../../components/icons';
 import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
 import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectColorDot } from '../../components/ProjectColorDot';
@@ -97,6 +97,7 @@ export function PlanEditor({
   const [title, setTitle] = useState(plan.title);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [addMode, setAddMode] = useState<'manual' | 'csv'>('manual');
 
   useEffect(() => {
@@ -384,6 +385,9 @@ export function PlanEditor({
     ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
     : null;
 
+  const formatSummaryDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+
   return (
     <div className="planning-view planning-view--editor">
       <PlanEditorKpiRow
@@ -402,8 +406,57 @@ export function PlanEditor({
         </header>
       )}
 
-      <div className="planning-view__sticky-summary">
-        <section className="planning-view__overview-block" aria-label="Plan overview">
+      <div className={`planning-view__sticky-summary${summaryCollapsed ? ' planning-view__sticky-summary--collapsed' : ''}`}>
+        {summaryCollapsed && (
+          <div className="planning-view__summary-bar">
+            <span className="planning-view__summary-bar-name">
+              {selectedProject && (
+                <ProjectColorDot color={selectedProject.color} size="sm" className="planning-view__project-dot" />
+              )}
+              <span>{planDisplayName || 'Untitled plan'}</span>
+            </span>
+            {summaryRange && (
+              <span className="planning-view__summary-bar-dates">
+                {formatSummaryDate(summaryRange.start)} – {formatSummaryDate(summaryRange.end)}
+              </span>
+            )}
+            <div className="planning-view__summary-bar-actions">
+              {canOpenScheduleAction && (
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm"
+                  onClick={handleOpenSchedule}
+                  disabled={scheduleActionBlockedReason != null}
+                  title={scheduleActionBlockedReason ?? 'Build schedule'}
+                >
+                  Build Schedule
+                </button>
+              )}
+              <button
+                type="button"
+                className="planning-view__summary-collapse-btn"
+                onClick={() => setSummaryCollapsed(false)}
+                aria-label="Expand plan setup"
+                title="Expand plan setup"
+              >
+                <ChevronUpIcon className="planning-view__summary-collapse-icon planning-view__summary-collapse-icon--collapsed" />
+              </button>
+            </div>
+          </div>
+        )}
+        <section
+          className={`planning-view__overview-block${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}
+          aria-label="Plan overview"
+        >
+          <button
+            type="button"
+            className="planning-view__summary-collapse-btn planning-view__summary-collapse-btn--card"
+            onClick={() => setSummaryCollapsed(true)}
+            aria-label="Collapse plan setup"
+            title="Collapse plan setup"
+          >
+            <ChevronUpIcon className="planning-view__summary-collapse-icon" />
+          </button>
           <div className="planning-view__overview-identity">
             <div className="planning-view__overview-field planning-view__overview-field--identity">
               <span className="planning-view__overview-label">Event/Project</span>
@@ -472,7 +525,7 @@ export function PlanEditor({
           <PlanSetupStepper steps={setupSteps} readOnly={readOnly} />
         </section>
 
-        <div className="planning-view__schedule-inputs-wrap">
+        <div className={`planning-view__schedule-inputs-wrap${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}>
           <PlanScheduleInputsPanel
             assemblyStartDate={phaseDates.assemblyStartDate}
             assemblyEndDate={phaseDates.assemblyEndDate}

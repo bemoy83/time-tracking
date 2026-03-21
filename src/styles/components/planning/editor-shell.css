@@ -21,6 +21,104 @@
   gap: var(--space-sm);
 }
 
+/* ── Collapsible summary ─────────────────────────────────────── */
+
+.planning-view__sticky-summary--collapsed {
+  gap: 0;
+}
+
+.planning-view__summary-section--hidden {
+  display: none !important;
+}
+
+/* Compact bar shown in place of overview-block + schedule inputs */
+.planning-view__summary-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px var(--space-md);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  min-height: 48px;
+  overflow: hidden;
+}
+
+.planning-view__summary-bar-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.planning-view__summary-bar-dates {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.planning-view__summary-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Collapse/expand toggle button — shared between bar and card */
+.planning-view__summary-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.planning-view__summary-collapse-btn:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.planning-view__summary-collapse-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Positioned in top-right corner of the overview-block card */
+.planning-view__summary-collapse-btn--card {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.planning-view__summary-collapse-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+/* Points down when collapsed (to indicate "expand") */
+.planning-view__summary-collapse-icon--collapsed {
+  transform: rotate(180deg);
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+
 .planning-view__editor-header {
   display: flex;
   align-items: center;
@@ -56,6 +154,7 @@
 }
 
 .planning-view__overview-block {
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: var(--space-sm);
