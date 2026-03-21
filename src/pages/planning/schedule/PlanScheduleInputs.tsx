@@ -34,9 +34,9 @@ interface PlanScheduleInputsProps extends PhaseDateValues {
 }
 
 const EFFICIENCY_PRESETS = [
-  { value: '70', label: 'Complex — 70%' },
-  { value: '80', label: 'Normal — 80%' },
-  { value: '90', label: 'Full pace — 90%' },
+  { value: '80', label: 'Conservative — 80%' },
+  { value: '90', label: 'Normal — 90%' },
+  { value: '100', label: 'Full pace — 100%' },
 ] as const;
 
 function DateInput({
@@ -173,7 +173,7 @@ export function PlanScheduleInputs({
         </label>
 
         <label className="planning-view__schedule-input">
-          <span className="planning-view__schedule-label-text">Usable time</span>
+          <span className="planning-view__schedule-label-text">Base efficiency</span>
           <select
             className="input"
             disabled={readOnly}

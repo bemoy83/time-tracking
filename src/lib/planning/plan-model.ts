@@ -479,7 +479,7 @@ export function planTotalsByUnit(plan: Plan): Map<WorkUnit, number> {
 // Efficiency helpers
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_PLAN_EFFICIENCY = 0.8;
+export const DEFAULT_PLAN_EFFICIENCY = 1.0;
 
 /** Clamp a raw number to the valid efficiency range [0.5, 1.0]. Returns null for invalid input. */
 export function normalizePlanEfficiency(value: number | null | undefined): number | null {
