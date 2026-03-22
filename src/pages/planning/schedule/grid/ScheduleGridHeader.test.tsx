@@ -43,7 +43,7 @@ function makeCapacity(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
     fragmentationScore: 3,
     fragmentationRisk: 'moderate',
     fragmentationFactor: 1,
-    skillGroupCount: 1,
+    requiredSkillCrew: 0,
     isOverAllocated: false,
     isOverAssignedCrew: false,
     isOverWorkerCapacity: false,

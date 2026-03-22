@@ -39,9 +39,10 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
     setIsOpen(false);
   };
 
-  // Skill-group penalty numbers
+  // Crew over-subscription penalty numbers
   const ff = cap.fragmentationFactor ?? 1;
-  const groups = cap.skillGroupCount ?? 1;
+  const rsc = cap.requiredSkillCrew ?? 0;
+  const avail = cap.availableCrew;
   const hasSkillPenalty = ff < 0.999;
   const penaltyPct = hasSkillPenalty ? Math.round((1 - ff) * 100) : 0;
   // Base capacity before fragmentation penalty (after efficiency)
@@ -78,7 +79,7 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
                 Task-switching penalty: −{penaltyPct}%
               </strong>
               <span>
-                {groups} skill {groups === 1 ? 'group' : 'groups'} active today — each additional group reduces throughput by the task-switching factor.
+                {rsc} skill {rsc === 1 ? 'worker' : 'workers'} needed across active skill types, but only {avail} available — {rsc - avail} {rsc - avail === 1 ? 'worker' : 'workers'} must cover multiple skills.
               </span>
               <span>
                 Usable capacity: <strong>{cap.effectiveAvailablePersonHours.toFixed(1)}h</strong> (down from {baseBeforePenalty.toFixed(1)}h — {hoursLost.toFixed(1)}h lost to switching overhead).

@@ -17,7 +17,7 @@ import {
 } from '../plan-model';
 import { round2, sameEffortMap } from './capacity-math';
 import { computeSharedCapacitySummary } from './capacity';
-import { buildDayStates, simulatePlacement, recomputeDayRemaining } from './placement';
+import { buildDayStates, simulatePlacement, recomputeDayRemaining, accumulateCommitted, accumulateSkillCommitted } from './placement';
 import type {
   AutoScheduleOptions,
   AutoScheduleMetrics,
@@ -140,19 +140,13 @@ function buildCommitted(plans: Plan[], options: NormalizedOptions): Map<string, 
     for (const item of plan.lineItems) {
       for (const phase of BUILD_PHASES) {
         if (!isPhaseActive(item, phase)) continue;
-        for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
-          committed.set(date, (committed.get(date) ?? 0) + hours);
-        }
+        accumulateCommitted(Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {}), committed);
       }
     }
   }
   return committed;
 }
 
-/**
- * Build per-skill committed person-hours from already-scheduled line items across all plans.
- * Returns a map of skillTagId → (date → person-hours).
- */
 function buildSkillCommitted(
   plans: Plan[],
   workTypes: Map<string, WorkType>,
@@ -167,11 +161,7 @@ function buildSkillCommitted(
       if (!skillTagId) continue;
       for (const phase of BUILD_PHASES) {
         if (!isPhaseActive(item, phase)) continue;
-        for (const [date, hours] of Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {})) {
-          let dateMap = result.get(skillTagId);
-          if (!dateMap) { dateMap = new Map(); result.set(skillTagId, dateMap); }
-          dateMap.set(date, (dateMap.get(date) ?? 0) + hours);
-        }
+        accumulateSkillCommitted(Object.entries(getPhaseFields(item, phase).personHoursByDate ?? {}), skillTagId, result);
       }
     }
   }
@@ -205,15 +195,6 @@ export function runSharedAutoSchedule(
     skillCommitted,
     taskSwitchingFactor,
   );
-  // Live committed maps — grow with each placement to drive incremental fragmentation updates.
-  const liveCommitted = new Map(initialCommitted);
-  const liveSkillCommitted = new Map<string, Map<string, number>>();
-  if (skillCommitted) {
-    for (const [skillId, dateMap] of skillCommitted) {
-      liveSkillCommitted.set(skillId, new Map(dateMap));
-    }
-  }
-
   const candidates = input.plans
     .flatMap((plan) => plan.lineItems.map((item) => ({ plan, item })))
     .flatMap(({ plan, item }) => BUILD_PHASES.map((phase) => ({ plan, item, phase })))
@@ -289,8 +270,6 @@ export function runSharedAutoSchedule(
       candidate.preferredCrew,
       normalized.allowOverAllocation,
       candidate.skillTagId,
-      liveCommitted,
-      input.workTypes ? liveSkillCommitted : undefined,
       taskSwitchingFactor,
     );
     if (!placement) {
@@ -308,13 +287,7 @@ export function runSharedAutoSchedule(
     for (const [date, hours] of Object.entries(placement.personHoursByDate)) {
       const day = dayStates.find((entry) => entry.date === date);
       if (!day) continue;
-      liveCommitted.set(date, (liveCommitted.get(date) ?? 0) + hours);
-      if (candidate.skillTagId && input.workTypes) {
-        let dm = liveSkillCommitted.get(candidate.skillTagId);
-        if (!dm) { dm = new Map(); liveSkillCommitted.set(candidate.skillTagId, dm); }
-        dm.set(date, (dm.get(date) ?? 0) + hours);
-      }
-      recomputeDayRemaining(day, date, liveCommitted, input.workTypes ? liveSkillCommitted : undefined, taskSwitchingFactor);
+      recomputeDayRemaining(day, hours, candidate.skillTagId, taskSwitchingFactor);
     }
 
     const plan = plansById.get(candidate.planId);

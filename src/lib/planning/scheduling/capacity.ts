@@ -3,10 +3,13 @@ import type { WorkType } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive, resolvePlanEfficiency, DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
 import type { CrewPool } from '../../tags';
-import { resolveFragmentationFactor, resolveSkillGroupCount } from './placement';
+import { resolveEffectiveSkillAllocations } from '../../tags';
+import { resolveOverSubscriptionFactor, resolveRequiredSkillCrew } from './placement';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import { getAssignedDates } from './assignment';
 import {
+  dayAccessHours,
+  dayCrewSize,
   generateDefaultWorkCalendarForSpans,
   hasSchedulingCalendar,
 } from './work-calendar';
@@ -46,8 +49,8 @@ export interface DailyCapacity {
   fragmentationRisk: 'none' | 'moderate' | 'high';
   /** Skill-group task-switching penalty applied to this day's capacity. 1.0 = no penalty. */
   fragmentationFactor: number;
-  /** Number of distinct skill groups (tagged + optional untagged) with committed work on this day. */
-  skillGroupCount: number;
+  /** Total required skill headcount across active skills on this day (0 = no crew pool configured). */
+  requiredSkillCrew: number;
   isOverAllocated: boolean;
   /** True when assignedCrewTotal > availableCrew. */
   isOverAssignedCrew: boolean;
@@ -175,8 +178,8 @@ export function computeCapacitySummary(
   const calendar = createPlanCapacityCalendar(plan, effectiveCrewSize);
 
   let fragmentationFactors: Map<string, number> | undefined;
-  let fragmentationGroupCounts: Map<string, number> | undefined;
-  if (workTypes) {
+  let requiredSkillCrews: Map<string, number> | undefined;
+  if (workTypes && crewPool) {
     const committed = new Map<string, number>();
     const skillCommitted = new Map<string, Map<string, number>>();
     for (const item of plan.lineItems) {
@@ -193,18 +196,24 @@ export function computeCapacitySummary(
         }
       }
     }
-    const taskSwitchingFactor = crewPool?.taskSwitchingFactor ?? 0.95;
+    const taskSwitchingFactor = crewPool.taskSwitchingFactor ?? 0.95;
+    const deploymentCappedAllocations = resolveEffectiveSkillAllocations(crewPool.allocations, crewPool.dailyDeployments);
     fragmentationFactors = new Map();
-    fragmentationGroupCounts = new Map();
+    requiredSkillCrews = new Map();
     for (const day of calendar) {
       if (!day.isWorkDay) continue;
-      const ff = resolveFragmentationFactor(day.date, committed, skillCommitted, taskSwitchingFactor);
-      const gc = resolveSkillGroupCount(day.date, committed, skillCommitted);
+      const accessHours = dayAccessHours(day);
+      const availableCrew = dayCrewSize(day, effectiveCrewSize);
+      const effectivePool = day.crewComposition ?? deploymentCappedAllocations;
+      const ff = resolveOverSubscriptionFactor(
+        day.date, accessHours, availableCrew, committed, skillCommitted, effectivePool, taskSwitchingFactor,
+      );
+      const rsc = resolveRequiredSkillCrew(day.date, accessHours, committed, skillCommitted, effectivePool);
       if (ff < 1) fragmentationFactors.set(day.date, ff);
-      if (gc > 1) fragmentationGroupCounts.set(day.date, gc);
+      if (rsc > 0) requiredSkillCrews.set(day.date, rsc);
     }
     if (fragmentationFactors.size === 0) fragmentationFactors = undefined;
-    if (fragmentationGroupCounts.size === 0) fragmentationGroupCounts = undefined;
+    if (requiredSkillCrews.size === 0) requiredSkillCrews = undefined;
   }
 
   return computeCapacityFromNormalizedInput({
@@ -215,7 +224,7 @@ export function computeCapacitySummary(
     scheduledLineItemCount: entries.scheduledLineItemCount,
     unscheduledLineItemCount: entries.unscheduledLineItemCount,
     fragmentationFactors,
-    fragmentationGroupCounts,
+    requiredSkillCrews,
   });
 }
 

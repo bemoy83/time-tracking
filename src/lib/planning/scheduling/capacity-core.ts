@@ -43,8 +43,8 @@ export interface CapacityComputationInput {
   scheduledLineItemCount: number;
   /** Per-day fragmentation penalty factors (date → factor ≤ 1.0). Applied to effective available hours. */
   fragmentationFactors?: Map<string, number>;
-  /** Per-day skill group counts (date → count). Stored in DailyCapacity for tooltip display. */
-  fragmentationGroupCounts?: Map<string, number>;
+  /** Per-day required skill crew counts (date → count). Stored in DailyCapacity for tooltip display. */
+  requiredSkillCrews?: Map<string, number>;
 }
 
 type FragmentationRisk = DailyCapacity['fragmentationRisk'];
@@ -55,7 +55,7 @@ interface DayAccumulator {
   rawAvailablePersonHours: number;
   effectiveAvailablePersonHours: number;
   fragmentationFactor: number;
-  skillGroupCount: number;
+  requiredSkillCrew: number;
   accessHours: number;
   availableCrew: number;
   effectiveAvailableCrew: number;
@@ -108,7 +108,7 @@ function createDayAccumulator(
   defaultCrewSize: number | null,
   planEfficiency: number,
   fragmentationFactor = 1,
-  skillGroupCount = 1,
+  requiredSkillCrew = 0,
 ): DayAccumulator {
   const dayEfficiency = resolveDayEfficiency(day, planEfficiency);
   const rawAvailablePersonHours = round2(dayAvailablePersonHours(day, defaultCrewSize));
@@ -121,7 +121,7 @@ function createDayAccumulator(
     rawAvailablePersonHours,
     effectiveAvailablePersonHours,
     fragmentationFactor,
-    skillGroupCount,
+    requiredSkillCrew,
     accessHours: dayAccessHours(day),
     availableCrew,
     effectiveAvailableCrew: round2(availableCrew * dayEfficiency),
@@ -144,13 +144,13 @@ function createDayAccumulatorMap(
   defaultCrewSize: number | null,
   planEfficiency: number,
   fragmentationFactors?: Map<string, number>,
-  fragmentationGroupCounts?: Map<string, number>,
+  requiredSkillCrews?: Map<string, number>,
 ): Map<string, DayAccumulator> {
   const dayMap = new Map<string, DayAccumulator>();
   for (const day of calendar) {
     const ff = fragmentationFactors?.get(day.date) ?? 1;
-    const gc = fragmentationGroupCounts?.get(day.date) ?? 1;
-    dayMap.set(day.date, createDayAccumulator(day, defaultCrewSize, planEfficiency, ff, gc));
+    const rsc = requiredSkillCrews?.get(day.date) ?? 0;
+    dayMap.set(day.date, createDayAccumulator(day, defaultCrewSize, planEfficiency, ff, rsc));
   }
   return dayMap;
 }
@@ -264,7 +264,7 @@ function deriveDailyCapacity(day: DayAccumulator): DailyCapacity {
     rawAvailablePersonHours,
     effectiveAvailablePersonHours,
     fragmentationFactor: day.fragmentationFactor,
-    skillGroupCount: day.skillGroupCount,
+    requiredSkillCrew: day.requiredSkillCrew,
     accessHours: day.accessHours,
     availableCrew: day.availableCrew,
     effectiveAvailableCrew: day.effectiveAvailableCrew,
@@ -334,7 +334,7 @@ export function computeCapacityFromNormalizedInput(
   input: CapacityComputationInput,
 ): CapacitySummary {
   const efficiency = input.efficiency ?? 1.0;
-  const dayMap = createDayAccumulatorMap(input.calendar, input.defaultCrewSize, efficiency, input.fragmentationFactors, input.fragmentationGroupCounts);
+  const dayMap = createDayAccumulatorMap(input.calendar, input.defaultCrewSize, efficiency, input.fragmentationFactors, input.requiredSkillCrews);
 
   for (const entry of input.scheduledEntries) {
     accumulateScheduledEntry(dayMap, entry);

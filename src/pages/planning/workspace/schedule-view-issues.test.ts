@@ -24,7 +24,7 @@ function makeDay(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
     fragmentationScore: 0,
     fragmentationRisk: 'none',
     fragmentationFactor: 1,
-    skillGroupCount: 1,
+    requiredSkillCrew: 0,
     isOverAllocated: false,
     isOverAssignedCrew: false,
     isOverWorkerCapacity: false,

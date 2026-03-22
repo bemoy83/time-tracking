@@ -4,11 +4,19 @@
  * Both schedulers share the same DayState shape, Placement result, and core
  * simulatePlacement algorithm. buildDayStates accepts a pre-built committed map
  * so callers control what counts as already-scheduled work.
+ *
+ * DayState is the single authoritative view of a work-day during scheduling.
+ * recomputeDayRemaining is the only place that advances its committed state.
  */
 
 import type { WorkCalendarDay, DailyEffortMap } from '../plan-model';
 import { normalizeDailyEffortMap } from '../plan-model';
-import { dayAccessHours, dayEffectiveAvailablePersonHours, resolveDayEfficiency } from './work-calendar';
+import {
+  dayAccessHours,
+  dayCrewSize,
+  dayEffectiveAvailablePersonHours,
+  resolveDayEfficiency,
+} from './work-calendar';
 import { round2 } from './capacity-math';
 
 export interface DayState {
@@ -18,16 +26,31 @@ export interface DayState {
   /** Effective person-hours still available for scheduling on this day. */
   remainingPersonHours: number;
   /**
-   * Base effective person-hours for this day before fragmentation and committed subtraction.
-   * Used to recompute remainingPersonHours when the fragmentation factor changes during scheduling.
+   * Base effective person-hours for this day before over-subscription penalty and committed subtraction.
+   * Used to recompute remainingPersonHours when the penalty changes during scheduling.
    */
   baseEffectivePersonHours: number;
   /**
-   * Per-skill effective person-hours remaining on this day.
-   * tagId → effective PH remaining (skill headcount × accessHours × efficiency − committed).
-   * Only populated when a CrewPool is passed to buildDayStates.
+   * Per-skill physical capacity remaining on this day.
+   * tagId → crew × accessHours × efficiency − committed (physical constraint, no penalty factor).
+   * Only populated when a crewPool is passed to buildDayStates.
    */
   skillPersonHoursRemaining?: Map<string, number>;
+  /** Physical crew headcount available on this day. */
+  availableCrew: number;
+  /**
+   * Snapshot of per-skill headcounts active on this day (day.crewComposition ?? crewPool).
+   * Used to compute over-subscription penalty.
+   */
+  skillCrewAllocations?: Record<string, number>;
+  /** Running total of person-hours committed on this day. Updated by recomputeDayRemaining. */
+  committedPersonHours: number;
+  /** Portion of committedPersonHours attributable to named skill tags. */
+  committedSkillPersonHours: number;
+  /** Skill tag IDs with any committed hours today. Drives the prospective-cap alreadyPresent check. */
+  activeSkillTagIds: Set<string>;
+  /** Cached required-crew sum; updated incrementally by recomputeDayRemaining. */
+  currentRequiredSkillCrew: number;
 }
 
 export interface Placement {
@@ -35,66 +58,110 @@ export interface Placement {
   personHoursByDate: DailyEffortMap;
 }
 
-/**
- * Build day states from a work calendar and a map of already-committed person-hours.
- *
- * @param calendar         Full work calendar (off days are filtered out).
- * @param defaultCrewSize  Plan-level crew size fallback.
- * @param planEfficiency   Plan-level efficiency; per-day overrides handled inside dayEffectiveAvailablePersonHours.
- * @param committed        date → person-hours already scheduled (subtracted from available).
- * @param crewPool         Optional system-level skill crew allocations (tagId → headcount).
- *                         When provided, each DayState gains skillPersonHoursRemaining.
- *                         A day's crewComposition overrides the system pool for that day.
- * @param skillCommitted   Optional per-skill committed hours (tagId → date → PH).
- *                         Subtracted from the initial skillPersonHoursRemaining per day.
- */
 const DEFAULT_TASK_SWITCHING_FACTOR = 0.95;
 
+// ─── Crew over-subscription model ────────────────────────────────────────────
+
 /**
- * Compute the fragmentation penalty factor for a given day.
+ * Compute the total headcount required by skills with committed work on a given date.
  *
- * Counts distinct skill groups with committed hours on this date.
- * If there are any committed hours not accounted for by skill groups
- * (i.e. untagged items), adds one generic group to the count.
+ * For each skill tag with committed hours > 0.01 on `date`:
+ *   requiredCrew += skillCrewAllocations[skillId]
+ * For untagged committed hours:
+ *   requiredCrew += ceil(untaggedPH / accessHours)
  *
- * fragmentationFactor = baseFactor ^ max(0, skillGroupCount - 1)
+ * Returns 0 when no skill/crew data is available (no-penalty fallback).
  */
-/**
- * Count the number of distinct skill groups with committed work on a given date.
- * Each skill tag with committed hours is one group; untagged work adds one generic group.
- * Returns 1 when there is no fragmentation (single group or no committed work).
- */
-export function resolveSkillGroupCount(
+export function resolveRequiredSkillCrew(
   date: string,
+  accessHours: number,
   committed: Map<string, number>,
   skillCommitted: Map<string, Map<string, number>> | undefined,
+  skillCrewAllocations: Record<string, number> | undefined,
 ): number {
+  if (!skillCommitted || !skillCrewAllocations || accessHours <= 0) return 0;
   const totalCommitted = committed.get(date) ?? 0;
-  if (totalCommitted <= 0.01 || !skillCommitted) return 1;
+  if (totalCommitted <= 0.01) return 0;
 
-  let skillGroupCount = 0;
+  let requiredCrew = 0;
   let totalSkillCommitted = 0;
-  for (const [, dateMap] of skillCommitted) {
+  for (const [skillId, dateMap] of skillCommitted) {
     const hours = dateMap.get(date) ?? 0;
     if (hours > 0.01) {
-      skillGroupCount += 1;
+      requiredCrew += skillCrewAllocations[skillId] ?? 0;
       totalSkillCommitted += hours;
     }
   }
-  if (totalCommitted - totalSkillCommitted > 0.01) skillGroupCount += 1;
-  return Math.max(1, skillGroupCount);
+
+  const untaggedPH = totalCommitted - totalSkillCommitted;
+  if (untaggedPH > 0.01) {
+    requiredCrew += Math.ceil(untaggedPH / accessHours);
+  }
+
+  return requiredCrew;
 }
 
-export function resolveFragmentationFactor(
+/**
+ * Compute the crew over-subscription penalty factor for a given day.
+ *
+ * When the sum of required skill headcounts exceeds available crew, workers must cover
+ * multiple skill types. The penalty scales with the degree of over-subscription:
+ *
+ *   overSubMultiple = max(0, requiredSkillCrew - availableCrew) / availableCrew
+ *   factor = taskSwitchingFactor ^ overSubMultiple
+ *
+ * Returns 1.0 (no penalty) when:
+ *   - skillCrewAllocations is absent or empty (no crew pool configured)
+ *   - availableCrew <= 0
+ *   - requiredSkillCrew <= availableCrew (no over-subscription)
+ */
+export function resolveOverSubscriptionFactor(
   date: string,
+  accessHours: number,
+  availableCrew: number,
   committed: Map<string, number>,
   skillCommitted: Map<string, Map<string, number>> | undefined,
+  skillCrewAllocations: Record<string, number> | undefined,
   taskSwitchingFactor: number,
 ): number {
-  const groupCount = resolveSkillGroupCount(date, committed, skillCommitted);
-  if (groupCount <= 1) return 1;
-  return Math.pow(taskSwitchingFactor, groupCount - 1);
+  if (!skillCrewAllocations || Object.keys(skillCrewAllocations).length === 0 || availableCrew <= 0) return 1;
+  const requiredCrew = resolveRequiredSkillCrew(date, accessHours, committed, skillCommitted, skillCrewAllocations);
+  if (requiredCrew <= availableCrew) return 1;
+  const overSubMultiple = (requiredCrew - availableCrew) / availableCrew;
+  return Math.pow(taskSwitchingFactor, overSubMultiple);
 }
+
+// ─── Committed accumulation helpers ──────────────────────────────────────────
+
+/**
+ * Accumulate person-hours entries into an aggregate committed map.
+ * Callers iterate their line items and call this for each day's hours.
+ */
+export function accumulateCommitted(
+  entries: Iterable<[string, number]>,
+  into: Map<string, number>,
+): void {
+  for (const [date, hours] of entries) {
+    into.set(date, (into.get(date) ?? 0) + hours);
+  }
+}
+
+/**
+ * Accumulate person-hours entries into a per-skill committed map.
+ */
+export function accumulateSkillCommitted(
+  entries: Iterable<[string, number]>,
+  skillTagId: string,
+  into: Map<string, Map<string, number>>,
+): void {
+  let dateMap = into.get(skillTagId);
+  if (!dateMap) { dateMap = new Map(); into.set(skillTagId, dateMap); }
+  for (const [date, hours] of entries) {
+    dateMap.set(date, (dateMap.get(date) ?? 0) + hours);
+  }
+}
+
+// ─── Core scheduling primitives ───────────────────────────────────────────────
 
 export function buildDayStates(
   calendar: WorkCalendarDay[],
@@ -113,89 +180,144 @@ export function buildDayStates(
       const available = dayEffectiveAvailablePersonHours(day, defaultCrewSize, planEfficiency);
       const accessHours = dayAccessHours(day);
       const efficiency = resolveDayEfficiency(day, planEfficiency);
-      const fragmentationFactor = resolveFragmentationFactor(day.date, committed, skillCommitted, baseFactor);
-
-      let skillPersonHoursRemaining: Map<string, number> | undefined;
+      const availableCrew = dayCrewSize(day, defaultCrewSize);
       const effectivePool = day.crewComposition ?? crewPool;
+
+      const overSubFactor = resolveOverSubscriptionFactor(
+        day.date, accessHours, availableCrew,
+        committed, skillCommitted, effectivePool, baseFactor,
+      );
+
+      // Per-skill: physical constraint only — no overSubFactor.
+      // The aggregate penalty belongs in remainingPersonHours.
+      let skillPersonHoursRemaining: Map<string, number> | undefined;
       if (effectivePool && Object.keys(effectivePool).length > 0) {
         skillPersonHoursRemaining = new Map();
         for (const [tagId, count] of Object.entries(effectivePool)) {
-          const skillPH = round2(count * accessHours * efficiency * fragmentationFactor);
+          const skillPH = round2(count * accessHours * efficiency);
           const alreadyCommitted = skillCommitted?.get(tagId)?.get(day.date) ?? 0;
           skillPersonHoursRemaining.set(tagId, round2(Math.max(0, skillPH - alreadyCommitted)));
+        }
+      }
+
+      // Populate committed state fields
+      const committedPH = committed.get(day.date) ?? 0;
+      const activeSkillTagIds = new Set<string>();
+      let committedSkillPH = 0;
+      if (skillCommitted) {
+        for (const [tagId, dateMap] of skillCommitted) {
+          const hours = dateMap.get(day.date) ?? 0;
+          if (hours > 0.01) {
+            activeSkillTagIds.add(tagId);
+            committedSkillPH += hours;
+          }
         }
       }
 
       return {
         date: day.date,
         accessHours,
+        availableCrew,
+        skillCrewAllocations: effectivePool,
         baseEffectivePersonHours: available,
-        remainingPersonHours: round2((available * fragmentationFactor) - (committed.get(day.date) ?? 0)),
+        remainingPersonHours: round2((available * overSubFactor) - committedPH),
         skillPersonHoursRemaining,
+        committedPersonHours: committedPH,
+        committedSkillPersonHours: round2(committedSkillPH),
+        activeSkillTagIds,
+        currentRequiredSkillCrew: resolveRequiredSkillCrew(
+          day.date, accessHours, committed, skillCommitted, effectivePool,
+        ),
       };
     });
 }
 
 /**
- * Recompute a day's remainingPersonHours after a new placement has been recorded
- * in the live committed/skillCommitted maps. Call this after updating those maps.
+ * Advance a day's committed state after a placement has been recorded.
+ * Updates committedPersonHours, committedSkillPersonHours, activeSkillTagIds,
+ * currentRequiredSkillCrew, and remainingPersonHours atomically.
  */
 export function recomputeDayRemaining(
   day: DayState,
-  date: string,
-  liveCommitted: Map<string, number>,
-  liveSkillCommitted: Map<string, Map<string, number>> | undefined,
+  placedHours: number,
+  skillTagId: string | undefined,
   taskSwitchingFactor: number,
 ): void {
-  const newFF = resolveFragmentationFactor(date, liveCommitted, liveSkillCommitted, taskSwitchingFactor);
-  const totalCommitted = liveCommitted.get(date) ?? 0;
-  day.remainingPersonHours = round2(day.baseEffectivePersonHours * newFF - totalCommitted);
+  const oldCommittedPH = day.committedPersonHours;
+  day.committedPersonHours += placedHours;
+
+  if (skillTagId) {
+    day.committedSkillPersonHours += placedHours;
+    if (!day.activeSkillTagIds.has(skillTagId)) {
+      day.activeSkillTagIds.add(skillTagId);
+      day.currentRequiredSkillCrew += day.skillCrewAllocations?.[skillTagId] ?? 0;
+    }
+  } else {
+    // Untagged: update the crew contribution by delta
+    const oldUntaggedPH = oldCommittedPH - day.committedSkillPersonHours;
+    const newUntaggedPH = day.committedPersonHours - day.committedSkillPersonHours;
+    const oldCrew = oldUntaggedPH > 0.01 ? Math.ceil(oldUntaggedPH / day.accessHours) : 0;
+    const newCrew = newUntaggedPH > 0.01 ? Math.ceil(newUntaggedPH / day.accessHours) : 0;
+    day.currentRequiredSkillCrew += newCrew - oldCrew;
+  }
+
+  // Derive FF from updated currentRequiredSkillCrew
+  let ff = 1;
+  if (
+    day.skillCrewAllocations
+    && Object.keys(day.skillCrewAllocations).length > 0
+    && day.availableCrew > 0
+    && day.currentRequiredSkillCrew > day.availableCrew
+  ) {
+    const overSub = (day.currentRequiredSkillCrew - day.availableCrew) / day.availableCrew;
+    ff = Math.pow(taskSwitchingFactor, overSub);
+  }
+  day.remainingPersonHours = round2(day.baseEffectivePersonHours * ff - day.committedPersonHours);
 }
 
 /**
- * Compute the available person-hours cap for a prospective placement that may introduce
- * a new skill group (or the untagged group) to a day.
+ * Compute the available person-hours cap for a prospective placement that may increase
+ * crew over-subscription on a day.
  *
- * When an item would be the FIRST representative of its skill (or the first untagged item)
- * on a given day, the fragmentation factor will increase after placement. We pre-apply
- * the post-placement factor so the placement stays within the penalized usable hours.
+ * When a skill (or untagged group) has no committed hours yet on this day, placing work
+ * for it would add its headcount to currentRequiredSkillCrew. If this pushes over
+ * availableCrew, the over-subscription factor worsens. We pre-apply the post-placement
+ * factor as a cap so the placement stays within the penalized usable hours.
  *
- * Returns Infinity when no new group would be added (no prospective constraint needed).
+ * Returns Infinity when the placement would not change the over-subscription level.
  */
 function computeProspectiveCap(
   day: DayState,
   skillTagId: string | undefined,
-  liveCommitted: Map<string, number>,
-  liveSkillCommitted: Map<string, Map<string, number>>,
   taskSwitchingFactor: number,
 ): number {
-  const totalNow = liveCommitted.get(day.date) ?? 0;
+  if (!day.skillCrewAllocations || Object.keys(day.skillCrewAllocations).length === 0 || day.availableCrew <= 0) return Infinity;
 
-  // Count existing skill groups on this day
-  let groups = 0;
-  let totalSkillNow = 0;
-  for (const [, dm] of liveSkillCommitted) {
-    const h = dm.get(day.date) ?? 0;
-    if (h > 0.01) { groups++; totalSkillNow += h; }
-  }
-  const hasUntagged = totalNow - totalSkillNow > 0.01;
-  if (hasUntagged) groups++;
+  const alreadyPresent = skillTagId
+    ? day.activeSkillTagIds.has(skillTagId)
+    : (day.committedPersonHours - day.committedSkillPersonHours > 0.01);
 
-  // Would this placement add a new group?
-  let wouldAddGroup: boolean;
-  if (skillTagId) {
-    wouldAddGroup = (liveSkillCommitted.get(skillTagId)?.get(day.date) ?? 0) <= 0.01;
-  } else {
-    // Untagged: adds the untagged group only if it's not already present and there are skill groups
-    wouldAddGroup = !hasUntagged && groups > 0;
-  }
+  if (alreadyPresent) return Infinity;
 
-  if (!wouldAddGroup) return Infinity;
+  const extraCrew = skillTagId
+    ? (day.skillCrewAllocations[skillTagId] ?? 0)
+    : (day.committedPersonHours > 0.01 ? 1 : 0);
 
-  const newGroups = groups + 1;
-  if (newGroups <= 1) return Infinity; // single group → no fragmentation penalty
-  const prospectiveFF = Math.pow(taskSwitchingFactor, newGroups - 1);
-  return Math.max(0, round2(day.baseEffectivePersonHours * prospectiveFF - totalNow));
+  if (extraCrew <= 0) return Infinity;
+
+  const prospectiveRequired = day.currentRequiredSkillCrew + extraCrew;
+  if (prospectiveRequired <= day.availableCrew) return Infinity;
+
+  const newOverSub = (prospectiveRequired - day.availableCrew) / day.availableCrew;
+  const prospectiveFF = Math.pow(taskSwitchingFactor, newOverSub);
+
+  const currentFF = day.currentRequiredSkillCrew <= day.availableCrew
+    ? 1
+    : Math.pow(taskSwitchingFactor, (day.currentRequiredSkillCrew - day.availableCrew) / day.availableCrew);
+
+  if (Math.abs(prospectiveFF - currentFF) < 0.0001) return Infinity;
+
+  return Math.max(0, round2(day.baseEffectivePersonHours * prospectiveFF - day.committedPersonHours));
 }
 
 /**
@@ -207,12 +329,13 @@ function computeProspectiveCap(
  * exceeds effective capacity.
  *
  * When skillTagId is provided, placement is also constrained by the day's
- * skillPersonHoursRemaining for that skill. Both pools are reduced after each assignment.
+ * skillPersonHoursRemaining for that skill (physical cap). Both pools are reduced after
+ * each assignment.
  *
- * When liveCommitted / liveSkillCommitted are provided, a prospective fragmentation cap
- * is applied: if this placement would introduce a new skill group (or the untagged group)
- * to a day, the available capacity is pre-limited to the post-fragmentation headroom.
- * This prevents the last item on a day from exceeding usable hours.
+ * A prospective over-subscription cap is always applied: if this placement would introduce
+ * a new skill (or untagged group) to a day and push crew over-subscription higher, the
+ * available capacity is pre-limited to the post-placement headroom. This prevents the last
+ * item on a day from exceeding usable hours.
  *
  * Returns null if no person-hours could be placed at all.
  */
@@ -222,10 +345,9 @@ export function simulatePlacement(
   preferredCrew: number,
   allowOverAllocation: boolean,
   skillTagId?: string,
-  liveCommitted?: Map<string, number>,
-  liveSkillCommitted?: Map<string, Map<string, number>>,
   taskSwitchingFactor?: number,
 ): Placement | null {
+  const tsf = taskSwitchingFactor ?? DEFAULT_TASK_SWITCHING_FACTOR;
   const personHoursByDate: DailyEffortMap = {};
   let assignedPH = 0;
 
@@ -236,17 +358,15 @@ export function simulatePlacement(
       ? Math.max(day.remainingPersonHours, preferredDayTarget)
       : day.remainingPersonHours;
 
-    // Skill constraint: when a skill tag is required, cap by available skill PH.
-    // This applies even in allowOverAllocation mode — you cannot conjure more skilled workers.
+    // Skill constraint: physical cap — you cannot conjure more skilled workers.
+    // Applies even in allowOverAllocation mode.
     const skillAvailablePH = (skillTagId && day.skillPersonHoursRemaining)
       ? (day.skillPersonHoursRemaining.get(skillTagId) ?? 0)
       : Infinity;
 
-    // Prospective fragmentation cap: if this item would introduce a new skill group
-    // (or the untagged group) to this day, limit placement to post-fragmentation headroom.
-    const prospectiveCap = (liveCommitted && liveSkillCommitted)
-      ? computeProspectiveCap(day, skillTagId, liveCommitted, liveSkillCommitted, taskSwitchingFactor ?? DEFAULT_TASK_SWITCHING_FACTOR)
-      : Infinity;
+    // Prospective over-subscription cap: if this item would introduce a new skill (or
+    // untagged group) and push crew over-subscription higher, pre-limit to post-placement headroom.
+    const prospectiveCap = computeProspectiveCap(day, skillTagId, tsf);
 
     const availablePH = Math.min(baseAvailablePH, skillAvailablePH, prospectiveCap);
     const assignablePH = Math.min(requiredPH - assignedPH, availablePH, preferredDayTarget);

@@ -71,7 +71,7 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
           <div className="settings-view__template-info">
             <span className="settings-view__row-label">Task-switching factor</span>
             <span className="settings-view__row-detail">
-              Capacity multiplier per extra skill group per day. Default 0.95 — e.g. 3 skill groups = ×0.95² ≈ 90%
+              Throughput factor applied when skill demand exceeds available crew. Default 0.95 — e.g. crew over-subscribed by 100% = ×0.95, by 200% = ×0.95² ≈ 90%
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
