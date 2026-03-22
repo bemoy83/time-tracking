@@ -77,7 +77,7 @@ export function SharedScheduleView({
   const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
-  const { allocations: crewPoolAllocations, defaultCrewSize: crewPoolSystemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor } = useCrewPoolStore();
+  const { allocations: crewPoolAllocations, dailyDeployments: crewPoolDailyDeployments, defaultCrewSize: crewPoolSystemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor } = useCrewPoolStore();
   const { workTypes } = useWorkTypeStore();
   const workTypesById = useMemo(() => new Map(workTypes.map((wt) => [wt.id, wt])), [workTypes]);
 
@@ -303,7 +303,7 @@ export function SharedScheduleView({
       ? { id: 'global' as const, tagIds: sequenceTagIds, updatedAt: '' }
       : undefined;
     const crewPool = (Object.keys(crewPoolAllocations).length > 0 || crewPoolSystemDefaultCrewSize != null)
-      ? { id: 'global' as const, defaultCrewSize: crewPoolSystemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor, allocations: crewPoolAllocations, updatedAt: '' }
+      ? { id: 'global' as const, defaultCrewSize: crewPoolSystemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor, allocations: crewPoolAllocations, dailyDeployments: crewPoolDailyDeployments, updatedAt: '' }
       : undefined;
     const { planUpdatesById, report } = runSharedAutoSchedule({
       plans: mutablePlans,

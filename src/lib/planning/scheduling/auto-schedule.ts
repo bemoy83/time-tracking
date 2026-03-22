@@ -6,7 +6,7 @@
 import type { BuildPhase, WorkType } from '../../types';
 import type { Plan, PlanLineItem, PhaseFields } from '../plan-model';
 import type { GlobalTagSequence, CrewPool } from '../../tags';
-import { resolveTagSequencePosition } from '../../tags';
+import { resolveTagSequencePosition, resolveEffectiveSkillAllocations } from '../../tags';
 import {
   getPhaseFields,
   getPhaseQuantity,
@@ -262,7 +262,9 @@ function schedulePhase(
 
   const phaseSpan = getPhaseSpan(plan, phase);
   const efficiency = resolvePlanEfficiency(plan);
-  const crewPoolAllocations = options.crewPool?.allocations;
+  const crewPoolAllocations = options.crewPool
+    ? resolveEffectiveSkillAllocations(options.crewPool.allocations, options.crewPool.dailyDeployments)
+    : undefined;
   const effectiveDefaultCrew = options.crewPool?.defaultCrewSize ?? plan.defaultCrewSize;
   const taskSwitchingFactor = options.crewPool?.taskSwitchingFactor ?? 0.95;
   const initialCommitted = buildCommitted(plan, options);
@@ -317,7 +319,7 @@ function schedulePhase(
       }
       const workType = item.workTypeId ? options.workTypes?.get(item.workTypeId) : undefined;
       const skillTagId = workType?.skillTagId ?? undefined;
-      const skillCrew = skillTagId ? options.crewPool?.allocations[skillTagId] : undefined;
+      const skillCrew = skillTagId ? crewPoolAllocations?.[skillTagId] : undefined;
       const effectiveDefaultCrew = options.crewPool?.defaultCrewSize ?? plan.defaultCrewSize ?? 1;
       return {
         item,

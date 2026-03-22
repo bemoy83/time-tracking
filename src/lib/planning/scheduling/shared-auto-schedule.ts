@@ -25,7 +25,7 @@ import type {
 } from './auto-schedule';
 import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
 import type { GlobalTagSequence, CrewPool } from '../../tags';
-import { resolveTagSequencePosition } from '../../tags';
+import { resolveTagSequencePosition, resolveEffectiveSkillAllocations } from '../../tags';
 
 export interface SharedAutoScheduleInput {
   plans: Plan[];
@@ -189,7 +189,9 @@ export function runSharedAutoSchedule(
   const unresolved: SharedAutoScheduleUnresolvedRow[] = [];
 
   // Shared schedule always uses the fixed DEFAULT_PLAN_EFFICIENCY — no per-plan override.
-  const crewPoolAllocations = input.crewPool?.allocations;
+  const crewPoolAllocations = input.crewPool
+    ? resolveEffectiveSkillAllocations(input.crewPool.allocations, input.crewPool.dailyDeployments)
+    : undefined;
   const effectiveDefaultCrew = input.crewPool?.defaultCrewSize ?? input.defaultCrewSize;
   const taskSwitchingFactor = input.crewPool?.taskSwitchingFactor ?? 0.95;
   const initialCommitted = buildCommitted(input.plans, normalized);
@@ -220,7 +222,7 @@ export function runSharedAutoSchedule(
     .map(({ plan, item, phase }) => {
       const workType = item.workTypeId ? input.workTypes?.get(item.workTypeId) : undefined;
       const skillTagId = workType?.skillTagId ?? undefined;
-      const skillCrew = skillTagId ? input.crewPool?.allocations[skillTagId] : undefined;
+      const skillCrew = skillTagId ? crewPoolAllocations?.[skillTagId] : undefined;
       const pf = getPhaseFields(item, phase);
       return {
         planId: plan.id,

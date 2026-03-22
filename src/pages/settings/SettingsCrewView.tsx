@@ -17,6 +17,7 @@ import {
   setSkillCrewCount,
   setSystemDefaultCrewSize,
   setTaskSwitchingFactor,
+  setSkillDailyDeployment,
 } from '../../lib/stores/crew-pool-store';
 import './settings-styles';
 
@@ -27,7 +28,7 @@ interface SettingsCrewViewProps {
 export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
   useTagStore(); // subscribe for tag data
   const { tags } = useTagStore();
-  const { allocations, defaultCrewSize, taskSwitchingFactor } = useCrewPoolStore();
+  const { allocations, dailyDeployments, defaultCrewSize, taskSwitchingFactor } = useCrewPoolStore();
 
   const skillTags = useMemo(
     () => tags.filter((t) => t.skillTag).sort((a, b) => a.name.localeCompare(b.name)),
@@ -48,11 +49,10 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
           <span className="settings-view__row-label">Crew size</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="input"
-              min={0}
-              max={999}
-              step={1}
               value={defaultCrewSize ?? ''}
               placeholder="—"
               onChange={(e) => {
@@ -76,11 +76,9 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               className="input"
-              min={0.80}
-              max={1.00}
-              step={0.01}
               value={taskSwitchingFactor ?? ''}
               placeholder="0.95"
               onChange={(e) => {
@@ -105,6 +103,9 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
           To add a skill, edit a tag in <strong>Tags</strong> settings and enable{' '}
           <em>Include as skill</em>.
         </p>
+        <p className="settings-view__helper" style={{ marginTop: 4 }}>
+          <em>Daily cap</em> limits how many workers the scheduler commits to this skill per day, leaving the remainder available for parallel work. Leave blank to use full headcount.
+        </p>
 
         {skillTags.length === 0 ? (
           <div className="empty-state">
@@ -128,24 +129,51 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
                       {tag.name}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="number"
-                      className="input"
-                      min={0}
-                      max={999}
-                      step={1}
-                      value={allocations[tag.id] ?? 0}
-                      onChange={(e) => {
-                        const count = Math.max(0, parseInt(e.target.value, 10) || 0);
-                        void setSkillCrewCount(tag.id, count);
-                      }}
-                      style={{ width: 72, textAlign: 'right' }}
-                      aria-label={`Crew count for ${tag.name}`}
-                    />
-                    <span style={{ fontSize: 13, color: 'var(--color-secondary, #6b7280)' }}>
-                      workers
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 13, color: 'var(--color-secondary, #6b7280)' }}>Workers</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="input"
+                        value={allocations[tag.id] ?? ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const raw = parseInt(e.target.value, 10);
+                          const count = Number.isFinite(raw) && raw > 0 ? raw : 0;
+                          void setSkillCrewCount(tag.id, count);
+                        }}
+                        style={{ width: 64, textAlign: 'right' }}
+                        aria-label={`Crew count for ${tag.name}`}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 13, color: 'var(--color-secondary, #6b7280)' }}>Daily cap</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="input"
+                        value={(() => {
+                          const cap = dailyDeployments?.[tag.id];
+                          const workers = allocations[tag.id];
+                          if (cap == null) return '';
+                          return workers != null ? Math.min(cap, workers) : cap;
+                        })()}
+                        placeholder={String(allocations[tag.id] ?? '—')}
+                        onChange={(e) => {
+                          const raw = parseInt(e.target.value, 10);
+                          const workers = allocations[tag.id] ?? 999;
+                          const count = Number.isFinite(raw) && raw > 0
+                            ? Math.min(raw, workers)
+                            : 0;
+                          void setSkillDailyDeployment(tag.id, count);
+                        }}
+                        style={{ width: 64, textAlign: 'right' }}
+                        aria-label={`Daily deployment cap for ${tag.name}`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

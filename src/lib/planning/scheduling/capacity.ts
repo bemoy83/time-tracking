@@ -3,7 +3,7 @@ import type { WorkType } from '../../types';
 import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive, resolvePlanEfficiency, DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
 import type { CrewPool } from '../../tags';
-import { resolveFragmentationFactor } from './placement';
+import { resolveFragmentationFactor, resolveSkillGroupCount } from './placement';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import { getAssignedDates } from './assignment';
 import {
@@ -44,6 +44,10 @@ export interface DailyCapacity {
   largestAllocationShare: number | null;
   fragmentationScore: number;
   fragmentationRisk: 'none' | 'moderate' | 'high';
+  /** Skill-group task-switching penalty applied to this day's capacity. 1.0 = no penalty. */
+  fragmentationFactor: number;
+  /** Number of distinct skill groups (tagged + optional untagged) with committed work on this day. */
+  skillGroupCount: number;
   isOverAllocated: boolean;
   /** True when assignedCrewTotal > availableCrew. */
   isOverAssignedCrew: boolean;
@@ -171,6 +175,7 @@ export function computeCapacitySummary(
   const calendar = createPlanCapacityCalendar(plan, effectiveCrewSize);
 
   let fragmentationFactors: Map<string, number> | undefined;
+  let fragmentationGroupCounts: Map<string, number> | undefined;
   if (workTypes) {
     const committed = new Map<string, number>();
     const skillCommitted = new Map<string, Map<string, number>>();
@@ -190,12 +195,16 @@ export function computeCapacitySummary(
     }
     const taskSwitchingFactor = crewPool?.taskSwitchingFactor ?? 0.95;
     fragmentationFactors = new Map();
+    fragmentationGroupCounts = new Map();
     for (const day of calendar) {
       if (!day.isWorkDay) continue;
       const ff = resolveFragmentationFactor(day.date, committed, skillCommitted, taskSwitchingFactor);
+      const gc = resolveSkillGroupCount(day.date, committed, skillCommitted);
       if (ff < 1) fragmentationFactors.set(day.date, ff);
+      if (gc > 1) fragmentationGroupCounts.set(day.date, gc);
     }
     if (fragmentationFactors.size === 0) fragmentationFactors = undefined;
+    if (fragmentationGroupCounts.size === 0) fragmentationGroupCounts = undefined;
   }
 
   return computeCapacityFromNormalizedInput({
@@ -206,6 +215,7 @@ export function computeCapacitySummary(
     scheduledLineItemCount: entries.scheduledLineItemCount,
     unscheduledLineItemCount: entries.unscheduledLineItemCount,
     fragmentationFactors,
+    fragmentationGroupCounts,
   });
 }
 

@@ -75,15 +75,15 @@ export function ScheduleView({
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
-  const { allocations: crewPoolAllocations, defaultCrewSize: systemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor } = useCrewPoolStore();
+  const { allocations: crewPoolAllocations, dailyDeployments: crewPoolDailyDeployments, defaultCrewSize: systemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor } = useCrewPoolStore();
   const effectiveCrewSize = systemDefaultCrewSize ?? currentPlan.defaultCrewSize;
   const { workTypes } = useWorkTypeStore();
   const workTypesById = useMemo(() => new Map(workTypes.map((wt) => [wt.id, wt])), [workTypes]);
   const crewPool = useMemo(
     () => (Object.keys(crewPoolAllocations).length > 0 || systemDefaultCrewSize != null)
-      ? { id: 'global' as const, defaultCrewSize: systemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor, allocations: crewPoolAllocations, updatedAt: '' }
+      ? { id: 'global' as const, defaultCrewSize: systemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor, allocations: crewPoolAllocations, dailyDeployments: crewPoolDailyDeployments, updatedAt: '' }
       : undefined,
-    [crewPoolAllocations, systemDefaultCrewSize, crewPoolTaskSwitchingFactor],
+    [crewPoolAllocations, crewPoolDailyDeployments, systemDefaultCrewSize, crewPoolTaskSwitchingFactor],
   );
 
   // Build the full execution sequence: explicitly-ordered tags first, then any

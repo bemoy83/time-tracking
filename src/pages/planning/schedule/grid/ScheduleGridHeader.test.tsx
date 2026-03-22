@@ -42,6 +42,8 @@ function makeCapacity(overrides: Partial<DailyCapacity> = {}): DailyCapacity {
     largestAllocationShare: 0.33,
     fragmentationScore: 3,
     fragmentationRisk: 'moderate',
+    fragmentationFactor: 1,
+    skillGroupCount: 1,
     isOverAllocated: false,
     isOverAssignedCrew: false,
     isOverWorkerCapacity: false,
@@ -80,9 +82,8 @@ describe('ScheduleGridHeader', () => {
     });
 
     const tooltip = screen.getByRole('tooltip');
-    expect(tooltip.textContent).toContain('Fragmentation risk: Moderate');
-    expect(tooltip.textContent).toContain('Assigned rows: 5');
-    expect(tooltip.textContent).toContain('Largest task share: 33%');
+    expect(tooltip.textContent).toContain('Fragmentation risk');
+    expect(tooltip.textContent).toContain('tasks scheduled today');
   });
 
   it('uses stronger icon styling for high fragmentation', () => {

@@ -3,20 +3,11 @@ import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity
 
 const FRAGMENTATION_TOOLTIP_DELAY_MS = 150;
 
-function formatFragmentationRiskLabel(risk: DailyCapacity['fragmentationRisk']): string {
-  if (risk === 'high') return 'High';
-  if (risk === 'moderate') return 'Moderate';
-  return 'None';
-}
-
 export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const tooltipId = useId();
   const isHighFragmentation = cap.fragmentationRisk === 'high';
-  const rationale = cap.fragmentationRisk === 'high'
-    ? 'This day is heavily fragmented and may underperform despite available capacity.'
-    : 'This day may lose throughput to switching and coordination.';
 
   useEffect(() => () => {
     if (timeoutRef.current != null) {
@@ -25,9 +16,7 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
   }, []);
 
   const openWithDelay = () => {
-    if (timeoutRef.current != null) {
-      window.clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => {
       setIsOpen(true);
       timeoutRef.current = null;
@@ -50,12 +39,25 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
     setIsOpen(false);
   };
 
+  // Skill-group penalty numbers
+  const ff = cap.fragmentationFactor ?? 1;
+  const groups = cap.skillGroupCount ?? 1;
+  const hasSkillPenalty = ff < 0.999;
+  const penaltyPct = hasSkillPenalty ? Math.round((1 - ff) * 100) : 0;
+  // Base capacity before fragmentation penalty (after efficiency)
+  const baseBeforePenalty = hasSkillPenalty
+    ? Math.round(cap.effectiveAvailablePersonHours / ff)
+    : cap.effectiveAvailablePersonHours;
+  const hoursLost = hasSkillPenalty
+    ? Math.round(baseBeforePenalty - cap.effectiveAvailablePersonHours)
+    : 0;
+
   return (
     <span className="schedule-grid__day-warning">
       <button
         type="button"
         className={`schedule-grid__day-warning-icon${isHighFragmentation ? ' schedule-grid__day-warning-icon--high' : ' schedule-grid__day-warning-icon--moderate'}`}
-        aria-label={`Fragmentation risk ${formatFragmentationRiskLabel(cap.fragmentationRisk)}`}
+        aria-label="Fragmentation warning"
         aria-describedby={isOpen ? tooltipId : undefined}
         onMouseEnter={openWithDelay}
         onMouseLeave={closeTooltip}
@@ -70,14 +72,37 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
           role="tooltip"
           className="schedule-grid__day-warning-tooltip"
         >
-          <strong className="schedule-grid__day-warning-tooltip-title">
-            Fragmentation risk: {formatFragmentationRiskLabel(cap.fragmentationRisk)}
-          </strong>
-          <span>Assigned rows: {cap.assignedRowCount}</span>
-          <span>Small allocations (&lt;2h): {cap.smallAllocationCount}</span>
-          <span>Average allocation: {(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h</span>
-          <span>Largest task share: {Math.round((cap.largestAllocationShare ?? 0) * 100)}%</span>
-          <span>{rationale}</span>
+          {hasSkillPenalty ? (
+            <>
+              <strong className="schedule-grid__day-warning-tooltip-title">
+                Task-switching penalty: −{penaltyPct}%
+              </strong>
+              <span>
+                {groups} skill {groups === 1 ? 'group' : 'groups'} active today — each additional group reduces throughput by the task-switching factor.
+              </span>
+              <span>
+                Usable capacity: <strong>{cap.effectiveAvailablePersonHours.toFixed(1)}h</strong> (down from {baseBeforePenalty.toFixed(1)}h — {hoursLost.toFixed(1)}h lost to switching overhead).
+              </span>
+              {cap.fragmentationRisk !== 'none' && (
+                <span>
+                  Also: many small allocations detected, adding coordination risk on top of the penalty.
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <strong className="schedule-grid__day-warning-tooltip-title">
+                Fragmentation risk: {cap.fragmentationRisk === 'high' ? 'High' : 'Moderate'}
+              </strong>
+              <span>
+                {cap.assignedRowCount} tasks scheduled today, averaging {(cap.averageAllocationPersonHours ?? 0).toFixed(1)}h each.
+                {cap.smallAllocationCount > 0 && ` ${cap.smallAllocationCount} ${cap.smallAllocationCount === 1 ? 'task is' : 'tasks are'} under 2h.`}
+              </span>
+              <span>
+                Frequent context switching between many short tasks tends to reduce actual throughput below what the hours suggest.
+              </span>
+            </>
+          )}
         </span>
       )}
     </span>

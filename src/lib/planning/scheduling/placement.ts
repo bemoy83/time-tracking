@@ -59,16 +59,19 @@ const DEFAULT_TASK_SWITCHING_FACTOR = 0.95;
  *
  * fragmentationFactor = baseFactor ^ max(0, skillGroupCount - 1)
  */
-export function resolveFragmentationFactor(
+/**
+ * Count the number of distinct skill groups with committed work on a given date.
+ * Each skill tag with committed hours is one group; untagged work adds one generic group.
+ * Returns 1 when there is no fragmentation (single group or no committed work).
+ */
+export function resolveSkillGroupCount(
   date: string,
   committed: Map<string, number>,
   skillCommitted: Map<string, Map<string, number>> | undefined,
-  taskSwitchingFactor: number,
 ): number {
   const totalCommitted = committed.get(date) ?? 0;
   if (totalCommitted <= 0.01 || !skillCommitted) return 1;
 
-  // Count distinct skill groups with hours on this date
   let skillGroupCount = 0;
   let totalSkillCommitted = 0;
   for (const [, dateMap] of skillCommitted) {
@@ -78,14 +81,19 @@ export function resolveFragmentationFactor(
       totalSkillCommitted += hours;
     }
   }
+  if (totalCommitted - totalSkillCommitted > 0.01) skillGroupCount += 1;
+  return Math.max(1, skillGroupCount);
+}
 
-  // Untagged items contribute one generic group if any committed hours remain
-  if (totalCommitted - totalSkillCommitted > 0.01) {
-    skillGroupCount += 1;
-  }
-
-  if (skillGroupCount <= 1) return 1;
-  return Math.pow(taskSwitchingFactor, skillGroupCount - 1);
+export function resolveFragmentationFactor(
+  date: string,
+  committed: Map<string, number>,
+  skillCommitted: Map<string, Map<string, number>> | undefined,
+  taskSwitchingFactor: number,
+): number {
+  const groupCount = resolveSkillGroupCount(date, committed, skillCommitted);
+  if (groupCount <= 1) return 1;
+  return Math.pow(taskSwitchingFactor, groupCount - 1);
 }
 
 export function buildDayStates(

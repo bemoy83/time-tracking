@@ -21,6 +21,7 @@ type CrewPoolState = {
   defaultCrewSize: number | null;
   taskSwitchingFactor: number | null;
   allocations: Record<string, number>;
+  dailyDeployments: Record<string, number>;
   isLoading: boolean;
 };
 
@@ -28,6 +29,7 @@ let state: CrewPoolState = {
   defaultCrewSize: null,
   taskSwitchingFactor: null,
   allocations: {},
+  dailyDeployments: {},
   isLoading: true,
 };
 
@@ -52,10 +54,23 @@ export async function initializeCrewPoolStore(): Promise<void> {
   if (initialized) return;
   try {
     const pool = await getCrewPool();
+    const allocations = pool?.allocations ?? {};
+    // Clamp any daily deployments that exceed the corresponding worker count.
+    const rawDeployments = pool?.dailyDeployments ?? {};
+    const dailyDeployments: Record<string, number> = {};
+    for (const [id, cap] of Object.entries(rawDeployments)) {
+      const workers = allocations[id];
+      if (workers != null && cap > workers) {
+        dailyDeployments[id] = workers;
+      } else {
+        dailyDeployments[id] = cap;
+      }
+    }
     setState({
       defaultCrewSize: pool?.defaultCrewSize ?? null,
       taskSwitchingFactor: pool?.taskSwitchingFactor ?? null,
-      allocations: pool?.allocations ?? {},
+      allocations,
+      dailyDeployments,
       isLoading: false,
     });
     initialized = true;
@@ -66,7 +81,7 @@ export async function initializeCrewPoolStore(): Promise<void> {
 
 export function resetCrewPoolStoreState(): void {
   initialized = false;
-  setState({ defaultCrewSize: null, taskSwitchingFactor: null, allocations: {}, isLoading: true });
+  setState({ defaultCrewSize: null, taskSwitchingFactor: null, allocations: {}, dailyDeployments: {}, isLoading: true });
 }
 
 // ============================================================
@@ -78,21 +93,29 @@ export function resetCrewPoolStoreState(): void {
  * A count of 0 removes the tag from the active allocations.
  */
 export async function setSkillCrewCount(tagId: string, count: number): Promise<void> {
-  const next = { ...state.allocations };
+  const nextAllocations = { ...state.allocations };
+  const nextDeployments = { ...state.dailyDeployments };
   if (count <= 0) {
-    delete next[tagId];
+    delete nextAllocations[tagId];
+    delete nextDeployments[tagId];
   } else {
-    next[tagId] = count;
+    nextAllocations[tagId] = count;
+    // Auto-clamp daily cap to new workers count.
+    const existingCap = nextDeployments[tagId];
+    if (existingCap != null && existingCap > count) {
+      nextDeployments[tagId] = count;
+    }
   }
   const pool = {
     id: 'global' as const,
     defaultCrewSize: state.defaultCrewSize,
     taskSwitchingFactor: state.taskSwitchingFactor,
-    allocations: next,
+    allocations: nextAllocations,
+    dailyDeployments: nextDeployments,
     updatedAt: nowUtc(),
   };
   await putCrewPool(pool);
-  setState({ allocations: next });
+  setState({ allocations: nextAllocations, dailyDeployments: nextDeployments });
 }
 
 /**
@@ -105,6 +128,7 @@ export async function setSystemDefaultCrewSize(count: number | null): Promise<vo
     defaultCrewSize: count,
     taskSwitchingFactor: state.taskSwitchingFactor,
     allocations: state.allocations,
+    dailyDeployments: state.dailyDeployments,
     updatedAt: nowUtc(),
   };
   await putCrewPool(pool);
@@ -122,6 +146,7 @@ export async function setTaskSwitchingFactor(factor: number | null): Promise<voi
     defaultCrewSize: state.defaultCrewSize,
     taskSwitchingFactor: factor,
     allocations: state.allocations,
+    dailyDeployments: state.dailyDeployments,
     updatedAt: nowUtc(),
   };
   await putCrewPool(pool);
@@ -133,18 +158,45 @@ export async function setTaskSwitchingFactor(factor: number | null): Promise<voi
  * Called automatically when a skill tag is deleted.
  */
 export async function removeSkillCrewEntry(tagId: string): Promise<void> {
-  if (!(tagId in state.allocations)) return;
-  const next = { ...state.allocations };
-  delete next[tagId];
+  if (!(tagId in state.allocations) && !(tagId in (state.dailyDeployments ?? {}))) return;
+  const nextAllocations = { ...state.allocations };
+  delete nextAllocations[tagId];
+  const nextDeployments = { ...(state.dailyDeployments ?? {}) };
+  delete nextDeployments[tagId];
   const pool = {
     id: 'global' as const,
     defaultCrewSize: state.defaultCrewSize,
     taskSwitchingFactor: state.taskSwitchingFactor,
-    allocations: next,
+    allocations: nextAllocations,
+    dailyDeployments: nextDeployments,
     updatedAt: nowUtc(),
   };
   await putCrewPool(pool);
-  setState({ allocations: next });
+  setState({ allocations: nextAllocations, dailyDeployments: nextDeployments });
+}
+
+/**
+ * Set the daily deployment cap for a single skill tag.
+ * Must be ≤ the corresponding headcount in allocations.
+ * A count of 0 removes the cap (reverts to full headcount).
+ */
+export async function setSkillDailyDeployment(tagId: string, count: number): Promise<void> {
+  const next = { ...(state.dailyDeployments ?? {}) };
+  if (count <= 0) {
+    delete next[tagId];
+  } else {
+    next[tagId] = count;
+  }
+  const pool = {
+    id: 'global' as const,
+    defaultCrewSize: state.defaultCrewSize,
+    taskSwitchingFactor: state.taskSwitchingFactor,
+    allocations: state.allocations,
+    dailyDeployments: next,
+    updatedAt: nowUtc(),
+  };
+  await putCrewPool(pool);
+  setState({ dailyDeployments: next });
 }
 
 // ============================================================

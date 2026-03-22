@@ -157,9 +157,35 @@ export interface CrewPool {
    * Default when null: 0.95.
    */
   taskSwitchingFactor?: number | null;
-  /** tagId → crew headcount */
+  /** tagId → physical crew headcount on site for this skill. Hard upper bound. */
   allocations: Record<string, number>;
+  /**
+   * tagId → max workers to schedule per day for this skill.
+   * A throughput policy — must be ≤ the corresponding allocations value.
+   * When set, the scheduler limits daily placement to this count while leaving
+   * the remaining headcount available in the aggregate pool for other skills.
+   * When absent for a skill, defaults to the full headcount (allocations[tagId]).
+   */
+  dailyDeployments?: Record<string, number>;
   updatedAt: string;
+}
+
+/**
+ * Resolve the effective daily skill allocations used by the scheduler.
+ * Returns a map where each skill's value is min(headcount, dailyCap).
+ * When no dailyDeployments are configured, returns allocations unchanged.
+ */
+export function resolveEffectiveSkillAllocations(
+  allocations: Record<string, number>,
+  dailyDeployments: Record<string, number> | undefined,
+): Record<string, number> {
+  if (!dailyDeployments || Object.keys(dailyDeployments).length === 0) return allocations;
+  const result: Record<string, number> = {};
+  for (const [id, headcount] of Object.entries(allocations)) {
+    const cap = dailyDeployments[id];
+    result[id] = cap != null ? Math.min(headcount, cap) : headcount;
+  }
+  return result;
 }
 
 // ============================================================
