@@ -18,6 +18,7 @@ import {
   getTask,
   updatePlan,
 } from '../../db';
+import { resolveImportedWorkTypeIds } from './import-support';
 
 vi.mock('../../db', () => ({
   addExecutionReturnLineItems: vi.fn(),
@@ -36,6 +37,10 @@ vi.mock('../../stores/task-store', () => ({
   refreshTasks: vi.fn(),
 }));
 
+vi.mock('./import-support', () => ({
+  resolveImportedWorkTypeIds: vi.fn(),
+}));
+
 const mockGetAllTimeEntries = vi.mocked(getAllTimeEntries);
 const mockAddTimeEntry = vi.mocked(addTimeEntry);
 const mockAddTask = vi.mocked(addTask);
@@ -45,6 +50,7 @@ const mockUpdatePlan = vi.mocked(updatePlan);
 const mockAddExecutionReturnRecord = vi.mocked(addExecutionReturnRecord);
 const mockAddExecutionReturnLineItems = vi.mocked(addExecutionReturnLineItems);
 const mockAddExecutionReturnUnplannedTasks = vi.mocked(addExecutionReturnUnplannedTasks);
+const mockResolveImportedWorkTypeIds = vi.mocked(resolveImportedWorkTypeIds);
 
 function makePlanTask(
   overrides: Partial<Pick<Task, 'id' | 'status' | 'sourceLineItemId'>> = {},
@@ -76,7 +82,7 @@ function makePlanTask(
 
 function makeEnvelope(): DataTransferEnvelope<ExecutionReturnPayload> {
   return {
-    schemaVersion: '2.0',
+    schemaVersion: '4.0',
     exportType: 'execution-return',
     exportedAt: '2026-02-27T00:00:00.000Z',
     appVersion: '0.0.1',
@@ -177,11 +183,13 @@ describe('execution-return import', () => {
     mockAddExecutionReturnRecord.mockReset();
     mockAddExecutionReturnLineItems.mockReset();
     mockAddExecutionReturnUnplannedTasks.mockReset();
+    mockResolveImportedWorkTypeIds.mockReset();
+    mockResolveImportedWorkTypeIds.mockResolvedValue(new Map());
   });
 
   it('rejects non-execution-return exports', () => {
     const text = JSON.stringify({
-      schemaVersion: '2.0',
+      schemaVersion: '4.0',
       exportType: 'plan-package',
       payload: {},
     });
@@ -319,6 +327,31 @@ describe('execution-return import', () => {
         crew: 4,
         blockReason: 'Legacy blocker',
       }),
+    );
+  });
+
+  it('uses import-support for work type remapping instead of plan-package internals', async () => {
+    const envelope = makeEnvelope();
+    envelope.payload.workTypes = [
+      {
+        id: 'wt-imported',
+        title: 'Flooring',
+        workUnit: 'm2',
+        assemblyRate: 10,
+        dismantleRate: 0,
+        createdAt: '2026-02-27T08:00:00.000Z',
+        updatedAt: '2026-02-27T08:00:00.000Z',
+      },
+    ];
+    mockGetAllTimeEntries.mockResolvedValue([]);
+    mockResolveImportedWorkTypeIds.mockResolvedValue(new Map([['wt-imported', 'wt-local']]));
+
+    const preview = await previewExecutionReturnImport(envelope);
+    await applyExecutionReturnImport(preview);
+
+    expect(mockResolveImportedWorkTypeIds).toHaveBeenCalledWith(
+      'plan-1',
+      envelope.payload.workTypes,
     );
   });
 

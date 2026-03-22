@@ -10,13 +10,13 @@ import { BUILD_PHASES, durationMs, nowUtc } from '../../types';
 import { evaluateLineItemDeadline } from '../../planning/scheduling/deadline';
 import { getAllWorkTypes, getAllWorkUnitDefinitions } from '../../db';
 import {
-  DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type ExecutionReturnPayload,
   type ScheduleSection,
   type ScheduleDayEntry,
 } from './contracts';
 import { listDateRange } from '../../planning/scheduling/work-calendar';
+import { createTransferEnvelope } from './transfer-core';
 
 function deriveStatusFromTasks(
   itemStatus: LineItemExecutionStatus,
@@ -235,13 +235,7 @@ export async function buildExecutionReturnEnvelope(
     workUnitDefinitions: workUnitDefinitions.length > 0 ? workUnitDefinitions : undefined,
   };
 
-  return {
-    schemaVersion: DATA_TRANSFER_SCHEMA_VERSION,
-    exportType: 'execution-return',
-    exportedAt: nowUtc(),
-    appVersion: '0.0.1',
-    payload,
-  };
+  return createTransferEnvelope('execution-return', payload);
 }
 
 function buildScheduleSection(plan: Plan): ScheduleSection {

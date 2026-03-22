@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  FULL_BACKUP_STORE_MANIFEST,
   applyFullBackupImport,
   buildFullBackupEnvelope,
   exportFullBackupToFile,
@@ -223,6 +224,30 @@ describe('full-backup transfer', () => {
     });
     expect(preview.isCompatible).toBe(true);
     expect(preview.warnings).toEqual([]);
+  });
+
+  it('uses one manifest to define all backup stores', () => {
+    expect(FULL_BACKUP_STORE_MANIFEST).toHaveLength(18);
+    expect(FULL_BACKUP_STORE_MANIFEST.map((entry) => entry.payloadKey)).toEqual([
+      'activeTimers',
+      'timeEntries',
+      'tasks',
+      'projects',
+      'taskNotes',
+      'templateNotes',
+      'taskTemplates',
+      'attributionSnapshots',
+      'plans',
+      'workTypes',
+      'workUnitDefinitions',
+      'executionReturns',
+      'executionReturnLineItems',
+      'executionReturnUnplannedTasks',
+      'tagCategories',
+      'tags',
+      'globalTagSequence',
+      'crewPool',
+    ]);
   });
 
   it('blocks apply when the backup schema version mismatches', async () => {

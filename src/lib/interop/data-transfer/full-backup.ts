@@ -19,6 +19,7 @@ import {
   getCrewPool,
   getDB,
   getGlobalTagSequence,
+  type TimeTrackingDBSchema,
 } from '../../db';
 import { invalidateAttributionCache } from '../../attribution/cache';
 import { downloadJson } from '../download-json';
@@ -33,51 +34,58 @@ import {
   type FullBackupPayload,
 } from './contracts';
 import {
-  isSupportedSchemaVersion,
-  unsupportedSchemaVersionMessage,
-} from './schema-version';
+  assertSupportedTransferSchemaVersion,
+  assertTransferExportType,
+  createTransferEnvelope,
+  parseJsonRecord,
+} from './transfer-core';
 
-const FULL_BACKUP_STORE_NAMES = [
-  'activeTimers',
-  'timeEntries',
-  'tasks',
-  'projects',
-  'taskNotes',
-  'templateNotes',
-  'taskTemplates',
-  'attributionSnapshots',
-  'plans',
-  'workTypes',
-  'workUnitDefinitions',
-  'executionReturns',
-  'executionReturnLineItems',
-  'executionReturnUnplannedTasks',
-  'tagCategories',
-  'tags',
-  'globalTagSequence',
-  'crewPool',
-] as const;
+type FullBackupStoreName = Exclude<
+  keyof FullBackupPayload,
+  'snapshotFormatVersion' | 'idbSchemaVersion'
+>;
 
-const FULL_BACKUP_INSERT_ORDER = [
-  'tagCategories',
-  'tags',
-  'globalTagSequence',
-  'crewPool',
-  'workUnitDefinitions',
-  'workTypes',
-  'projects',
-  'plans',
-  'tasks',
-  'timeEntries',
-  'taskNotes',
-  'templateNotes',
-  'taskTemplates',
-  'executionReturns',
-  'executionReturnLineItems',
-  'executionReturnUnplannedTasks',
-  'activeTimers',
-  'attributionSnapshots',
-] as const;
+type CollectionStoreName = {
+  [K in FullBackupStoreName]: FullBackupPayload[K] extends Array<unknown> ? K : never;
+}[FullBackupStoreName];
+
+type SingletonStoreName = Exclude<FullBackupStoreName, CollectionStoreName>;
+
+type FullBackupTransaction = {
+  objectStore<K extends FullBackupStoreName>(storeName: K): {
+    clear: () => Promise<unknown>;
+    put: (value: TimeTrackingDBSchema[K]['value']) => Promise<unknown>;
+  };
+  done: Promise<unknown>;
+  abort: () => void;
+};
+
+type CollectionManifestEntry<K extends CollectionStoreName> = {
+  storeName: K;
+  payloadKey: K;
+  kind: 'collection';
+  order: number;
+  read: () => Promise<FullBackupPayload[K]>;
+  clear: (tx: FullBackupTransaction) => Promise<void>;
+  restore: (tx: FullBackupTransaction, value: FullBackupPayload[K]) => Promise<void>;
+  count: (value: FullBackupPayload[K]) => number;
+};
+
+type SingletonManifestEntry<K extends SingletonStoreName> = {
+  storeName: K;
+  payloadKey: K;
+  kind: 'singleton';
+  order: number;
+  read: () => Promise<FullBackupPayload[K]>;
+  clear: (tx: FullBackupTransaction) => Promise<void>;
+  restore: (tx: FullBackupTransaction, value: FullBackupPayload[K]) => Promise<void>;
+  count: (value: FullBackupPayload[K]) => number;
+};
+
+type ManifestEntryForKey<K extends FullBackupStoreName> =
+  K extends CollectionStoreName
+    ? CollectionManifestEntry<K>
+    : SingletonManifestEntry<Extract<K, SingletonStoreName>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -87,130 +95,173 @@ function isNullableRecord(value: unknown): value is Record<string, unknown> | nu
   return value === null || isRecord(value);
 }
 
+async function clearStore<K extends FullBackupStoreName>(
+  tx: FullBackupTransaction,
+  storeName: K,
+): Promise<void> {
+  await tx.objectStore(storeName).clear();
+}
+
+async function restoreCollectionStore<K extends CollectionStoreName>(
+  tx: FullBackupTransaction,
+  storeName: K,
+  value: FullBackupPayload[K],
+): Promise<void> {
+  const store = tx.objectStore(storeName);
+  for (const record of value) {
+    await store.put(record as TimeTrackingDBSchema[K]['value']);
+  }
+}
+
+async function restoreSingletonStore<K extends SingletonStoreName>(
+  tx: FullBackupTransaction,
+  storeName: K,
+  value: FullBackupPayload[K],
+): Promise<void> {
+  if (!value) return;
+  await tx.objectStore(storeName).put(value as TimeTrackingDBSchema[K]['value']);
+}
+
+function createCollectionManifestEntry<K extends CollectionStoreName>(
+  storeName: K,
+  order: number,
+  read: () => Promise<FullBackupPayload[K]>,
+): CollectionManifestEntry<K> {
+  return {
+    storeName,
+    payloadKey: storeName,
+    kind: 'collection',
+    order,
+    read,
+    clear: async (tx) => clearStore(tx, storeName),
+    restore: async (tx, value) => restoreCollectionStore(tx, storeName, value),
+    count: (value) => value.length,
+  };
+}
+
+function createSingletonManifestEntry<K extends SingletonStoreName>(
+  storeName: K,
+  order: number,
+  read: () => Promise<FullBackupPayload[K]>,
+): SingletonManifestEntry<K> {
+  return {
+    storeName,
+    payloadKey: storeName,
+    kind: 'singleton',
+    order,
+    read,
+    clear: async (tx) => clearStore(tx, storeName),
+    restore: async (tx, value) => restoreSingletonStore(tx, storeName, value),
+    count: (value) => (value ? 1 : 0),
+  };
+}
+
+export const FULL_BACKUP_STORE_MANIFEST = [
+  createCollectionManifestEntry('activeTimers', 17, getAllActiveTimers),
+  createCollectionManifestEntry('timeEntries', 10, getAllTimeEntries),
+  createCollectionManifestEntry('tasks', 9, getAllTasks),
+  createCollectionManifestEntry('projects', 7, getAllProjects),
+  createCollectionManifestEntry('taskNotes', 11, getAllTaskNotes),
+  createCollectionManifestEntry('templateNotes', 12, getAllTemplateNotes),
+  createCollectionManifestEntry('taskTemplates', 13, getAllTaskTemplates),
+  createCollectionManifestEntry('attributionSnapshots', 18, getAllAttributionSnapshots),
+  createCollectionManifestEntry('plans', 8, getAllPlans),
+  createCollectionManifestEntry('workTypes', 6, getAllWorkTypes),
+  createCollectionManifestEntry('workUnitDefinitions', 5, getAllWorkUnitDefinitions),
+  createCollectionManifestEntry('executionReturns', 14, getAllExecutionReturns),
+  createCollectionManifestEntry('executionReturnLineItems', 15, getAllExecutionReturnLineItems),
+  createCollectionManifestEntry('executionReturnUnplannedTasks', 16, getAllExecutionReturnUnplannedTasks),
+  createCollectionManifestEntry('tagCategories', 1, getAllTagCategories),
+  createCollectionManifestEntry('tags', 2, getAllTags),
+  createSingletonManifestEntry('globalTagSequence', 3, async () => (await getGlobalTagSequence()) ?? null),
+  createSingletonManifestEntry('crewPool', 4, async () => (await getCrewPool()) ?? null),
+] as const;
+
+function visitManifestEntry<TResult>(
+  entry: (typeof FULL_BACKUP_STORE_MANIFEST)[number],
+  visitor: <K extends FullBackupStoreName>(entry: ManifestEntryForKey<K>) => TResult,
+): TResult {
+  return visitor(entry as never);
+}
+
+function getManifestPayloadValue<K extends FullBackupStoreName>(
+  entry: ManifestEntryForKey<K>,
+  payload: FullBackupPayload,
+): FullBackupPayload[K] {
+  return payload[entry.payloadKey] as FullBackupPayload[K];
+}
+
+function countManifestValue<K extends FullBackupStoreName>(
+  entry: ManifestEntryForKey<K>,
+  payload: FullBackupPayload,
+): number {
+  const count = entry.count as (value: FullBackupPayload[K]) => number;
+  return count(getManifestPayloadValue(entry, payload));
+}
+
+async function restoreManifestValue<K extends FullBackupStoreName>(
+  entry: ManifestEntryForKey<K>,
+  tx: FullBackupTransaction,
+  payload: FullBackupPayload,
+): Promise<void> {
+  const restore = entry.restore as (
+    tx: FullBackupTransaction,
+    value: FullBackupPayload[K],
+  ) => Promise<void>;
+  await restore(tx, getManifestPayloadValue(entry, payload));
+}
+
+function buildEntityCounts(payload: FullBackupPayload): FullBackupEntityCounts {
+  const counts: Partial<FullBackupEntityCounts> = {};
+
+  for (const entry of FULL_BACKUP_STORE_MANIFEST) {
+    const [key, count] = visitManifestEntry(entry, (specificEntry) => [
+      specificEntry.payloadKey,
+      countManifestValue(specificEntry, payload),
+    ] as const);
+    counts[key] = count;
+  }
+
+  return counts as FullBackupEntityCounts;
+}
+
 function isFullBackupPayload(value: unknown): value is FullBackupPayload {
   if (!isRecord(value)) return false;
   if (typeof value.snapshotFormatVersion !== 'number') return false;
   if (typeof value.idbSchemaVersion !== 'number') return false;
 
-  for (const key of FULL_BACKUP_STORE_NAMES) {
-    if (!(key in value)) return false;
+  for (const entry of FULL_BACKUP_STORE_MANIFEST) {
+    const storeValue = value[entry.payloadKey];
+    if (entry.kind === 'collection' && !Array.isArray(storeValue)) {
+      return false;
+    }
+    if (entry.kind === 'singleton' && !isNullableRecord(storeValue)) {
+      return false;
+    }
   }
 
-  return (
-    Array.isArray(value.activeTimers)
-    && Array.isArray(value.timeEntries)
-    && Array.isArray(value.tasks)
-    && Array.isArray(value.projects)
-    && Array.isArray(value.taskNotes)
-    && Array.isArray(value.templateNotes)
-    && Array.isArray(value.taskTemplates)
-    && Array.isArray(value.attributionSnapshots)
-    && Array.isArray(value.plans)
-    && Array.isArray(value.workTypes)
-    && Array.isArray(value.workUnitDefinitions)
-    && Array.isArray(value.executionReturns)
-    && Array.isArray(value.executionReturnLineItems)
-    && Array.isArray(value.executionReturnUnplannedTasks)
-    && Array.isArray(value.tagCategories)
-    && Array.isArray(value.tags)
-    && isNullableRecord(value.globalTagSequence)
-    && isNullableRecord(value.crewPool)
-  );
+  return true;
 }
 
-function buildEntityCounts(payload: FullBackupPayload): FullBackupEntityCounts {
-  return {
-    activeTimers: payload.activeTimers.length,
-    timeEntries: payload.timeEntries.length,
-    tasks: payload.tasks.length,
-    projects: payload.projects.length,
-    taskNotes: payload.taskNotes.length,
-    templateNotes: payload.templateNotes.length,
-    taskTemplates: payload.taskTemplates.length,
-    attributionSnapshots: payload.attributionSnapshots.length,
-    plans: payload.plans.length,
-    workTypes: payload.workTypes.length,
-    workUnitDefinitions: payload.workUnitDefinitions.length,
-    executionReturns: payload.executionReturns.length,
-    executionReturnLineItems: payload.executionReturnLineItems.length,
-    executionReturnUnplannedTasks: payload.executionReturnUnplannedTasks.length,
-    tagCategories: payload.tagCategories.length,
-    tags: payload.tags.length,
-    globalTagSequence: payload.globalTagSequence ? 1 : 0,
-    crewPool: payload.crewPool ? 1 : 0,
-  };
+async function readFullBackupPayloadStores(): Promise<Pick<FullBackupPayload, FullBackupStoreName>> {
+  const values = await Promise.all(
+    FULL_BACKUP_STORE_MANIFEST.map(async (entry) => [entry.payloadKey, await entry.read()] as const),
+  );
+  return Object.fromEntries(values) as Pick<FullBackupPayload, FullBackupStoreName>;
 }
 
 export async function buildFullBackupEnvelope(): Promise<DataTransferEnvelope<FullBackupPayload>> {
   const exportedAt = nowUtc();
-  const [
-    activeTimers,
-    timeEntries,
-    tasks,
-    projects,
-    taskNotes,
-    templateNotes,
-    taskTemplates,
-    attributionSnapshots,
-    plans,
-    workTypes,
-    workUnitDefinitions,
-    executionReturns,
-    executionReturnLineItems,
-    executionReturnUnplannedTasks,
-    tagCategories,
-    tags,
-    globalTagSequence,
-    crewPool,
-  ] = await Promise.all([
-    getAllActiveTimers(),
-    getAllTimeEntries(),
-    getAllTasks(),
-    getAllProjects(),
-    getAllTaskNotes(),
-    getAllTemplateNotes(),
-    getAllTaskTemplates(),
-    getAllAttributionSnapshots(),
-    getAllPlans(),
-    getAllWorkTypes(),
-    getAllWorkUnitDefinitions(),
-    getAllExecutionReturns(),
-    getAllExecutionReturnLineItems(),
-    getAllExecutionReturnUnplannedTasks(),
-    getAllTagCategories(),
-    getAllTags(),
-    getGlobalTagSequence(),
-    getCrewPool(),
-  ]);
-
-  return {
-    schemaVersion: '4.0',
-    exportType: 'full-backup',
-    exportedAt,
-    appVersion: '0.0.1',
-    payload: {
+  const payloadStores = await readFullBackupPayloadStores();
+  return createTransferEnvelope(
+    'full-backup',
+    {
       snapshotFormatVersion: FULL_BACKUP_SNAPSHOT_FORMAT_VERSION,
       idbSchemaVersion: DB_VERSION,
-      activeTimers,
-      timeEntries,
-      tasks,
-      projects,
-      taskNotes,
-      templateNotes,
-      taskTemplates,
-      attributionSnapshots,
-      plans,
-      workTypes,
-      workUnitDefinitions,
-      executionReturns,
-      executionReturnLineItems,
-      executionReturnUnplannedTasks,
-      tagCategories,
-      tags,
-      globalTagSequence: globalTagSequence ?? null,
-      crewPool: crewPool ?? null,
+      ...payloadStores,
     },
-  };
+    exportedAt,
+  );
 }
 
 export async function exportFullBackupToFile(): Promise<void> {
@@ -222,36 +273,37 @@ export async function exportFullBackupToFile(): Promise<void> {
 export function parseFullBackupJson(
   text: string,
 ): { ok: true; envelope: DataTransferEnvelope<FullBackupPayload> } | { ok: false; error: string } {
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    if (!isRecord(parsed)) {
-      return { ok: false, error: 'Invalid JSON structure.' };
-    }
-    if (parsed.exportType !== 'full-backup') {
-      return { ok: false, error: 'Selected file is not a full backup export.' };
-    }
-    if (!isSupportedSchemaVersion(String(parsed.schemaVersion))) {
-      return {
-        ok: false,
-        error: unsupportedSchemaVersionMessage(String(parsed.schemaVersion), 'full-backup'),
-      };
-    }
-    if (!isFullBackupPayload(parsed.payload)) {
-      return { ok: false, error: 'Invalid full backup payload.' };
-    }
-    if (parsed.payload.snapshotFormatVersion !== FULL_BACKUP_SNAPSHOT_FORMAT_VERSION) {
-      return {
-        ok: false,
-        error: `Unsupported full-backup snapshot format version: ${parsed.payload.snapshotFormatVersion}.`,
-      };
-    }
+  const parsedResult = parseJsonRecord(text);
+  if (!parsedResult.ok) {
     return {
-      ok: true,
-      envelope: parsed as unknown as DataTransferEnvelope<FullBackupPayload>,
+      ok: false,
+      error: parsedResult.error === 'invalid-json' ? 'Could not parse JSON file.' : 'Invalid JSON structure.',
     };
-  } catch {
-    return { ok: false, error: 'Could not parse JSON file.' };
   }
+  const parsed = parsedResult.value;
+  if (!assertTransferExportType(parsed, 'full-backup')) {
+    return { ok: false, error: 'Selected file is not a full backup export.' };
+  }
+  const schemaVersionCheck = assertSupportedTransferSchemaVersion(
+    String(parsed.schemaVersion),
+    'full-backup',
+  );
+  if (!schemaVersionCheck.ok) {
+    return { ok: false, error: schemaVersionCheck.error };
+  }
+  if (!isFullBackupPayload(parsed.payload)) {
+    return { ok: false, error: 'Invalid full backup payload.' };
+  }
+  if (parsed.payload.snapshotFormatVersion !== FULL_BACKUP_SNAPSHOT_FORMAT_VERSION) {
+    return {
+      ok: false,
+      error: `Unsupported full-backup snapshot format version: ${parsed.payload.snapshotFormatVersion}.`,
+    };
+  }
+  return {
+    ok: true,
+    envelope: parsed as unknown as DataTransferEnvelope<FullBackupPayload>,
+  };
 }
 
 export async function previewFullBackupImport(
@@ -279,24 +331,6 @@ export async function previewFullBackupImport(
   };
 }
 
-async function clearStore(
-  tx: any,
-  storeName: (typeof FULL_BACKUP_STORE_NAMES)[number],
-): Promise<void> {
-  await tx.objectStore(storeName).clear();
-}
-
-async function putMany(
-  tx: any,
-  storeName: (typeof FULL_BACKUP_STORE_NAMES)[number],
-  records: unknown[],
-): Promise<void> {
-  const store = tx.objectStore(storeName);
-  for (const record of records) {
-    await store.put(record);
-  }
-}
-
 export async function applyFullBackupImport(
   preview: FullBackupImportPreview,
 ): Promise<FullBackupImportResult> {
@@ -306,71 +340,18 @@ export async function applyFullBackupImport(
 
   const { payload } = preview.envelope;
   const db = await getDB();
-  const tx = db.transaction(FULL_BACKUP_STORE_NAMES, 'readwrite');
+  const tx = db.transaction(
+    FULL_BACKUP_STORE_MANIFEST.map((entry) => entry.storeName),
+    'readwrite',
+  ) as unknown as FullBackupTransaction;
 
   try {
-    for (const storeName of FULL_BACKUP_STORE_NAMES) {
-      await clearStore(tx, storeName);
+    for (const entry of FULL_BACKUP_STORE_MANIFEST) {
+      await entry.clear(tx);
     }
 
-    await putMany(tx, 'tagCategories', payload.tagCategories);
-    await putMany(tx, 'tags', payload.tags);
-    if (payload.globalTagSequence) {
-      await tx.objectStore('globalTagSequence').put(payload.globalTagSequence);
-    }
-    if (payload.crewPool) {
-      await tx.objectStore('crewPool').put(payload.crewPool);
-    }
-    for (const storeName of FULL_BACKUP_INSERT_ORDER) {
-      switch (storeName) {
-        case 'tagCategories':
-        case 'tags':
-        case 'globalTagSequence':
-        case 'crewPool':
-          break;
-        case 'workUnitDefinitions':
-          await putMany(tx, storeName, payload.workUnitDefinitions);
-          break;
-        case 'workTypes':
-          await putMany(tx, storeName, payload.workTypes);
-          break;
-        case 'projects':
-          await putMany(tx, storeName, payload.projects);
-          break;
-        case 'plans':
-          await putMany(tx, storeName, payload.plans);
-          break;
-        case 'tasks':
-          await putMany(tx, storeName, payload.tasks);
-          break;
-        case 'timeEntries':
-          await putMany(tx, storeName, payload.timeEntries);
-          break;
-        case 'taskNotes':
-          await putMany(tx, storeName, payload.taskNotes);
-          break;
-        case 'templateNotes':
-          await putMany(tx, storeName, payload.templateNotes);
-          break;
-        case 'taskTemplates':
-          await putMany(tx, storeName, payload.taskTemplates);
-          break;
-        case 'executionReturns':
-          await putMany(tx, storeName, payload.executionReturns);
-          break;
-        case 'executionReturnLineItems':
-          await putMany(tx, storeName, payload.executionReturnLineItems);
-          break;
-        case 'executionReturnUnplannedTasks':
-          await putMany(tx, storeName, payload.executionReturnUnplannedTasks);
-          break;
-        case 'activeTimers':
-          await putMany(tx, storeName, payload.activeTimers);
-          break;
-        case 'attributionSnapshots':
-          await putMany(tx, storeName, payload.attributionSnapshots);
-          break;
-      }
+    for (const entry of [...FULL_BACKUP_STORE_MANIFEST].sort((a, b) => a.order - b.order)) {
+      await visitManifestEntry(entry, (specificEntry) => restoreManifestValue(specificEntry, tx, payload));
     }
 
     await tx.done;

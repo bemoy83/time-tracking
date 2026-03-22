@@ -24,12 +24,10 @@ import {
   normalizePlanEfficiency,
 } from '../../planning/plan-model';
 import { ensureImportedWorkUnits } from '../../stores/work-unit-store';
-import { createWorkType, findWorkTypeByKey } from '../../stores/work-type-store';
 import { normalizeProjectName, nowUtc } from '../../types';
 import type { Project, WorkType, WorkUnit } from '../../types';
 import { BUILD_PHASES, generateId } from '../../types';
 import {
-  DATA_TRANSFER_SCHEMA_VERSION,
   type DataTransferEnvelope,
   type PlanPackageSerializedLineItem,
   type PlanPackageImportPreview,
@@ -39,15 +37,18 @@ import {
 } from './contracts';
 import { getWorkCalendarPhaseSpans, readPhaseDateValues } from '../../planning/scheduling/schedule-span';
 import { reconcileWorkCalendarForSpans } from '../../planning/scheduling/work-calendar';
-import {
-  isSupportedSchemaVersion,
-  unsupportedSchemaVersionMessage,
-} from './schema-version';
 import { sanitizeFileNameSegment } from '../../utils/sanitize-filename';
 import { downloadJson } from '../download-json';
 import { provisionWorkUnitsForImport } from '../work-unit-import';
 import { isPlanInPlannerState } from '../../planning/plan-lifecycle';
 import { refreshProjectsInTaskStore } from '../../stores/task-store-project-sync';
+import {
+  assertSupportedTransferSchemaVersion,
+  assertTransferExportType,
+  createTransferEnvelope,
+  parseJsonRecord,
+} from './transfer-core';
+import { resolveImportedWorkTypeIds } from './import-support';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -216,58 +217,53 @@ async function hasExecutionStateForPlan(plan: Plan): Promise<boolean> {
 export function parsePlanPackageJson(
   text: string,
 ): { ok: true; envelope: DataTransferEnvelope<PlanPackagePayload> } | { ok: false; error: string } {
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    if (!isRecord(parsed)) {
-      return { ok: false, error: 'Invalid JSON structure' };
-    }
-    if (parsed.exportType !== 'plan-package') {
-      return { ok: false, error: 'Selected file is not a plan package export' };
-    }
-    if (!isSupportedSchemaVersion(String(parsed.schemaVersion))) {
-      return {
-        ok: false,
-        error: unsupportedSchemaVersionMessage(String(parsed.schemaVersion), 'plan-package'),
-      };
-    }
-    if (!isRecord(parsed.payload)) {
-      return { ok: false, error: 'Missing export payload' };
-    }
-    const payload = parsed.payload;
-    if (!isRecord(payload.plan)) {
-      return { ok: false, error: 'Invalid plan payload' };
-    }
-    if (typeof payload.plan.id !== 'string' || typeof payload.plan.title !== 'string') {
-      return { ok: false, error: 'Invalid plan metadata' };
-    }
-    if (!Array.isArray(payload.plan.lineItems)) {
-      return { ok: false, error: 'Invalid line item payload' };
-    }
-    if (!payload.plan.lineItems.every(isCanonicalSerializedLineItem)) {
-      return { ok: false, error: 'Invalid line item payload. Only canonical dual-phase line items are supported.' };
-    }
-    if (!Array.isArray(payload.workTypes)) {
-      return { ok: false, error: 'Invalid work type payload' };
-    }
+  const parsedResult = parseJsonRecord(text);
+  if (!parsedResult.ok) {
     return {
-      ok: true,
-      envelope: parsed as unknown as DataTransferEnvelope<PlanPackagePayload>,
+      ok: false,
+      error: parsedResult.error === 'invalid-json' ? 'Could not parse JSON file' : 'Invalid JSON structure',
     };
-  } catch {
-    return { ok: false, error: 'Could not parse JSON file' };
   }
+  const parsed = parsedResult.value;
+  if (!assertTransferExportType(parsed, 'plan-package')) {
+    return { ok: false, error: 'Selected file is not a plan package export' };
+  }
+  const schemaVersionCheck = assertSupportedTransferSchemaVersion(
+    String(parsed.schemaVersion),
+    'plan-package',
+  );
+  if (!schemaVersionCheck.ok) {
+    return { ok: false, error: schemaVersionCheck.error };
+  }
+  if (!isRecord(parsed.payload)) {
+    return { ok: false, error: 'Missing export payload' };
+  }
+  const payload = parsed.payload;
+  if (!isRecord(payload.plan)) {
+    return { ok: false, error: 'Invalid plan payload' };
+  }
+  if (typeof payload.plan.id !== 'string' || typeof payload.plan.title !== 'string') {
+    return { ok: false, error: 'Invalid plan metadata' };
+  }
+  if (!Array.isArray(payload.plan.lineItems)) {
+    return { ok: false, error: 'Invalid line item payload' };
+  }
+  if (!payload.plan.lineItems.every(isCanonicalSerializedLineItem)) {
+    return { ok: false, error: 'Invalid line item payload. Only canonical dual-phase line items are supported.' };
+  }
+  if (!Array.isArray(payload.workTypes)) {
+    return { ok: false, error: 'Invalid work type payload' };
+  }
+  return {
+    ok: true,
+    envelope: parsed as unknown as DataTransferEnvelope<PlanPackagePayload>,
+  };
 }
 
 export function createPlanPackageEnvelope(
   payload: PlanPackagePayload,
 ): DataTransferEnvelope<PlanPackagePayload> {
-  return {
-    schemaVersion: DATA_TRANSFER_SCHEMA_VERSION,
-    exportType: 'plan-package',
-    exportedAt: nowUtc(),
-    appVersion: '0.0.1',
-    payload,
-  };
+  return createTransferEnvelope('plan-package', payload);
 }
 
 export async function buildPlanPackagePayload(plan: Plan): Promise<PlanPackagePayload> {
@@ -377,36 +373,6 @@ export async function exportPlanPackage(plan: Plan): Promise<void> {
   const envelope = createPlanPackageEnvelope(payload);
   const filename = `plan-package-${sanitizeFileNameSegment(plan.title)}-${plan.updatedAt.slice(0, 10)}.json`;
   downloadJson(filename, envelope);
-}
-
-export async function resolveImportedWorkTypeIds(
-  _planId: string,
-  workTypes: WorkType[],
-  tagIdRemap?: Map<string, string>,
-): Promise<Map<string, string>> {
-  const mapping = new Map<string, string>();
-  for (const imported of workTypes) {
-    // Any existing match (editable or readOnly phantom) — remap, no duplicate created.
-    const existing = findWorkTypeByKey(imported.title, imported.workUnit);
-    if (existing) {
-      mapping.set(imported.id, existing.id);
-      continue;
-    }
-    // Remap tag IDs if a tag remap table was provided (from the package's tag import).
-    const remappedTagIds = imported.tagIds?.length
-      ? imported.tagIds.map((id) => tagIdRemap?.get(id) ?? id)
-      : undefined;
-    // Genuinely new — create as a regular editable work type so it appears in the library.
-    const created = await createWorkType({
-      title: imported.title,
-      workUnit: imported.workUnit,
-      assemblyRate: imported.assemblyRate ?? 0,
-      dismantleRate: imported.dismantleRate ?? 0,
-      tagIds: remappedTagIds,
-    });
-    mapping.set(imported.id, created.id);
-  }
-  return mapping;
 }
 
 async function resolveImportedProjectId(

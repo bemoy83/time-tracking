@@ -26,10 +26,11 @@ import {
   type ImportedExecutionReturnUnplannedTaskRecord,
 } from './contracts';
 import {
-  isSupportedSchemaVersion,
-  unsupportedSchemaVersionMessage,
-} from './schema-version';
-import { resolveImportedWorkTypeIds } from './plan-package';
+  assertSupportedTransferSchemaVersion,
+  assertTransferExportType,
+  parseJsonRecord,
+} from './transfer-core';
+import { resolveImportedWorkTypeIds } from './import-support';
 import { ensureImportedWorkUnits } from '../../stores/work-unit-store';
 import { provisionWorkUnitsForImport } from '../work-unit-import';
 
@@ -115,25 +116,32 @@ function remapTaskSourceLineItemId(
 export function parseExecutionReturnJson(
   text: string,
 ): { ok: true; envelope: DataTransferEnvelope<ExecutionReturnPayload> } | { ok: false; error: string } {
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    if (!isExecutionReturnEnvelope(parsed)) {
-      return { ok: false, error: 'Selected file is not a valid execution return export.' };
-    }
-    if (!isSupportedSchemaVersion(String(parsed.schemaVersion))) {
-      return {
-        ok: false,
-        error: unsupportedSchemaVersionMessage(String(parsed.schemaVersion), 'execution-return'),
-      };
-    }
-
-    return {
-      ok: true,
-      envelope: parsed,
-    };
-  } catch {
+  const parsedResult = parseJsonRecord(text);
+  if (!parsedResult.ok) {
     return { ok: false, error: 'Could not parse JSON file.' };
   }
+  const parsed = parsedResult.value;
+  if (!assertTransferExportType(parsed, 'execution-return')) {
+    return { ok: false, error: 'Selected file is not a valid execution return export.' };
+  }
+  const schemaVersionCheck = assertSupportedTransferSchemaVersion(
+    String(parsed.schemaVersion),
+    'execution-return',
+  );
+  if (!schemaVersionCheck.ok) {
+    return {
+      ok: false,
+      error: schemaVersionCheck.error,
+    };
+  }
+  if (!isExecutionReturnEnvelope(parsed)) {
+    return { ok: false, error: 'Selected file is not a valid execution return export.' };
+  }
+
+  return {
+    ok: true,
+    envelope: parsed,
+  };
 }
 
 export async function previewExecutionReturnImport(
