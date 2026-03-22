@@ -66,6 +66,21 @@ export interface Placement {
 
 const DEFAULT_TASK_SWITCHING_FACTOR = 0.95;
 
+function hasCrewPool(day: Pick<DayState, 'skillCrewAllocations' | 'availableCrew'>): boolean {
+  return !!day.skillCrewAllocations
+    && Object.keys(day.skillCrewAllocations).length > 0
+    && day.availableCrew > 0;
+}
+
+function ffFromRequiredSkillCrew(
+  day: Pick<DayState, 'skillCrewAllocations' | 'availableCrew'>,
+  requiredCrew: number,
+  taskSwitchingFactor: number,
+): number {
+  if (!hasCrewPool(day) || requiredCrew <= day.availableCrew) return 1;
+  return Math.pow(taskSwitchingFactor, requiredCrew - day.availableCrew);
+}
+
 // ─── Crew over-subscription model ────────────────────────────────────────────
 
 /**
@@ -280,17 +295,69 @@ export function recomputeDayRemaining(
   }
 
   // Derive FF from updated currentRequiredSkillCrew
-  let ff = 1;
-  if (
-    day.skillCrewAllocations
-    && Object.keys(day.skillCrewAllocations).length > 0
-    && day.availableCrew > 0
-    && day.currentRequiredSkillCrew > day.availableCrew
-  ) {
-    const overSub = day.currentRequiredSkillCrew - day.availableCrew;
-    ff = Math.pow(taskSwitchingFactor, overSub);
-  }
+  const ff = ffFromRequiredSkillCrew(day, day.currentRequiredSkillCrew, taskSwitchingFactor);
   day.remainingPersonHours = round2(day.baseEffectivePersonHours * ff - day.committedPersonHours);
+}
+
+function projectRequiredSkillCrewAfterAdditionalPH(
+  day: DayState,
+  additionalPH: number,
+  skillTagId: string | undefined,
+): number {
+  if (day.accessHours <= 0) return day.currentRequiredSkillCrew;
+
+  if (skillTagId) {
+    if (!day.committedSkillPHByTag) return day.currentRequiredSkillCrew;
+    const oldPH = day.committedSkillPHByTag.get(skillTagId) ?? 0;
+    const newPH = oldPH + additionalPH;
+    const oldRequired = oldPH > 0.01 ? Math.ceil(oldPH / day.accessHours) : 0;
+    const newRequired = newPH > 0.01 ? Math.ceil(newPH / day.accessHours) : 0;
+    return day.currentRequiredSkillCrew + (newRequired - oldRequired);
+  }
+
+  const oldUntaggedPH = day.committedPersonHours - day.committedSkillPersonHours;
+  const newUntaggedPH = day.committedPersonHours + additionalPH - day.committedSkillPersonHours;
+  const oldCrew = oldUntaggedPH > 0.01 ? Math.ceil(oldUntaggedPH / day.accessHours) : 0;
+  const newCrew = newUntaggedPH > 0.01 ? Math.ceil(newUntaggedPH / day.accessHours) : 0;
+  return day.currentRequiredSkillCrew + (newCrew - oldCrew);
+}
+
+function maxPersonHoursFeasibleUnderPostPenalty(
+  day: DayState,
+  tentativeMax: number,
+  skillTagId: string | undefined,
+  taskSwitchingFactor: number,
+): number {
+  if (!hasCrewPool(day) || tentativeMax <= 0 || day.accessHours <= 0) return tentativeMax;
+
+  const isFeasible = (additionalPH: number): boolean => {
+    const projectedRequired = projectRequiredSkillCrewAfterAdditionalPH(day, additionalPH, skillTagId);
+    const ff = ffFromRequiredSkillCrew(day, projectedRequired, taskSwitchingFactor);
+    const remainingPH = round2(
+      day.baseEffectivePersonHours * ff - (day.committedPersonHours + additionalPH),
+    );
+    return remainingPH >= -0.01;
+  };
+
+  if (isFeasible(tentativeMax)) return tentativeMax;
+
+  let low = 0;
+  let high = tentativeMax;
+  for (let i = 0; i < 55; i += 1) {
+    const mid = (low + high) / 2;
+    if (isFeasible(mid)) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  let feasiblePH = Math.min(tentativeMax, round2(low));
+  while (feasiblePH > 0.01 && !isFeasible(feasiblePH)) {
+    feasiblePH = round2(feasiblePH - 0.01);
+  }
+
+  return Math.max(0, feasiblePH);
 }
 
 /**
@@ -309,7 +376,7 @@ function computeProspectiveCap(
   skillTagId: string | undefined,
   taskSwitchingFactor: number,
 ): number {
-  if (!day.skillCrewAllocations || Object.keys(day.skillCrewAllocations).length === 0 || day.availableCrew <= 0) return Infinity;
+  if (!hasCrewPool(day)) return Infinity;
 
   const alreadyPresent = skillTagId
     ? day.activeSkillTagIds.has(skillTagId)
@@ -329,9 +396,7 @@ function computeProspectiveCap(
   const newOverSub = prospectiveRequired - day.availableCrew;
   const prospectiveFF = Math.pow(taskSwitchingFactor, newOverSub);
 
-  const currentFF = day.currentRequiredSkillCrew <= day.availableCrew
-    ? 1
-    : Math.pow(taskSwitchingFactor, day.currentRequiredSkillCrew - day.availableCrew);
+  const currentFF = ffFromRequiredSkillCrew(day, day.currentRequiredSkillCrew, taskSwitchingFactor);
 
   if (Math.abs(prospectiveFF - currentFF) < 0.0001) return Infinity;
 
@@ -342,18 +407,20 @@ function computeProspectiveCap(
  * Greedily place requiredPH person-hours across candidate days.
  *
  * preferredDayTarget = preferredCrew × accessHours (raw, not effective).
- * This is a chunking hint only — remainingPersonHours (effective capacity) is always
- * the binding constraint, so over-placement is not possible even when preferredDayTarget
- * exceeds effective capacity.
+ * This is a chunking hint only. On crew-pool days, placements are additionally limited by
+ * post-placement penalty caps, so remainingPersonHours is not the only binding constraint
+ * even when allowOverAllocation is enabled.
  *
  * When skillTagId is provided, placement is also constrained by the day's
  * skillPersonHoursRemaining for that skill (physical cap). Both pools are reduced after
  * each assignment.
  *
- * A prospective over-subscription cap is always applied: if this placement would introduce
- * a new skill (or untagged group) to a day and push crew over-subscription higher, the
- * available capacity is pre-limited to the post-placement headroom. This prevents the last
- * item on a day from exceeding usable hours.
+ * On crew-pool days, two penalty-aware caps apply:
+ *   - a prospective cap for introducing a new skill (or untagged group)
+ *   - a post-placement cap that also covers already-present skills and allowOverAllocation
+ *
+ * This prevents a chunk from exceeding usable hours after recomputeDayRemaining lowers the
+ * task-switching factor.
  *
  * Returns null if no person-hours could be placed at all.
  */
@@ -386,7 +453,9 @@ export function simulatePlacement(
     // untagged group) and push crew over-subscription higher, pre-limit to post-placement headroom.
     const prospectiveCap = computeProspectiveCap(day, skillTagId, tsf);
 
-    const availablePH = Math.min(baseAvailablePH, skillAvailablePH, prospectiveCap);
+    const tentativeMax = Math.min(baseAvailablePH, skillAvailablePH, prospectiveCap);
+    const postPenaltyCap = maxPersonHoursFeasibleUnderPostPenalty(day, tentativeMax, skillTagId, tsf);
+    const availablePH = Math.min(tentativeMax, postPenaltyCap);
     const assignablePH = Math.min(requiredPH - assignedPH, availablePH, preferredDayTarget);
     if (assignablePH <= 0.01) continue;
     personHoursByDate[day.date] = round2(assignablePH);

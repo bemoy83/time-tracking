@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDayStates, simulatePlacement, type DayState } from './placement';
+import { buildDayStates, recomputeDayRemaining, simulatePlacement, type DayState } from './placement';
 
 const BASE_DAY = {
   isWorkDay: true as const,
@@ -56,6 +56,71 @@ describe('simulatePlacement', () => {
     expect(result).not.toBeNull();
     expect(result!.personHoursByDate['2026-03-01']).toBe(16);
     expect(result!.personHoursByDate['2026-03-02']).toBe(4);
+  });
+
+  it('caps already-present tagged skills when post-placement penalty worsens', () => {
+    const calendar = [{ ...BASE_DAY, date: '2026-03-01', crewSize: 2 }];
+    const committed = new Map([['2026-03-01', 7.9]]);
+    const skillCommitted = new Map([
+      ['skill-a', new Map([['2026-03-01', 7.5]])],
+      ['skill-b', new Map([['2026-03-01', 0.2]])],
+      ['skill-c', new Map([['2026-03-01', 0.2]])],
+    ]);
+
+    const [day] = buildDayStates(
+      calendar,
+      2,
+      1,
+      committed,
+      { 'skill-a': 3, 'skill-b': 1, 'skill-c': 1 },
+      skillCommitted,
+      0.8,
+    );
+    const initialRemaining = day!.remainingPersonHours;
+    const initialCommitted = day!.committedPersonHours;
+    const maxWithTolerance = Number((((16 * 0.64) - initialCommitted) + 0.01).toFixed(2));
+
+    const result = simulatePlacement([day!], 8, 1, false, 'skill-a', 0.8);
+
+    expect(result).not.toBeNull();
+    expect(result!.personHoursByDate['2026-03-01']).toBe(2.35);
+    expect(result!.personHoursByDate['2026-03-01']).toBeLessThan(initialRemaining);
+
+    recomputeDayRemaining(day!, result!.personHoursByDate['2026-03-01']!, 'skill-a', 0.8);
+    expect(day!.remainingPersonHours).toBeGreaterThanOrEqual(-0.01);
+    expect(result!.personHoursByDate['2026-03-01']).toBeLessThanOrEqual(maxWithTolerance);
+  });
+
+  it('caps untagged placement when post-placement penalty worsens', () => {
+    const calendar = [{ ...BASE_DAY, date: '2026-03-01', crewSize: 2 }];
+    const committed = new Map([['2026-03-01', 7.9]]);
+    const skillCommitted = new Map([
+      ['skill-b', new Map([['2026-03-01', 0.2]])],
+      ['skill-c', new Map([['2026-03-01', 0.2]])],
+    ]);
+
+    const [day] = buildDayStates(
+      calendar,
+      2,
+      1,
+      committed,
+      { 'skill-b': 1, 'skill-c': 1 },
+      skillCommitted,
+      0.8,
+    );
+    const initialRemaining = day!.remainingPersonHours;
+    const initialCommitted = day!.committedPersonHours;
+    const maxWithTolerance = Number((((16 * 0.64) - initialCommitted) + 0.01).toFixed(2));
+
+    const result = simulatePlacement([day!], 8, 1, false, undefined, 0.8);
+
+    expect(result).not.toBeNull();
+    expect(result!.personHoursByDate['2026-03-01']).toBe(2.35);
+    expect(result!.personHoursByDate['2026-03-01']).toBeLessThan(initialRemaining);
+
+    recomputeDayRemaining(day!, result!.personHoursByDate['2026-03-01']!, undefined, 0.8);
+    expect(day!.remainingPersonHours).toBeGreaterThanOrEqual(-0.01);
+    expect(result!.personHoursByDate['2026-03-01']).toBeLessThanOrEqual(maxWithTolerance);
   });
 });
 
