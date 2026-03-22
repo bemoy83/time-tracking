@@ -19,6 +19,11 @@ export async function getTaskNotesByTask(taskId: string): Promise<TaskNote[]> {
   return notes;
 }
 
+export async function getAllTaskNotes(): Promise<TaskNote[]> {
+  const db = await getDB();
+  return db.getAll('taskNotes');
+}
+
 /**
  * Delete a single task note.
  */
@@ -42,6 +47,13 @@ export async function deleteTaskNotesByTask(taskId: string): Promise<void> {
   ]);
 }
 
+export async function deleteAllTaskNotes(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('taskNotes', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
 /**
  * Add a template note.
  */
@@ -58,6 +70,11 @@ export async function getTemplateNotesByTemplate(templateId: string): Promise<Te
   const notes = await db.getAllFromIndex('templateNotes', 'by-template', templateId);
   notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return notes;
+}
+
+export async function getAllTemplateNotes(): Promise<TemplateNote[]> {
+  const db = await getDB();
+  return db.getAll('templateNotes');
 }
 
 /**

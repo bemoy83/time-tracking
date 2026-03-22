@@ -68,7 +68,7 @@ export function SettingsView({ onNavigateToSection }: SettingsViewProps) {
     { key: 'productivity', label: 'Productivity', helper: 'View KPIs and use the estimate calculator' },
     { key: 'attribution', label: 'Attribution Quality', helper: 'Set attribution policy and monitor quality' },
     { key: 'remediation', label: 'Remediation', helper: 'Review and fix attribution/work-data issues' },
-    { key: 'dataTransfer', label: 'Data Transfer', helper: 'Import plan packages and progress reports' },
+    { key: 'dataTransfer', label: 'Data Transfer', helper: 'Import plan packages and execution returns' },
     { key: 'telemetry', label: 'Telemetry', helper: 'Quality/adoption event counters (local aggregate)' },
   ];
 

@@ -307,6 +307,8 @@ export interface Plan {
   reviewedAt?: string | null;
   /** ISO timestamp when plan was imported onto executor device. */
   importedAt?: string | null;
+  /** ISO timestamp when executor last exported an execution return. */
+  lastExecutionReturnExportedAt?: string | null;
   /** ISO timestamp when executor closed the session. */
   sessionClosedAt?: string | null;
 }
@@ -519,6 +521,7 @@ export function createPlan(title: string): Plan {
     activatedAt: null,
     reviewedAt: null,
     importedAt: null,
+    lastExecutionReturnExportedAt: null,
     sessionClosedAt: null,
   };
 }
@@ -640,6 +643,7 @@ export function activatePlan(plan: Plan): Plan {
     activatedAt: now,
     reviewedAt: null,
     sessionClosedAt: null,
+    lastExecutionReturnExportedAt: null,
     updatedAt: now,
   };
 }
@@ -652,6 +656,7 @@ export function revertToDraft(plan: Plan): Plan {
     activatedAt: null,
     handedOffAt: null,
     reviewedAt: null,
+    lastExecutionReturnExportedAt: null,
     updatedAt: nowUtc(),
   };
 }

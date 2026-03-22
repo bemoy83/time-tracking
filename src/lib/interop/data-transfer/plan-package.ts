@@ -170,6 +170,7 @@ function normalizeIncomingPlan(plan: PlanPackagePayload['plan']): Plan {
     status: 'received',
     reviewedAt: null,
     importedAt: now,
+    lastExecutionReturnExportedAt: null,
     sessionClosedAt: null,
     updatedAt: now,
     defaultCrewSize: normalizedDates.defaultCrewSize ?? null,
@@ -496,6 +497,7 @@ function mergeReceivedPlan(existing: Plan, incoming: Plan): Plan {
     createdAt: existing.createdAt,
     importedAt: nowUtc(),
     status: 'received',
+    lastExecutionReturnExportedAt: existing.lastExecutionReturnExportedAt ?? null,
     sessionClosedAt: null,
     workCalendar: reconcileWorkCalendarForSpans(
       normalizedIncoming.workCalendar,

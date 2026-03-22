@@ -10,7 +10,7 @@ import type { TimeTrackingDBSchema } from './schema';
 export type { TimeTrackingDBSchema } from './schema';
 
 const DB_NAME = 'time-tracking-db';
-const DB_VERSION = 37;
+export const DB_VERSION = 38;
 
 let dbPromise: Promise<IDBPDatabase<TimeTrackingDBSchema>> | null = null;
 

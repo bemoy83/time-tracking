@@ -16,6 +16,7 @@ import { notifyExecutionReturnImported } from '../../planning/execution-return-i
 import { phaseFieldUpdates } from '../../planning/plan-model';
 import {
   type DataTransferEnvelope,
+  type ExecutionReturnMergeSummary,
   type ExecutionReturnLineItem,
   type ExecutionReturnImportPreview,
   type ExecutionReturnImportResult,
@@ -162,10 +163,36 @@ export async function previewExecutionReturnImport(
   };
 }
 
+function buildExecutionReturnMergeSummary(args: {
+  importedAt: string;
+  importedEntryCount: number;
+  skippedDuplicateEntryCount: number;
+  mergedTaskCount: number;
+  lineItemCount: number;
+}): ExecutionReturnMergeSummary {
+  return {
+    importedAt: args.importedAt,
+    importedEntryCount: args.importedEntryCount,
+    skippedDuplicateEntryCount: args.skippedDuplicateEntryCount,
+    mergedTaskCount: args.mergedTaskCount,
+    lineItemCount: args.lineItemCount,
+  };
+}
+
+export function formatExecutionReturnMergeSummary(summary: ExecutionReturnMergeSummary): string {
+  return [
+    `${summary.importedEntryCount} new ${summary.importedEntryCount === 1 ? 'entry' : 'entries'}`,
+    `${summary.skippedDuplicateEntryCount} duplicate ${summary.skippedDuplicateEntryCount === 1 ? 'entry' : 'entries'} skipped`,
+    `${summary.mergedTaskCount} ${summary.mergedTaskCount === 1 ? 'task' : 'tasks'} merged`,
+    `${summary.lineItemCount} ${summary.lineItemCount === 1 ? 'line item' : 'line items'} reflected`,
+  ].join(', ');
+}
+
 function buildImportedExecutionReturnRecord(
   envelope: DataTransferEnvelope<ExecutionReturnPayload>,
   importedAt: string,
   id: string,
+  mergeSummary: ExecutionReturnMergeSummary,
 ): ImportedExecutionReturnRecord {
   return {
     id,
@@ -177,6 +204,7 @@ function buildImportedExecutionReturnRecord(
     appVersion: envelope.appVersion,
     exportType: 'execution-return',
     exportedAt: envelope.exportedAt,
+    mergeSummary,
   };
 }
 
@@ -368,7 +396,6 @@ export async function applyExecutionReturnImport(
 
   const importedAt = nowUtc();
   const executionReturnId = generateId();
-  const record = buildImportedExecutionReturnRecord(preview.envelope, importedAt, executionReturnId);
   const normalizedPayloadLineItems = normalizeExecutionReturnLineItems(preview.envelope.payload.lineItems);
   const lineItems = buildImportedLineItems(
     preview.envelope,
@@ -377,10 +404,6 @@ export async function applyExecutionReturnImport(
     normalizedPayloadLineItems,
   );
   const unplannedTasks = buildImportedUnplannedTasks(preview.envelope, executionReturnId, importedAt);
-
-  await addExecutionReturnRecord(record);
-  await addExecutionReturnLineItems(lineItems);
-  await addExecutionReturnUnplannedTasks(unplannedTasks);
 
   // Add or update tasks so the Planning Progress view shows execution state.
   // Sync task status from payload line items (authoritative executor-reported status).
@@ -434,6 +457,23 @@ export async function applyExecutionReturnImport(
 
   const planTasksToUpsert = planTasksWithSyncedStatus.map(remapWorkTypeId);
   const unplannedTasksToUpsert = normalizedUnplannedTasks.map(remapWorkTypeId);
+  const mergeSummary = buildExecutionReturnMergeSummary({
+    importedAt,
+    importedEntryCount: entriesToAdd.length,
+    skippedDuplicateEntryCount: preview.envelope.payload.timeEntries.length - entriesToAdd.length,
+    mergedTaskCount: planTasksToUpsert.length + unplannedTasksToUpsert.length,
+    lineItemCount: lineItems.length,
+  });
+  const record = buildImportedExecutionReturnRecord(
+    preview.envelope,
+    importedAt,
+    executionReturnId,
+    mergeSummary,
+  );
+
+  await addExecutionReturnRecord(record);
+  await addExecutionReturnLineItems(lineItems);
+  await addExecutionReturnUnplannedTasks(unplannedTasks);
   await upsertTasksFromPayload(planTasksToUpsert);
   await upsertTasksFromPayload(unplannedTasksToUpsert);
   await applyImportedLineItemsToPlan(preview.envelope.payload.planId, normalizedPayloadLineItems);
@@ -446,9 +486,7 @@ export async function applyExecutionReturnImport(
     executionReturnId,
     lineItemCount: lineItems.length,
     unplannedTaskCount: unplannedTasks.length,
-    reason:
-      entriesToAdd.length === preview.envelope.payload.timeEntries.length
-        ? 'Imported execution return.'
-        : `Imported execution return with ${preview.envelope.payload.timeEntries.length - entriesToAdd.length} duplicate entries skipped.`,
+    mergeSummary,
+    reason: `Imported execution return. ${formatExecutionReturnMergeSummary(mergeSummary)}.`,
   };
 }

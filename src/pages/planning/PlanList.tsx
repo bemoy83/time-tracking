@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { getPlanDisplayName, type Plan } from '../../lib/planning/plan-model';
 import type { Project, Task } from '../../lib/types';
+import type { LatestExecutionReturnSummaryByPlan } from '../../lib/db';
 import {
   isPlanWrapUpEligible,
   isPlanArchived,
@@ -8,6 +9,7 @@ import {
   sortPlansForSidebar,
 } from '../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from './hooks/usePlanIdsWithImportedExecutionReturns';
+import { useLatestExecutionReturnSummaries } from './hooks/useLatestExecutionReturnSummary';
 import {
   ChevronRightIcon,
   TrashIcon,
@@ -65,6 +67,7 @@ export function PlanList({
   onSelectedPlanIdsChange,
 }: PlanListProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+  const latestExecutionReturnSummaries = useLatestExecutionReturnSummaries(plans.map((plan) => plan.id));
   const projectById = useMemo(
     () => new Map(projects.map((project) => [project.id, project])),
     [projects],
@@ -126,6 +129,7 @@ export function PlanList({
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              latestExecutionReturnSummaries={latestExecutionReturnSummaries}
               compact
               showAddToScheduleButton={showAddToScheduleButton}
               selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
@@ -146,6 +150,7 @@ export function PlanList({
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              latestExecutionReturnSummaries={latestExecutionReturnSummaries}
               compact
               showAddToScheduleButton={showAddToScheduleButton}
               selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
@@ -166,6 +171,7 @@ export function PlanList({
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              latestExecutionReturnSummaries={latestExecutionReturnSummaries}
               compact
               showAddToScheduleButton={showAddToScheduleButton}
               selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
@@ -191,6 +197,7 @@ export function PlanList({
               onDelete={onDelete}
               onOpenWrapUp={onOpenWrapUp}
               planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+              latestExecutionReturnSummaries={latestExecutionReturnSummaries}
               compact
               showAddToScheduleButton={showAddToScheduleButton}
               selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
@@ -241,6 +248,7 @@ export function PlanList({
                     onDelete={onDelete}
                     onOpenWrapUp={onOpenWrapUp}
                     planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                    latestExecutionReturnSummaries={latestExecutionReturnSummaries}
                   />
                 ))}
               </ul>
@@ -261,6 +269,7 @@ export function PlanList({
                     onDelete={onDelete}
                     onOpenWrapUp={onOpenWrapUp}
                     planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                    latestExecutionReturnSummaries={latestExecutionReturnSummaries}
                   />
                 ))}
               </ul>
@@ -281,6 +290,7 @@ export function PlanList({
                     onDelete={onDelete}
                     onOpenWrapUp={onOpenWrapUp}
                     planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                    latestExecutionReturnSummaries={latestExecutionReturnSummaries}
                   />
                 ))}
               </ul>
@@ -301,6 +311,7 @@ export function PlanList({
                     onDelete={onDelete}
                     onOpenWrapUp={onOpenWrapUp}
                     planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                    latestExecutionReturnSummaries={latestExecutionReturnSummaries}
                   />
                 ))}
               </ul>
@@ -323,6 +334,7 @@ interface PlanItemsProps {
   onDelete: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
   planIdsWithImportedExecutionReturns: Set<string>;
+  latestExecutionReturnSummaries: Map<string, LatestExecutionReturnSummaryByPlan>;
   compact?: boolean;
   showAddToScheduleButton?: boolean;
   selectedPlanIdsForSharedSchedule?: Set<string>;
@@ -338,6 +350,7 @@ function PlanItems({
   onDelete,
   onOpenWrapUp,
   planIdsWithImportedExecutionReturns,
+  latestExecutionReturnSummaries,
   compact,
   showAddToScheduleButton,
   selectedPlanIdsForSharedSchedule,
@@ -356,6 +369,7 @@ function PlanItems({
           onDelete={onDelete}
           onOpenWrapUp={onOpenWrapUp}
           planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+          latestExecutionReturnSummaries={latestExecutionReturnSummaries}
           compact={compact}
           showAddToScheduleButton={showAddToScheduleButton}
           selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
@@ -375,6 +389,7 @@ interface PlanListItemProps {
   onDelete: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
   planIdsWithImportedExecutionReturns: Set<string>;
+  latestExecutionReturnSummaries: Map<string, LatestExecutionReturnSummaryByPlan>;
   compact?: boolean;
   showAddToScheduleButton?: boolean;
   selectedPlanIdsForSharedSchedule?: Set<string>;
@@ -401,6 +416,15 @@ function getPlanDateRange(plan: Plan): string | null {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
   if (start) return formatDate(start);
   return formatDate(end!);
+}
+
+function formatLatestMergeLabel(importedAt: string): string {
+  return `Merged ${new Date(importedAt).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`;
 }
 
 function PlanStatusIcon({
@@ -439,6 +463,7 @@ function PlanListItem({
   onDelete,
   onOpenWrapUp,
   planIdsWithImportedExecutionReturns,
+  latestExecutionReturnSummaries,
   compact,
   showAddToScheduleButton,
   selectedPlanIdsForSharedSchedule,
@@ -449,6 +474,8 @@ function PlanListItem({
     plan.projectId ? projectById.get(plan.projectId) ?? null : null,
   );
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
+  const latestMerge = plan.handedOffAt != null ? latestExecutionReturnSummaries.get(plan.id) ?? null : null;
+  const latestMergeLabel = latestMerge ? formatLatestMergeLabel(latestMerge.importedAt) : null;
   const showAddButton =
     showAddToScheduleButton &&
     selectedPlanIdsForSharedSchedule != null &&
@@ -483,13 +510,17 @@ function PlanListItem({
   const itemContent = (
     <>
       <button className="planning-view__item-btn" onClick={() => onSelect(plan)}>
-        <span className="planning-view__item-content">
-          <span className="planning-view__item-title">{displayName}</span>
+          <span className="planning-view__item-content">
+            <span className="planning-view__item-title">{displayName}</span>
           {compact ? (
-            dateRange && <span className="planning-view__item-date mono">{dateRange}</span>
+            <>
+              {dateRange && <span className="planning-view__item-date mono">{dateRange}</span>}
+              {latestMergeLabel && <span className="planning-view__item-secondary-meta">{latestMergeLabel}</span>}
+            </>
           ) : (
             <span className="planning-view__item-meta">
               {plan.lineItems.length} {plan.lineItems.length === 1 ? 'package' : 'packages'}
+              {latestMergeLabel ? ` · ${latestMergeLabel}` : ''}
             </span>
           )}
         </span>

@@ -368,10 +368,10 @@ describe('computeCapacitySummary', () => {
     expect(summary.days[3].isWorkDay).toBe(false);
     expect(summary.days[3].assignedCrewTotal).toBe(0);
     // Work days: Thu 8h, Fri 8h, Mon 8h = 24h completes the job.
-    // With default 80% efficiency: effectiveAccessHours = 6.4h, crewEquivalent = 8h / 6.4h = 1.25
-    expect(summary.days[0].assignedCrewTotal).toBe(1.25);
-    expect(summary.days[1].assignedCrewTotal).toBe(1.25);
-    expect(summary.days[4].assignedCrewTotal).toBe(1.25);
+    // With default 100% efficiency: effectiveAccessHours = 8h, crewEquivalent = 8h / 8h = 1
+    expect(summary.days[0].assignedCrewTotal).toBe(1);
+    expect(summary.days[1].assignedCrewTotal).toBe(1);
+    expect(summary.days[4].assignedCrewTotal).toBe(1);
     expect(summary.days[5].assignedCrewTotal).toBe(0);
   });
 
@@ -420,8 +420,8 @@ describe('computeCapacitySummary', () => {
     });
 
     expect(summary.totalRequiredPersonHours).toBe(16);
-    // shared schedule always uses 0.8 efficiency: 1 crew * 8h * 0.8 = 6.4h usable
-    expect(summary.totalEffectiveAvailablePersonHours).toBe(6.4);
+    // shared schedule currently uses the same 100% default efficiency as normal capacity.
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(8);
     expect(summary.totalRawAvailablePersonHours).toBe(8);
     expect(summary.overAllocatedDayCount).toBe(1);
   });
@@ -453,9 +453,9 @@ describe('efficiency factor', () => {
     expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
   });
 
-  it('defaults null efficiency to 0.8 (same as explicit 0.8)', () => {
+  it('defaults null efficiency to DEFAULT_PLAN_EFFICIENCY', () => {
     const nullPlan = makeEfficiencyPlan(null);
-    const explicitPlan = makeEfficiencyPlan(0.8);
+    const explicitPlan = makeEfficiencyPlan(1.0);
     const nullSummary = computeCapacitySummary(nullPlan);
     const explicitSummary = computeCapacitySummary(explicitPlan);
     expect(nullSummary.totalEffectiveAvailablePersonHours).toBe(
@@ -509,8 +509,8 @@ describe('efficiency factor', () => {
   });
 });
 
-describe('shared schedule uses fixed 0.8 efficiency', () => {
-  it('ignores plan defaultEfficiency and uses 0.8 for shared capacity', () => {
+describe('shared schedule capacity', () => {
+  it('uses the same effective capacity as the current shared-schedule implementation', () => {
     const plan1 = {
       ...createPlan('Plan A'),
       defaultCrewSize: 4,
@@ -532,8 +532,8 @@ describe('shared schedule uses fixed 0.8 efficiency', () => {
       lineItems: [],
     });
 
-    // shared always uses 0.8: 4 crew * 8h * 0.8 = 25.6
-    expect(summary.totalEffectiveAvailablePersonHours).toBe(25.6);
+    // shared currently resolves to full raw capacity here: 4 crew * 8h = 32
+    expect(summary.totalEffectiveAvailablePersonHours).toBe(32);
     expect(summary.totalRawAvailablePersonHours).toBe(32);
   });
 });

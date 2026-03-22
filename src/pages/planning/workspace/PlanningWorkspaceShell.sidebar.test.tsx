@@ -11,6 +11,10 @@ vi.mock('../hooks/usePlanIdsWithImportedExecutionReturns', () => ({
   usePlanIdsWithImportedExecutionReturns: () => new Set<string>(),
 }));
 
+vi.mock('../hooks/useLatestExecutionReturnSummary', () => ({
+  useLatestExecutionReturnSummaries: () => new Map<string, never>(),
+}));
+
 function createProps(
   overrides: Partial<ComponentProps<typeof PlanningWorkspaceShell>> = {},
 ): ComponentProps<typeof PlanningWorkspaceShell> {

@@ -1,4 +1,4 @@
-export { getDB, type TimeTrackingDBSchema } from './db/core';
+export { DB_VERSION, getDB, type TimeTrackingDBSchema } from './db/core';
 
 export * from './db/active-timers-repo';
 export * from './db/time-entries-repo';

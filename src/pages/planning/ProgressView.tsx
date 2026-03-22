@@ -14,10 +14,19 @@ import {
   parseExecutionReturnJson,
   previewExecutionReturnImport,
   applyExecutionReturnImport,
+  formatExecutionReturnMergeSummary,
 } from '../../lib/interop/data-transfer/execution-return-import';
-import type { ExecutionReturnImportPreview } from '../../lib/interop/data-transfer/contracts';
+import {
+  CANONICAL_HANDOFF_EXPLANATION,
+  PLANNER_EXECUTION_RETURN_EXPLANATION,
+} from '../../lib/interop/data-transfer/handoff-copy';
+import type {
+  ExecutionReturnImportPreview,
+  ExecutionReturnMergeSummary,
+} from '../../lib/interop/data-transfer/contracts';
 import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
 import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
+import { useLatestExecutionReturnSummary } from './hooks/useLatestExecutionReturnSummary';
 
 interface ProgressViewProps {
   plan: Plan;
@@ -53,11 +62,13 @@ export function ProgressView({
   onWrapUp,
 }: ProgressViewProps) {
   const importedExecutionStatus = useExecutionReturnForProgress(plan.id);
+  const latestExecutionReturnSummary = useLatestExecutionReturnSummary(plan.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { definitions } = useWorkUnitStore();
   const [filePreview, setFilePreview] = useState<ExecutionReturnImportPreview | null>(null);
   const [importMsg, setImportMsg] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+  const [appliedMergeSummary, setAppliedMergeSummary] = useState<ExecutionReturnMergeSummary | null>(null);
   const {
     preview: importWorkUnitPreview,
     applyImportedLabels: applyImportedUnitLabels,
@@ -89,9 +100,15 @@ export function ProgressView({
       applyLabelToExistingWorkUnits: applyImportedUnitLabels,
     });
     setFilePreview(null);
-    setImportMsg(result.reason);
+    setAppliedMergeSummary(result.mergeSummary);
+    setImportMsg('');
     setIsApplying(false);
   }
+
+  useEffect(() => {
+    setAppliedMergeSummary(null);
+    setImportMsg('');
+  }, [plan.id]);
 
   const progress = useMemo(
     () => computePlanProgress(plan, tasks, timeEntries, importedExecutionStatus),
@@ -114,6 +131,11 @@ export function ProgressView({
 
   const isRisk = progress.deadline.enabled && progress.deadline.status != null && progress.deadline.status !== 'on-track';
   const isComplete = progress.completionRatio >= 1;
+  const displayedMergeSummary = latestExecutionReturnSummary?.mergeSummary ?? appliedMergeSummary;
+  const displayedMergeImportedAt =
+    latestExecutionReturnSummary?.importedAt
+    ?? appliedMergeSummary?.importedAt
+    ?? null;
 
   return (
     <div className="planning-view progress-view">
@@ -176,7 +198,7 @@ export function ProgressView({
               className="btn btn--secondary btn--sm"
               onClick={() => fileInputRef.current?.click()}
             >
-              Import Report
+              Import Execution Return
             </button>
           )}
           {onWrapUp && (
@@ -186,6 +208,45 @@ export function ProgressView({
           )}
         </div>
       </section>
+
+      <section className="progress-view__import-section" aria-label="Execution return handoff guidance">
+        <div className="progress-view__import-card">
+          <p className="progress-view__import-meta">
+            {PLANNER_EXECUTION_RETURN_EXPLANATION}
+          </p>
+          <p className="progress-view__import-meta">
+            {CANONICAL_HANDOFF_EXPLANATION}
+          </p>
+        </div>
+      </section>
+
+      {displayedMergeSummary && displayedMergeImportedAt && (
+        <section className="progress-view__import-section" aria-label="Latest handoff merge summary">
+          <div className="progress-view__import-card">
+            <p className="progress-view__import-title">
+              <strong>Last merged from field</strong>
+            </p>
+            <p className="progress-view__import-meta">
+              Merged {new Date(displayedMergeImportedAt).toLocaleString()}
+            </p>
+            <p className="progress-view__import-meta">
+              {formatExecutionReturnMergeSummary(displayedMergeSummary)}
+            </p>
+            <p className="progress-view__import-meta">
+              New entries: {displayedMergeSummary.importedEntryCount}
+            </p>
+            <p className="progress-view__import-meta">
+              Duplicate entries skipped: {displayedMergeSummary.skippedDuplicateEntryCount}
+            </p>
+            <p className="progress-view__import-meta">
+              Tasks merged from payload: {displayedMergeSummary.mergedTaskCount}
+            </p>
+            <p className="progress-view__import-meta">
+              Line items reflected: {displayedMergeSummary.lineItemCount}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* File import preview card */}
       {filePreview && (

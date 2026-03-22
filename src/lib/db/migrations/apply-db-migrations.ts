@@ -882,4 +882,32 @@ export const applyDbMigrations: DbUpgradeCallback = (
             });
           }
         }
+
+        // Version 38: Persist handoff metadata for field exports and planner import summaries.
+        if (oldVersion < 38) {
+          if (db.objectStoreNames.contains('plans')) {
+            backfillStore('plans', (plan) => {
+              const p = plan as unknown as Record<string, unknown>;
+              if (p['lastExecutionReturnExportedAt'] !== undefined) return false;
+              p['lastExecutionReturnExportedAt'] = null;
+              return true;
+            });
+          }
+
+          if (db.objectStoreNames.contains('executionReturns')) {
+            backfillStore('executionReturns', (record) => {
+              const r = record as unknown as Record<string, unknown>;
+              if (r['mergeSummary'] !== undefined) return false;
+              const importedAt = typeof r['importedAt'] === 'string' ? r['importedAt'] : '';
+              r['mergeSummary'] = {
+                importedAt,
+                importedEntryCount: 0,
+                skippedDuplicateEntryCount: 0,
+                mergedTaskCount: 0,
+                lineItemCount: 0,
+              };
+              return true;
+            });
+          }
+        }
 };

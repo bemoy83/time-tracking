@@ -12,12 +12,16 @@ import {
 import { createTask, useTaskStore } from '../../lib/stores/task-store';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { getProjectDisplayColor, nowUtc, type TimeEntry, type BuildPhase } from '../../lib/types';
-import { sanitizeFileNameSegment } from '../../lib/utils/sanitize-filename';
 import {
   buildFieldPlanLineItemSummaries,
   summarizeLineItemStatuses,
   type FieldPlanLineItemSummary,
 } from './field-plan-model';
+import {
+  buildExecutionReturnExportConfirmation,
+  buildExecutionReturnFileName,
+  markExecutionReturnExported,
+} from './field-plan-handoff';
 import {
   formatPlanPersonHours,
   groupByStatus,
@@ -296,42 +300,45 @@ export function useFieldPlanModel() {
   const handleExportExecutionReturn = useCallback(async () => {
     if (!selectedPlan) return;
 
-    const summary = summarizeLineItemStatuses(lineItems);
-    const summaryText = [
-      `Completed: ${summary.completed}`,
-      `Blocked: ${summary.blocked}`,
-      `Deferred: ${summary.deferred}`,
-      `Unplanned tasks: ${unplannedTasks.length}`,
-    ].join('\n');
-
-    const confirmed = window.confirm(`Export execution return?\n\n${summaryText}\n\nYou can export again anytime until the plan is archived.`);
-    if (!confirmed) return;
-
     try {
       const latestEntries = await getAllTimeEntries();
       setTimeEntries(latestEntries);
 
       const envelope = await buildExecutionReturnEnvelope(selectedPlan, tasks, latestEntries);
-      const stamp = new Date().toISOString().slice(0, 10);
-      const titleKey = sanitizeFileNameSegment(selectedPlan.title);
-      downloadJson(`execution-return-${titleKey}-${stamp}.json`, envelope);
+      const exportDisplayName = selectedPlanDisplayName ?? selectedPlan.title;
+      const filename = buildExecutionReturnFileName(exportDisplayName, envelope.exportedAt);
+      const confirmed = window.confirm(
+        buildExecutionReturnExportConfirmation({
+          planDisplayName: exportDisplayName,
+          filename,
+          summary: {
+            completed: envelope.payload.summary.completed,
+            inProgress: envelope.payload.summary.inProgress,
+            blocked: envelope.payload.summary.blocked,
+            deferred: envelope.payload.summary.deferred,
+            pending: envelope.payload.summary.pending,
+            unplannedTaskCount: envelope.payload.unplannedTasks.length,
+            timeEntryCount: envelope.payload.timeEntries.length,
+          },
+        }),
+      );
+      if (!confirmed) return;
+
+      downloadJson(filename, envelope);
       trackTelemetryEvent('interop_execution_return_export');
 
       const now = nowUtc();
-      const updatedPlan: Plan = {
-        ...selectedPlan,
-        status: 'received',
-        sessionClosedAt: null,
-        updatedAt: now,
-      };
+      const updatedPlan: Plan = markExecutionReturnExported(selectedPlan, now);
       await updatePlan(updatedPlan);
       setPlans((prev) => sortExecutorPlans(prev.map((plan) => (plan.id === updatedPlan.id ? updatedPlan : plan))));
       setSelectedPlanId(updatedPlan.id);
-      setMessage('Execution return exported. You can continue working and export again when needed.');
+      setMessage(
+        `Execution return exported ${new Date(now).toLocaleString()}. Save or share "${filename}" for planner import.`,
+      );
     } catch {
       setMessage('Failed to export. Please try again.');
     }
-  }, [lineItems, selectedPlan, tasks, unplannedTasks.length]);
+  }, [selectedPlan, selectedPlanDisplayName, tasks]);
 
   const handleDeletePlan = useCallback(
     async (planId: string) => {

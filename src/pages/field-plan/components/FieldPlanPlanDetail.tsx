@@ -12,6 +12,7 @@ import {
   WarningIcon,
 } from '../../../components/icons';
 import { BUILD_PHASE_LABELS, type BuildPhase, type Task } from '../../../lib/types';
+import { FIELD_EXECUTION_RETURN_EXPLANATION } from '../../../lib/interop/data-transfer/handoff-copy';
 import type { FieldPlanLineItemSummary } from '../field-plan-model';
 import type { FieldPlanStatusGroups } from '../field-plan-overlay-types';
 import { FieldPlanLineItemRow } from './FieldPlanLineItemRow';
@@ -30,6 +31,8 @@ interface FieldPlanPlanDetailProps {
   planId: string;
   planDisplayName: string;
   projectColor?: string;
+  importedAt: string | null;
+  lastExecutionReturnExportedAt: string | null;
   progressPercent: number;
   lineItemStatusSummary: LineItemStatusSummary;
   lineItems: FieldPlanLineItemSummary[];
@@ -54,6 +57,8 @@ export function FieldPlanPlanDetail({
   planId,
   planDisplayName,
   projectColor,
+  importedAt,
+  lastExecutionReturnExportedAt,
   progressPercent,
   lineItemStatusSummary,
   lineItems,
@@ -141,6 +146,18 @@ export function FieldPlanPlanDetail({
               {deadlineSummary.atRisk} at risk
             </span>
           )}
+        </div>
+        <div className="field-plan__handoff-status" aria-label="Handoff status">
+          <p className="field-plan__handoff-title">Handoff status</p>
+          <p className="field-plan__handoff-row">
+            Imported to device: {importedAt ? new Date(importedAt).toLocaleString() : 'Unknown'}
+          </p>
+          <p className="field-plan__handoff-row">
+            Last execution return export: {lastExecutionReturnExportedAt ? new Date(lastExecutionReturnExportedAt).toLocaleString() : 'Not yet exported'}
+          </p>
+          <p className="field-plan__handoff-row">
+            {FIELD_EXECUTION_RETURN_EXPLANATION}
+          </p>
         </div>
         <div
           className="field-plan__filter-group"
@@ -340,7 +357,7 @@ export function FieldPlanPlanDetail({
         className="btn btn--primary btn--full"
         onClick={onExportExecutionReturn}
       >
-        Send Progress Report
+        Export Execution Return
       </button>
     </>
   );

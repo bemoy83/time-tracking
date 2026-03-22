@@ -36,6 +36,10 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
     raw.importedAt = null;
   }
 
+  if (raw.lastExecutionReturnExportedAt === undefined) {
+    raw.lastExecutionReturnExportedAt = null;
+  }
+
   if (raw.sessionClosedAt === undefined) {
     raw.sessionClosedAt = null;
   }

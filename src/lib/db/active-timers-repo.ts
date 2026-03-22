@@ -9,6 +9,13 @@ export async function getAllActiveTimers(): Promise<ActiveTimer[]> {
   return db.getAll('activeTimers');
 }
 
+export async function deleteAllActiveTimers(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction('activeTimers', 'readwrite');
+  await tx.store.clear();
+  await tx.done;
+}
+
 /**
  * Get the active timer for a specific task, if any.
  */

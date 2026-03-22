@@ -90,7 +90,7 @@ describe('applyDbMigrations', () => {
     await flushMicrotasks();
     await flushMicrotasks();
 
-    expect(taskStore.records[0]).toEqual({ id: 'task-1', phase: 'assembly' });
+    expect(taskStore.records[0]).toEqual({ id: 'task-1', phase: 'assembly', additionalTagIds: [] });
     expect(templateStore.records[0]).toEqual({ id: 'template-1', phase: 'dismantle' });
     expect(unplannedTaskStore.records[0]).toEqual({ id: 'return-task-1', phase: null });
 

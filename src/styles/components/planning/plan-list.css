@@ -131,6 +131,11 @@
   color: var(--color-text-muted);
 }
 
+.planning-view__item-secondary-meta {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
 .planning-view__item-delete {
   display: flex;
   align-items: center;

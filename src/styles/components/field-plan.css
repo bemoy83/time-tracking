@@ -273,6 +273,28 @@
   height: 14px;
 }
 
+.field-plan__handoff-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: transparent;
+}
+
+.field-plan__handoff-title {
+  margin: 0;
+  font-size: var(--font-label);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.field-plan__handoff-row {
+  margin: 0;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
 .field-plan__filter-group {
   display: flex;
   flex-direction: column;

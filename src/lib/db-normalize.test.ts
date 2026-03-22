@@ -59,6 +59,7 @@ describe('normalizePlan', () => {
     const plan = normalizePlan(raw);
     expect(plan.status).toBe('draft');
     expect(plan.activatedAt).toBeNull();
+    expect(plan.lastExecutionReturnExportedAt).toBeNull();
   });
 
   it('normalizes reviewedAt plans to reviewed status', () => {

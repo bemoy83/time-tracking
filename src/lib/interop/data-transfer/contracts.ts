@@ -1,10 +1,23 @@
 import type { Plan, PlanLineItem, BlockCategory, LineItemExecutionStatus } from '../../planning/plan-model';
-import type { BuildPhase, Project, Task, TimeEntry, WorkType, WorkUnitDefinition } from '../../types';
-import type { Tag, TagCategory } from '../../tags';
+import type {
+  ActiveTimer,
+  AttributionSnapshot,
+  BuildPhase,
+  Project,
+  Task,
+  TaskNote,
+  TaskTemplate,
+  TemplateNote,
+  TimeEntry,
+  WorkType,
+  WorkUnitDefinition,
+} from '../../types';
+import type { CrewPool, GlobalTagSequence, Tag, TagCategory } from '../../tags';
 import type { DeadlineStatus } from '../../planning/scheduling/deadline';
 
 export const DATA_TRANSFER_SCHEMA_VERSION = '4.0';
 export const DATA_TRANSFER_SCHEMA_COMPAT = ['3.0', '4.0'] as const;
+export const FULL_BACKUP_SNAPSHOT_FORMAT_VERSION = 1;
 
 export type DataTransferExportType =
   | 'plan-package'
@@ -128,12 +141,21 @@ export interface ExecutionReturnImportPreview {
   envelope: DataTransferEnvelope<ExecutionReturnPayload>;
 }
 
+export interface ExecutionReturnMergeSummary {
+  importedAt: string;
+  importedEntryCount: number;
+  skippedDuplicateEntryCount: number;
+  mergedTaskCount: number;
+  lineItemCount: number;
+}
+
 export interface ExecutionReturnImportResult {
   importedEntryCount: number;
   skippedDuplicateEntryCount: number;
   executionReturnId: string;
   lineItemCount: number;
   unplannedTaskCount: number;
+  mergeSummary: ExecutionReturnMergeSummary;
   reason: string;
 }
 
@@ -147,6 +169,7 @@ export interface ImportedExecutionReturnRecord {
   appVersion: string;
   exportType: 'execution-return';
   exportedAt: string;
+  mergeSummary: ExecutionReturnMergeSummary;
 }
 
 export interface ImportedExecutionReturnLineItemRecord extends ExecutionReturnLineItem {
@@ -167,6 +190,68 @@ export interface ImportedExecutionReturnUnplannedTaskRecord {
   workUnit: Task['workUnit'];
   phase: Task['phase'];
   personHours: number;
+}
+
+export interface FullBackupPayload {
+  snapshotFormatVersion: number;
+  idbSchemaVersion: number;
+  activeTimers: ActiveTimer[];
+  timeEntries: TimeEntry[];
+  tasks: Task[];
+  projects: Project[];
+  taskNotes: TaskNote[];
+  templateNotes: TemplateNote[];
+  taskTemplates: TaskTemplate[];
+  attributionSnapshots: AttributionSnapshot[];
+  plans: Plan[];
+  workTypes: WorkType[];
+  workUnitDefinitions: WorkUnitDefinition[];
+  executionReturns: ImportedExecutionReturnRecord[];
+  executionReturnLineItems: ImportedExecutionReturnLineItemRecord[];
+  executionReturnUnplannedTasks: ImportedExecutionReturnUnplannedTaskRecord[];
+  tagCategories: TagCategory[];
+  tags: Tag[];
+  globalTagSequence: GlobalTagSequence | null;
+  crewPool: CrewPool | null;
+}
+
+export interface FullBackupEntityCounts {
+  activeTimers: number;
+  timeEntries: number;
+  tasks: number;
+  projects: number;
+  taskNotes: number;
+  templateNotes: number;
+  taskTemplates: number;
+  attributionSnapshots: number;
+  plans: number;
+  workTypes: number;
+  workUnitDefinitions: number;
+  executionReturns: number;
+  executionReturnLineItems: number;
+  executionReturnUnplannedTasks: number;
+  tagCategories: number;
+  tags: number;
+  globalTagSequence: number;
+  crewPool: number;
+}
+
+export interface FullBackupImportPreview {
+  exportedAt: string;
+  schemaVersion: string;
+  appVersion: string;
+  snapshotFormatVersion: number;
+  idbSchemaVersion: number;
+  counts: FullBackupEntityCounts;
+  warnings: string[];
+  isCompatible: boolean;
+  envelope: DataTransferEnvelope<FullBackupPayload>;
+}
+
+export interface FullBackupImportResult {
+  restoredAt: string;
+  counts: FullBackupEntityCounts;
+  reason: string;
 }
 
 export type PlanPackageLineItemDiffAction = 'new' | 'updated' | 'unchanged' | 'removed';

@@ -162,6 +162,8 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
                     planId={model.selectedPlan.id}
                     planDisplayName={model.selectedPlanDisplayName ?? 'Plan'}
                     projectColor={model.projectColor}
+                    importedAt={model.selectedPlan.importedAt ?? null}
+                    lastExecutionReturnExportedAt={model.selectedPlan.lastExecutionReturnExportedAt ?? null}
                     progressPercent={model.progressPercent}
                     lineItemStatusSummary={model.lineItemStatusSummary}
                     lineItems={model.lineItems}

@@ -253,8 +253,28 @@ describe('execution-return import', () => {
 
     expect(result.importedEntryCount).toBe(1);
     expect(result.skippedDuplicateEntryCount).toBe(1);
+    expect(result.mergeSummary).toEqual({
+      importedAt: expect.any(String),
+      importedEntryCount: 1,
+      skippedDuplicateEntryCount: 1,
+      mergedTaskCount: 2,
+      lineItemCount: 1,
+    });
+    expect(result.reason).toBe(
+      'Imported execution return. 1 new entry, 1 duplicate entry skipped, 2 tasks merged, 1 line item reflected.',
+    );
     expect(mockAddTimeEntry).toHaveBeenCalledTimes(1);
     expect(mockAddExecutionReturnRecord).toHaveBeenCalledTimes(1);
+    expect(mockAddExecutionReturnRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mergeSummary: expect.objectContaining({
+          importedEntryCount: 1,
+          skippedDuplicateEntryCount: 1,
+          mergedTaskCount: 2,
+          lineItemCount: 1,
+        }),
+      }),
+    );
     expect(mockAddExecutionReturnLineItems).toHaveBeenCalledTimes(1);
     expect(mockAddExecutionReturnUnplannedTasks).toHaveBeenCalledTimes(1);
     // Tasks from payload are upserted so Planning Progress view can show execution state

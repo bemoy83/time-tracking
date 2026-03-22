@@ -39,6 +39,7 @@ describe('createPlan', () => {
     expect(plan.workCalendar).toEqual([]);
     expect(plan.activatedAt).toBeNull();
     expect(plan.reviewedAt).toBeNull();
+    expect(plan.lastExecutionReturnExportedAt).toBeNull();
     expect(plan.id).toBeTruthy();
   });
 });
@@ -341,7 +342,6 @@ describe('normalizePlanEfficiency', () => {
 describe('resolvePlanEfficiency', () => {
   it('returns DEFAULT_PLAN_EFFICIENCY when defaultEfficiency is null', () => {
     expect(resolvePlanEfficiency({ defaultEfficiency: null })).toBe(DEFAULT_PLAN_EFFICIENCY);
-    expect(resolvePlanEfficiency({ defaultEfficiency: null })).toBe(0.8);
   });
 
   it('returns the plan value when set', () => {

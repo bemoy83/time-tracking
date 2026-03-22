@@ -12,6 +12,7 @@ interface AlertAction {
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 'outline-success';
   icon?: ReactNode;
+  disabled?: boolean;
 }
 
 interface AlertDialogProps {
@@ -94,6 +95,7 @@ export function AlertDialog({
               type="button"
               className={variantClass(action.variant)}
               onClick={action.onClick}
+              disabled={action.disabled}
             >
               {action.icon && (
                 <span className="alert-dialog__btn-icon">{action.icon}</span>
