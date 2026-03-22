@@ -36,6 +36,12 @@ export interface DayState {
    * Only populated when a crewPool is passed to buildDayStates.
    */
   skillPersonHoursRemaining?: Map<string, number>;
+  /**
+   * Per-skill committed person-hours on this day.
+   * tagId → hours placed so far. Used for incremental required-crew computation in recomputeDayRemaining.
+   * Only populated when a crewPool is passed to buildDayStates.
+   */
+  committedSkillPHByTag?: Map<string, number>;
   /** Physical crew headcount available on this day. */
   availableCrew: number;
   /**
@@ -63,13 +69,14 @@ const DEFAULT_TASK_SWITCHING_FACTOR = 0.95;
 // ─── Crew over-subscription model ────────────────────────────────────────────
 
 /**
- * Compute the total headcount required by skills with committed work on a given date.
+ * Compute the total worker-days required by all committed work on a given date.
  *
  * For each skill tag with committed hours > 0.01 on `date`:
- *   requiredCrew += skillCrewAllocations[skillId]
+ *   requiredCrew += ceil(skillHours / accessHours)
  * For untagged committed hours:
  *   requiredCrew += ceil(untaggedPH / accessHours)
  *
+ * When the sum exceeds availableCrew, workers must cover more than one skill type.
  * Returns 0 when no skill/crew data is available (no-penalty fallback).
  */
 export function resolveRequiredSkillCrew(
@@ -85,10 +92,10 @@ export function resolveRequiredSkillCrew(
 
   let requiredCrew = 0;
   let totalSkillCommitted = 0;
-  for (const [skillId, dateMap] of skillCommitted) {
+  for (const [, dateMap] of skillCommitted) {
     const hours = dateMap.get(date) ?? 0;
     if (hours > 0.01) {
-      requiredCrew += skillCrewAllocations[skillId] ?? 0;
+      requiredCrew += Math.ceil(hours / accessHours);
       totalSkillCommitted += hours;
     }
   }
@@ -107,7 +114,7 @@ export function resolveRequiredSkillCrew(
  * When the sum of required skill headcounts exceeds available crew, workers must cover
  * multiple skill types. The penalty scales with the degree of over-subscription:
  *
- *   overSubMultiple = max(0, requiredSkillCrew - availableCrew) / availableCrew
+ *   overSubMultiple = max(0, requiredSkillCrew - availableCrew)   (switching workers count)
  *   factor = taskSwitchingFactor ^ overSubMultiple
  *
  * Returns 1.0 (no penalty) when:
@@ -127,7 +134,7 @@ export function resolveOverSubscriptionFactor(
   if (!skillCrewAllocations || Object.keys(skillCrewAllocations).length === 0 || availableCrew <= 0) return 1;
   const requiredCrew = resolveRequiredSkillCrew(date, accessHours, committed, skillCommitted, skillCrewAllocations);
   if (requiredCrew <= availableCrew) return 1;
-  const overSubMultiple = (requiredCrew - availableCrew) / availableCrew;
+  const overSubMultiple = requiredCrew - availableCrew;
   return Math.pow(taskSwitchingFactor, overSubMultiple);
 }
 
@@ -204,12 +211,17 @@ export function buildDayStates(
       const committedPH = committed.get(day.date) ?? 0;
       const activeSkillTagIds = new Set<string>();
       let committedSkillPH = 0;
+      let committedSkillPHByTag: Map<string, number> | undefined;
+      if (effectivePool && Object.keys(effectivePool).length > 0) {
+        committedSkillPHByTag = new Map();
+      }
       if (skillCommitted) {
         for (const [tagId, dateMap] of skillCommitted) {
           const hours = dateMap.get(day.date) ?? 0;
           if (hours > 0.01) {
             activeSkillTagIds.add(tagId);
             committedSkillPH += hours;
+            committedSkillPHByTag?.set(tagId, hours);
           }
         }
       }
@@ -222,6 +234,7 @@ export function buildDayStates(
         baseEffectivePersonHours: available,
         remainingPersonHours: round2((available * overSubFactor) - committedPH),
         skillPersonHoursRemaining,
+        committedSkillPHByTag,
         committedPersonHours: committedPH,
         committedSkillPersonHours: round2(committedSkillPH),
         activeSkillTagIds,
@@ -248,9 +261,14 @@ export function recomputeDayRemaining(
 
   if (skillTagId) {
     day.committedSkillPersonHours += placedHours;
-    if (!day.activeSkillTagIds.has(skillTagId)) {
-      day.activeSkillTagIds.add(skillTagId);
-      day.currentRequiredSkillCrew += day.skillCrewAllocations?.[skillTagId] ?? 0;
+    day.activeSkillTagIds.add(skillTagId);
+    if (day.committedSkillPHByTag) {
+      const oldPH = day.committedSkillPHByTag.get(skillTagId) ?? 0;
+      const newPH = oldPH + placedHours;
+      day.committedSkillPHByTag.set(skillTagId, newPH);
+      const oldRequired = oldPH > 0.01 ? Math.ceil(oldPH / day.accessHours) : 0;
+      const newRequired = Math.ceil(newPH / day.accessHours);
+      day.currentRequiredSkillCrew += newRequired - oldRequired;
     }
   } else {
     // Untagged: update the crew contribution by delta
@@ -269,7 +287,7 @@ export function recomputeDayRemaining(
     && day.availableCrew > 0
     && day.currentRequiredSkillCrew > day.availableCrew
   ) {
-    const overSub = (day.currentRequiredSkillCrew - day.availableCrew) / day.availableCrew;
+    const overSub = day.currentRequiredSkillCrew - day.availableCrew;
     ff = Math.pow(taskSwitchingFactor, overSub);
   }
   day.remainingPersonHours = round2(day.baseEffectivePersonHours * ff - day.committedPersonHours);
@@ -299,21 +317,21 @@ function computeProspectiveCap(
 
   if (alreadyPresent) return Infinity;
 
-  const extraCrew = skillTagId
-    ? (day.skillCrewAllocations[skillTagId] ?? 0)
-    : (day.committedPersonHours > 0.01 ? 1 : 0);
-
-  if (extraCrew <= 0) return Infinity;
+  // Conservative estimate: assume remaining capacity would be filled with this new skill.
+  // ceil(remaining / accessHours) is the max extra required workers; minimum is 1.
+  const extraCrew = day.accessHours > 0
+    ? Math.max(1, Math.ceil(day.remainingPersonHours / day.accessHours))
+    : 1;
 
   const prospectiveRequired = day.currentRequiredSkillCrew + extraCrew;
   if (prospectiveRequired <= day.availableCrew) return Infinity;
 
-  const newOverSub = (prospectiveRequired - day.availableCrew) / day.availableCrew;
+  const newOverSub = prospectiveRequired - day.availableCrew;
   const prospectiveFF = Math.pow(taskSwitchingFactor, newOverSub);
 
   const currentFF = day.currentRequiredSkillCrew <= day.availableCrew
     ? 1
-    : Math.pow(taskSwitchingFactor, (day.currentRequiredSkillCrew - day.availableCrew) / day.availableCrew);
+    : Math.pow(taskSwitchingFactor, day.currentRequiredSkillCrew - day.availableCrew);
 
   if (Math.abs(prospectiveFF - currentFF) < 0.0001) return Infinity;
 

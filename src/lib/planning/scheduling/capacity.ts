@@ -4,7 +4,7 @@ import type { Plan, WorkCalendarDay } from '../plan-model';
 import { getPhaseFields, getPhaseSpan, isPhaseActive, resolvePlanEfficiency, DEFAULT_PLAN_EFFICIENCY } from '../plan-model';
 import type { CrewPool } from '../../tags';
 import { resolveEffectiveSkillAllocations } from '../../tags';
-import { resolveOverSubscriptionFactor, resolveRequiredSkillCrew } from './placement';
+import { resolveOverSubscriptionFactor } from './placement';
 import type { SharedScheduleInput } from './shared-schedule-types';
 import { getAssignedDates } from './assignment';
 import {
@@ -208,7 +208,15 @@ export function computeCapacitySummary(
       const ff = resolveOverSubscriptionFactor(
         day.date, accessHours, availableCrew, committed, skillCommitted, effectivePool, taskSwitchingFactor,
       );
-      const rsc = resolveRequiredSkillCrew(day.date, accessHours, committed, skillCommitted, effectivePool);
+      // Compute required skill crew from committed PH / accessHours (actual worker-days needed).
+      let rsc = 0;
+      let totalSkillPH = 0;
+      for (const [, dm] of skillCommitted) {
+        const h = dm.get(day.date) ?? 0;
+        if (h > 0.01) { rsc += Math.ceil(h / accessHours); totalSkillPH += h; }
+      }
+      const untaggedPH = (committed.get(day.date) ?? 0) - totalSkillPH;
+      if (untaggedPH > 0.01) rsc += Math.ceil(untaggedPH / accessHours);
       if (ff < 1) fragmentationFactors.set(day.date, ff);
       if (rsc > 0) requiredSkillCrews.set(day.date, rsc);
     }

@@ -71,7 +71,7 @@ export function SettingsCrewView({ onBack }: SettingsCrewViewProps) {
           <div className="settings-view__template-info">
             <span className="settings-view__row-label">Task-switching factor</span>
             <span className="settings-view__row-detail">
-              Throughput factor applied when skill demand exceeds available crew. Default 0.95 — e.g. crew over-subscribed by 100% = ×0.95, by 200% = ×0.95² ≈ 90%
+              Applied per worker who must cover multiple skill types in a day. Default 0.95 — e.g. 1 switching worker → ×0.95 (−5%), 4 switching workers → ×0.95⁴ ≈ −19%.
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

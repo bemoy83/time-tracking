@@ -76,13 +76,13 @@ export function FragmentationWarningIcon({ cap }: { cap: DailyCapacity }) {
           {hasSkillPenalty ? (
             <>
               <strong className="schedule-grid__day-warning-tooltip-title">
-                Task-switching penalty: −{penaltyPct}%
+                Skill-switching penalty: −{penaltyPct}%
               </strong>
               <span>
-                {rsc} skill {rsc === 1 ? 'worker' : 'workers'} needed across active skill types, but only {avail} available — {rsc - avail} {rsc - avail === 1 ? 'worker' : 'workers'} must cover multiple skills.
+                Keeping each skill type to dedicated workers today would require {rsc}, but only {avail} {avail === 1 ? 'is' : 'are'} on site — at least {rsc - avail} {rsc - avail === 1 ? 'worker' : 'workers'} must cover more than one skill type.
               </span>
               <span>
-                Usable capacity: <strong>{cap.effectiveAvailablePersonHours.toFixed(1)}h</strong> (down from {baseBeforePenalty.toFixed(1)}h — {hoursLost.toFixed(1)}h lost to switching overhead).
+                Usable capacity: <strong>{cap.effectiveAvailablePersonHours.toFixed(1)}h</strong> (down from {baseBeforePenalty.toFixed(1)}h — {hoursLost.toFixed(1)}h estimated loss from cross-skill switching).
               </span>
               {cap.fragmentationRisk !== 'none' && (
                 <span>
