@@ -213,7 +213,7 @@ function SingleScheduleGrid({
   const unresolvedKeys = unresolvedIssueKeys ?? new Set<string>();
 
   const gridRef = useRef<HTMLDivElement>(null);
-  const gridColumns = `minmax(220px, 1.3fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
+  const gridColumns = `minmax(260px, 1.35fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
   const handleGridKeyboard = useScheduleGridKeyboardNavigation(calendar.length);
 
   useEffect(() => {

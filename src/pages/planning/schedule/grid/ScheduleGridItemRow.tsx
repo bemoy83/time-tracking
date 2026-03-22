@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { TagPillGroup } from '../../../../components/TagPillGroup';
 import { PeopleIcon, UndoIcon, WarningIcon } from '../../../../components/icons';
 import { getPhaseFields } from '../../../../lib/planning/plan-model';
 import { getCrewEquivalentForDate, resolveEffectiveAccessHours } from '../../../../lib/planning/scheduling/capacity-math';
@@ -127,6 +128,11 @@ export function ScheduleGridItemRow({
               </button>
             )}
           </span>
+          <TagPillGroup
+            tagIds={item.tagIds ?? []}
+            compact
+            className="schedule-grid__line-item-tag-group"
+          />
           <span className="schedule-grid__line-item-meta">
             {formatQuantityWithUnit(item.workQuantity, item.workUnit)}
             {metaPrefix ? ` · ${metaPrefix}` : ''} ·{' '}

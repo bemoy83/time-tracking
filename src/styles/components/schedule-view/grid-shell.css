@@ -13,7 +13,7 @@
   overflow-x: visible; /* Scroll handled by __scroll-wrap */
   background: transparent;
   border-radius: 0;
-  min-width: calc(220px + 144px * var(--schedule-day-count, 4));
+  min-width: calc(260px + 144px * var(--schedule-day-count, 4));
 }
 
 /* Subgrid unifies column tracks so phase-label, line-item-col, and line-item share the same right edge */
@@ -24,7 +24,7 @@
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
-  min-width: calc(220px + 144px * var(--schedule-day-count, 4));
+  min-width: calc(260px + 144px * var(--schedule-day-count, 4));
 }
 
 .schedule-grid__body {
@@ -85,6 +85,11 @@
 /* Rounded left corners on row cells — border-bottom is replaced with an inset
    box-shadow so the hairline stays straight (doesn't follow the curve). */
 .schedule-grid__line-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--space-2xs);
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   border-bottom: none;
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
@@ -378,8 +383,12 @@
 
 .schedule-grid__line-item-meta {
   display: block;
-  margin-top: 2px;
+  margin-top: 0;
   color: var(--color-text-muted);
+}
+
+.schedule-grid__line-item-tag-group {
+  min-width: 0;
 }
 
 .schedule-grid__hours-compare {

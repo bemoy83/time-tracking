@@ -7,7 +7,7 @@
 
 .schedule-grid__phase-header {
   display: grid;
-  min-width: calc(220px + 144px * var(--schedule-day-count, 4));
+  min-width: calc(260px + 144px * var(--schedule-day-count, 4));
   background: none;
   border: none;
   cursor: pointer;
