@@ -36,6 +36,7 @@
 @import './styles/components/task-detail.css';
 @import './styles/components/task-time-tracking.css';
 @import './styles/components/task-work-quantity.css';
+@import './styles/components/work-type-picker.css';
 @import './styles/components/task-personnel.css';
 @import './styles/components/task-tags.css';
 @import './styles/components/task-productivity.css';

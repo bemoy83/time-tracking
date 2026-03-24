@@ -1,0 +1,60 @@
+.work-type-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.work-type-picker__control {
+  position: relative;
+  min-width: 0;
+}
+
+.work-type-picker__input {
+  width: 100%;
+  min-width: 0;
+}
+
+.work-type-picker__listbox {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--surface-elevated-bg);
+  border: 1px solid var(--surface-elevated-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--surface-elevated-shadow-soft);
+}
+
+.work-type-picker__option,
+.work-type-picker__empty {
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-small);
+  line-height: 1.35;
+}
+
+.work-type-picker__option {
+  cursor: pointer;
+}
+
+.work-type-picker__option--active {
+  background: var(--surface-elevated-hover);
+}
+
+.work-type-picker__option--selected {
+  color: var(--color-primary);
+  background: var(--surface-brand-subtle);
+}
+
+.work-type-picker__option--selected.work-type-picker__option--active {
+  background: var(--surface-brand-subtle-hover);
+}
+
+.work-type-picker__empty {
+  color: var(--color-text-muted);
+}

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { formatWorkTypeWithUnit, resolveWorkUnitLabel } from '../../lib/types';
+import { resolveWorkUnitLabel } from '../../lib/types';
 import type { PlanLineItem } from '../../lib/planning/plan-model';
 import { createLineItem } from '../../lib/planning/plan-model';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import type { WorkUnitImportPreview } from '../../lib/interop/work-unit-import-preview';
 import { WorkUnitImportPreviewPanel } from '../../components/WorkUnitImportPreviewPanel';
+import { WorkTypePicker } from '../../components/WorkTypePicker';
 
 interface AddWorkPackageBarProps {
   onAdd: (item: PlanLineItem) => void;
@@ -179,22 +180,18 @@ export function AddWorkPackageBar({
 
                   <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--type">
                     <span className="planning-view__wp-add-bar-label">Type</span>
-                    <select
-                      className="input planning-view__wp-add-bar-type"
-                      value={newWorkTypeId}
-                      onChange={(e) => setNewWorkTypeId(e.target.value)}
+                    <WorkTypePicker
+                      workTypes={selectableWorkTypes}
+                      selectedId={newWorkTypeId || null}
+                      onChange={(id) => setNewWorkTypeId(id ?? '')}
                       disabled={selectableWorkTypes.length === 0}
-                      aria-label="New work package type"
-                    >
-                      {selectableWorkTypes.length === 0 && (
-                        <option value="">No work types. Add in Settings.</option>
-                      )}
-                      {selectableWorkTypes.map((wt) => (
-                        <option key={wt.id} value={wt.id}>
-                          {formatWorkTypeWithUnit(wt.title, wt.workUnit)}
-                        </option>
-                      ))}
-                    </select>
+                      emptyMessage="No work types. Add in Settings."
+                      placeholder={
+                        selectableWorkTypes.length === 0 ? 'No work types. Add in Settings.' : ''
+                      }
+                      showLabel={false}
+                      inputClassName="planning-view__wp-add-bar-type"
+                    />
                   </label>
 
                   <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--qty">
