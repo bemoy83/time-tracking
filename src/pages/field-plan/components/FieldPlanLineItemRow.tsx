@@ -12,11 +12,15 @@ import { formatDeadlineStatusLabel } from '../../../lib/planning/scheduling/dead
 import { getPhaseQuantity } from '../../../lib/planning/plan-model';
 import { getTagsByIds } from '../../../lib/stores/tag-store';
 import { BUILD_PHASE_LABELS, formatQuantityWithUnit, formatWorkTypeWithUnit } from '../../../lib/types';
-import type { FieldPlanLineItemSummary } from '../field-plan-model';
+import {
+  isLineItemEligibleForRelease,
+  type FieldPlanLineItemSummary,
+} from '../field-plan-model';
 
 interface FieldPlanLineItemRowProps {
   lineItem: FieldPlanLineItemSummary;
   projectColor?: string;
+  /** Must stay consistent with lineItem.planCanExecute for the current scope. */
   canExecute: boolean;
   showPlanLabel?: boolean;
   onRelease: (lineItem: FieldPlanLineItemSummary) => void;
@@ -34,7 +38,7 @@ export function FieldPlanLineItemRow({
   const { item, phase, phaseFields: pf, status, tasks: linkedTasks } = lineItem;
   const quantity = getPhaseQuantity(item, phase);
   const tags = getTagsByIds(item.tagIds ?? []);
-  const canRelease = canExecute && !item.removedFromSource && status === 'pending' && linkedTasks.length === 0;
+  const canRelease = isLineItemEligibleForRelease(lineItem);
   const canAct = canExecute && !item.removedFromSource;
 
   const leftAction = canRelease

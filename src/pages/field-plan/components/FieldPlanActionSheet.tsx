@@ -8,7 +8,10 @@ import {
 } from '../../../components/icons';
 import type { BlockCategory } from '../../../lib/planning/plan-model';
 import type { BuildPhase } from '../../../lib/types';
-import type { FieldPlanLineItemSummary } from '../field-plan-model';
+import {
+  isLineItemEligibleForRelease,
+  type FieldPlanLineItemSummary,
+} from '../field-plan-model';
 import type { FormMode } from '../field-plan-overlay-types';
 
 const BLOCK_CATEGORIES: { value: BlockCategory; label: string }[] = [
@@ -119,7 +122,7 @@ function FieldPlanActionList({
 }) {
   return (
     <div className="field-plan__action-list">
-      {lineItem.status === 'pending' && lineItem.tasks.length === 0 && (
+      {isLineItemEligibleForRelease(lineItem) && (
         <button
           type="button"
           className="field-plan__action-btn"

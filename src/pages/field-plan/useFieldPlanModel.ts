@@ -14,6 +14,7 @@ import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import { getProjectDisplayColor, nowUtc, type TimeEntry, type BuildPhase } from '../../lib/types';
 import {
   buildFieldPlanLineItemSummaries,
+  isLineItemEligibleForRelease,
   summarizeLineItemStatuses,
   type FieldPlanLineItemSummary,
 } from './field-plan-model';
@@ -133,6 +134,7 @@ export function useFieldPlanModel() {
   }, [selectedPlan, tasks, timeEntries, projectById]);
 
   const allActiveLineItems = useMemo(
+    // Phases view intentionally aggregates received plans only; session-closed plans stay in by-plan selection.
     () => receivedPlans.flatMap((plan) =>
       buildFieldPlanLineItemSummaries(plan, tasks, timeEntries, projectById),
     ),
@@ -169,6 +171,7 @@ export function useFieldPlanModel() {
   );
 
   const deadlineSummary = useMemo(() => {
+    // Deadline counts stay plan-wide from all lineItems; progress and status groups follow displayLineItems after phase filtering.
     const actionable = lineItems.filter((item) => item.deadlineStatus !== 'unscheduled');
     const overdue = actionable.filter((item) => item.deadlineStatus === 'overdue').length;
     const atRisk = actionable.filter((item) => item.deadlineStatus === 'at-risk').length;
@@ -212,7 +215,7 @@ export function useFieldPlanModel() {
 
   const handleReleaseToToday = useCallback(
     (lineItem: FieldPlanLineItemSummary) => {
-      if (!lineItem.planCanExecute || lineItem.item.removedFromSource) return;
+      if (!isLineItemEligibleForRelease(lineItem)) return;
       const alreadyReleased = tasks.some(
         (task) =>
           task.sourcePlanId === lineItem.planId

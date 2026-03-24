@@ -53,7 +53,7 @@ export function deriveLineItemStatus(pf: PhaseFields, tasks: Task[]): LineItemEx
   return 'pending';
 }
 
-/** Same rules as FieldPlanLineItemRow swipe Release. */
+/** Shared release rules for row swipe, batch actions, action sheet, and handleReleaseToToday. */
 export function isLineItemEligibleForRelease(li: FieldPlanLineItemSummary): boolean {
   return (
     li.planCanExecute

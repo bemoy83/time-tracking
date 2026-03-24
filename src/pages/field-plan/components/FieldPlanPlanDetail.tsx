@@ -100,6 +100,7 @@ export function FieldPlanPlanDetail({
   const filteredStatusGroups: FieldPlanStatusGroups = useMemo(() => {
     const { activeTagFilters } = tagFilter;
     if (activeTagFilters.size === 0) return statusGroups;
+    // Tag filters narrow the visible lists only; header summary props remain plan-wide values from the parent model.
     const filter = <T extends FieldPlanLineItemSummary>(items: T[]): T[] =>
       items.filter((li) => (li.item.tagIds ?? []).some((id) => activeTagFilters.has(id)));
     return {

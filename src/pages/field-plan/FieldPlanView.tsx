@@ -17,6 +17,7 @@ interface FieldPlanViewProps {
 export function FieldPlanView({ onBack }: FieldPlanViewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const model = useFieldPlanModel();
+  const isImportBusy = model.isLoadingPreview || model.isApplyingImport;
 
   const breadcrumbSegments = model.selectedPlan
     ? [{ label: 'Field Plan' }, { label: model.selectedPlanDisplayName ?? 'Plan' }]
@@ -193,6 +194,8 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
       <Fab
         onClick={() => fileInputRef.current?.click()}
         aria-label="Import plan"
+        disabled={isImportBusy}
+        aria-busy={isImportBusy}
       >
         <ImportIcon className="fab__icon" />
       </Fab>
