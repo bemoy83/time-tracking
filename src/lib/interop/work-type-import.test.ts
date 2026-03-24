@@ -51,6 +51,29 @@ beforeEach(() => {
 });
 
 describe('parseWorkTypeCsv', () => {
+  it('skips rows with both rates 0 and records a warning without failing parse', () => {
+    const result = parseWorkTypeCsv(csv([
+      'Skip Me,m2,m²,0,0',
+      'Keep Me,pcs,pcs,5,0',
+    ]));
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatchObject({ row: 2, field: 'rates' });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].title).toBe('Keep Me');
+  });
+
+  it('still errors when both rates are 0 but title or unit is invalid', () => {
+    const result = parseWorkTypeCsv(csv([',m2,m²,0,0']));
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.field === 'title')).toBe(true);
+    expect(result.warnings).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
+  });
+
   it('parses a valid row with mapping key', () => {
     const result = parseWorkTypeCsv(csv([
       'Carpet Tiles,m2,m²,11.5,3',
@@ -58,6 +81,7 @@ describe('parseWorkTypeCsv', () => {
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+    expect(result.warnings).toHaveLength(0);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
       mappingKey: 'carpet tiles:m2',

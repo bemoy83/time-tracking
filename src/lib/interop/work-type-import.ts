@@ -27,9 +27,17 @@ export interface ImportValidationError {
   message: string;
 }
 
+/** Non-fatal notices (e.g. skipped rows). Import can still be valid. */
+export interface WorkTypeImportWarning {
+  row: number;
+  field: string;
+  message: string;
+}
+
 export interface WorkTypeImportParseResult {
   items: ImportedWorkType[];
   errors: ImportValidationError[];
+  warnings: WorkTypeImportWarning[];
   valid: boolean;
 }
 
@@ -72,6 +80,7 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     return {
       items: [],
       errors: [{ row: 0, field: 'csv', message: 'CSV must have a header row and at least one data row' }],
+      warnings: [],
       valid: false,
     };
   }
@@ -84,12 +93,14 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     return {
       items: [],
       errors: [{ row: 0, field: 'headers', message: `Missing required headers: ${missingHeaders.join(', ')}` }],
+      warnings: [],
       valid: false,
     };
   }
 
   const items: ImportedWorkType[] = [];
   const errors: ImportValidationError[] = [];
+  const warnings: WorkTypeImportWarning[] = [];
 
   for (let index = 1; index < lines.length; index += 1) {
     const line = lines[index].trim();
@@ -125,12 +136,18 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     if ((dismantleRate ?? 0) < 0) {
       rowErrors.push({ row: rowNum, field: 'dismantleRate', message: 'Dismantle rate cannot be negative' });
     }
-    if ((assemblyRate ?? 0) === 0 && (dismantleRate ?? 0) === 0) {
-      rowErrors.push({ row: rowNum, field: 'rates', message: 'At least one rate must be greater than 0' });
-    }
 
     if (rowErrors.length > 0) {
       errors.push(...rowErrors);
+      continue;
+    }
+
+    if ((assemblyRate ?? 0) === 0 && (dismantleRate ?? 0) === 0) {
+      warnings.push({
+        row: rowNum,
+        field: 'rates',
+        message: 'Assembly and dismantle rates are both 0; row skipped.',
+      });
       continue;
     }
 
@@ -144,7 +161,7 @@ export function parseWorkTypeCsv(csvText: string): WorkTypeImportParseResult {
     });
   }
 
-  return { items, errors, valid: errors.length === 0 };
+  return { items, errors, warnings, valid: errors.length === 0 };
 }
 
 export function generateWorkTypeImportPreview(

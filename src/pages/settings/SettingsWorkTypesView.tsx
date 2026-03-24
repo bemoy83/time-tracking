@@ -109,7 +109,17 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
           );
           return;
         }
+        const warningSummary =
+          parsed.warnings.length > 0
+            ? parsed.warnings.map((w) => `Row ${w.row}: ${w.message}`).join('; ')
+            : null;
+        if (parsed.items.length === 0) {
+          setWorkTypePreview(null);
+          setImportSummary(warningSummary ?? 'No rows to import.');
+          return;
+        }
         setWorkTypePreview(generateWorkTypeImportPreview(parsed.items, editableWorkTypes));
+        setImportSummary(warningSummary);
       } finally {
         setIsLoadingPreview(false);
       }

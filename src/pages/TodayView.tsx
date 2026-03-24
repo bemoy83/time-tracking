@@ -1,21 +1,10 @@
-/**
- * TodayView - Primary view for active work.
- *
- * Design requirements from PLAN.md §4.1:
- * - "Today / Active" as primary view
- * - Active timer and current tasks
- * - Project/phase grouping
- * - Progress bars where relevant (color-first)
- * - Swipe actions with long-press fallback
- * - Minimal metadata in list rows
- */
+/** TodayView is the primary active-work list. */
 
 import { useState, useMemo } from 'react';
-import { Task, Project, TaskTemplate } from '../lib/types';
+import { Task, TaskTemplate } from '../lib/types';
 import {
   useTaskStore,
 } from '../lib/stores/task-store';
-// template-store no longer needed directly — TemplatePickerSheet handles its own data
 import {
   useTimerStore,
   startTimer,
@@ -34,6 +23,10 @@ import { useProjectColorResolver } from '../lib/hooks/useProjectColorResolver';
 import { ActiveSection } from './today/ActiveSection';
 import { BlockedSection } from './today/BlockedSection';
 import { CompletedSectionContainer } from './today/CompletedSectionContainer';
+import {
+  buildTodayViewModel,
+  showPromotionalEmptyState,
+} from './today/today-view-model';
 
 interface TodayViewProps {
   onSelectTask: (task: Task) => void;
@@ -62,47 +55,8 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
     handlePromptCancel,
   } = useCompletionFlow(tasks, activeTimerTaskIds);
 
-  // Filter and group tasks
-  const { groupedTasks, ungroupedTasks, blockedTasks, completedTasks } = useMemo(() => {
-    // Get top-level active tasks (not completed, not subtasks)
-    const activeTasks = tasks.filter(
-      (t) => t.status === 'active' && t.parentId === null
-    );
-    const blocked = tasks.filter(
-      (t) => t.status === 'blocked' && t.parentId === null
-    );
-    const completed = tasks.filter(
-      (t) => t.status === 'completed' && t.parentId === null
-    );
-
-    // Group by project
-    const byProject = new Map<string | null, Task[]>();
-    activeTasks.forEach((task) => {
-      const key = task.projectId;
-      if (!byProject.has(key)) {
-        byProject.set(key, []);
-      }
-      byProject.get(key)!.push(task);
-    });
-
-    // Separate grouped (has project) from ungrouped
-    const grouped: { project: Project; tasks: Task[] }[] = [];
-    const ungrouped: Task[] = byProject.get(null) || [];
-
-    projects.forEach((project) => {
-      const projectTasks = byProject.get(project.id);
-      if (projectTasks && projectTasks.length > 0) {
-        grouped.push({ project, tasks: projectTasks });
-      }
-    });
-
-    return {
-      groupedTasks: grouped,
-      ungroupedTasks: ungrouped,
-      blockedTasks: blocked,
-      completedTasks: completed,
-    };
-  }, [tasks, projects]);
+  const model = useMemo(() => buildTodayViewModel(tasks, projects), [tasks, projects]);
+  const { groupedTasks, ungroupedTasks, blockedTasks, completedTasks } = model;
 
   const handleStartTimer = async (task: Task) => {
     // In sequential mode, stop the existing timer before starting a new one
@@ -202,15 +156,13 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
       />
 
       {/* Empty State */}
-      {ungroupedTasks.length === 0 &&
-        groupedTasks.length === 0 &&
-        blockedTasks.length === 0 && (
-          <div className="empty-state">
-            <TaskListIcon className="empty-state__icon" />
-            <p className="empty-state__heading">No active tasks</p>
-            <p className="empty-state__text">Tap + to add a task and get started.</p>
-          </div>
-        )}
+      {showPromotionalEmptyState(model) && (
+        <div className="empty-state">
+          <TaskListIcon className="empty-state__icon" />
+          <p className="empty-state__heading">No active tasks</p>
+          <p className="empty-state__text">Tap + to add a task and get started.</p>
+        </div>
+      )}
 
       {/* Completion dialogs */}
       <CompleteParentConfirm
