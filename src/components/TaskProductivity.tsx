@@ -6,6 +6,7 @@
  * Actual   = workQuantity / actual person-hours (from tracked time)
  */
 
+import { useEffect } from 'react';
 import { useAttributedPersonHours } from '../lib/hooks/useAttributedPersonHours';
 import { useTimerStore } from '../lib/stores/timer-store';
 import { useTask, useTaskStore } from '../lib/stores/task-store';
@@ -34,10 +35,9 @@ export function TaskProductivity({ taskId, subtaskIds, onAttributedRefresh }: Ta
     subtaskRollupMode,
   );
 
-  // Expose refresh to parent for coordination
-  if (onAttributedRefresh) {
-    onAttributedRefresh(refresh);
-  }
+  useEffect(() => {
+    onAttributedRefresh?.(refresh);
+  }, [onAttributedRefresh, refresh]);
 
   if (!task || task.workQuantity == null || task.workUnit == null) {
     return null;

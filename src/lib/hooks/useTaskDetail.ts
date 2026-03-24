@@ -23,7 +23,6 @@ import {
   useTimerStore,
   startTimer,
   stopTimer,
-  setTimerWorkers,
 } from '../stores/timer-store';
 import { useTaskTimes, type TaskTimes } from './useTaskTimes';
 
@@ -70,13 +69,11 @@ export interface UseTaskDetailReturn {
   isSubtask: boolean;
   error: string | null;
   taskTimes: TaskTimes;
-  activeTimers: ReturnType<typeof useTimerStore>['activeTimers'];
 
   // Actions
   handleStartTimer: (t: Task) => Promise<void>;
   handleStopTimer: () => Promise<void>;
   handleReactivate: () => Promise<void>;
-  handleSetWorkers: (n: number) => void;
   handleCompleteSubtask: (subtask: Task) => Promise<void>;
 
   // Flows
@@ -148,10 +145,6 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
     if (!result.success) {
       setError(result.message);
     }
-  };
-
-  const handleSetWorkers = (n: number) => {
-    if (task) setTimerWorkers(task.id, n);
   };
 
   const handleReactivate = async () => {
@@ -317,11 +310,9 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
     isSubtask: !!isSubtask,
     error,
     taskTimes,
-    activeTimers,
     handleStartTimer,
     handleStopTimer,
     handleReactivate,
-    handleSetWorkers,
     handleCompleteSubtask,
     completionFlow,
     deleteFlow,

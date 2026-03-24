@@ -1,10 +1,10 @@
 /**
  * TaskDetail page.
- * Pure view component — all logic lives in useTaskDetail hook.
+ * Mostly view composition; task flows live in useTaskDetail while title editing stays in TaskDetailHeader.
  * Renders status banner, expandable sections, and fixed action bar.
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { Task, Project } from '../lib/types';
 import { TrashIcon } from '../components/icons';
 import { useTaskDetail } from '../lib/hooks/useTaskDetail';
@@ -54,6 +54,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
   }
 
   const { task, subtasks, parentTask, project } = detail;
+  const subtaskIds = useMemo(() => subtasks.map((subtask) => subtask.id), [subtasks]);
 
   return (
     <div className="task-detail">
@@ -84,7 +85,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       />
 
       {/* 4. Time Tracking (expandable, default open) */}
-      <TaskTimeTracking taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} onEntriesChange={handleEntriesChange} />
+      <TaskTimeTracking taskId={task.id} subtaskIds={subtaskIds} onEntriesChange={handleEntriesChange} />
 
       {/* 5. Work quantity (expandable, default closed) */}
       <TaskWorkQuantity taskId={task.id} />
@@ -93,18 +94,18 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
       <TaskPersonnel taskId={task.id} />
 
       {/* 7. Productivity (when quantity + estimate or time) */}
-      <TaskProductivity taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} onAttributedRefresh={handleAttributedRefresh} />
+      <TaskProductivity taskId={task.id} subtaskIds={subtaskIds} onAttributedRefresh={handleAttributedRefresh} />
 
-      {/* 7b. Attribution breakdown (expandable, default closed) */}
-      <TaskAttributionBreakdown taskId={task.id} subtaskIds={subtasks.map((s) => s.id)} />
+      {/* 8. Attribution breakdown (expandable, default closed) */}
+      <TaskAttributionBreakdown taskId={task.id} subtaskIds={subtaskIds} />
 
-      {/* 8. Tags (inline, shown when task has a work type or existing tags) */}
+      {/* 9. Tags (inline, shown when task has a work type or existing tags) */}
       <TaskTagsSection task={task} />
 
-      {/* 9. Notes (expandable, default closed) */}
+      {/* 10. Notes (expandable, default closed) */}
       <TaskNotes taskId={task.id} />
 
-      {/* 7. Subtasks (expandable, default open, parent tasks only) */}
+      {/* 11. Subtasks (expandable, default open, parent tasks only) */}
       {!detail.isSubtask && (
         <TaskDetailSubtasks
           task={task}
@@ -117,7 +118,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         />
       )}
 
-      {/* 7. Block input (secondary inline action) */}
+      {/* 12. Block input (secondary inline action) */}
       {!detail.isBlocked && !detail.isCompleted && (
         <div className="task-detail__actions">
           {detail.blockFlow.showInput ? (
@@ -154,7 +155,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         </div>
       )}
 
-      {/* 8. Delete link (bottom of scroll) */}
+      {/* 13. Delete link (bottom of scroll) */}
       <button
         className="task-detail__delete-link"
         onClick={detail.deleteFlow.handleDeleteClick}
@@ -164,7 +165,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         Delete Task
       </button>
 
-      {/* 9. Action bar (fixed bottom) */}
+      {/* 14. Action bar (fixed bottom) */}
       <TaskActionBar
         status={task.status}
         isTimerActive={detail.isTimerActive}
@@ -175,7 +176,7 @@ export function TaskDetail({ taskId, onBack, onSelectTask, onNavigateToProject }
         onReactivate={detail.handleReactivate}
       />
 
-      {/* 10. Modal dialogs */}
+      {/* 15. Modal dialogs */}
       <ProjectPicker
         isOpen={detail.showProjectPicker}
         onClose={() => detail.setShowProjectPicker(false)}
