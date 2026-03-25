@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarIcon } from '../../../components/icons';
+import { DEFAULT_PLAN_EFFICIENCY } from '../../../lib/planning/plan-model';
 import {
   type PhaseDateField,
   type PhaseDateValues,
@@ -100,7 +101,8 @@ export function PlanScheduleInputs({
   onDefaultCrewSizeChange,
   onDefaultEfficiencyChange,
 }: PlanScheduleInputsProps) {
-  const currentPct = defaultEfficiency != null ? Math.round(defaultEfficiency * 100) : 80;
+  const currentPct =
+    defaultEfficiency != null ? Math.round(defaultEfficiency * 100) : Math.round(DEFAULT_PLAN_EFFICIENCY * 100);
   const isKnownPreset = EFFICIENCY_PRESETS.some((p) => p.value === String(currentPct));
 
   const [customMode, setCustomMode] = useState(() => !isKnownPreset);

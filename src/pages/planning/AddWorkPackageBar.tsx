@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { resolveWorkUnitLabel } from '../../lib/types';
 import type { PlanLineItem } from '../../lib/planning/plan-model';
@@ -37,6 +37,7 @@ export function AddWorkPackageBar({
   const selectableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
 
   const addTitleRef = useRef<HTMLInputElement>(null);
+  const workTypeFieldLabelId = useId();
   const [newTitle, setNewTitle] = useState('');
   const [newWorkTypeId, setNewWorkTypeId] = useState('');
   const [newQuantity, setNewQuantity] = useState('');
@@ -179,7 +180,9 @@ export function AddWorkPackageBar({
                   </label>
 
                   <label className="planning-view__wp-add-bar-field planning-view__wp-add-bar-field--type">
-                    <span className="planning-view__wp-add-bar-label">Type</span>
+                    <span className="planning-view__wp-add-bar-label" id={workTypeFieldLabelId}>
+                      Type
+                    </span>
                     <WorkTypePicker
                       workTypes={selectableWorkTypes}
                       selectedId={newWorkTypeId || null}
@@ -191,6 +194,7 @@ export function AddWorkPackageBar({
                       }
                       showLabel={false}
                       inputClassName="planning-view__wp-add-bar-type"
+                      inputAriaLabelledBy={workTypeFieldLabelId}
                     />
                   </label>
 

@@ -18,6 +18,10 @@ interface WorkTypePickerProps {
   showLabel?: boolean;
   inputClassName?: string;
   disabled?: boolean;
+  /** Overrides default `aria-label="Work Type"` when no `inputAriaLabelledBy`. */
+  inputAriaLabel?: string;
+  /** When set, names the combobox via that element id (omit redundant aria-label). */
+  inputAriaLabelledBy?: string;
 }
 
 interface PickerOption {
@@ -42,6 +46,8 @@ export function WorkTypePicker({
   showLabel = true,
   inputClassName,
   disabled = false,
+  inputAriaLabel,
+  inputAriaLabelledBy,
 }: WorkTypePickerProps) {
   useWorkUnitStore();
 
@@ -156,7 +162,8 @@ export function WorkTypePicker({
           aria-expanded={!isDisabled && isOpen}
           aria-controls={!isDisabled && isOpen ? listboxId : undefined}
           aria-activedescendant={activeDescendant}
-          aria-label="Work Type"
+          aria-labelledby={inputAriaLabelledBy}
+          aria-label={inputAriaLabelledBy ? undefined : inputAriaLabel ?? 'Work Type'}
           autoComplete="off"
           disabled={isDisabled}
           placeholder={selectedId == null ? placeholder : undefined}
@@ -219,6 +226,10 @@ export function WorkTypePicker({
             }
 
             if (e.key === 'Tab' && isOpen) {
+              if (activeIndex >= 0 && activeIndex < options.length) {
+                selectOption(options[activeIndex].id);
+                return;
+              }
               closeList();
               setSearch(committedLabel);
             }

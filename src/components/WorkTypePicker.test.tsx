@@ -59,6 +59,28 @@ describe('WorkTypePicker', () => {
     expect(handleChange).toHaveBeenCalledWith('wt-2');
   });
 
+  it('commits the active option on Tab when the list is open', () => {
+    const handleChange = vi.fn();
+
+    render(
+      <WorkTypePicker
+        workTypes={workTypes}
+        selectedId={null}
+        onChange={handleChange}
+        placeholder="Select work type..."
+      />,
+    );
+
+    const input = screen.getByRole('combobox', { name: 'Work Type' });
+
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'cable' } });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Tab' });
+
+    expect(handleChange).toHaveBeenCalledWith('wt-2');
+  });
+
   it('closes on escape before bubbling to outer listeners', () => {
     const handleChange = vi.fn();
     const documentEscapeSpy = vi.fn();
