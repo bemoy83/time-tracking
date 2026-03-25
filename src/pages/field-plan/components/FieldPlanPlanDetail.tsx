@@ -296,7 +296,6 @@ export function FieldPlanPlanDetail({
                   key={`${li.item.id}:${li.phase}`}
                   lineItem={li}
                   projectColor={projectColor}
-                  canExecute={canExecute}
                   onRelease={onReleaseToToday}
                   onOpenActions={onOpenActions}
                 />
@@ -327,7 +326,6 @@ export function FieldPlanPlanDetail({
                   key={`${li.item.id}:${li.phase}`}
                   lineItem={li}
                   projectColor={projectColor}
-                  canExecute={canExecute}
                   onRelease={onReleaseToToday}
                   onOpenActions={onOpenActions}
                 />
