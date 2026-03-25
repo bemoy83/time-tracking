@@ -58,7 +58,6 @@ describe('FieldPlanPlanDetail', () => {
         statusGroups={{ inProgress: [], blocked: [], pending: [], completed: [], deferred: [] }}
         completedExpanded={false}
         deferredExpanded={false}
-        canExecute
         personHours="12.0h"
         unplannedTasks={[]}
         phaseFilter="all"

@@ -3,14 +3,12 @@
  * Extracts all state and handlers from TaskDetail page into a reusable hook.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Task, Project } from '../types';
 import {
   useTask,
   useSubtasks,
   useTaskStore,
-  completeTask,
-  completeTaskAndChildren,
   reactivateTask,
   blockTask,
   unblockTask,
@@ -25,6 +23,7 @@ import {
   stopTimer,
 } from '../stores/timer-store';
 import { useTaskTimes, type TaskTimes } from './useTaskTimes';
+import { useCompletionFlow } from './useCompletionFlow';
 
 interface CompletionFlow {
   showConfirm: boolean;
@@ -109,11 +108,12 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
   const [deletePreview, setDeletePreview] = useState<DeletePreview | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Completion flow state
-  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
-  const [showCompletePrompt, setShowCompletePrompt] = useState(false);
-  const [completePromptParentId, setCompletePromptParentId] = useState<string | null>(null);
-  const [lastCompletedSubtaskId, setLastCompletedSubtaskId] = useState<string | null>(null);
+  // Completion flow — delegated to shared hook
+  const activeTimerTaskIds = useMemo(
+    () => new Set(activeTimers.map((t) => t.taskId)),
+    [activeTimers],
+  );
+  const cf = useCompletionFlow(tasks, activeTimerTaskIds);
 
   // Derived state
   const isTimerActive = activeTimers.some((t) => t.taskId === task?.id);
@@ -153,91 +153,22 @@ export function useTaskDetail(taskId: string, onBack: () => void): UseTaskDetail
 
   // --- Completion flow ---
 
-  const checkParentCompletion = (parentId: string, excludeTaskId: string) => {
-    const siblings = tasks.filter((t) => t.parentId === parentId);
-    const allSiblingsDone = siblings
-      .filter((t) => t.id !== excludeTaskId)
-      .every((t) => t.status === 'completed');
-    if (allSiblingsDone) {
-      const parent = tasks.find((t) => t.id === parentId);
-      if (parent && parent.status !== 'completed') {
-        setLastCompletedSubtaskId(excludeTaskId);
-        setCompletePromptParentId(parentId);
-        setShowCompletePrompt(true);
-      }
-    }
-  };
-
-  const handleComplete = async () => {
-    if (!task) return;
-    if (isTimerActive) {
-      await stopTimer(task.id);
-    }
-
-    const incompleteSubtasks = subtasks.filter((t) => t.status !== 'completed');
-    if (subtasks.length > 0 && incompleteSubtasks.length > 0) {
-      setShowCompleteConfirm(true);
-      return;
-    }
-
-    await completeTask(task.id);
-
-    if (task.parentId) {
-      checkParentCompletion(task.parentId, task.id);
-    }
-  };
-
-  const handleCompleteSubtask = async (subtask: Task) => {
-    if (activeTimers.some((t) => t.taskId === subtask.id)) {
-      await stopTimer(subtask.id);
-    }
-    await completeTask(subtask.id);
-
-    const allNowDone = subtasks
-      .filter((t) => t.id !== subtask.id)
-      .every((t) => t.status === 'completed');
-    if (allNowDone && task && task.status !== 'completed') {
-      setLastCompletedSubtaskId(subtask.id);
-      setCompletePromptParentId(task.id);
-      setShowCompletePrompt(true);
-    }
-  };
-
   const completionFlow: CompletionFlow = {
-    showConfirm: showCompleteConfirm,
-    showPrompt: showCompletePrompt,
-    incompleteCount: subtasks.filter((t) => t.status !== 'completed').length,
-    promptParentTitle: completePromptParentId
-      ? (tasks.find((t) => t.id === completePromptParentId)?.title ?? 'parent task')
-      : '',
-    handleComplete,
-    handleConfirmCompleteAll: async () => {
-      if (task) await completeTaskAndChildren(task.id);
-      setShowCompleteConfirm(false);
-    },
-    handlePromptYes: async () => {
-      if (completePromptParentId) {
-        await completeTask(completePromptParentId);
-      }
-      setCompletePromptParentId(null);
-      setLastCompletedSubtaskId(null);
-      setShowCompletePrompt(false);
-    },
-    handlePromptNo: () => {
-      setCompletePromptParentId(null);
-      setLastCompletedSubtaskId(null);
-      setShowCompletePrompt(false);
-    },
-    handlePromptCancel: async () => {
-      if (lastCompletedSubtaskId) {
-        await reactivateTask(lastCompletedSubtaskId);
-      }
-      setCompletePromptParentId(null);
-      setLastCompletedSubtaskId(null);
-      setShowCompletePrompt(false);
-    },
-    dismissConfirm: () => setShowCompleteConfirm(false),
+    showConfirm: cf.confirmTarget !== null,
+    showPrompt: cf.promptParent !== null,
+    incompleteCount: cf.confirmTarget
+      ? tasks.filter((t) => t.parentId === cf.confirmTarget!.id && t.status !== 'completed').length
+      : 0,
+    promptParentTitle: cf.promptParent?.title ?? 'parent task',
+    handleComplete: () => (task ? cf.handleComplete(task) : Promise.resolve()),
+    handleConfirmCompleteAll: cf.handleConfirmCompleteAll,
+    handlePromptYes: cf.handlePromptYes,
+    handlePromptNo: cf.dismissPrompt,
+    handlePromptCancel: cf.handlePromptCancel,
+    dismissConfirm: cf.dismissConfirm,
   };
+
+  const handleCompleteSubtask = (subtask: Task) => cf.handleComplete(subtask);
 
   // --- Delete flow ---
 

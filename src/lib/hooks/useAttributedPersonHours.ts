@@ -3,7 +3,7 @@
  * Refetches when taskId, subtaskIds, or activeTimers change.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Task, ActiveTimer } from '../types';
 import { getAttributedPersonHoursForTask } from '../attributed-person-hours';
 import type { SubtaskTimeRollupMode } from '../stores/subtask-time-rollup-settings';
@@ -59,13 +59,17 @@ export function useAttributedPersonHours(
     }
   };
 
+  // Keep ref always pointing at the latest closure so the stable `refresh`
+  // callback below always invokes the current fetch without needing to be
+  // recreated on every render.
+  const fetchRef = useRef(fetchAttributed);
+  fetchRef.current = fetchAttributed;
+
   useEffect(() => {
     fetchAttributed();
   }, [taskId, subtaskKey, taskKey, timerKey, mode, refreshKey]);
 
-  const refresh = () => {
-    fetchAttributed();
-  };
+  const refresh = useCallback(() => fetchRef.current(), []);
 
   return { attributedPersonMs, isLoading, refresh };
 }

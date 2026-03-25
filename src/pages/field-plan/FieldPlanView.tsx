@@ -172,7 +172,6 @@ export function FieldPlanView({ onBack }: FieldPlanViewProps) {
                     statusGroups={model.statusGroups}
                     completedExpanded={model.completedExpanded}
                     deferredExpanded={model.deferredExpanded}
-                    canExecute={model.canExecute}
                     personHours={model.selectedPlanPersonHours}
                     unplannedTasks={model.unplannedTasks}
                     phaseFilter={model.phaseFilter}

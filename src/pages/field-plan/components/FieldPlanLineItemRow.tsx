@@ -20,8 +20,6 @@ import {
 interface FieldPlanLineItemRowProps {
   lineItem: FieldPlanLineItemSummary;
   projectColor?: string;
-  /** Must stay consistent with lineItem.planCanExecute for the current scope. */
-  canExecute: boolean;
   showPlanLabel?: boolean;
   onRelease: (lineItem: FieldPlanLineItemSummary) => void;
   onOpenActions: (lineItem: FieldPlanLineItemSummary) => void;
@@ -30,7 +28,6 @@ interface FieldPlanLineItemRowProps {
 export function FieldPlanLineItemRow({
   lineItem,
   projectColor,
-  canExecute,
   showPlanLabel = false,
   onRelease,
   onOpenActions,
@@ -39,7 +36,7 @@ export function FieldPlanLineItemRow({
   const quantity = getPhaseQuantity(item, phase);
   const tags = getTagsByIds(item.tagIds ?? []);
   const canRelease = isLineItemEligibleForRelease(lineItem);
-  const canAct = canExecute && !item.removedFromSource;
+  const canAct = lineItem.planCanExecute && !item.removedFromSource;
 
   const leftAction = canRelease
     ? {

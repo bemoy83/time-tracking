@@ -1,18 +1,18 @@
 ---
 name: Session refactor follow-ups
-overview: "Handoff document capturing non-urgent refactor candidates surfaced during the Today View, Field Plan, and Task Detail cleanup work on 2026-03-24. Intended for a later session so these opportunities do not get lost."
+overview: Handoff document capturing non-urgent refactor candidates surfaced during the Today View, Field Plan, and Task Detail cleanup work on 2026-03-24. Intended for a later session so these opportunities do not get lost.
 todos:
   - id: completion-flow-unify
-    content: "Evaluate converging useTaskDetail completion logic with useCompletionFlow shared list completion behavior"
+    content: Evaluate converging useTaskDetail completion logic with useCompletionFlow shared list completion behavior
     status: pending
   - id: taskdetail-perf-investigation
-    content: "Profile TaskDetail time/productivity hooks before any scoped useTaskTimes or attribution refactor"
+    content: Profile TaskDetail time/productivity hooks before any scoped useTaskTimes or attribution refactor
     status: pending
   - id: field-plan-row-api
-    content: "Revisit FieldPlanLineItemRow canExecute prop duplication vs lineItem.planCanExecute"
+    content: Revisit FieldPlanLineItemRow canExecute prop duplication vs lineItem.planCanExecute
     status: pending
   - id: attributed-refresh-stability
-    content: "Optionally stabilize useAttributedPersonHours refresh identity if effect churn becomes measurable"
+    content: Optionally stabilize useAttributedPersonHours refresh identity if effect churn becomes measurable
     status: pending
 isProject: false
 ---
@@ -37,8 +37,8 @@ None of these were urgent enough to justify widening the delivery scope during t
 
 **Why it surfaced**
 
-- [`src/lib/hooks/useTaskDetail.ts`](src/lib/hooks/useTaskDetail.ts) contains its own parent/subtask completion state machine.
-- [`src/lib/hooks/useCompletionFlow.ts`](src/lib/hooks/useCompletionFlow.ts) contains the same product behavior for Today/Project list flows.
+- `[src/lib/hooks/useTaskDetail.ts](src/lib/hooks/useTaskDetail.ts)` contains its own parent/subtask completion state machine.
+- `[src/lib/hooks/useCompletionFlow.ts](src/lib/hooks/useCompletionFlow.ts)` contains the same product behavior for Today/Project list flows.
 
 **Why it matters**
 
@@ -71,9 +71,9 @@ None of these were urgent enough to justify widening the delivery scope during t
 
 Task Detail currently depends on broad task-store inputs in multiple places:
 
-- [`src/lib/hooks/useTaskDetail.ts`](src/lib/hooks/useTaskDetail.ts) uses `useTaskTimes(tasks, activeTimers)`
-- [`src/lib/hooks/useTaskTimeBreakdown.ts`](src/lib/hooks/useTaskTimeBreakdown.ts) derives a `taskKey` from all tasks
-- [`src/lib/hooks/useAttributedPersonHours.ts`](src/lib/hooks/useAttributedPersonHours.ts) also derives a `taskKey` from all tasks
+- `[src/lib/hooks/useTaskDetail.ts](src/lib/hooks/useTaskDetail.ts)` uses `useTaskTimes(tasks, activeTimers)`
+- `[src/lib/hooks/useTaskTimeBreakdown.ts](src/lib/hooks/useTaskTimeBreakdown.ts)` derives a `taskKey` from all tasks
+- `[src/lib/hooks/useAttributedPersonHours.ts](src/lib/hooks/useAttributedPersonHours.ts)` also derives a `taskKey` from all tasks
 
 **Why it matters**
 
@@ -104,7 +104,7 @@ Task Detail currently depends on broad task-store inputs in multiple places:
 
 **Why it surfaced**
 
-- [`src/pages/field-plan/components/FieldPlanLineItemRow.tsx`](src/pages/field-plan/components/FieldPlanLineItemRow.tsx) still receives `canExecute` as a prop.
+- `[src/pages/field-plan/components/FieldPlanLineItemRow.tsx](src/pages/field-plan/components/FieldPlanLineItemRow.tsx)` still receives `canExecute` as a prop.
 - The same execution eligibility already exists on `lineItem.planCanExecute`.
 
 **Why it matters**
@@ -133,8 +133,8 @@ Task Detail currently depends on broad task-store inputs in multiple places:
 
 **Why it surfaced**
 
-- [`src/components/TaskProductivity.tsx`](src/components/TaskProductivity.tsx) was fixed this session to register `onAttributedRefresh` in an effect instead of during render.
-- [`src/lib/hooks/useAttributedPersonHours.ts`](src/lib/hooks/useAttributedPersonHours.ts) still returns a freshly created `refresh` function on each render.
+- `[src/components/TaskProductivity.tsx](src/components/TaskProductivity.tsx)` was fixed this session to register `onAttributedRefresh` in an effect instead of during render.
+- `[src/lib/hooks/useAttributedPersonHours.ts](src/lib/hooks/useAttributedPersonHours.ts)` still returns a freshly created `refresh` function on each render.
 
 **Why it matters**
 

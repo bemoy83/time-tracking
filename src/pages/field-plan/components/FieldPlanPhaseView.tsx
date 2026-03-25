@@ -61,7 +61,6 @@ export function FieldPlanPhaseView({
               <FieldPlanLineItemRow
                 key={`${li.planId}:${li.item.id}:${li.phase}`}
                 lineItem={li}
-                canExecute={li.planCanExecute}
                 showPlanLabel
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
@@ -91,7 +90,6 @@ export function FieldPlanPhaseView({
               <FieldPlanLineItemRow
                 key={`${li.planId}:${li.item.id}:${li.phase}`}
                 lineItem={li}
-                canExecute={li.planCanExecute}
                 showPlanLabel
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}

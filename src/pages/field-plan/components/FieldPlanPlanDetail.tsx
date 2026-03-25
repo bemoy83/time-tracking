@@ -40,7 +40,6 @@ interface FieldPlanPlanDetailProps {
   statusGroups: FieldPlanStatusGroups;
   completedExpanded: boolean;
   deferredExpanded: boolean;
-  canExecute: boolean;
   personHours: string;
   unplannedTasks: Task[];
   phaseFilter: 'all' | BuildPhase;
@@ -66,7 +65,6 @@ export function FieldPlanPlanDetail({
   statusGroups,
   completedExpanded,
   deferredExpanded,
-  canExecute,
   personHours,
   unplannedTasks,
   phaseFilter,
@@ -219,7 +217,6 @@ export function FieldPlanPlanDetail({
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
-                canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
               />
@@ -241,7 +238,6 @@ export function FieldPlanPlanDetail({
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
-                canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
               />
@@ -270,7 +266,6 @@ export function FieldPlanPlanDetail({
                 key={`${li.item.id}:${li.phase}`}
                 lineItem={li}
                 projectColor={projectColor}
-                canExecute={canExecute}
                 onRelease={onReleaseToToday}
                 onOpenActions={onOpenActions}
               />
