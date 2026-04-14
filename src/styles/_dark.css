@@ -270,7 +270,7 @@
     background: var(--surface-elevated-bg);
   }
 
-  .project-picker {
+  .new-plan-modal.project-picker-modal {
     background: var(--surface-elevated-bg);
   }
 

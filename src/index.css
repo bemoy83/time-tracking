@@ -48,6 +48,7 @@
 @import './styles/components/network-status.css';
 @import './styles/components/install-prompt.css';
 @import './styles/components/modal.css';
+@import './styles/components/new-plan-sheet.css';
 @import './styles/components/alert-dialog.css';
 @import './styles/components/stepper-pill.css';
 @import './styles/components/segmented-control.css';
