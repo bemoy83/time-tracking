@@ -10,6 +10,7 @@ import { type Plan, type PlanLineItem, activatePlan, revertToDraft, handOffPlan,
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { useScheduleAssistantState } from './hooks/useScheduleAssistantState';
+import { useScheduleSequenceTagIds } from './hooks/useScheduleSequenceTagIds';
 import { computeCapacitySummary } from '../../lib/planning/scheduling/capacity';
 import { generateConflictSuggestions } from '../../lib/planning/scheduling/conflict-resolution';
 import { toggleAssignmentDate, getAssignedDates } from '../../lib/planning/scheduling/assignment';
@@ -90,19 +91,7 @@ export function ScheduleView({
   // sequencable tags not yet saved to the sequence (alphabetical). This mirrors
   // SettingsTagSequenceView so the assistant always respects all sequencable tags
   // even when the user hasn't visited the sequence settings view yet.
-  const sequenceTagIds = useMemo(() => {
-    const sequencableTags = tags.filter((t) => t.sequencable);
-    if (sequencableTags.length === 0) return [];
-    const sequenceSet = new Set(storedSequenceTagIds);
-    const positionMap = new Map(storedSequenceTagIds.map((id, i) => [id, i]));
-    const inSequence = sequencableTags
-      .filter((t) => sequenceSet.has(t.id))
-      .sort((a, b) => (positionMap.get(a.id) ?? 0) - (positionMap.get(b.id) ?? 0));
-    const notInSequence = sequencableTags
-      .filter((t) => !sequenceSet.has(t.id))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return [...inSequence, ...notInSequence].map((t) => t.id);
-  }, [tags, storedSequenceTagIds]);
+  const sequenceTagIds = useScheduleSequenceTagIds(tags, storedSequenceTagIds);
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);

@@ -12,6 +12,9 @@ export type { TimeTrackingDBSchema } from './schema';
 const DB_NAME = 'time-tracking-db';
 export const DB_VERSION = 38;
 
+type OpenDbOptions = NonNullable<Parameters<typeof openDB<TimeTrackingDBSchema>>[2]>;
+type LibraryDbUpgradeCallback = NonNullable<OpenDbOptions['upgrade']>;
+
 let dbPromise: Promise<IDBPDatabase<TimeTrackingDBSchema>> | null = null;
 
 /**
@@ -21,7 +24,7 @@ let dbPromise: Promise<IDBPDatabase<TimeTrackingDBSchema>> | null = null;
 export function getDB(): Promise<IDBPDatabase<TimeTrackingDBSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<TimeTrackingDBSchema>(DB_NAME, DB_VERSION, {
-      upgrade: applyDbMigrations,
+      upgrade: applyDbMigrations as LibraryDbUpgradeCallback,
     });
   }
   return dbPromise;
