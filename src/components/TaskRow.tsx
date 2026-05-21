@@ -1,5 +1,6 @@
 import { Task, formatDurationShort } from '../lib/types';
 import { useTimerStore } from '../lib/stores/timer-store';
+import { hasProgress } from '../lib/utils/taskProgress';
 import { pluralize } from '../lib/utils/pluralize';
 import {
   WarningIcon,
@@ -36,7 +37,7 @@ export function TaskRow({
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
   const hasSubtasks = subtaskCount > 0;
-  const isInProgress = !isTimerActive && !isBlocked && !isCompleted && totalMs > 0;
+  const isInProgress = hasProgress({ totalMs, isTimerActive });
 
   const handleClick = () => {
     onSelect(task);

@@ -132,15 +132,6 @@
     --color-muted-bg-badge: var(--state-neutral-bg);
   }
 
-  /* --- Task Row --- */
-  .task-row:hover {
-    background: var(--surface-contained-hover);
-  }
-
-  .task-row:active {
-    background: var(--surface-contained-active);
-  }
-
   .today-view__task-list {
     background: var(--surface-contained-bg);
   }
@@ -212,14 +203,6 @@
 
   .task-card {
     background: var(--surface-contained-bg);
-  }
-
-  .task-card:hover {
-    background: var(--surface-contained-hover);
-  }
-
-  .task-card:active {
-    background: var(--surface-contained-active);
   }
 
   /* --- Task Action Bar --- */

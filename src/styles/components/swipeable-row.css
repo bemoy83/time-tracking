@@ -9,10 +9,6 @@
   border: 1px solid var(--surface-contained-border);
 }
 
-.swipeable-row:has(.task-card--active) {
-  border-color: var(--color-recording-border);
-}
-
 .swipeable-row:has(.task-row--active),
 .swipeable-row:has(.task-card--active) {
   border-inline-start: 4px solid var(--color-recording);
