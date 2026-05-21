@@ -141,20 +141,8 @@
     background: var(--surface-contained-active);
   }
 
-  .task-row--subtask {
-    background: var(--surface-contained-muted);
-  }
-
   .today-view__task-list {
     background: var(--surface-contained-bg);
-  }
-
-  .today-view__subtasks {
-    background: var(--surface-contained-bg);
-  }
-
-  .task-row--subtask:hover {
-    background: var(--surface-contained-muted-hover);
   }
 
   /* --- Task Detail --- */
