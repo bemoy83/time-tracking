@@ -25,16 +25,12 @@
   left: var(--space-md);
 }
 
-.task-card:hover:not(.task-card--active) {
+.task-card:hover {
   background: var(--surface-contained-hover);
 }
 
-.task-card:active:not(.task-card--active) {
+.task-card:active {
   background: var(--surface-contained-active);
-}
-
-.task-card--active {
-  background: var(--color-recording-bg);
 }
 
 .task-card__main {

@@ -145,23 +145,6 @@
     background: var(--surface-contained-muted);
   }
 
-  .task-row--blocked {
-    background: var(--surface-contained-muted);
-  }
-
-  .task-row--blocked:hover {
-    background: var(--surface-contained-muted-hover);
-  }
-
-  .task-row--completed {
-    opacity: 0.85;
-    background: var(--surface-contained-muted);
-  }
-
-  .task-row--completed:hover {
-    background: var(--surface-contained-muted-hover);
-  }
-
   .today-view__task-list {
     background: var(--surface-contained-bg);
   }
@@ -243,11 +226,11 @@
     background: var(--surface-contained-bg);
   }
 
-  .task-card:hover:not(.task-card--active) {
+  .task-card:hover {
     background: var(--surface-contained-hover);
   }
 
-  .task-card:active:not(.task-card--active) {
+  .task-card:active {
     background: var(--surface-contained-active);
   }
 

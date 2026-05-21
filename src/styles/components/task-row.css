@@ -24,17 +24,8 @@
   background: var(--surface-contained-active);
 }
 
-.task-row--active {
-  background: var(--color-recording-bg);
-}
-
 .task-row--blocked {
   opacity: 0.85;
-  background: var(--surface-contained-muted);
-}
-
-.task-row--blocked:hover {
-  background: var(--surface-contained-muted-hover);
 }
 
 .task-row--blocked .task-row__title {
@@ -43,11 +34,6 @@
 
 .task-row--completed {
   opacity: 0.85;
-  background: var(--surface-contained-muted);
-}
-
-.task-row--completed:hover {
-  background: var(--surface-contained-muted-hover);
 }
 
 
