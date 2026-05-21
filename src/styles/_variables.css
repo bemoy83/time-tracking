@@ -4,7 +4,7 @@
 
 :root {
   /* Surface layers */
-  --surface-base-bg: #e8e8ec;
+  --surface-base-bg: #e8eaf0;
   --surface-base-border: #e0e0e0;
   --surface-contained-bg: #ffffff;
   --surface-contained-border: #e0e0e0;
@@ -93,7 +93,7 @@
   /* Colors - designed for high contrast and visibility */
   --color-bg: var(--surface-base-bg);
   --color-text: #13131a;
-  --color-text-muted: #72728a;
+  --color-text-muted: #65657a;
   --color-border: var(--surface-contained-border);
 
   /* Timer states */
@@ -116,9 +116,10 @@
   --color-danger-bg-hover: #fecaca;
 
   /* Typography scale */
-  --font-large: 1.5rem;    /* 24px - titles, key values */
-  --font-body: 1rem;       /* 16px - buttons, labels, body */
-  --font-small: 0.8125rem; /* 13px - timestamps, badges, metadata */
+  --font-large: 1.5rem;      /* 24px - page titles */
+  --font-heading: 1.1875rem; /* 19px - section headings */
+  --font-body: 1rem;         /* 16px - buttons, labels, body */
+  --font-small: 0.8125rem;   /* 13px - timestamps, badges, metadata */
   --font-label: 0.75rem;     /* 12px — field labels, secondary metadata */
   --font-caption: 0.6875rem; /* 11px — smallest readable text for dense data */
 
@@ -142,16 +143,20 @@
   --radius-2xl: 26px;
   --radius-full: 9999px;
 
+  /* Animation easing */
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);    /* smooth decelerate — entrances */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot — microinteractions */
+
   /* Shadow scale */
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-blue: 0 6px 20px rgba(37, 99, 235, 0.30);
 
   /* Shared card / lifted surface — use for consistent card look app-wide */
   --card-bg: var(--surface-contained-bg);
-  --card-radius: var(--radius-xl);
-  --card-shadow: var(--shadow-sm);
+  --card-radius: var(--radius-lg);
+  --card-shadow: none;
 
   /* Budget status colors */
   --color-budget-under: var(--state-success-fg);

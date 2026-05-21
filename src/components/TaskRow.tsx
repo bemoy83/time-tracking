@@ -1,25 +1,12 @@
-/**
- * TaskRow component.
- * Compact row for task list with status indicators and quick actions.
- *
- * Design requirements from PLAN.md:
- * - Compact rows
- * - High-contrast status indicators
- * - Minimal metadata
- * - Blocked tasks clearly marked
- * - Inline subtask expansion via chevron
- */
-
 import { Task, formatDurationShort } from '../lib/types';
 import { useTimerStore } from '../lib/stores/timer-store';
 import { pluralize } from '../lib/utils/pluralize';
 import {
-  CheckIcon,
   WarningIcon,
   ChevronIcon,
   ExpandChevronIcon,
 } from './icons';
-import { TaskProjectDot, TaskRecordingDot, TaskTimeBadge } from './TaskItemMeta';
+import { TaskProjectDot, TaskTimeBadge } from './TaskItemMeta';
 
 interface TaskRowProps {
   task: Task;
@@ -29,6 +16,7 @@ interface TaskRowProps {
   isExpanded?: boolean;
   onExpandToggle?: (e: React.MouseEvent) => void;
   isSubtask?: boolean;
+  showProjectDot?: boolean;
   onSelect: (task: Task) => void;
 }
 
@@ -40,6 +28,7 @@ export function TaskRow({
   isExpanded = false,
   onExpandToggle,
   isSubtask = false,
+  showProjectDot = true,
   onSelect,
 }: TaskRowProps) {
   const { activeTimers } = useTimerStore();
@@ -47,7 +36,7 @@ export function TaskRow({
   const isBlocked = task.status === 'blocked';
   const isCompleted = task.status === 'completed';
   const hasSubtasks = subtaskCount > 0;
-  const showDefaultStatusDot = !isTimerActive && !isBlocked && !isCompleted;
+  const isInProgress = !isTimerActive && !isBlocked && !isCompleted && totalMs > 0;
 
   const handleClick = () => {
     onSelect(task);
@@ -58,8 +47,8 @@ export function TaskRow({
       className={`task-row ${isTimerActive ? 'task-row--active' : ''} ${
         isBlocked ? 'task-row--blocked' : ''
       } ${isCompleted ? 'task-row--completed' : ''} ${
-        isSubtask ? 'task-row--subtask' : ''
-      }`}
+        isInProgress ? 'task-row--in-progress' : ''
+      } ${isSubtask ? 'task-row--subtask' : ''}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -73,27 +62,12 @@ export function TaskRow({
         isCompleted ? ', completed' : ''
       }${isTimerActive ? ', timer running' : ''}`}
     >
-      {/* Status indicator */}
-      <div className="task-row__status" aria-hidden="true">
-        {isCompleted && <CheckIcon className="task-row__icon task-row__icon--check" />}
-        {showDefaultStatusDot && (
-          <span className="task-row__status-dot" />
-        )}
-        {!isCompleted && !showDefaultStatusDot && (
-          <span className="task-row__status-placeholder" />
-        )}
-      </div>
-
-      <div className="task-row__project" aria-hidden="true">
-        {projectColor ? (
-          <TaskProjectDot
-            color={projectColor}
-            className="task-row__project-dot"
-          />
-        ) : (
-          <span className="task-row__project-placeholder" />
-        )}
-      </div>
+      {showProjectDot && projectColor && (
+        <TaskProjectDot
+          color={projectColor}
+          className="task-card__edge-dot task-card__edge-dot--project"
+        />
+      )}
 
       {/* Task content */}
       <div className="task-row__content">
@@ -137,9 +111,6 @@ export function TaskRow({
           </button>
         ) : (
           <ChevronIcon className="task-row__chevron" />
-        )}
-        {isTimerActive && (
-          <TaskRecordingDot trailing />
         )}
       </div>
     </div>

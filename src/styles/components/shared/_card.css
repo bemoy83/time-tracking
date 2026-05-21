@@ -7,4 +7,5 @@
   background: var(--card-bg);
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--surface-contained-border);
 }

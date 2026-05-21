@@ -9,7 +9,7 @@
   right: 0;
   display: flex;
   background: var(--surface-contained-bg);
-  border-top: 1px solid var(--surface-contained-border);
+  box-shadow: 0 -1px 0 var(--surface-contained-border);
   z-index: 99;
   transition: bottom 0.25s ease-out;
 }
@@ -30,13 +30,13 @@
   font-weight: 500;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s, box-shadow 0.15s, font-weight 0.15s;
+  transition: color 0.15s, box-shadow 0.15s;
 }
 
 .tab-nav__btn--active {
   color: var(--color-primary);
-  font-weight: 700;
-  box-shadow: inset 0 4px 0 0 var(--color-primary);
+  font-weight: 600;
+  box-shadow: inset 0 3px 0 0 var(--color-primary);
   background: var(--surface-brand-subtle);
 }
 

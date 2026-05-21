@@ -48,8 +48,10 @@
 .field-plan__plan-list {
   display: flex;
   flex-direction: column;
-  background: transparent;
-  border-radius: var(--radius-xl);
+  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--surface-contained-border);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -93,13 +95,13 @@
 
 /* Rounded corners wrapping the accent bar (matches task list) */
 .field-plan__plan-item:first-child .field-plan__plan-btn--active {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
+  border-start-start-radius: calc(var(--card-radius) - 1px);
+  border-start-end-radius: var(--card-radius);
 }
 
 .field-plan__plan-item:last-child .field-plan__plan-btn--active {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
+  border-end-start-radius: calc(var(--card-radius) - 1px);
+  border-end-end-radius: var(--card-radius);
 }
 
 /* Delete button — hover-revealed, absolute inside item */
@@ -193,8 +195,10 @@
    ============================================================ */
 
 .field-plan__header-card {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
+  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--surface-contained-border);
+  box-shadow: var(--card-shadow);
   padding: var(--space-md);
   display: flex;
   flex-direction: column;
@@ -521,8 +525,10 @@
 .field-plan__task-list {
   display: flex;
   flex-direction: column;
-  background: transparent;
-  border-radius: var(--radius-xl);
+  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--surface-contained-border);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -542,13 +548,13 @@
 }
 
 .field-plan__task-list--active > .swipeable-row:first-child {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
+  border-start-start-radius: calc(var(--card-radius) - 1px);
+  border-start-end-radius: var(--card-radius);
 }
 
 .field-plan__task-list--active > .swipeable-row:last-child {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
+  border-end-start-radius: calc(var(--card-radius) - 1px);
+  border-end-end-radius: var(--card-radius);
 }
 
 /* Blocked — amber left accent */
@@ -557,13 +563,13 @@
 }
 
 .field-plan__task-list--blocked > .swipeable-row:first-child {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
+  border-start-start-radius: calc(var(--card-radius) - 1px);
+  border-start-end-radius: var(--card-radius);
 }
 
 .field-plan__task-list--blocked > .swipeable-row:last-child {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
+  border-end-start-radius: calc(var(--card-radius) - 1px);
+  border-end-end-radius: var(--card-radius);
 }
 
 /* Completed — green left accent */
@@ -572,13 +578,13 @@
 }
 
 .field-plan__task-list--completed > .swipeable-row:first-child {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
+  border-start-start-radius: calc(var(--card-radius) - 1px);
+  border-start-end-radius: var(--card-radius);
 }
 
 .field-plan__task-list--completed > .swipeable-row:last-child {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
+  border-end-start-radius: calc(var(--card-radius) - 1px);
+  border-end-end-radius: var(--card-radius);
 }
 
 /* Deferred — muted */
@@ -792,8 +798,10 @@
    ============================================================ */
 
 .field-plan__unplanned {
-  background: var(--color-surface-subtle);
-  border-radius: var(--radius-xl);
+  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--surface-contained-border);
+  box-shadow: var(--card-shadow);
   padding: var(--space-sm) var(--space-md);
 }
 

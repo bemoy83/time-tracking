@@ -27,7 +27,7 @@
   max-width: 400px;
   width: 100%;
   box-shadow: var(--surface-elevated-shadow);
-  animation: slideUp 0.2s ease-out;
+  animation: slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1); /* --ease-enter */
 }
 
 .delete-project-confirm__options {

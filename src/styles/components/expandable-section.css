@@ -4,7 +4,9 @@
 
 .expandable-section {
   background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--surface-contained-border);
+  box-shadow: var(--card-shadow);
   padding: var(--space-xs) var(--space-md) var(--space-md);
 }
 
@@ -18,7 +20,8 @@
   padding: 0;
   background: var(--surface-contained-bg);
   border: none;
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
+  box-shadow: none;
   overflow: hidden;
 }
 

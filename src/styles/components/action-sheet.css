@@ -19,7 +19,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  animation: fadeIn 0.15s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .action-sheet {
@@ -42,7 +42,7 @@
   overscroll-behavior: contain;
   box-shadow: var(--surface-elevated-shadow);
   z-index: 301;
-  animation: actionSheetSlideUp 0.25s ease-out;
+  animation: actionSheetSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1); /* --ease-enter */
 }
 
 .action-sheet__handle {

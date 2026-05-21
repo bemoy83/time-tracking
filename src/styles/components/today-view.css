@@ -18,7 +18,7 @@
 
 .today-view__title {
   font-size: var(--font-large);
-  font-weight: 800;
+  font-weight: 700;
   margin: 0;
   color: var(--color-text);
 }
@@ -72,10 +72,10 @@
   align-items: center;
   gap: var(--space-sm);
   margin: 0;
-  font-size: var(--font-body);
+  font-size: var(--font-label);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--color-text-muted);
 }
 
@@ -96,7 +96,7 @@
   display: flex;
   flex-direction: column;
   background: var(--surface-contained-bg);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-radius);
   overflow: hidden;
 }
 
@@ -111,16 +111,29 @@
   border-top: none;
 }
 
-/* Active task — blue left accent (must come after border:none) */
+/* Per-row accents — recording (red), in-progress (blue), blocked (amber), completed (green) */
 .today-view__task-list > .swipeable-row:has(.task-row--active),
 .today-view__task-list > .swipeable-row:has(.task-card--active) {
-  border-inline-start: 3px solid var(--color-primary);
+  border-inline-start: 4px solid var(--color-recording);
+}
+
+.today-view__task-list > .swipeable-row:has(.task-row--in-progress),
+.today-view__task-list > .swipeable-row:has(.task-card--in-progress) {
+  border-inline-start: 4px solid var(--color-primary);
+}
+
+.today-view__task-list > .swipeable-row:has(.task-row--blocked) {
+  border-inline-start: 4px solid var(--color-amber);
+}
+
+.today-view__task-list > .swipeable-row:has(.task-row--completed) {
+  border-inline-start: 4px solid var(--color-ready);
 }
 
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
-  background: var(--surface-contained-bg);
+  background: var(--surface-base-bg);
   overflow: hidden;
 }
 
@@ -139,42 +152,52 @@
 
 /* Single subtask (first and last): bottom rounded only */
 .today-view__subtasks .swipeable-row:first-child:last-child {
-  border-bottom-left-radius: var(--radius-xl);
-  border-bottom-right-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--card-radius);
+  border-bottom-right-radius: var(--card-radius);
 }
 
 /* Last of multiple: bottom rounded only */
 .today-view__subtasks .swipeable-row:last-child:not(:first-child) {
-  border-bottom-left-radius: var(--radius-xl);
-  border-bottom-right-radius: var(--radius-xl);
+  border-bottom-left-radius: var(--card-radius);
+  border-bottom-right-radius: var(--card-radius);
 }
 
-/* Active task — blue accent corner radius (first/last in list) */
+/* Subtask drawer per-row accents */
+.today-view__subtasks .swipeable-row:has(.task-row--active) {
+  border-inline-start: 4px solid var(--color-recording);
+}
+
+.today-view__subtasks .swipeable-row:has(.task-row--in-progress) {
+  border-inline-start: 4px solid var(--color-primary);
+}
+
+.today-view__subtasks .swipeable-row:has(.task-row--blocked) {
+  border-inline-start: 4px solid var(--color-amber);
+}
+
+.today-view__subtasks .swipeable-row:has(.task-row--completed) {
+  border-inline-start: 4px solid var(--color-ready);
+}
+
+/* Accented row corner radius helpers (first/last in list) */
 .today-view__task-list > .swipeable-row:first-child:has(.task-row--active),
-.today-view__task-list > .swipeable-row:first-child:has(.task-card--active) {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
+.today-view__task-list > .swipeable-row:first-child:has(.task-card--active),
+.today-view__task-list > .swipeable-row:first-child:has(.task-row--in-progress),
+.today-view__task-list > .swipeable-row:first-child:has(.task-card--in-progress),
+.today-view__task-list > .swipeable-row:first-child:has(.task-row--blocked),
+.today-view__task-list > .swipeable-row:first-child:has(.task-row--completed) {
+  border-start-start-radius: calc(var(--card-radius) - 2px);
+  border-start-end-radius: var(--card-radius);
 }
 
 .today-view__task-list > .swipeable-row:last-child:has(.task-row--active),
-.today-view__task-list > .swipeable-row:last-child:has(.task-card--active) {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
-}
-
-/* Blocked section — amber left accent */
-.today-view__section--blocked .today-view__task-list {
-  border-inline-start: 3px solid var(--color-amber);
-}
-
-.today-view__section--blocked .today-view__task-list > .swipeable-row:first-child {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
-}
-
-.today-view__section--blocked .today-view__task-list > .swipeable-row:last-child {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
+.today-view__task-list > .swipeable-row:last-child:has(.task-card--active),
+.today-view__task-list > .swipeable-row:last-child:has(.task-row--in-progress),
+.today-view__task-list > .swipeable-row:last-child:has(.task-card--in-progress),
+.today-view__task-list > .swipeable-row:last-child:has(.task-row--blocked),
+.today-view__task-list > .swipeable-row:last-child:has(.task-row--completed) {
+  border-end-start-radius: calc(var(--card-radius) - 2px);
+  border-end-end-radius: var(--card-radius);
 }
 
 /* Card after a drawer: divider only (no special rounding) */

@@ -42,18 +42,3 @@
 .collapsible-section-toggle:not(.collapsible-section-toggle--expanded) .collapsible-section__chevron {
   transform: rotate(-90deg);
 }
-
-.section--completed .today-view__task-list {
-  border-radius: var(--radius-xl);
-  border-inline-start: 3px solid var(--color-ready);
-}
-
-.section--completed .today-view__task-list > .swipeable-row:first-child {
-  border-start-start-radius: calc(var(--radius-xl) - 1px);
-  border-start-end-radius: var(--radius-xl);
-}
-
-.section--completed .today-view__task-list > .swipeable-row:last-child {
-  border-end-start-radius: calc(var(--radius-xl) - 1px);
-  border-end-end-radius: var(--radius-xl);
-}

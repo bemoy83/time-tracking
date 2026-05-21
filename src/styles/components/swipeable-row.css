@@ -13,10 +13,22 @@
   border-color: var(--color-recording-border);
 }
 
-/* Active task — blue left accent (wraps corners like section accents) */
 .swipeable-row:has(.task-row--active),
 .swipeable-row:has(.task-card--active) {
-  border-inline-start: 3px solid var(--color-primary);
+  border-inline-start: 4px solid var(--color-recording);
+}
+
+.swipeable-row:has(.task-row--in-progress),
+.swipeable-row:has(.task-card--in-progress) {
+  border-inline-start: 4px solid var(--color-primary);
+}
+
+.swipeable-row:has(.task-row--blocked) {
+  border-inline-start: 4px solid var(--color-amber);
+}
+
+.swipeable-row:has(.task-row--completed) {
+  border-inline-start: 4px solid var(--color-ready);
 }
 
 .swipeable-row__action {

@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  padding: var(--space-sm) calc(var(--space-md) + 14px) var(--space-sm) calc(var(--space-md) + 18px);
+  padding: var(--space-sm) var(--space-md) var(--space-sm) calc(var(--space-md) + 18px);
   background: var(--surface-contained-bg);
   cursor: pointer;
   min-height: var(--touch-min);
@@ -23,10 +23,6 @@
 
 .task-card__edge-dot--project {
   left: var(--space-md);
-}
-
-.task-card__edge-dot--recording {
-  right: var(--space-md);
 }
 
 .task-card:hover:not(.task-card--active) {

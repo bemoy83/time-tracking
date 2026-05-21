@@ -173,7 +173,7 @@ export function DurationEditorContent({
         {showDelete && (
           <button
             type="button"
-            className={`btn ${showDeleteConfirm ? 'btn--danger' : 'btn--ghost'}`}
+            className={`btn ${showDeleteConfirm ? 'btn--danger' : 'btn--ghost-danger'}`}
             onClick={handleDelete}
           >
             <TrashIcon className="entry-modal__btn-icon" />

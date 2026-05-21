@@ -66,19 +66,16 @@ input[type="radio"] {
 
 /* High contrast adjustments for status indicators */
 @media (prefers-contrast: high) {
-  .task-row--blocked {
-    border-width: 3px;
-  }
-
-  .swipeable-row:has(.task-card--active) {
-    border-width: 3px;
+  .swipeable-row:has(.task-row--active),
+  .swipeable-row:has(.task-card--active),
+  .swipeable-row:has(.task-row--in-progress),
+  .swipeable-row:has(.task-card--in-progress),
+  .swipeable-row:has(.task-row--blocked),
+  .swipeable-row:has(.task-row--completed) {
+    border-inline-start-width: 5px;
   }
 
   .timer-display__indicator {
-    border: 2px solid var(--color-text);
-  }
-
-  .task-item__recording-dot {
     border: 2px solid var(--color-text);
   }
 

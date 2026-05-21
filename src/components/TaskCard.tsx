@@ -20,7 +20,8 @@ import {
   ExpandChevronIcon,
 } from './icons';
 import { StatusProgressBar } from './StatusProgressBar';
-import { TaskProjectDot, TaskRecordingDot, TaskTimeBadge, type TaskTimeBadgeStatus } from './TaskItemMeta';
+import { TaskProjectDot, TaskTimeBadge, type TaskTimeBadgeStatus } from './TaskItemMeta';
+import { hasProgress } from '../lib/utils/taskProgress';
 
 export interface TaskCardProps {
   task: Task;
@@ -81,6 +82,8 @@ export function TaskCard({
     ? budgetStatus.status as TaskTimeBadgeStatus
     : undefined;
 
+  const isInProgress = hasProgress({ totalMs, isTimerActive, subtasks, progress });
+
   return (
     <>
       <SwipeableRow
@@ -102,19 +105,13 @@ export function TaskCard({
         }
       >
         <div
-          className={`task-card ${isTimerActive ? 'task-card--active' : ''}`}
+          className={`task-card ${isTimerActive ? 'task-card--active' : ''} ${isInProgress ? 'task-card--in-progress' : ''}`}
           onClick={onSelect}
         >
           {projectColor && (
             <TaskProjectDot
               color={projectColor}
               className="task-card__edge-dot task-card__edge-dot--project"
-            />
-          )}
-          {isTimerActive && (
-            <TaskRecordingDot
-              trailing
-              className="task-card__edge-dot task-card__edge-dot--recording"
             />
           )}
           <div className="task-card__main">
@@ -195,6 +192,7 @@ export function TaskCard({
               task={subtask}
               projectColor={resolveProjectColor?.(subtask) ?? projectColor}
               isSubtask
+              showProjectDot={false}
               totalMs={taskTimes?.durationByTask.get(subtask.id)}
               onSelect={onSelectTask}
               onStartTimer={onStartTimerForTask}
