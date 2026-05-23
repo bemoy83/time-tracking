@@ -14,7 +14,6 @@ interface SwipeableTaskRowProps {
   task: Task;
   projectColor?: string;
   isSubtask?: boolean;
-  showProjectDot?: boolean;
   subtaskCount?: number;
   totalMs?: number;
   isExpanded?: boolean;
@@ -28,7 +27,6 @@ export function SwipeableTaskRow({
   task,
   projectColor,
   isSubtask,
-  showProjectDot,
   subtaskCount,
   totalMs,
   isExpanded,
@@ -47,6 +45,7 @@ export function SwipeableTaskRow({
 
   return (
     <SwipeableRow
+      accentColor={projectColor}
       leftAction={
         canComplete
           ? {
@@ -70,9 +69,7 @@ export function SwipeableTaskRow({
     >
       <TaskRow
         task={task}
-        projectColor={projectColor}
         isSubtask={isSubtask}
-        showProjectDot={showProjectDot}
         subtaskCount={subtaskCount}
         totalMs={totalMs}
         isExpanded={isExpanded}

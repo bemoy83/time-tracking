@@ -98,3 +98,41 @@
   background: var(--color-recording);
   color: white;
 }
+
+/* ---- Task status icon badges ---- */
+
+.status-badge--task-icon {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.status-badge--task-icon svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.status-badge--recording {
+  background: var(--color-recording);
+  color: white;
+}
+
+.status-badge--in-progress {
+  background: var(--color-primary);
+  color: white;
+}
+
+.status-badge--blocked {
+  background: var(--color-amber-solid);
+  color: white;
+}
+
+.status-badge--completed {
+  background: var(--color-ready);
+  color: white;
+}

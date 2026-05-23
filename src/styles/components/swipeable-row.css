@@ -9,22 +9,9 @@
   border: 1px solid var(--surface-contained-border);
 }
 
-.swipeable-row:has(.task-row--active),
-.swipeable-row:has(.task-card--active) {
-  border-inline-start: 4px solid var(--color-recording);
-}
-
-.swipeable-row:has(.task-row--in-progress),
-.swipeable-row:has(.task-card--in-progress) {
-  border-inline-start: 4px solid var(--color-primary);
-}
-
-.swipeable-row:has(.task-row--blocked) {
-  border-inline-start: 4px solid var(--color-amber);
-}
-
-.swipeable-row:has(.task-row--completed) {
-  border-inline-start: 4px solid var(--color-ready);
+/* Project colour accent bar — colour set via inline style on the element */
+.swipeable-row--has-project {
+  border-inline-start: 4px solid transparent;
 }
 
 .swipeable-row__action {

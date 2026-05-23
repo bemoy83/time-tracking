@@ -22,6 +22,7 @@ interface SwipeableRowProps {
   leftAction?: SwipeAction;
   rightAction?: SwipeAction;
   onLongPress?: () => void;
+  accentColor?: string;
 }
 
 const SWIPE_THRESHOLD = 80;
@@ -32,6 +33,7 @@ export function SwipeableRow({
   leftAction,
   rightAction,
   onLongPress,
+  accentColor,
 }: SwipeableRowProps) {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -180,7 +182,10 @@ export function SwipeableRow({
   const showRight = rightAction && offset < 0;
 
   return (
-    <div className="swipeable-row">
+    <div
+      className={`swipeable-row${accentColor ? ' swipeable-row--has-project' : ''}`}
+      style={accentColor ? { borderInlineStartColor: accentColor } : undefined}
+    >
       {/* Left action background (visible when swiping right) */}
       {showLeft && (
         <div

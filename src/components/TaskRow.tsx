@@ -6,30 +6,29 @@ import {
   WarningIcon,
   ChevronIcon,
   ExpandChevronIcon,
+  PlayIcon,
+  ClockIcon,
+  CheckIcon,
 } from './icons';
-import { TaskProjectDot, TaskTimeBadge } from './TaskItemMeta';
+import { TaskTimeBadge } from './TaskItemMeta';
 
 interface TaskRowProps {
   task: Task;
-  projectColor?: string;
   subtaskCount?: number;
   totalMs?: number;
   isExpanded?: boolean;
   onExpandToggle?: (e: React.MouseEvent) => void;
   isSubtask?: boolean;
-  showProjectDot?: boolean;
   onSelect: (task: Task) => void;
 }
 
 export function TaskRow({
   task,
-  projectColor,
   subtaskCount = 0,
   totalMs = 0,
   isExpanded = false,
   onExpandToggle,
   isSubtask = false,
-  showProjectDot = true,
   onSelect,
 }: TaskRowProps) {
   const { activeTimers } = useTimerStore();
@@ -63,12 +62,41 @@ export function TaskRow({
         isCompleted ? ', completed' : ''
       }${isTimerActive ? ', timer running' : ''}`}
     >
-      {showProjectDot && projectColor && (
-        <TaskProjectDot
-          color={projectColor}
-          className="task-card__edge-dot task-card__edge-dot--project"
-        />
-      )}
+      {/* Status badge column */}
+      <div className="task-row__status">
+        {isTimerActive && (
+          <span
+            className="status-badge status-badge--task-icon status-badge--recording"
+            aria-label="Timer running"
+          >
+            <PlayIcon />
+          </span>
+        )}
+        {!isTimerActive && isBlocked && (
+          <span
+            className="status-badge status-badge--task-icon status-badge--blocked"
+            aria-label="Blocked"
+          >
+            <WarningIcon />
+          </span>
+        )}
+        {!isTimerActive && isCompleted && (
+          <span
+            className="status-badge status-badge--task-icon status-badge--completed"
+            aria-label="Completed"
+          >
+            <CheckIcon />
+          </span>
+        )}
+        {!isTimerActive && !isBlocked && !isCompleted && isInProgress && (
+          <span
+            className="status-badge status-badge--task-icon status-badge--in-progress"
+            aria-label="In progress"
+          >
+            <ClockIcon />
+          </span>
+        )}
+      </div>
 
       {/* Task content */}
       <div className="task-row__content">

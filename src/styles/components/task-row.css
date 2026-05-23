@@ -5,10 +5,10 @@
 .task-row {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   column-gap: var(--space-sm);
-  padding: var(--space-md) var(--space-md) var(--space-md) calc(var(--space-md) + 18px);
+  padding: var(--space-md);
   background: var(--surface-contained-bg);
   cursor: pointer;
   transition: background-color 0.15s;
@@ -36,6 +36,15 @@
   opacity: 0.85;
 }
 
+
+/* Status indicator column — leading fixed-width slot */
+.task-row__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
 
 /* Task content */
 .task-row__content {
@@ -127,7 +136,7 @@
 
 /* Subtask variant – flat rows inside a shared container */
 .task-row--subtask {
-  padding-left: calc(var(--space-md) + 18px + var(--space-lg));
+  padding-left: calc(var(--space-md) + var(--space-lg));
   background: var(--surface-contained-bg);
 }
 

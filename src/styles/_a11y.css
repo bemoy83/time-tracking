@@ -66,12 +66,7 @@ input[type="radio"] {
 
 /* High contrast adjustments for status indicators */
 @media (prefers-contrast: high) {
-  .swipeable-row:has(.task-row--active),
-  .swipeable-row:has(.task-card--active),
-  .swipeable-row:has(.task-row--in-progress),
-  .swipeable-row:has(.task-card--in-progress),
-  .swipeable-row:has(.task-row--blocked),
-  .swipeable-row:has(.task-row--completed) {
+  .swipeable-row--has-project {
     border-inline-start-width: 5px;
   }
 

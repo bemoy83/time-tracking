@@ -17,11 +17,13 @@ import { SwipeableTaskRow } from './SwipeableTaskRow';
 import {
   CheckIcon,
   PlayIcon,
+  ClockIcon,
+  WarningIcon,
   ExpandChevronIcon,
   TaskListIcon,
 } from './icons';
 import { StatusProgressBar } from './StatusProgressBar';
-import { TaskProjectDot, TaskTimeBadge, type TaskTimeBadgeStatus } from './TaskItemMeta';
+import { TaskTimeBadge, type TaskTimeBadgeStatus } from './TaskItemMeta';
 import { hasProgress } from '../lib/utils/taskProgress';
 
 export interface TaskCardProps {
@@ -88,6 +90,7 @@ export function TaskCard({
   return (
     <>
       <SwipeableRow
+        accentColor={projectColor}
         leftAction={{
           label: 'Complete',
           icon: <CheckIcon className="today-view__icon" />,
@@ -109,13 +112,28 @@ export function TaskCard({
           className={`task-card ${isTimerActive ? 'task-card--active' : ''} ${isInProgress ? 'task-card--in-progress' : ''}`}
           onClick={onSelect}
         >
-          {projectColor && (
-            <TaskProjectDot
-              color={projectColor}
-              className="task-card__edge-dot task-card__edge-dot--project"
-            />
-          )}
           <div className="task-card__main">
+            {/* Status badge */}
+            {isTimerActive && (
+              <span className="status-badge status-badge--task-icon status-badge--recording" aria-label="Timer running">
+                <PlayIcon />
+              </span>
+            )}
+            {!isTimerActive && task.status === 'blocked' && (
+              <span className="status-badge status-badge--task-icon status-badge--blocked" aria-label="Blocked">
+                <WarningIcon />
+              </span>
+            )}
+            {!isTimerActive && task.status === 'completed' && (
+              <span className="status-badge status-badge--task-icon status-badge--completed" aria-label="Completed">
+                <CheckIcon />
+              </span>
+            )}
+            {!isTimerActive && task.status !== 'blocked' && task.status !== 'completed' && isInProgress && (
+              <span className="status-badge status-badge--task-icon status-badge--in-progress" aria-label="In progress">
+                <ClockIcon />
+              </span>
+            )}
             {/* Title */}
             <span className="task-card__title">{task.title}</span>
 
@@ -205,7 +223,6 @@ export function TaskCard({
                 task={subtask}
                 projectColor={resolveProjectColor?.(subtask) ?? projectColor}
                 isSubtask
-                showProjectDot={false}
                 totalMs={taskTimes?.durationByTask.get(subtask.id)}
                 onSelect={onSelectTask}
                 onStartTimer={onStartTimerForTask}

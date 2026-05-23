@@ -42,12 +42,12 @@
 }
 
 .btn--secondary {
-  background: var(--color-border);
+  background: var(--surface-contained-hover);
   color: var(--color-text);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: var(--color-surface-hover);
+  background: var(--surface-contained-active);
 }
 
 .btn--danger {
