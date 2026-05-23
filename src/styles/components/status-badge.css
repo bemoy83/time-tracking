@@ -37,7 +37,7 @@
 }
 
 .status-badge--review-ready {
-  background: var(--color-amber);
+  background: var(--color-amber-solid);
   color: white;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .status-badge--medium {
-  background: var(--color-amber);
+  background: var(--color-amber-solid);
   color: white;
 }
 

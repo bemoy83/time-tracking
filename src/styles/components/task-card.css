@@ -74,6 +74,22 @@
   margin-left: auto;
 }
 
+/* Subtask count label — icon + fraction inline */
+.task-card__subtask-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.task-card__subtask-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
 /* Progress bar — StatusProgressBar needs flex to fill horizontal space */
 .task-card__progress {
   display: flex;

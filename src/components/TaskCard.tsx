@@ -18,6 +18,7 @@ import {
   CheckIcon,
   PlayIcon,
   ExpandChevronIcon,
+  TaskListIcon,
 } from './icons';
 import { StatusProgressBar } from './StatusProgressBar';
 import { TaskProjectDot, TaskTimeBadge, type TaskTimeBadgeStatus } from './TaskItemMeta';
@@ -128,7 +129,7 @@ export function TaskCard({
             )}
           </div>
 
-          {/* Budget progress bar — replaces subtask bar when estimate set */}
+          {/* Budget progress bar — subtask count always shown when subtasks exist */}
           {showBudgetBar && (
             <div className="task-card__progress">
               <StatusProgressBar
@@ -137,18 +138,24 @@ export function TaskCard({
                 label={`${Math.round(budgetStatus.percentUsed)}%`}
               />
               {progress && (
-                <button
-                  className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onExpandToggle();
-                  }}
-                  aria-expanded={isExpanded}
-                  aria-controls={`subtasks-${task.id}`}
-                  aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
-                >
-                  <ExpandChevronIcon className="today-view__icon" />
-                </button>
+                <>
+                  <span className="task-card__subtask-label">
+                    <TaskListIcon className="task-card__subtask-icon" />
+                    {progress.completed}/{progress.total}
+                  </span>
+                  <button
+                    className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onExpandToggle();
+                    }}
+                    aria-expanded={isExpanded}
+                    aria-controls={`subtasks-${task.id}`}
+                    aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
+                  >
+                    <ExpandChevronIcon className="today-view__icon" />
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -158,7 +165,12 @@ export function TaskCard({
             <div className="task-card__progress">
               <StatusProgressBar
                 percent={progressPercent!}
-                label={`${progress!.completed}/${progress!.total}`}
+                label={
+                  <span className="task-card__subtask-label">
+                    <TaskListIcon className="task-card__subtask-icon" />
+                    {progress!.completed}/{progress!.total}
+                  </span>
+                }
               />
               <button
                 className={`task-item__expand-btn ${isExpanded ? 'task-item__expand-btn--expanded' : ''}`}

@@ -929,12 +929,12 @@
 }
 
 .field-plan__category-pill--active {
-  background: var(--color-amber);
-  border-color: var(--color-amber);
+  background: var(--color-amber-solid);
+  border-color: var(--color-amber-solid);
   color: white;
 }
 
 .field-plan__category-pill--active:hover {
-  background: var(--color-amber);
-  opacity: 0.9;
+  background: var(--color-amber-solid);
+  filter: brightness(1.08);
 }

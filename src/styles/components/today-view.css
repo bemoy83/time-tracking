@@ -108,8 +108,8 @@
 }
 
 /* iOS-style inset separator: inset both leading and trailing */
-.today-view__task-list .task-card::before,
-.today-view__task-list .task-row::before {
+.today-view__task-list > .swipeable-row .task-card::before,
+.today-view__task-list > .swipeable-row .task-row::before {
   content: '';
   position: absolute;
   top: 0;
@@ -120,7 +120,7 @@
   pointer-events: none;
 }
 
-/* First item in the list has no top separator */
+/* First row in the list has no top separator */
 .today-view__task-list > .swipeable-row:first-child .task-card::before,
 .today-view__task-list > .swipeable-row:first-child .task-row::before {
   display: none;

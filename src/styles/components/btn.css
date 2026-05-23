@@ -69,12 +69,13 @@
 }
 
 .btn--warning {
-  background: var(--color-amber);
+  background: var(--color-amber-solid);
   color: white;
 }
 
 .btn--warning:hover:not(:disabled) {
-  background: var(--state-warning-fg);
+  background: var(--color-amber-solid);
+  filter: brightness(1.08);
 }
 
 .btn--ghost {
