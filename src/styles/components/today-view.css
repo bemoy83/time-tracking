@@ -81,11 +81,12 @@
 
 .today-view__project-badge {
   display: inline-block;
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-xl);
-  font-size: var(--font-small);
+  padding: 2px var(--space-xs);
+  background: var(--color-primary-bg-badge);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-caption);
+  font-weight: 700;
   text-transform: none;
   letter-spacing: normal;
 }
@@ -100,15 +101,29 @@
   overflow: hidden;
 }
 
-/* No outer border — only horizontal divider between rows */
+/* No outer border — dividers are inset pseudo-elements on the content layer */
 .today-view__task-list > .swipeable-row {
   border: none;
   border-radius: 0;
-  border-top: 1px solid var(--color-border);
 }
 
-.today-view__task-list > .swipeable-row:first-child {
-  border-top: none;
+/* iOS-style inset separator: inset both leading and trailing */
+.today-view__task-list .task-card::before,
+.today-view__task-list .task-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-md) + 18px);
+  right: var(--space-md);
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
+
+/* First item in the list has no top separator */
+.today-view__task-list > .swipeable-row:first-child .task-card::before,
+.today-view__task-list > .swipeable-row:first-child .task-row::before {
+  display: none;
 }
 
 /* Per-row accents — recording (red), in-progress (blue), blocked (amber), completed (green) */
@@ -133,16 +148,38 @@
 /* ---- Subtask drawer ---- */
 
 .today-view__subtasks {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s var(--ease-enter);
   background: var(--surface-base-bg);
+}
+
+.today-view__subtasks--open {
+  grid-template-rows: 1fr;
+}
+
+.today-view__subtasks__inner {
   overflow: hidden;
+  min-height: 0;
 }
 
 /* Swipeable-rows inside drawer — first connects to parent (no top radius) */
 .today-view__subtasks .swipeable-row {
   border: none;
-  border-top: 1px solid var(--color-border);
   background: transparent;
   border-radius: 0;
+}
+
+/* Subtask inset separator — deeper indent aligns with subtask text column */
+.today-view__subtasks .task-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--space-md) + 18px + var(--space-lg));
+  right: var(--space-md);
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
 }
 
 /* First of multiple: no rounded corners */
@@ -200,10 +237,7 @@
   border-end-end-radius: var(--card-radius);
 }
 
-/* Card after a drawer: divider only (no special rounding) */
-.today-view__task-list > .today-view__subtasks + .swipeable-row {
-  border-top: 1px solid var(--color-border);
-}
+/* Card after a subtask drawer inherits the inset separator from .task-card::before / .task-row::before above */
 
 /* Empty State */
 .today-view__empty {

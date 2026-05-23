@@ -88,14 +88,18 @@
   background: var(--color-recording);
 }
 
-/* Blocked */
+/* Blocked — tinted, non-interactive: visually distinct from the solid active/recording states */
 .task-detail__status-control--blocked {
-  background: var(--color-amber);
+  background: var(--state-warning-bg-stronger);
+  color: var(--state-warning-fg-strong);
+  border: 1.5px solid var(--state-warning-border);
 }
 
-/* Completed */
+/* Completed — tinted, non-interactive */
 .task-detail__status-control--completed {
-  background: var(--color-ready);
+  background: var(--state-success-bg-strong);
+  color: var(--state-success-fg-strong);
+  border: 1.5px solid var(--state-success-border);
 }
 
 .task-detail__status-control .task-detail__status-icon {

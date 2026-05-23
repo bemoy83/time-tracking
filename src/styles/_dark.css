@@ -125,6 +125,9 @@
     --color-amber-bg-subtle: var(--state-warning-bg-soft);
     --color-amber-bg-hover: var(--state-warning-bg-strong);
 
+    /* Draft badge — tinted in dark mode; --color-amber-solid intentionally stays #b45309 (passes 4.6:1 with white) */
+    --status-badge-draft-bg: var(--state-warning-bg-strong);
+
     /* Semantic badge backgrounds (dark) */
     --color-ready-bg-badge: var(--state-success-bg);
     --color-primary-bg-badge: var(--state-info-bg-strong);
@@ -134,15 +137,6 @@
 
   .today-view__task-list {
     background: var(--surface-contained-bg);
-  }
-
-  /* --- Task Detail --- */
-  .task-detail__status-control--blocked {
-    background: var(--state-warning-fg);
-  }
-
-  .task-detail__status-control--completed {
-    background: var(--state-success-fg);
   }
 
   /* --- Shared Input --- */
@@ -273,6 +267,10 @@
   /* --- Project Detail --- */
   .metric-card {
     background: var(--surface-contained-bg);
+  }
+
+  .status-badge--draft {
+    color: var(--state-warning-fg-strong);
   }
 
   .status-badge--danger,

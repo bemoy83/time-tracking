@@ -178,27 +178,29 @@ export function TaskCard({
         </div>
       </SwipeableRow>
 
-      {/* Expanded subtasks — outside parent SwipeableRow for independent swipe */}
-      {isExpanded && subtasks.length > 0 && (
+      {/* Subtask drawer — always in DOM when subtasks exist; animates open/closed via CSS grid */}
+      {subtasks.length > 0 && (
         <div
           id={`subtasks-${task.id}`}
-          className="today-view__subtasks"
+          className={`today-view__subtasks${isExpanded ? ' today-view__subtasks--open' : ''}`}
           role="group"
           aria-label={`Subtasks of ${task.title}`}
         >
-          {subtasks.map((subtask) => (
-            <SwipeableTaskRow
-              key={subtask.id}
-              task={subtask}
-              projectColor={resolveProjectColor?.(subtask) ?? projectColor}
-              isSubtask
-              showProjectDot={false}
-              totalMs={taskTimes?.durationByTask.get(subtask.id)}
-              onSelect={onSelectTask}
-              onStartTimer={onStartTimerForTask}
-              onComplete={onCompleteTask}
-            />
-          ))}
+          <div className="today-view__subtasks__inner">
+            {subtasks.map((subtask) => (
+              <SwipeableTaskRow
+                key={subtask.id}
+                task={subtask}
+                projectColor={resolveProjectColor?.(subtask) ?? projectColor}
+                isSubtask
+                showProjectDot={false}
+                totalMs={taskTimes?.durationByTask.get(subtask.id)}
+                onSelect={onSelectTask}
+                onStartTimer={onStartTimerForTask}
+                onComplete={onCompleteTask}
+              />
+            ))}
+          </div>
         </div>
       )}
     </>

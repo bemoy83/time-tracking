@@ -191,12 +191,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 24px;
-  padding: 0 var(--space-xs);
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 var(--space-sm);
   background: var(--surface-contained-active);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
   font-size: var(--font-small);
   font-weight: 700;
   color: var(--color-text-muted);
