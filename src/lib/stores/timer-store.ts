@@ -177,6 +177,20 @@ export async function startTimer(taskId: string): Promise<StartTimerResult> {
   }
 }
 
+/**
+ * User-initiated "work on this task" action.
+ * In sequential mode: stops all running timers then starts the new one.
+ * In parallel mode: starts the new timer alongside any running ones.
+ */
+export async function switchToTimer(taskId: string): Promise<StartTimerResult> {
+  if (!getParallelSubtaskTimers() && state.activeTimers.length > 0) {
+    for (const timer of state.activeTimers) {
+      await stopTimer(timer.taskId);
+    }
+  }
+  return startTimer(taskId);
+}
+
 export type StopTimerResult =
   | { success: true; entry: TimeEntry }
   | { success: false; reason: 'no_active_timer' | 'error'; message: string };

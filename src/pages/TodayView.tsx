@@ -7,8 +7,7 @@ import {
 } from '../lib/stores/task-store';
 import {
   useTimerStore,
-  startTimer,
-  stopTimer,
+  switchToTimer,
 } from '../lib/stores/timer-store';
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
 import { useTaskTimes } from '../lib/hooks/useTaskTimes';
@@ -59,13 +58,7 @@ export function TodayView({ onSelectTask }: TodayViewProps) {
   const { groupedTasks, ungroupedTasks, blockedTasks, completedTasks } = model;
 
   const handleStartTimer = async (task: Task) => {
-    // In sequential mode, stop the existing timer before starting a new one
-    if (activeTimers.length > 0) {
-      for (const timer of activeTimers) {
-        await stopTimer(timer.taskId);
-      }
-    }
-    await startTimer(task.id);
+    await switchToTimer(task.id);
   };
 
   // Count subtasks for progress

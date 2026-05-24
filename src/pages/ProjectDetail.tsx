@@ -42,8 +42,7 @@ import {
 import { useTemplateStore } from '../lib/stores/template-store';
 import {
   useTimerStore,
-  startTimer,
-  stopTimer,
+  switchToTimer,
 } from '../lib/stores/timer-store';
 import { useCompletionFlow } from '../lib/hooks/useCompletionFlow';
 import { useTaskTimes } from '../lib/hooks/useTaskTimes';
@@ -197,12 +196,7 @@ export function ProjectDetail({
   };
 
   const handleStartTimer = async (task: Task) => {
-    if (activeTimers.length > 0) {
-      for (const timer of activeTimers) {
-        await stopTimer(timer.taskId);
-      }
-    }
-    await startTimer(task.id);
+    await switchToTimer(task.id);
   };
 
   const getSubtaskProgress = (parentId: string) => {
