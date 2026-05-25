@@ -748,6 +748,40 @@
   height: 100%;
 }
 
+/* Schedule tab: constrain height chain so only the grid area scrolls vertically */
+.planning-workspace__tab-content:has(.schedule-view) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.planning-workspace__tab-content:has(.schedule-view) .planning-workspace__editor-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.planning-workspace__tab-content:has(.schedule-view) .schedule-view {
+  flex: 1;
+  min-height: 0;
+}
+
+.planning-workspace__tab-content:has(.schedule-view) .schedule-view__grid-stack {
+  flex: 1;
+  min-height: 0;
+}
+
+.planning-workspace__tab-content:has(.schedule-view) .schedule-view__block {
+  flex: 1;
+  min-height: 0;
+}
+
+.planning-workspace__tab-content:has(.schedule-view) .schedule-grid__scroll-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
 .planning-workspace__editor-canvas {
   width: 100%;
   max-width: 1520px;
@@ -1019,6 +1053,7 @@
 
   /* Grid sticky-header background */
   .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__line-item-col,
+  .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__day-col,
   .planning-workspace__editor-canvas .schedule-grid__line-item-col,
   .planning-workspace__editor-canvas .schedule-grid__line-item,
   .planning-workspace__editor-canvas .schedule-grid__phase-label,
@@ -1043,4 +1078,5 @@
   .planning-workspace__editor-canvas .wc-cell {
     border-radius: 10px;
   }
+
 }

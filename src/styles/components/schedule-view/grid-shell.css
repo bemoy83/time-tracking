@@ -1,8 +1,12 @@
 /* --- Schedule Grid --- */
 
-/* Wrapper constrains grid width so overflow-x scrolls instead of expanding the card */
+/* Wrapper constrains grid width so overflow-x scrolls instead of expanding the card.
+   overflow-y: clip prevents the implicit overflow-y: auto that overflow-x: auto creates,
+   which would otherwise form a y-axis scroll container and block sticky on the header. */
 .schedule-grid__scroll-wrap {
   overflow-x: auto;
+  /* overflow-y computes to auto when overflow-x is non-visible — this makes
+     scroll-wrap the vertical scroll container so the header can be sticky */
   min-width: 0;
   -webkit-overflow-scrolling: touch;
 }
@@ -59,8 +63,14 @@
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
+.schedule-grid__header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
 .schedule-grid__header .schedule-grid__day-col {
-  background: transparent;
+  background: var(--card-bg);
 }
 
 .schedule-grid__header .schedule-grid__line-item-col {
