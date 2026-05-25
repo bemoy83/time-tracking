@@ -866,56 +866,38 @@
 }
 
 /* ============================================================
-   Desktop floating-card layout (≥768px)
+   Desktop full-bleed layout (≥768px)
    Mobile layout is fully preserved below this breakpoint.
    ============================================================ */
 
 @media (min-width: 768px) {
-  /* Canvas — add padding/gap so cards float; center the duo when viewport exceeds combined max widths */
   .planning-workspace {
     --planning-workspace-sidebar-max: 288px;
     --planning-workspace-main-max: 1600px;
-    padding: 12px;
-    gap: 10px;
-    justify-content: center;
-    background: var(--surface-base-bg);
   }
 
-  /* Sidebar — floating white card, fixed max width; content top padding removed for tab alignment */
+  /* Sidebar — fixed width, clip content */
   .planning-workspace__sidebar {
     width: var(--planning-workspace-sidebar-max);
     max-width: var(--planning-workspace-sidebar-max);
     flex-shrink: 0;
-    border-right: none;
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-md);
     overflow: clip;
-    animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .planning-workspace__sidebar-content {
     padding-top: 0;
   }
 
-  /* Main pane — floating white card, fixed max width */
+  /* Main pane — fill remaining width up to max */
   .planning-workspace__main {
     flex: 1;
     min-width: 0;
     max-width: var(--planning-workspace-main-max);
     background: var(--surface-contained-bg);
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-md);
     overflow: clip;
-    animation: riseUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
   }
 
-  /* Tab content — soft inset canvas so section cards float above it */
-  .planning-workspace__tab-content {
-    background: var(--surface-contained-inset);
-    padding: 18px 22px 22px;
-  }
-
-  /* Section header labels — caption size + tight letter-spacing per mockup */
+  /* Section header labels — caption size + tight letter-spacing */
   .planning-workspace__editor-canvas .planning-view__items-title {
     font-size: var(--font-caption);
     letter-spacing: 0.09em;
@@ -929,7 +911,6 @@
     padding: 8px 20px;
     gap: 3px;
     align-items: center;
-    /* Remove scroll shadow images; simple inset bg is enough */
     background-image: none;
     --_scroll-shadow-color: var(--surface-contained-inset);
     background-image:
@@ -939,7 +920,7 @@
       linear-gradient(to left, rgba(0,0,0,0.05), transparent) right / 24px 100% no-repeat scroll;
   }
 
-  /* Tab items — pill proportions per mockup; override global a11y min-size (desktop only) */
+  /* Tab items — pill proportions; override global a11y min-size (desktop only) */
   .planning-workspace__tab {
     border: none;
     border-bottom: none;
@@ -964,7 +945,7 @@
     color: var(--color-text);
   }
 
-  /* Context bar — no hard border; keep header height to align with sidebar */
+  /* Context bar */
   .planning-workspace__plan-context-bar {
     border-bottom: none;
     padding: 0 24px;
@@ -973,22 +954,22 @@
   }
 
   .planning-workspace__plan-context-title {
-    font-size: 0.9375rem; /* 15px per mockup */
+    font-size: 0.9375rem;
   }
 
-  /* "New Plan" button — primary brand (base); lift on hover */
+  /* "New Plan" button — lift on hover */
   .planning-sidebar__create-btn:hover {
     opacity: 0.85;
     transform: translateY(-1px);
   }
 
-  /* Inactive tab hover — subtle fill */
+  /* Inactive tab hover */
   .planning-workspace__tab:not(.planning-workspace__tab--active):hover {
     background: rgba(0, 0, 0, 0.04);
     color: var(--color-text);
   }
 
-  /* Build Schedule (primary btn) — lift + shadow glow on hover */
+  /* Build Schedule button — lift + shadow glow on hover */
   .planning-workspace__editor-canvas .btn--primary {
     transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
     box-shadow: var(--shadow-blue);
@@ -998,35 +979,13 @@
     box-shadow: 0 8px 28px rgba(37, 99, 235, 0.38);
   }
 
-  /* KPI cards — staggered entrance */
-  .planning-workspace__editor-canvas .planning-view__kpi-card {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(1) { animation-delay: 0.10s; }
-  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(2) { animation-delay: 0.15s; }
-  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(3) { animation-delay: 0.20s; }
-  .planning-workspace__editor-canvas .planning-view__kpi-card:nth-child(4) { animation-delay: 0.25s; }
-
-  /* Section cards — staggered entrance */
-  .planning-workspace__editor-canvas .planning-view__overview-block {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
-  }
-  .planning-workspace__editor-canvas .planning-view__schedule-inputs-wrap {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.23s both;
-  }
-  .planning-workspace__editor-canvas .planning-view__wp-surface {
-    animation: riseUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
-  }
-
-  /* Issues tab — constrained width for readability in wide main pane */
+  /* Issues tab */
   .planning-workspace__issues-pane {
     max-width: 680px;
     padding: 18px 22px;
   }
 
-  /* ── Schedule tab — section card polish ── */
-
-  /* Main "Schedule" h2 — align with PlanEditor section header (caption + uppercase) */
+  /* Schedule tab */
   .planning-workspace__editor-canvas .schedule-view .planning-view__title {
     font-size: var(--font-caption);
     font-weight: 600;
@@ -1035,7 +994,6 @@
     color: var(--color-text-muted);
   }
 
-  /* Activate / Hand off / Clear buttons in schedule view footer */
   .planning-workspace__editor-canvas .schedule-view .btn--success {
     box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
     transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
@@ -1045,7 +1003,6 @@
     box-shadow: 0 6px 20px rgba(22, 163, 74, 0.36);
   }
 
-  /* Danger (Clear all) button */
   .planning-workspace__editor-canvas .schedule-view .btn--danger {
     transition: background-color 0.15s, transform 0.15s;
   }
@@ -1053,7 +1010,6 @@
     transform: translateY(-1px);
   }
 
-  /* Auto-schedule button in grid header */
   .planning-workspace__editor-canvas .schedule-grid__auto-schedule-btn {
     transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
   }
@@ -1061,7 +1017,7 @@
     transform: translateY(-1px);
   }
 
-  /* Grid header sticky background matches canvas inset */
+  /* Grid sticky-header background */
   .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__line-item-col,
   .planning-workspace__editor-canvas .schedule-grid__line-item-col,
   .planning-workspace__editor-canvas .schedule-grid__line-item,
@@ -1070,7 +1026,6 @@
     background: var(--surface-contained-bg);
   }
 
-  /* Phase headers keep semantic colors in workspace (override canvas background) */
   .planning-workspace__editor-canvas .schedule-grid__phase-header--assembly .schedule-grid__phase-label {
     background: var(--wp-phase-assembly-header-bg);
     color: var(--phase-assembly-fg);
@@ -1081,12 +1036,10 @@
     color: var(--phase-dismantle-fg);
   }
 
-  /* Slightly tighter grid cells in workspace at wider widths */
   .planning-workspace__editor-canvas .schedule-grid__day-col {
     padding: var(--space-sm) 10px;
   }
 
-  /* Work calendar cell — slightly crisper in workspace */
   .planning-workspace__editor-canvas .wc-cell {
     border-radius: 10px;
   }

@@ -1,6 +1,7 @@
 import type { WorkCalendarDay } from '../../../../lib/planning/plan-model';
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
 import { OVER_STAFFED_AMBER_THRESHOLD } from '../../../../lib/planning/scheduling/capacity-core';
+import type { PhaseDateValues } from '../schedule-date-ui';
 import { FragmentationWarningIcon } from './FragmentationWarningIcon';
 
 interface ScheduleGridHeaderProps {
@@ -12,6 +13,47 @@ interface ScheduleGridHeaderProps {
   unscheduledCount?: number;
   readOnly?: boolean;
   hasWorkDays?: boolean;
+  phaseDates?: PhaseDateValues;
+  eventStartDate?: string | null;
+  eventEndDate?: string | null;
+  onToggleWorkday?: (date: string) => void;
+  todayIso?: string;
+}
+
+type DayPhase = 'assembly' | 'event' | 'dismantle' | null;
+
+function getDayPhase(
+  date: string,
+  phaseDates: PhaseDateValues | undefined,
+  eventStartDate: string | null | undefined,
+  eventEndDate: string | null | undefined,
+): DayPhase {
+  if (!phaseDates) return null;
+  if (
+    phaseDates.assemblyStartDate &&
+    phaseDates.assemblyEndDate &&
+    date >= phaseDates.assemblyStartDate &&
+    date <= phaseDates.assemblyEndDate
+  ) {
+    return 'assembly';
+  }
+  if (
+    eventStartDate &&
+    eventEndDate &&
+    date >= eventStartDate &&
+    date <= eventEndDate
+  ) {
+    return 'event';
+  }
+  if (
+    phaseDates.dismantleStartDate &&
+    phaseDates.dismantleEndDate &&
+    date >= phaseDates.dismantleStartDate &&
+    date <= phaseDates.dismantleEndDate
+  ) {
+    return 'dismantle';
+  }
+  return null;
 }
 
 function formatDayLabel(date: string): string {
@@ -55,6 +97,11 @@ export function ScheduleGridHeader({
   onAutoSchedule,
   unscheduledCount,
   readOnly = false,
+  phaseDates,
+  eventStartDate,
+  eventEndDate,
+  onToggleWorkday,
+  todayIso,
 }: ScheduleGridHeaderProps) {
   return (
     <div className="schedule-grid__header" role="row">
@@ -79,15 +126,40 @@ export function ScheduleGridHeader({
         const utilizationPct = cap && cap.availableCrew > 0 ? (cap.assignedCrewTotal / cap.availableCrew) * 100 : 0;
         const showOverStaffedWarning = (cap?.isOverStaffed ?? false) && utilizationPct < OVER_STAFFED_AMBER_THRESHOLD;
         const isFragmented = cap?.fragmentationRisk === 'moderate' || cap?.fragmentationRisk === 'high';
+        const isToday = todayIso != null && day.date === todayIso;
+        const dayPhase = getDayPhase(day.date, phaseDates, eventStartDate, eventEndDate);
         return (
           <span
             key={day.date}
             role="columnheader"
-            className={`schedule-grid__day-col${day.isWorkDay ? '' : ' schedule-grid__day-col--off'}${isOver ? ' schedule-grid__day-col--over' : ''}${cap?.isOverAssignedCrew ? ' schedule-grid__day-col--over-crew' : ''}${cap?.isOverWorkerCapacity ? ' schedule-grid__day-col--over-worker' : ''}${showOverStaffedWarning ? ' schedule-grid__day-col--over-staffed' : ''}`}
+            data-date={day.date}
+            className={[
+              'schedule-grid__day-col',
+              day.isWorkDay ? '' : 'schedule-grid__day-col--off',
+              isOver ? 'schedule-grid__day-col--over' : '',
+              cap?.isOverAssignedCrew ? 'schedule-grid__day-col--over-crew' : '',
+              cap?.isOverWorkerCapacity ? 'schedule-grid__day-col--over-worker' : '',
+              showOverStaffedWarning ? 'schedule-grid__day-col--over-staffed' : '',
+              isToday ? 'schedule-grid__day-col--today' : '',
+            ].filter(Boolean).join(' ')}
             title={buildDayTitle(cap, day.isWorkDay)}
           >
             <span className="schedule-grid__day-label-row">
-              <span className="schedule-grid__day-label">{formatDayLabel(day.date)}</span>
+              {onToggleWorkday && !readOnly ? (
+                <button
+                  type="button"
+                  className={`schedule-grid__day-toggle${isToday ? ' schedule-grid__day-toggle--today' : ''}`}
+                  onClick={() => onToggleWorkday(day.date)}
+                  aria-label={day.isWorkDay ? `Remove ${formatDayLabel(day.date)} as work day` : `Add ${formatDayLabel(day.date)} as work day`}
+                  title={day.isWorkDay ? 'Click to mark as off day' : 'Click to add as work day'}
+                >
+                  {formatDayLabel(day.date)}
+                </button>
+              ) : (
+                <span className={`schedule-grid__day-label${isToday ? ' schedule-grid__day-label--today' : ''}`}>
+                  {formatDayLabel(day.date)}
+                </span>
+              )}
               {isFragmented && cap && <FragmentationWarningIcon cap={cap} />}
             </span>
             {cap && day.isWorkDay && (
@@ -125,6 +197,12 @@ export function ScheduleGridHeader({
                   </span>
                 )}
               </>
+            )}
+            {dayPhase && (
+              <span
+                className={`schedule-grid__day-phase-bar schedule-grid__day-phase-bar--${dayPhase}`}
+                aria-hidden
+              />
             )}
           </span>
         );

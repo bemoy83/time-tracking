@@ -1,6 +1,7 @@
 @import '../components/plan-picker.css';
 @import '../components/planning.css';
 @import '../components/planning-workspace.css';
+@import '../components/workspace-sidebar.css';
 @import '../components/planning/plan-setup-stepper.css';
 @import '../components/schedule-view.css';
 @import '../components/progress-view.css';

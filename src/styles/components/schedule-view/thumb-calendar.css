@@ -1,0 +1,110 @@
+/* ============================================================
+   ThumbCalendar — mini week-grid in sidebar drill-in
+   ============================================================ */
+
+.thumb-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  user-select: none;
+}
+
+.thumb-calendar__header,
+.thumb-calendar__row {
+  display: grid;
+  grid-template-columns: 22px repeat(7, 1fr);
+  gap: 1px;
+}
+
+.thumb-calendar__week-label-col,
+.thumb-calendar__day-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-bottom: 3px;
+  line-height: 1.2;
+}
+
+.thumb-calendar__week-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.thumb-calendar__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  gap: 1px;
+  transition: background-color 0.1s;
+  min-width: unset;
+  min-height: unset;
+}
+
+.thumb-calendar__cell:hover:not(:disabled) {
+  background: var(--surface-contained-hover);
+}
+
+.thumb-calendar__cell:focus-visible,
+.thumb-calendar__cell[data-focused='true'] {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.thumb-calendar__cell:disabled {
+  cursor: default;
+}
+
+.thumb-calendar__cell--out {
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+
+.thumb-calendar__cell--off {
+  opacity: 0.35;
+}
+
+.thumb-calendar__cell--assembly {
+  background: color-mix(in srgb, var(--phase-assembly-fg) 12%, transparent);
+}
+
+.thumb-calendar__cell--event {
+  background: color-mix(in srgb, var(--phase-event-fg) 12%, transparent);
+}
+
+.thumb-calendar__cell--dismantle {
+  background: color-mix(in srgb, var(--phase-dismantle-fg) 12%, transparent);
+}
+
+.thumb-calendar__cell--today {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.thumb-calendar__today-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}

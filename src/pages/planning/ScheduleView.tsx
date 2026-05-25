@@ -4,7 +4,7 @@ import { useTagStore } from '../../lib/stores/tag-store';
 import { useCrewPoolStore } from '../../lib/stores/crew-pool-store';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
 import { ChevronLeftIcon } from '../../components/icons';
-import { PlanKpiRow } from './PlanKpiRow';
+import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { buildScheduleCoverageMetric, getScheduleViewMetrics } from './workspace/workspace-metrics';
 import { type Plan, type PlanLineItem, activatePlan, revertToDraft, handOffPlan, getPhaseFields, planTotalPersonHours } from '../../lib/planning/plan-model';
 import { exportPlanPackage } from '../../lib/interop/data-transfer/plan-package';
@@ -25,18 +25,17 @@ import {
   updatePlanCalendarDay,
   updateLineItemAssignment,
   updateLineItemPersonHoursForDate,
+  syncPlanWorkCalendarFromCrewPool,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import { dayAccessHours, reconcileWorkCalendarForSpans } from '../../lib/planning/scheduling/work-calendar';
 import {
   resolveRequiredPersonHoursForPhase,
   runAutoSchedule,
 } from '../../lib/planning/scheduling/auto-schedule';
-import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { ScheduleGrid, getSchedulableUnscheduledPhaseRowCount } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
-import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
 import { ScheduleAssistantPanel } from './schedule/ScheduleAssistantPanel';
-import { PlanSetupStepper } from './PlanSetupStepper';
+import { type ScheduleEditContextValue } from './workspace/ScheduleEditContext';
 import type {
   ScheduleIssuePanelPayload,
 } from './workspace/schedule-issue-panel-types';
@@ -56,6 +55,7 @@ interface ScheduleViewProps {
   onBack: () => void;
   showBackButton?: boolean;
   readOnly: boolean;
+  onScheduleContextChange?: (ctx: ScheduleEditContextValue | null) => void;
 }
 
 interface AmendmentState {
@@ -72,6 +72,7 @@ export function ScheduleView({
   onBack,
   showBackButton = true,
   readOnly,
+  onScheduleContextChange,
 }: ScheduleViewProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
   const { tags } = useTagStore();
@@ -95,18 +96,15 @@ export function ScheduleView({
   const [amendment, setAmendment] = useState<AmendmentState | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
-  const workCalendarRef = useRef<HTMLDivElement>(null);
   const scheduleGridRef = useRef<HTMLDivElement>(null);
-  const phaseDates = readPhaseDateValues(currentPlan);
-  const primaryRange = getPrimaryScheduleRange(
-    phaseDates,
-    currentPlan.eventStartDate,
-    currentPlan.eventEndDate,
+  const phaseDates = useMemo(() => readPhaseDateValues(currentPlan), [currentPlan]);
+  const primaryRange = useMemo(
+    () => getPrimaryScheduleRange(phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate),
+    [phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate],
   );
-  const workCalendarRange = getScheduleRangeForWorkCalendar(
-    phaseDates,
-    currentPlan.eventStartDate,
-    currentPlan.eventEndDate,
+  const workCalendarRange = useMemo(
+    () => getScheduleRangeForWorkCalendar(phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate),
+    [phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate],
   );
   const workCalendarPhaseSpans = useMemo(
     () => getWorkCalendarPhaseSpans(phaseDates),
@@ -199,41 +197,55 @@ export function ScheduleView({
     markAssistantFindingsStale();
   }, [markAssistantFindingsStale]);
 
-  const handlePlanDateChange = (
+  const handlePlanDateChange = useCallback((
     field: 'eventStartDate' | 'eventEndDate',
     value: string,
   ) => {
     clearAssistantReport();
     mutatePlan((prev) => setPlanEventDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
-  };
+  }, [clearAssistantReport, mutatePlan]);
 
-  const handlePlanPhaseDateChange = (
+  const handlePlanPhaseDateChange = useCallback((
     field: PhaseDateField,
     value: string,
   ) => {
     clearAssistantReport();
     mutatePlan((prev) => setPlanPhaseDate(prev, field, value));
     trackTelemetryEvent('schedule_calendar_edit');
-  };
+  }, [clearAssistantReport, mutatePlan]);
 
-  const handleDefaultCrewChange = (value: string) => {
+  const handleDefaultCrewChange = useCallback((value: string) => {
     clearAssistantReport();
     mutatePlan((prev) => setPlanDefaultCrewSize(prev, value));
     trackTelemetryEvent('schedule_calendar_edit');
-  };
+  }, [clearAssistantReport, mutatePlan]);
 
-  const handleDefaultEfficiencyChange = (value: string) => {
+  const handleDefaultEfficiencyChange = useCallback((value: string) => {
     clearAssistantReport();
     mutatePlan((prev) => setPlanDefaultEfficiency(prev, value));
     trackTelemetryEvent('schedule_calendar_edit');
-  };
+  }, [clearAssistantReport, mutatePlan]);
 
-  const handleUpdateCalendarDay = (date: string, updates: Partial<Plan['workCalendar'][number]>) => {
+  const handleUpdateCalendarDay = useCallback((date: string, updates: Partial<Plan['workCalendar'][number]>) => {
     clearAssistantReport();
     mutatePlan((prev) => updatePlanCalendarDay(prev, date, updates));
     trackTelemetryEvent('schedule_calendar_edit');
-  };
+  }, [clearAssistantReport, mutatePlan]);
+
+  const handleToggleWorkday = useCallback((date: string) => {
+    clearAssistantReport();
+    mutatePlan((prev) => {
+      const existing = prev.workCalendar.find((d) => d.date === date);
+      if (existing) {
+        return updatePlanCalendarDay(prev, date, { isWorkDay: !existing.isWorkDay });
+      }
+      return syncPlanWorkCalendarFromCrewPool(prev, date, { isWorkDay: true });
+    });
+    trackTelemetryEvent('schedule_calendar_edit');
+  }, [clearAssistantReport, mutatePlan]);
+
+  const todayIso = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
   const handleToggleAssignment = (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => {
     if (currentPlan.status === 'active' && cellElement) {
@@ -499,10 +511,7 @@ export function ScheduleView({
   };
 
   const handleOpenWorkCalendar = useCallback(() => {
-    const el = workCalendarRef.current;
-    if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // Work calendar is now in the sidebar drill-in — no-op for now
   }, []);
 
   const handleOpenScheduleGrid = useCallback(() => {
@@ -512,6 +521,10 @@ export function ScheduleView({
     }
   }, []);
 
+  const handleScrollToDate = useCallback((date: string) => {
+    const cell = scheduleGridRef.current?.querySelector(`[data-date="${date}"]`);
+    cell?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, []);
 
   const handlePrevAssistantIssue = useCallback(() => {
     if (!focusPrevReviewIssue()) return;
@@ -640,99 +653,84 @@ export function ScheduleView({
     },
   ];
 
+  const contextValue = useMemo(() => ({
+    currentPlan,
+    phaseDates,
+    primaryRange,
+    workCalendarRange,
+    effectiveCrewSize: effectiveCrewSize ?? null,
+    totalAvailable: capacity.totalEffectiveAvailablePersonHours,
+    readOnly,
+    onPhaseDateChange: handlePlanPhaseDateChange,
+    onEventDateChange: handlePlanDateChange,
+    onDefaultCrewChange: handleDefaultCrewChange,
+    onDefaultEfficiencyChange: handleDefaultEfficiencyChange,
+    onUpdateCalendarDay: handleUpdateCalendarDay,
+    onScrollToDate: handleScrollToDate,
+  }), [
+    currentPlan, phaseDates, primaryRange, workCalendarRange,
+    effectiveCrewSize, capacity.totalEffectiveAvailablePersonHours, readOnly,
+    handlePlanPhaseDateChange, handlePlanDateChange, handleDefaultCrewChange,
+    handleDefaultEfficiencyChange, handleUpdateCalendarDay, handleScrollToDate,
+  ]);
+
+  useEffect(() => {
+    onScheduleContextChange?.(contextValue);
+    return () => { onScheduleContextChange?.(null); };
+  }, [contextValue, onScheduleContextChange]);
+
   return (
     <div className="planning-view schedule-view">
-      <PlanKpiRow metrics={scheduleKpiMetrics} />
-      <div className="schedule-view__top-band">
-        <section className="schedule-view__block schedule-view__top-band-health" aria-label="Schedule health and controls">
-          <header className="schedule-view__top-band-header">
-            <div className="schedule-view__top-band-title-row">
-              {showBackButton && (
-                <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
-                  <ChevronLeftIcon className="planning-view__back-icon" />
-                  Back
-                </button>
-              )}
-              <h2 className="planning-view__title" style={{ flex: 1 }}>
-                Schedule
-              </h2>
-              <div className="schedule-view__planning-meta" role="status" aria-live="polite">
-                <span className="schedule-view__planning-chip">
-                  {planningIssues.length} {planningIssues.length === 1 ? 'issue' : 'issues'}
-                </span>
-                {criticalIssueCount > 0 && (
-                  <span className="schedule-view__planning-chip schedule-view__planning-chip--critical">
-                    {criticalIssueCount} critical
-                  </span>
-                )}
-                {warningIssueCount > 0 && (
-                  <span className="schedule-view__planning-chip schedule-view__planning-chip--warning">
-                    {warningIssueCount} warning
-                  </span>
-                )}
-              </div>
-            </div>
-          </header>
-
-          <PlanSetupStepper steps={scheduleSteps} readOnly={readOnly} />
-
-          <div className="schedule-view__planning-footer">
-            <div className="schedule-view__planning-actions">
-              <button
-                type="button"
-                className={`btn btn--secondary btn--sm${planningIssues.length > 0 ? ' schedule-view__assistant-btn--has-issues' : ''}`}
-                onClick={() => setIsAssistantPanelOpen(true)}
-                aria-haspopup="dialog"
-              >
-                Schedule Assistant
-                {planningIssues.length > 0 && (
-                  <span className="schedule-view__assistant-btn-count">{planningIssues.length}</span>
-                )}
-              </button>
-              {!readOnly && isLocked && (
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={handleRevertToDraft}
-                >
-                  Revert to Draft
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <div className="schedule-view__top-band-inputs">
-          <PlanScheduleInputsPanel
-            assemblyStartDate={phaseDates.assemblyStartDate}
-            assemblyEndDate={phaseDates.assemblyEndDate}
-            dismantleStartDate={phaseDates.dismantleStartDate}
-            dismantleEndDate={phaseDates.dismantleEndDate}
-            eventStartDate={currentPlan.eventStartDate}
-            eventEndDate={currentPlan.eventEndDate}
-            defaultCrewSize={currentPlan.defaultCrewSize}
-            defaultEfficiency={currentPlan.defaultEfficiency}
-            readOnly={readOnly}
-            collapseWhenConfigured
-            primaryRange={workCalendarRange ?? primaryRange}
-            dayCount={currentPlan.workCalendar.length}
-            crewSize={effectiveCrewSize ?? null}
-            totalAvailable={capacity.totalEffectiveAvailablePersonHours}
-            onPhaseDateChange={handlePlanPhaseDateChange}
-            onEventDateChange={handlePlanDateChange}
-            onDefaultCrewSizeChange={handleDefaultCrewChange}
-            onDefaultEfficiencyChange={handleDefaultEfficiencyChange}
-          />
+      <ScheduleMetricStrip metrics={scheduleKpiMetrics} steps={scheduleSteps} readOnly={readOnly} />
+      <div className="schedule-toolbar" role="region" aria-label="Schedule health and controls">
+        {showBackButton && (
+          <button className="planning-view__back" onClick={onBack} aria-label="Back to plan">
+            <ChevronLeftIcon className="planning-view__back-icon" />
+            Back
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn btn--primary btn--sm"
+          onClick={handleAutoSchedule}
+          disabled={readOnly || schedulableUnscheduledCount === 0}
+          aria-label={schedulableUnscheduledCount > 0 ? `Auto-schedule ${schedulableUnscheduledCount} schedulable item${schedulableUnscheduledCount === 1 ? '' : 's'}` : 'No schedulable items — set phase dates, add crew and time'}
+          title={schedulableUnscheduledCount > 0 ? `Auto-schedule ${schedulableUnscheduledCount} item${schedulableUnscheduledCount === 1 ? '' : 's'} with crew, time, and phase work days` : 'Set phase dates and add crew/time to items to enable'}
+        >
+          Auto-schedule ({schedulableUnscheduledCount})
+        </button>
+        {!readOnly && isLocked && (
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            onClick={handleRevertToDraft}
+          >
+            Revert to Draft
+          </button>
+        )}
+        <div className="schedule-toolbar__chips" role="status" aria-live="polite">
+          {criticalIssueCount > 0 && (
+            <span className="schedule-view__planning-chip schedule-view__planning-chip--critical">
+              {criticalIssueCount} {criticalIssueCount === 1 ? 'issue' : 'issues'}
+            </span>
+          )}
+          {warningIssueCount > 0 && (
+            <span className="schedule-view__planning-chip schedule-view__planning-chip--warning">
+              {warningIssueCount} {warningIssueCount === 1 ? 'warning' : 'warnings'}
+            </span>
+          )}
+          <button
+            type="button"
+            className={`btn btn--secondary btn--sm${planningIssues.length > 0 ? ' schedule-view__assistant-btn--has-issues' : ''}`}
+            onClick={() => setIsAssistantPanelOpen(true)}
+            aria-haspopup="dialog"
+          >
+            Schedule Assistant
+            {planningIssues.length > 0 && (
+              <span className="schedule-view__assistant-btn-count">{planningIssues.length}</span>
+            )}
+          </button>
         </div>
-      </div>
-
-      <div ref={workCalendarRef}>
-        <WorkCalendarEditor
-          calendar={currentPlan.workCalendar}
-          readOnly={readOnly}
-          onUpdateDay={handleUpdateCalendarDay}
-          planDefaultCrewSize={effectiveCrewSize ?? currentPlan.defaultCrewSize}
-        />
       </div>
 
       <div ref={scheduleGridRef} className="schedule-view__grid-stack">
@@ -742,12 +740,15 @@ export function ScheduleView({
           capacity={capacity}
           phaseDates={phaseDates}
           readOnly={readOnly}
-          onAutoSchedule={handleAutoSchedule}
           onToggleAssignment={handleToggleAssignment}
           onClearRowSchedule={handleClearRowSchedule}
           onPersonHoursForDateChange={handlePersonHoursForDateChange}
           unresolvedIssueKeys={unresolvedIssueKeys}
           activeIssueKey={activeAssistantIssue?.key ?? null}
+          onToggleWorkday={readOnly ? undefined : handleToggleWorkday}
+          todayIso={todayIso}
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
         />
       </div>
 

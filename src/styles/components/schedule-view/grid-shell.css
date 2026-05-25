@@ -424,3 +424,72 @@
   background: var(--state-success-bg);
   color: var(--state-success-fg-strong);
 }
+
+/* --- Today highlight --- */
+
+.schedule-grid__day-col--today {
+  border-top: 2px solid var(--color-primary);
+}
+
+.schedule-grid__day-label--today,
+.schedule-grid__day-toggle--today {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* --- Workday toggle button --- */
+
+.schedule-grid__day-toggle {
+  appearance: none;
+  display: block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: var(--font-caption);
+  line-height: 1.4;
+  letter-spacing: 0;
+  font-weight: 600;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+  min-width: unset;
+  min-height: unset;
+}
+
+.schedule-grid__day-toggle:hover {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 2px;
+}
+
+.schedule-grid__day-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* --- Phase color bar (bottom of each day column) --- */
+
+.schedule-grid__day-phase-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.schedule-grid__day-phase-bar--assembly {
+  background: var(--phase-assembly-fg);
+}
+
+.schedule-grid__day-phase-bar--event {
+  background: var(--phase-event-fg);
+}
+
+.schedule-grid__day-phase-bar--dismantle {
+  background: var(--phase-dismantle-fg);
+}

@@ -32,8 +32,6 @@ function createProps(
     hasLinkedTasks: false,
     wrapUpPlan: null,
     selectedPlanIdsForSharedSchedule: new Set<string>(),
-    archiveExpanded: false,
-    onToggleArchive: vi.fn(),
     onSelectPlan: vi.fn(),
     onCreatePlan: vi.fn(),
     onDeletePlan: vi.fn(),

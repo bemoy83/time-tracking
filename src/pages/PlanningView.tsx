@@ -64,8 +64,6 @@ export function PlanningView({
           hasLinkedTasks={workspace.hasLinkedTasks}
           wrapUpPlan={workspace.wrapUpPlan}
           selectedPlanIdsForSharedSchedule={workspace.selectedPlanIdsForSharedSchedule}
-          archiveExpanded={workspace.archiveExpanded}
-          onToggleArchive={workspace.toggleArchiveExpanded}
           onSelectPlan={workspace.handleSelectPlan}
           onCreatePlan={workspace.handleRequestNewPlan}
           onDeletePlan={workspace.handleDeletePlan}

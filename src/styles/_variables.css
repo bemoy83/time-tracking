@@ -39,6 +39,8 @@
   --wp-phase-dismantle-header-col-bg: rgba(124, 58, 237, 0.05);
   --phase-assembly-fg: #059669;
   --phase-dismantle-fg: #7c3aed;
+  --phase-event-fg: #d97706;
+  --wp-phase-event-header-bg: rgba(217, 119, 6, 0.10);
   --wp-phase-inactive-bg: #ebebed;
   --wp-phase-inactive-bg-hover: #e3e3e6;
   --wp-phase-activatable-hover: #eef2fb;

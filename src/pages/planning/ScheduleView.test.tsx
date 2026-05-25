@@ -41,50 +41,11 @@ describe('ScheduleView', () => {
 
     expect(container.querySelector('.schedule-view__top-band')).toBeTruthy();
     expect(container.querySelector('.schedule-view__top-band-health')).toBeTruthy();
-    expect(container.querySelector('.schedule-view__top-band-inputs')).toBeTruthy();
+    // Schedule inputs and work calendar are now in the sidebar drill-in, not in the main pane
+    expect(container.querySelector('.schedule-view__top-band-inputs')).toBeNull();
     expect(within(container).getByRole('button', { name: /Schedule Assistant/i })).toBeTruthy();
     expect(within(container).getAllByText('Schedule').length).toBeGreaterThan(0);
     expect(within(container).getByText('Hand off')).toBeTruthy();
-  });
-
-  it('collapses schedule inputs by default on desktop when dates are set', () => {
-    const plan = createPlan('Configured Plan');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-05';
-    plan.workCalendar = [
-      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
-      { date: '2026-03-03', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
-    ];
-
-    const { container } = renderSchedule(plan, true);
-    const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
-    expect(inputsColumn).toBeTruthy();
-
-    const toggle = (inputsColumn as HTMLElement).querySelector('.schedule-view__block-toggle');
-    expect(toggle).toBeTruthy();
-    expect((toggle as HTMLElement).getAttribute('aria-expanded')).toBe('false');
-
-    fireEvent.click(toggle as HTMLElement);
-    expect(within(inputsColumn as HTMLElement).getByText('Assembly from')).toBeTruthy();
-  });
-
-  it('keeps schedule inputs collapsible on non-desktop', () => {
-    const plan = createPlan('Configured Plan');
-    plan.assemblyStartDate = '2026-03-02';
-    plan.assemblyEndDate = '2026-03-05';
-    plan.workCalendar = [
-      { date: '2026-03-02', isWorkDay: true, accessStart: '08:00', accessEnd: '16:00', crewSize: 2 },
-    ];
-
-    const { container } = renderSchedule(plan, false);
-    const inputsColumn = container.querySelector('.schedule-view__top-band-inputs');
-    expect(inputsColumn).toBeTruthy();
-
-    const toggle = within(inputsColumn as HTMLElement).getByRole('button', {
-      name: /Schedule Inputs/i,
-    });
-    fireEvent.click(toggle);
-    expect(within(inputsColumn as HTMLElement).getByText('Assembly from')).toBeTruthy();
   });
 
   it('clears a scheduled row from the row face clear action', async () => {

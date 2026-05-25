@@ -113,6 +113,7 @@
     --wp-phase-dismantle-header-col-bg: rgba(167, 139, 250, 0.08);
     --phase-assembly-fg: #34d399;
     --phase-dismantle-fg: #a78bfa;
+    --phase-event-fg: #fbbf24;
     --wp-phase-inactive-bg: #161616;
     --wp-phase-inactive-bg-hover: #202020;
     --wp-phase-activatable-hover: #1e2333;
@@ -506,5 +507,42 @@
       linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,
       linear-gradient(to right, rgba(255,255,255,0.06), transparent) left / 24px 100% no-repeat scroll,
       linear-gradient(to left, rgba(255,255,255,0.06), transparent) right / 24px 100% no-repeat scroll;
+  }
+
+  /* --- WorkspaceSidebar --- */
+  .workspace-sidebar {
+    background: var(--surface-contained-bg);
+  }
+
+  .workspace-sidebar__detail-header {
+    border-bottom-color: var(--surface-base-border);
+    background: var(--surface-contained-bg);
+  }
+
+  .workspace-sidebar__drill-section-label {
+    color: var(--color-text-muted);
+  }
+
+  /* --- ScheduleMetricStrip --- */
+  .schedule-metric-strip {
+    border-bottom-color: var(--surface-base-border);
+    background: var(--surface-contained-bg);
+  }
+
+  /* --- ThumbCalendar --- */
+  .thumb-calendar__cell--assembly {
+    background: color-mix(in srgb, var(--phase-assembly-fg) 14%, transparent);
+  }
+
+  .thumb-calendar__cell--event {
+    background: color-mix(in srgb, var(--phase-event-fg) 14%, transparent);
+  }
+
+  .thumb-calendar__cell--dismantle {
+    background: color-mix(in srgb, var(--phase-dismantle-fg) 14%, transparent);
+  }
+
+  .thumb-calendar__cell:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
   }
 }

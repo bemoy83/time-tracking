@@ -60,6 +60,10 @@ interface SingleScheduleGridProps {
   onPersonHoursForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, personHours: number) => void;
   unresolvedIssueKeys?: Set<string>;
   activeIssueKey?: string | null;
+  onToggleWorkday?: (date: string) => void;
+  todayIso?: string;
+  eventStartDate?: string | null;
+  eventEndDate?: string | null;
 }
 
 interface SharedScheduleGridProps {
@@ -193,6 +197,10 @@ function SingleScheduleGrid({
   onPersonHoursForDateChange,
   unresolvedIssueKeys,
   activeIssueKey,
+  onToggleWorkday,
+  todayIso,
+  eventStartDate,
+  eventEndDate,
 }: SingleScheduleGridProps) {
   const dayByDate = useMemo(
     () => new Map(capacity.days.map((day) => [day.date, day])),
@@ -295,6 +303,11 @@ function SingleScheduleGrid({
           unscheduledCount={schedulableUnscheduledCount}
           readOnly={readOnly}
           hasWorkDays={workDays.length > 0}
+          phaseDates={phaseDates}
+          eventStartDate={eventStartDate}
+          eventEndDate={eventEndDate}
+          onToggleWorkday={onToggleWorkday}
+          todayIso={todayIso}
         />
       )}
       body={phaseGroups.length > 1

@@ -5,14 +5,14 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
 import type { Project, TimeEntry } from '../../../lib/types';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithImportedExecutionReturns';
-import { PlanList } from '../PlanList';
+import { WorkspaceSidebar } from './WorkspaceSidebar';
 import { PlanEditor } from '../PlanEditor';
 import { ScheduleView } from '../ScheduleView';
 import { SharedScheduleView } from '../SharedScheduleView';
@@ -28,6 +28,7 @@ import {
 import { SparklesIcon, TaskListIcon } from '../../../components/icons';
 import { WrapUpReviewPane } from '../WrapUpReviewPane';
 import { StatusBadge } from '../../../components/StatusBadge';
+import { ScheduleEditContext, type ScheduleEditContextValue } from './ScheduleEditContext';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -45,10 +46,6 @@ interface PlanningWorkspaceShellProps {
   hasLinkedTasks: boolean;
   wrapUpPlan: Plan | null;
   selectedPlanIdsForSharedSchedule: Set<string>;
-
-  // Sidebar preferences
-  archiveExpanded: boolean;
-  onToggleArchive: () => void;
 
   // Navigation
   onSelectPlan: (plan: Plan) => void;
@@ -80,8 +77,6 @@ export function PlanningWorkspaceShell({
   hasLinkedTasks,
   wrapUpPlan,
   selectedPlanIdsForSharedSchedule,
-  archiveExpanded,
-  onToggleArchive,
   onSelectPlan,
   onCreatePlan,
   onDeletePlan,
@@ -96,6 +91,7 @@ export function PlanningWorkspaceShell({
   onExit,
 }: PlanningWorkspaceShellProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
+  const [scheduleCtx, setScheduleCtx] = useState<ScheduleEditContextValue | null>(null);
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
     isReviewed: activePlan ? isPlanArchived(activePlan) : false,
@@ -107,58 +103,47 @@ export function PlanningWorkspaceShell({
   };
   const sidebarTabs = getVisibleGlobalWorkspaceTabs(sidebarTabContext);
 
+  const sidebarFooter = sidebarTabs.length > 0 ? (
+    <>
+      {sidebarTabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={`planning-workspace__sidebar-footer-item${activeTab === tab.id ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
+          onClick={tab.onSelect}
+          aria-label={tab.label}
+        >
+          {tab.id === 'shared-schedule' ? (
+            <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
+          ) : (
+            <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
+          )}
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </>
+  ) : null;
+
   return (
+    <ScheduleEditContext.Provider value={scheduleCtx}>
     <div className="planning-workspace">
       {/* Sidebar */}
-      <aside className="planning-workspace__sidebar">
-        <div className="planning-workspace__sidebar-header">
-          <button
-            type="button"
-            className="planning-workspace__exit"
-            onClick={onExit}
-            aria-label="Exit workspace"
-          >
-            <span>Exit workspace</span>
-          </button>
-        </div>
-        <div className="planning-workspace__sidebar-content">
-          <PlanList
-            plans={plans}
-            projects={projects}
-            tasks={tasks}
-            onSelect={onSelectPlan}
-            onCreate={onCreatePlan}
-            onDelete={onDeletePlan}
-            onOpenWrapUp={onOpenWrapUp}
-            onOpenInsights={onOpenInsights}
-            selectedPlanId={activePlan?.id ?? null}
-            sidebarMode
-            archiveExpanded={archiveExpanded}
-            onToggleArchive={onToggleArchive}
-            showAddToScheduleButton={activeTab === 'shared-schedule'}
-            selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
-            onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
-          />
-        </div>
-        <div className="planning-workspace__sidebar-footer">
-          {sidebarTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`planning-workspace__sidebar-footer-item${activeTab === tab.id ? ' planning-workspace__sidebar-footer-item--active' : ''}`}
-              onClick={tab.onSelect}
-              aria-label={tab.label}
-            >
-              {tab.id === 'shared-schedule' ? (
-                <TaskListIcon className="planning-workspace__sidebar-footer-icon" />
-              ) : (
-                <SparklesIcon className="planning-workspace__sidebar-footer-icon" />
-              )}
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-      </aside>
+      <WorkspaceSidebar
+        plans={plans}
+        projects={projects}
+        tasks={tasks}
+        activePlan={activePlan}
+        activeTab={activeTab}
+        onSelectPlan={onSelectPlan}
+        onCreatePlan={onCreatePlan}
+        onDeletePlan={onDeletePlan}
+        onOpenWrapUp={onOpenWrapUp}
+        onExit={onExit}
+        footer={sidebarFooter}
+        showAddToScheduleButton={activeTab === 'shared-schedule'}
+        selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
+        onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
+      />
 
       {/* Main pane */}
       <section className="planning-workspace__main">
@@ -207,6 +192,7 @@ export function PlanningWorkspaceShell({
             onOpenProgress={onOpenProgress}
             onOpenWrapUp={onOpenWrapUp}
             planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+            onScheduleContextChange={setScheduleCtx}
           />
         ) : activeTab === 'progress' ? (
           <div className="planning-workspace__main-inner">
@@ -248,6 +234,7 @@ export function PlanningWorkspaceShell({
         )}
       </section>
     </div>
+    </ScheduleEditContext.Provider>
   );
 }
 
@@ -391,6 +378,7 @@ interface WorkspaceMainPaneProps {
   onOpenProgress: () => void;
   onOpenWrapUp: (plan: Plan) => void;
   planIdsWithImportedExecutionReturns: Set<string>;
+  onScheduleContextChange: (ctx: ScheduleEditContextValue | null) => void;
 }
 
 function WorkspaceMainPane({
@@ -407,6 +395,7 @@ function WorkspaceMainPane({
   onSetActiveTab,
   onOpenProgress,
   onOpenWrapUp,
+  onScheduleContextChange,
   planIdsWithImportedExecutionReturns,
 }: WorkspaceMainPaneProps) {
   const beforeScheduleTabRef = useRef<(() => Promise<void>) | null>(null);
@@ -546,6 +535,7 @@ function WorkspaceMainPane({
               showBackButton={false}
               onBack={() => onSetActiveTab('edit')}
               readOnly={isReviewed}
+              onScheduleContextChange={onScheduleContextChange}
             />
           </div>
         )}

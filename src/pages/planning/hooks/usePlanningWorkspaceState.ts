@@ -36,10 +36,6 @@ export function usePlanningWorkspaceState({
     () => new Set(session?.selectedPlanIdsForSharedSchedule ?? []),
   );
 
-  const [archiveExpanded, setArchiveExpanded] = useState(() => {
-    try { return sessionStorage.getItem('planning_archive_expanded') === 'true'; } catch { return false; }
-  });
-
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
     session?.activeTab ?? 'edit',
   );
@@ -163,14 +159,6 @@ export function usePlanningWorkspaceState({
     setActiveTab('report');
   }, []);
 
-  const toggleArchiveExpanded = useCallback(() => {
-    setArchiveExpanded((prev) => {
-      const next = !prev;
-      try { sessionStorage.setItem('planning_archive_expanded', String(next)); } catch { /* ignore */ }
-      return next;
-    });
-  }, []);
-
   const handleWrapUpCompleted = useCallback(async (updatedPlan: Plan, success: boolean) => {
     await data.handleWrapUpCompleted(updatedPlan, success);
     setActivePlan((prev) => (prev?.id === updatedPlan.id ? updatedPlan : prev));
@@ -197,9 +185,6 @@ export function usePlanningWorkspaceState({
 
     activeTab,
     setActiveTab,
-
-    archiveExpanded,
-    toggleArchiveExpanded,
 
     showNewPlanSheet,
     setShowNewPlanSheet,

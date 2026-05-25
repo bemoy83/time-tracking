@@ -1,0 +1,120 @@
+/* ============================================================
+   Schedule Metric Strip — replaces KPI tile row + stepper card
+   ============================================================ */
+
+.schedule-metric-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 0 var(--space-md);
+  min-height: 36px;
+  border-bottom: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* --- Metric pairs (left side) --- */
+
+.schedule-metric-strip__metrics {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.schedule-metric-strip__divider {
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.schedule-metric-strip__metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  white-space: nowrap;
+  font-size: var(--font-caption);
+}
+
+.schedule-metric-strip__value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-metric-strip__label {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.schedule-metric-strip__metric--risk .schedule-metric-strip__value {
+  color: var(--state-danger-fg);
+}
+
+/* --- Stepper (right side) --- */
+
+.schedule-metric-strip__stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.schedule-metric-strip__step-sep {
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.schedule-metric-strip__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.schedule-metric-strip__step--done {
+  color: var(--state-success-fg);
+}
+
+.schedule-metric-strip__step-check {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.schedule-metric-strip__step-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--state-on-solid);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.schedule-metric-strip__step-cta:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.schedule-metric-strip__step-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.schedule-metric-strip__step-cta:focus-visible {
+  outline-offset: 2px;
+}

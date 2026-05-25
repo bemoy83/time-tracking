@@ -1,3 +1,4 @@
+@import './schedule-view/metric-strip.css';
 @import './schedule-view/base.css';
 @import './schedule-view/schedule-input-context.css';
 @import './schedule-view/conflict-banner.css';
@@ -9,3 +10,4 @@
 @import './schedule-view/work-calendar.css';
 @import './schedule-view/print.css';
 @import './schedule-view/assistant-panel.css';
+@import './schedule-view/thumb-calendar.css';
