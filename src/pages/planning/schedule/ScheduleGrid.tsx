@@ -54,7 +54,6 @@ interface SingleScheduleGridProps {
   capacity: CapacitySummary;
   phaseDates: PhaseDateValues;
   readOnly: boolean;
-  onAutoSchedule?: () => void;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
   onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
   onPersonHoursForDateChange?: (lineItemId: string, phase: BuildPhase, date: string, personHours: number) => void;
@@ -191,7 +190,6 @@ function SingleScheduleGrid({
   capacity,
   phaseDates,
   readOnly,
-  onAutoSchedule,
   onToggleAssignment,
   onClearRowSchedule,
   onPersonHoursForDateChange,
@@ -299,7 +297,6 @@ function SingleScheduleGrid({
           dayByDate={dayByDate}
           gridColumns={gridColumns}
           label="Work package"
-          onAutoSchedule={onAutoSchedule}
           unscheduledCount={schedulableUnscheduledCount}
           readOnly={readOnly}
           hasWorkDays={workDays.length > 0}

@@ -35,16 +35,14 @@ function renderSchedule(plan: Plan, desktop = false) {
 }
 
 describe('ScheduleView', () => {
-  it('renders the top-band layout and schedule assistant entry point on desktop', () => {
+  it('renders the toolbar row and schedule assistant entry point', () => {
     const plan = createPlan('Schedule Test');
     const { container } = renderSchedule(plan, true);
 
-    expect(container.querySelector('.schedule-view__top-band')).toBeTruthy();
-    expect(container.querySelector('.schedule-view__top-band-health')).toBeTruthy();
-    // Schedule inputs and work calendar are now in the sidebar drill-in, not in the main pane
-    expect(container.querySelector('.schedule-view__top-band-inputs')).toBeNull();
+    expect(container.querySelector('.schedule-toolbar')).toBeTruthy();
+    expect(container.querySelector('.schedule-toolbar__chips')).toBeTruthy();
+    expect(within(container).getByText(/Auto-schedule/i)).toBeTruthy();
     expect(within(container).getByRole('button', { name: /Schedule Assistant/i })).toBeTruthy();
-    expect(within(container).getAllByText('Schedule').length).toBeGreaterThan(0);
     expect(within(container).getByText('Hand off')).toBeTruthy();
   });
 

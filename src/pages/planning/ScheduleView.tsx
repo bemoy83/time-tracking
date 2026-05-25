@@ -721,7 +721,7 @@ export function ScheduleView({
           )}
           <button
             type="button"
-            className={`btn btn--secondary btn--sm${planningIssues.length > 0 ? ' schedule-view__assistant-btn--has-issues' : ''}`}
+            className="btn btn--secondary btn--sm"
             onClick={() => setIsAssistantPanelOpen(true)}
             aria-haspopup="dialog"
           >
