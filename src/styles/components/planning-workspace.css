@@ -378,7 +378,7 @@
 
 /* Override plan list styles inside sidebar: remove outer padding since sidebar provides it */
 .planning-workspace__sidebar-content .planning-view {
-  gap: var(--space-sm);
+  gap: 12px;
 }
 
 /* Override a11y min 44px so add-to-schedule button stays 22px (matches status icon) */
@@ -469,25 +469,22 @@
   transform: rotate(90deg);
 }
 
-/* Compact list variant for sidebar */
+/* Compact list variant for sidebar — flat list; rows separated by inset dividers */
 .planning-view__list--compact {
-  border-radius: var(--radius-lg);
+  border-radius: 0;
+  gap: 0;
 }
 
-/* No dividers in compact sidebar — rows are separated by gap + hover bg only */
-.planning-view__list--compact .planning-view__row:not(:last-child) .planning-view__item::after {
-  display: none;
-}
-
-/* First/last item radius to match list container */
-.planning-view__list--compact .planning-view__row:first-child .planning-view__item {
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
-}
-
-.planning-view__list--compact .planning-view__row:last-child .planning-view__item {
-  border-bottom-left-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-lg);
+/* Inset divider between rows — starts at content left-edge, iOS-style */
+.planning-view__list--compact .planning-view__row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--space-md);
+  right: 0;
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
 }
 
 .planning-view__list--compact .planning-view__row {
@@ -524,8 +521,7 @@
 /* --- Selected plan highlight in sidebar --- */
 
 .planning-view__row.planning-view__row--selected .planning-view__item {
-  background: var(--surface-contained-inset);
-  box-shadow: var(--shadow-xs);
+  background: var(--surface-brand-subtle);
 }
 
 .planning-view__row.planning-view__row--selected .planning-view__item-btn {

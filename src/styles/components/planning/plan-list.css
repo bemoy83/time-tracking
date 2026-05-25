@@ -117,7 +117,7 @@
 }
 
 .planning-view__item-title {
-  font-weight: 500;
+  font-weight: 600;
   word-wrap: break-word;
   overflow-wrap: break-word;
   display: -webkit-box;
@@ -178,7 +178,7 @@
 
 .planning-view__status-icon--draft,
 .planning-view__status-icon--review-ready {
-  background: var(--color-amber);
+  background: var(--color-amber-solid);
 }
 
 .planning-view__status-icon--active,
@@ -261,14 +261,14 @@
   flex-shrink: 0;
 }
 
-/* --- Compact sidebar: floating rows — each item is independently rounded --- */
+/* --- Compact sidebar: flat list rows, dividers act as separators --- */
 
 .planning-view__list--compact .planning-view__item {
   position: relative;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: transparent;
-  transition: background-color 0.12s, box-shadow 0.12s;
+  transition: background-color 0.12s;
 }
 
 .planning-view__list--compact .planning-view__row:hover .planning-view__item {

@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440">
+  <title>Schedule View Redesign — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================================
+       Design Tokens — mirrored from _variables.css
+       ============================================================ */
+    :root {
+      /* Surface layers */
+      --surface-base-bg:          #e8eaf0;
+      --surface-base-border:      #e0e0e0;
+      --surface-contained-bg:     #ffffff;
+      --surface-contained-border: #e0e0e0;
+      --surface-contained-inset:  #f3f3f7;
+      --surface-border-hover:     #cbd5e1;
+      --surface-contained-hover:  #d4d6e0;
+      --surface-contained-active: #c8cad4;
+      --surface-brand-subtle:     rgba(37, 99, 235, 0.08);
+      --surface-brand-subtle-hover: rgba(37, 99, 235, 0.12);
+
+      /* Work-package phase tints */
+      --wp-phase-assembly-header-bg:    rgba(5, 150, 105, 0.09);
+      --wp-phase-dismantle-header-bg:   rgba(124, 58, 237, 0.09);
+      --phase-assembly-fg:   #059669;
+      --phase-dismantle-fg:  #7c3aed;
+
+      /* Semantic state palette */
+      --state-on-solid: #ffffff;
+
+      --state-info-fg:           #2563eb;
+      --state-info-fg-strong:    #1e40af;
+      --state-info-bg:           rgba(59, 130, 246, 0.08);
+      --state-info-bg-strong:    rgba(59, 130, 246, 0.12);
+
+      --state-success-fg:        #16a34a;
+      --state-success-bg:        rgba(22, 163, 74, 0.12);
+
+      --state-warning-fg:        #d97706;
+      --state-warning-fg-strong: #92400e;
+      --state-warning-bg-soft:   rgba(245, 158, 11, 0.06);
+      --state-warning-bg:        rgba(245, 158, 11, 0.10);
+      --state-warning-bg-strong: rgba(245, 158, 11, 0.15);
+      --state-warning-border:    rgba(245, 158, 11, 0.30);
+
+      --state-danger-fg:         #dc2626;
+      --state-danger-fg-strong:  #991b1b;
+      --state-danger-bg-soft:    rgba(239, 68, 68, 0.08);
+      --state-danger-bg:         rgba(239, 68, 68, 0.10);
+      --state-danger-border:     rgba(220, 38, 38, 0.30);
+
+      /* Core colors */
+      --color-bg:           var(--surface-base-bg);
+      --color-text:         #13131a;
+      --color-text-muted:   #65657a;
+      --color-border:       var(--surface-contained-border);
+      --color-primary:      #2563eb;
+      --color-primary-hover:#1d4ed8;
+      --color-amber:        var(--state-warning-fg);
+      --color-amber-solid:  #b45309;
+      --color-ready:        var(--state-success-fg);
+      --status-badge-draft-bg: #b45309;
+
+      /* Typography */
+      --font-large:   1.5rem;
+      --font-heading: 1.1875rem;
+      --font-body:    1rem;
+      --font-small:   0.8125rem;
+      --font-label:   0.75rem;
+      --font-caption: 0.75rem;
+      --font-sans:    'Outfit', system-ui, sans-serif;
+      --font-mono:    'DM Mono', ui-monospace, monospace;
+
+      /* Spacing */
+      --space-xs: 0.25rem;   /* 4px */
+      --space-sm: 0.5rem;    /* 8px */
+      --space-md: 1rem;      /* 16px */
+      --space-lg: 1.5rem;    /* 24px */
+      --space-xl: 2rem;      /* 32px */
+
+      /* Radius */
+      --radius-sm:   4px;
+      --radius-md:   8px;
+      --radius-lg:   14px;
+      --radius-xl:   20px;
+      --radius-2xl:  26px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-xs: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-sm: 0 2px 12px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
+      --shadow-md: 0 6px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-blue: 0 6px 20px rgba(37,99,235,0.30);
+
+      /* Easing */
+      --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ============================================================
+       Reset & base
+       ============================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 1440px;
+      height: 900px;
+      overflow: hidden;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      color: var(--color-text);
+      background: var(--surface-base-bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button {
+      font-family: var(--font-sans);
+      cursor: pointer;
+    }
+
+    /* ============================================================
+       Planning Workspace Shell
+       ============================================================ */
+    .workspace {
+      display: flex;
+      width: 1440px;
+      height: 900px;
+      padding: 12px;
+      gap: 10px;
+      background: var(--surface-base-bg);
+      overflow: hidden;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      width: 288px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface-contained-bg);
+      border-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: width 0.28s var(--ease-enter), opacity 0.2s, box-shadow 0.28s;
+    }
+
+    .sidebar--collapsed {
+      width: 0;
+      opacity: 0;
+      box-shadow: none;
+    }
+
+    /* Sidebar header — zone label + new plan button */
+    .sidebar__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px var(--space-md) 12px;
+      flex-shrink: 0;
+    }
+
+    .sidebar__zone-label {
+      font-size: var(--font-caption);
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .sidebar__new-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      border: none;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+      color: var(--state-on-solid);
+      font-size: var(--font-small);
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+
+    .sidebar__new-btn:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    .sidebar__new-btn-icon {
+      font-size: 15px;
+      line-height: 1;
+      margin-top: -1px;
+    }
+
+    /* Sidebar plan list */
+    .sidebar__list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 var(--space-sm);
+      min-height: 0;
+    }
+
+    .plan-row {
+      display: flex;
+      align-items: center;
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: background-color 0.12s;
+    }
+
+    .plan-row:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: var(--space-md);
+      right: 0;
+      height: 1px;
+      background: var(--color-border);
+      pointer-events: none;
+    }
+
+    .plan-row--selected {
+      background: var(--surface-brand-subtle);
+    }
+
+    /* Orange accent bar for DRAFT status */
+    .plan-row--draft::before {
+      content: '';
+      position: absolute;
+      inset-block: 5px;
+      left: 0;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--color-amber);
+      pointer-events: none;
+    }
+
+    .plan-row:not(.plan-row--selected):hover {
+      background: var(--surface-contained-hover);
+    }
+
+    .plan-row__btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 9px var(--space-sm) 9px calc(3px + var(--space-md));
+      border: none;
+      background: none;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      min-height: 40px;
+    }
+
+    .plan-row__content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .plan-row__title {
+      font-size: var(--font-small);
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .plan-row--selected .plan-row__title {
+      font-weight: 700;
+    }
+
+    .plan-row__date {
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+    }
+
+    /* Status icon (amber solid circle) */
+    .plan-row__status-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--color-amber-solid);
+      color: #fff;
+      margin-right: var(--space-xs);
+    }
+
+    .plan-row__status-icon svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    /* Sidebar footer */
+    .sidebar__footer {
+      flex-shrink: 0;
+      padding: var(--space-sm) var(--space-md);
+      border-top: 1px solid var(--surface-contained-border);
+    }
+
+    .sidebar__footer-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: 100%;
+      padding: var(--space-sm);
+      border: none;
+      border-radius: var(--radius-md);
+      background: none;
+      color: var(--color-text-muted);
+      font-size: var(--font-small);
+      font-weight: 500;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .sidebar__footer-item:hover {
+      background: var(--surface-contained-hover);
+      color: var(--color-text);
+    }
+
+    .sidebar__footer-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ---- Main content card ---- */
+    .main-card {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface-contained-bg);
+      border-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Context Bar
+       ============================================================ */
+    .context-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: 0 20px;
+      min-height: 52px;
+      flex-shrink: 0;
+      background: var(--surface-contained-bg);
+    }
+
+    .sidebar-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      flex-shrink: 0;
+      border: none;
+      border-radius: var(--radius-md);
+      background: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+      padding: 0;
+    }
+
+    .sidebar-toggle:hover {
+      background: var(--surface-contained-hover);
+      color: var(--color-text);
+    }
+
+    .sidebar-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .context-bar__title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    .context-bar__badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--status-badge-draft-bg);
+      color: #fff;
+      font-size: var(--font-caption);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .context-bar__phases {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .context-bar__phase {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .context-bar__phase-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .context-bar__phase-dot--assembly  { background: var(--phase-assembly-fg); }
+    .context-bar__phase-dot--dismantle { background: var(--phase-dismantle-fg); }
+
+    /* ============================================================
+       Tab Strip (desktop pill style)
+       ============================================================ */
+    .tab-strip {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 20px;
+      background: var(--surface-contained-inset);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 15px;
+      border: none;
+      border-radius: var(--radius-full);
+      background: none;
+      color: var(--color-text-muted);
+      font-family: var(--font-sans);
+      font-size: var(--font-small);
+      font-weight: 500;
+      line-height: 1;
+      transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover:not(.tab-btn--active) {
+      background: rgba(0,0,0,0.04);
+      color: var(--color-text);
+    }
+
+    .tab-btn--active {
+      background: var(--surface-contained-bg);
+      box-shadow: var(--shadow-sm);
+      color: var(--color-text);
+      font-weight: 600;
+    }
+
+    /* ============================================================
+       Tab Content Area (inset bg, flex column, fills remaining height)
+       ============================================================ */
+    .tab-content {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface-contained-inset);
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Zone A — Metric Strip
+       ============================================================ */
+    .metric-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+      height: 36px;
+      flex-shrink: 0;
+      padding: 0 var(--space-md);
+      background: var(--surface-contained-bg);
+      border-bottom: 1px solid var(--surface-contained-border);
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .metric-item__value {
+      font-family: var(--font-mono);
+      font-size: var(--font-small);
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .metric-item__label {
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+      line-height: 1;
+    }
+
+    .metric-item--muted .metric-item__value   { color: var(--color-text-muted); }
+    .metric-item--warning .metric-item__value { color: var(--state-warning-fg); }
+    .metric-item--normal .metric-item__value  { color: var(--color-text); }
+    .metric-item--danger .metric-item__value  { color: var(--state-danger-fg); }
+
+    .metric-strip__sep {
+      width: 1px;
+      height: 14px;
+      background: var(--surface-contained-border);
+      flex-shrink: 0;
+    }
+
+    /* Inline stepper (right side of metric strip) */
+    .progress-stepper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .progress-stepper__step {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: var(--font-caption);
+      white-space: nowrap;
+    }
+
+    .progress-stepper__step--done {
+      color: var(--state-success-fg);
+    }
+
+    .progress-stepper__step--current {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .progress-stepper__step--future {
+      color: var(--color-text-muted);
+    }
+
+    .progress-stepper__step-icon {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+    }
+
+    .progress-stepper__dot {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      line-height: 1;
+      margin: 0 1px;
+    }
+
+    /* ============================================================
+       Zone B — Two-column layout
+       ============================================================ */
+    .zone-b {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ---- Config Panel (left, 220px) ---- */
+    .config-panel {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+      padding: var(--space-md);
+      background: var(--surface-contained-bg);
+      border-right: 1px solid var(--surface-contained-border);
+      overflow-y: auto;
+    }
+
+    /* Section label */
+    .config-section__label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .config-section__label {
+      font-size: var(--font-caption);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-text-muted);
+    }
+
+    .config-section__edit-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      transition: background-color 0.12s, color 0.12s;
+    }
+
+    .config-section__edit-btn:hover {
+      background: var(--surface-contained-hover);
+      color: var(--color-text);
+    }
+
+    .config-section__edit-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    /* Schedule Inputs — label/value pairs */
+    .schedule-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .schedule-input-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .schedule-input-pair__label {
+      font-size: var(--font-caption);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+    }
+
+    .schedule-input-pair__value {
+      font-size: var(--font-small);
+      font-weight: 500;
+      color: var(--color-text);
+      line-height: 1.3;
+    }
+
+    /* Work Calendar — rows */
+    .work-calendar {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .work-day-row {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      padding: 0 var(--space-xs);
+      border-radius: var(--radius-sm);
+      transition: background-color 0.12s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .work-day-row:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--surface-contained-border);
+      pointer-events: none;
+    }
+
+    .work-day-row:hover {
+      background: var(--surface-contained-hover);
+    }
+
+    .work-day-row__day {
+      width: 32px;
+      font-size: var(--font-small);
+      font-weight: 700;
+      color: var(--color-text);
+      flex-shrink: 0;
+    }
+
+    .work-day-row__time {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+    }
+
+    .work-day-row__crew {
+      width: 24px;
+      font-size: var(--font-small);
+      font-weight: 700;
+      color: var(--color-text);
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Add day dashed button */
+    .add-day-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+      height: 32px;
+      margin-top: 8px;
+      border: 1.5px dashed var(--color-border);
+      border-radius: var(--radius-md);
+      background: none;
+      color: var(--color-text-muted);
+      font-family: var(--font-sans);
+      font-size: var(--font-caption);
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .add-day-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* ============================================================
+       Zone B Right — Grid Column
+       ============================================================ */
+    .grid-column {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ---- Grid Toolbar ---- */
+    .grid-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      height: 44px;
+      flex-shrink: 0;
+      padding: 0 var(--space-md);
+      background: var(--surface-contained-inset);
+      border-bottom: 1px solid var(--surface-contained-border);
+    }
+
+    .btn-primary-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 var(--space-md);
+      border: none;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+      color: var(--state-on-solid);
+      font-family: var(--font-sans);
+      font-size: var(--font-small);
+      font-weight: 600;
+      box-shadow: var(--shadow-blue);
+      transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-primary-pill:hover {
+      background: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(37,99,235,0.38);
+    }
+
+    .btn-primary-pill svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+
+    .grid-toolbar__right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-left: auto;
+    }
+
+    /* Chip styles */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: var(--font-caption);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .chip--danger {
+      background: var(--state-danger-bg);
+      color: var(--state-danger-fg);
+    }
+
+    .chip--warning {
+      background: var(--state-warning-bg);
+      color: var(--state-warning-fg);
+    }
+
+    /* Schedule Assistant toggle button */
+    .assistant-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 var(--space-sm);
+      border: 1.5px solid var(--surface-contained-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-contained-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: var(--font-small);
+      font-weight: 500;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .assistant-btn:hover:not(.assistant-btn--active) {
+      background: var(--surface-contained-hover);
+    }
+
+    .assistant-btn--active {
+      background: var(--surface-brand-subtle);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .assistant-btn svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+
+    /* ---- Schedule Grid ---- */
+    .grid-and-drawer {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .schedule-grid {
+      flex: 1;
+      min-width: 0;
+      overflow: auto;
+      background: var(--surface-contained-bg);
+    }
+
+    /* Grid table */
+    .grid-table {
+      border-collapse: collapse;
+      min-width: 100%;
+      table-layout: fixed;
+    }
+
+    /* Sticky header */
+    .grid-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .grid-header th {
+      background: var(--surface-contained-bg);
+      border-bottom: 2px solid var(--surface-contained-border);
+      vertical-align: bottom;
+      padding: 0;
+    }
+
+    .grid-header th:not(:first-child) {
+      border-left: 1px solid var(--surface-contained-border);
+    }
+
+    .grid-header__wp-cell {
+      width: 240px;
+      min-width: 240px;
+      padding: 0 var(--space-md);
+      height: 40px;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      z-index: 11;
+      background: var(--surface-contained-bg);
+    }
+
+    .grid-header__wp-label {
+      font-size: var(--font-caption);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-text-muted);
+    }
+
+    .grid-header__date-cell {
+      width: 100px;
+      min-width: 100px;
+      height: 40px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .grid-header__date-day {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      letter-spacing: 0.03em;
+      line-height: 1.3;
+    }
+
+    .grid-header__date-md {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: var(--font-caption);
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1.3;
+    }
+
+    /* Phase group header row */
+    .grid-phase-header td {
+      height: 32px;
+      padding: 0 var(--space-md);
+      vertical-align: middle;
+      background: var(--surface-contained-inset);
+      border-top: 4px solid var(--surface-contained-inset);
+    }
+
+    .grid-phase-header td:not(:first-child) {
+      border-left: 1px solid var(--surface-contained-border);
+    }
+
+    .grid-phase-header__label-cell {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+    }
+
+    .grid-phase-header--assembly td {
+      background: var(--wp-phase-assembly-header-bg);
+    }
+
+    .grid-phase-header--assembly .grid-phase-header__label-cell {
+      border-left: 3px solid var(--phase-assembly-fg);
+      background: var(--wp-phase-assembly-header-bg);
+    }
+
+    .grid-phase-header--dismantle td {
+      background: var(--wp-phase-dismantle-header-bg);
+    }
+
+    .grid-phase-header--dismantle .grid-phase-header__label-cell {
+      border-left: 3px solid var(--phase-dismantle-fg);
+      background: var(--wp-phase-dismantle-header-bg);
+    }
+
+    .grid-phase-header__label {
+      font-size: var(--font-caption);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .grid-phase-header--assembly .grid-phase-header__label { color: var(--phase-assembly-fg); }
+    .grid-phase-header--dismantle .grid-phase-header__label { color: var(--phase-dismantle-fg); }
+
+    /* Work package row */
+    .grid-wp-row td {
+      height: 72px;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--surface-contained-border);
+    }
+
+    .grid-wp-row td:not(:first-child) {
+      border-left: 1px solid var(--surface-contained-border);
+    }
+
+    /* Sticky left column for WP name */
+    .grid-wp-row__name-cell {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      padding: 0 var(--space-md) 0 calc(var(--space-md) + 8px);
+      background: var(--surface-contained-bg);
+      vertical-align: middle;
+    }
+
+    .grid-wp-row__name-cell-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .grid-wp-row__name {
+      font-size: var(--font-small);
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .grid-wp-row__tags {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .grid-wp-row__tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 6px;
+      height: 16px;
+      border-radius: var(--radius-full);
+      background: rgba(37,99,235,0.10);
+      color: var(--color-primary);
+      font-size: var(--font-caption);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .grid-wp-row__unit {
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+    }
+
+    .grid-wp-row__meta {
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Unscheduled cell — dashed inset */
+    .grid-cell {
+      background: var(--surface-contained-inset);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-sm);
+      margin: 6px 8px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.12s, border-color 0.12s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .grid-cell__plus {
+      opacity: 0;
+      color: var(--color-text-muted);
+      font-size: 18px;
+      line-height: 1;
+      transition: opacity 0.12s;
+      user-select: none;
+    }
+
+    .grid-wp-row td:not(.grid-wp-row__name-cell):hover .grid-cell {
+      border-color: var(--color-primary);
+      background: var(--surface-brand-subtle);
+    }
+
+    .grid-wp-row td:not(.grid-wp-row__name-cell):hover .grid-cell__plus {
+      opacity: 1;
+      color: var(--color-primary);
+    }
+
+    /* Spacer row between phase groups */
+    .grid-spacer td {
+      height: 8px;
+      background: var(--surface-contained-inset);
+    }
+
+    /* ============================================================
+       Schedule Assistant Drawer
+       ============================================================ */
+    .assistant-drawer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 0;
+      overflow: hidden;
+      background: var(--surface-contained-bg);
+      border-left: 0px solid var(--surface-contained-border);
+      box-shadow: none;
+      z-index: 10;
+      transition: width 0.25s var(--ease-enter), box-shadow 0.25s, border-left-width 0s 0.25s;
+    }
+
+    .assistant-drawer--open {
+      width: 300px;
+      border-left-width: 1px;
+      box-shadow: -6px 0 24px rgba(0, 0, 0, 0.07);
+      transition: width 0.25s var(--ease-enter), box-shadow 0.25s, border-left-width 0s 0s;
+    }
+
+    .assistant-drawer__inner {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .assistant-drawer__header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .assistant-drawer__header-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .assistant-drawer__title {
+      flex: 1;
+      font-size: var(--font-body);
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .assistant-drawer__close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: none;
+      border-radius: var(--radius-sm);
+      color: var(--color-text-muted);
+      font-size: 18px;
+      line-height: 1;
+      transition: background-color 0.12s, color 0.12s;
+    }
+
+    .assistant-drawer__close:hover {
+      background: var(--surface-contained-hover);
+      color: var(--color-text);
+    }
+
+    /* Issue cards */
+    .issue-card {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      padding: var(--space-sm);
+      background: var(--surface-contained-inset);
+      border-radius: var(--radius-lg);
+      border-left: 3px solid transparent;
+    }
+
+    .issue-card--warning { border-left-color: var(--state-warning-fg); }
+    .issue-card--info    { border-left-color: var(--state-info-fg); }
+
+    .issue-card__header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .issue-card__severity {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .issue-card__severity--warning {
+      background: var(--state-warning-bg);
+      color: var(--state-warning-fg);
+    }
+
+    .issue-card__severity--info {
+      background: var(--state-info-bg);
+      color: var(--state-info-fg);
+    }
+
+    .issue-card__title {
+      font-size: var(--font-small);
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .issue-card__desc {
+      font-size: var(--font-caption);
+      color: var(--color-text);
+      line-height: 1.45;
+    }
+
+    .issue-card__impact {
+      font-size: var(--font-caption);
+      color: var(--color-text-muted);
+    }
+
+    .issue-card__action {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border: 1.5px solid var(--surface-contained-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-contained-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: var(--font-caption);
+      font-weight: 600;
+      transition: background-color 0.12s, border-color 0.12s;
+      align-self: flex-start;
+    }
+
+    .issue-card__action:hover {
+      background: var(--surface-contained-hover);
+      border-color: var(--surface-border-hover);
+    }
+
+    /* ============================================================
+       Utility
+       ============================================================ */
+    .u-mono { font-family: var(--font-mono); }
+
+    /* Scrollbar styling for webkit */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-contained-hover); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-contained-border); }
+
+  </style>
+</head>
+<body>
+
+<div class="workspace">
+
+  <!-- =====================================================
+       SIDEBAR
+       ===================================================== -->
+  <aside class="sidebar">
+
+    <div class="sidebar__header">
+      <span class="sidebar__zone-label">Drafts</span>
+      <button class="sidebar__new-btn" type="button">
+        <!-- Plus icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+        </svg>
+        New Plan
+      </button>
+    </div>
+
+    <div class="sidebar__list">
+      <ul style="list-style:none;padding:0;margin:0;">
+
+        <!-- Project 2 — SELECTED + DRAFT -->
+        <li class="plan-row plan-row--selected plan-row--draft">
+          <button class="plan-row__btn" type="button">
+            <div class="plan-row__content">
+              <span class="plan-row__title">Project 2</span>
+              <span class="plan-row__date u-mono">May 26 – May 31</span>
+            </div>
+            <!-- Amber solid status icon — draft/pencil -->
+            <span class="plan-row__status-icon" title="Draft">
+              <!-- Pencil icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
+              </svg>
+            </span>
+          </button>
+        </li>
+
+        <!-- Test — UNSELECTED + DRAFT -->
+        <li class="plan-row plan-row--draft">
+          <button class="plan-row__btn" type="button">
+            <div class="plan-row__content">
+              <span class="plan-row__title">Test</span>
+              <span class="plan-row__date u-mono">Jun 2 – Jun 6</span>
+            </div>
+            <span class="plan-row__status-icon" title="Draft">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
+              </svg>
+            </span>
+          </button>
+        </li>
+
+      </ul>
+    </div>
+
+    <div class="sidebar__footer">
+      <!-- Shared Schedule -->
+      <button class="sidebar__footer-item" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="12" height="10" rx="2"/>
+          <line x1="2" y1="6" x2="14" y2="6"/>
+          <line x1="6" y1="3" x2="6" y2="2"/>
+          <line x1="10" y1="3" x2="10" y2="2"/>
+        </svg>
+        Shared Schedule
+      </button>
+      <!-- Insights -->
+      <button class="sidebar__footer-item" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="2,12 5,8 8,10 11,5 14,7"/>
+          <circle cx="14" cy="7" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        Insights
+      </button>
+    </div>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN CONTENT CARD
+       ===================================================== -->
+  <div class="main-card">
+
+    <!-- Context Bar -->
+    <div class="context-bar">
+      <!-- Sidebar toggle -->
+      <button class="sidebar-toggle" type="button" id="sidebarToggle" title="Toggle plan list" aria-label="Toggle plan list">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" fill="none"/>
+          <line x1="6" y1="2" x2="6" y2="14"/>
+        </svg>
+      </button>
+      <span class="context-bar__title">Project 2</span>
+      <span class="context-bar__badge">Draft</span>
+
+      <div class="context-bar__phases">
+        <span class="context-bar__phase">
+          <span class="context-bar__phase-dot context-bar__phase-dot--assembly"></span>
+          Assembly
+        </span>
+        <span class="context-bar__phase" style="color:var(--color-text-muted);font-size:var(--font-caption);">·</span>
+        <span class="context-bar__phase">
+          <span class="context-bar__phase-dot context-bar__phase-dot--dismantle"></span>
+          Dismantle
+        </span>
+        <span style="font-size:var(--font-caption);color:var(--color-text-muted);margin-left:4px;">
+          May 26 – May 31
+        </span>
+      </div>
+    </div>
+
+    <!-- Tab Strip -->
+    <div class="tab-strip">
+      <button class="tab-btn" type="button">Edit</button>
+      <button class="tab-btn tab-btn--active" type="button">Schedule</button>
+      <button class="tab-btn" type="button">Progress</button>
+    </div>
+
+    <!-- Tab Content (Schedule tab active) -->
+    <div class="tab-content">
+
+      <!-- Zone A: Metric Strip -->
+      <div class="metric-strip">
+
+        <div class="metric-item metric-item--muted">
+          <span class="metric-item__value">0 h</span>
+          <span class="metric-item__label">Scheduled</span>
+        </div>
+
+        <div class="metric-item metric-item--warning">
+          <span class="metric-item__value">71.8 h</span>
+          <span class="metric-item__label">Unscheduled</span>
+        </div>
+
+        <div class="metric-item metric-item--muted">
+          <span class="metric-item__value">144 h</span>
+          <span class="metric-item__label">Usable</span>
+        </div>
+
+        <div class="metric-strip__sep"></div>
+
+        <div class="metric-item metric-item--muted">
+          <span class="metric-item__value">0</span>
+          <span class="metric-item__label">Over-allocated</span>
+        </div>
+
+        <!-- Inline progress stepper -->
+        <div class="progress-stepper">
+          <!-- Plan ✓ -->
+          <span class="progress-stepper__step progress-stepper__step--done">
+            <!-- Checkmark -->
+            <svg class="progress-stepper__step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1.5,6.5 4.5,9.5 10.5,3.5"/>
+            </svg>
+            Plan
+          </span>
+          <span class="progress-stepper__dot">·</span>
+          <!-- Crew ✓ -->
+          <span class="progress-stepper__step progress-stepper__step--done">
+            <svg class="progress-stepper__step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1.5,6.5 4.5,9.5 10.5,3.5"/>
+            </svg>
+            Crew
+          </span>
+          <span class="progress-stepper__dot">·</span>
+          <!-- Schedule (current) -->
+          <span class="progress-stepper__step progress-stepper__step--current">Schedule</span>
+          <span class="progress-stepper__dot">·</span>
+          <!-- Hand off (future) -->
+          <span class="progress-stepper__step progress-stepper__step--future">Hand off</span>
+        </div>
+
+      </div>
+
+      <!-- Zone B -->
+      <div class="zone-b">
+
+        <!-- Left: Config Panel -->
+        <div class="config-panel">
+
+          <!-- Schedule Inputs -->
+          <div>
+            <div class="config-section__label-row">
+              <span class="config-section__label">Schedule Inputs</span>
+              <button class="config-section__edit-btn" type="button" title="Edit">
+                <!-- Pencil icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="schedule-inputs">
+              <div class="schedule-input-pair">
+                <span class="schedule-input-pair__label">Dates</span>
+                <span class="schedule-input-pair__value u-mono">May 26 – May 31</span>
+              </div>
+              <div class="schedule-input-pair">
+                <span class="schedule-input-pair__label">Duration</span>
+                <span class="schedule-input-pair__value">5 days</span>
+              </div>
+              <div class="schedule-input-pair">
+                <span class="schedule-input-pair__label">Default Crew</span>
+                <span class="schedule-input-pair__value">6 workers</span>
+              </div>
+              <div class="schedule-input-pair">
+                <span class="schedule-input-pair__label">Efficiency</span>
+                <span class="schedule-input-pair__value">Full pace — 100%</span>
+              </div>
+              <div class="schedule-input-pair">
+                <span class="schedule-input-pair__label">Event</span>
+                <span class="schedule-input-pair__value u-mono">May 28 – May 28</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Work Calendar -->
+          <div>
+            <div class="config-section__label-row">
+              <span class="config-section__label">Work Calendar</span>
+            </div>
+            <div class="work-calendar">
+              <div class="work-day-row">
+                <span class="work-day-row__day">Tue</span>
+                <span class="work-day-row__time">8:00 – 16:00</span>
+                <span class="work-day-row__crew">6</span>
+              </div>
+              <div class="work-day-row">
+                <span class="work-day-row__day">Wed</span>
+                <span class="work-day-row__time">8:00 – 16:00</span>
+                <span class="work-day-row__crew">6</span>
+              </div>
+              <div class="work-day-row">
+                <span class="work-day-row__day">Fri</span>
+                <span class="work-day-row__time">8:00 – 16:00</span>
+                <span class="work-day-row__crew">6</span>
+              </div>
+            </div>
+            <button class="add-day-btn" type="button">
+              <!-- Plus icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+              </svg>
+              Add day
+            </button>
+          </div>
+
+        </div>
+        <!-- /config-panel -->
+
+        <!-- Right: Grid Column -->
+        <div class="grid-column" id="gridColumn">
+
+          <!-- Grid Toolbar -->
+          <div class="grid-toolbar">
+            <!-- Auto-schedule button -->
+            <button class="btn-primary-pill" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3,2 12,7 3,12"/>
+              </svg>
+              Auto-schedule (2)
+            </button>
+
+            <div class="grid-toolbar__right">
+              <span class="chip chip--danger">1 issue</span>
+              <span class="chip chip--warning">1 warning</span>
+              <button class="assistant-btn" type="button" id="assistantToggle">
+                <!-- Sparkle icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="currentColor">
+                  <path d="M7 0 L7.7 5.3 L13 6 L7.7 6.7 L7 12 L6.3 6.7 L1 6 L6.3 5.3 Z" opacity="0.9"/>
+                </svg>
+                Schedule Assistant
+                <!-- Chevron indicator -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;opacity:0.6">
+                  <polyline points="3,3 6,6 9,3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid + Drawer wrapper -->
+          <div class="grid-and-drawer">
+
+            <!-- Schedule Grid -->
+            <div class="schedule-grid" id="scheduleGrid">
+              <table class="grid-table">
+                <colgroup>
+                  <col style="width:240px;min-width:240px;">
+                  <col style="width:100px;min-width:100px;">
+                  <col style="width:100px;min-width:100px;">
+                  <col style="width:100px;min-width:100px;">
+                </colgroup>
+
+                <thead class="grid-header">
+                  <tr>
+                    <th class="grid-header__wp-cell" scope="col">
+                      <span class="grid-header__wp-label">Work Package</span>
+                    </th>
+                    <th class="grid-header__date-cell" scope="col">
+                      <span class="grid-header__date-day">Tue</span>
+                      <span class="grid-header__date-md">May 26</span>
+                    </th>
+                    <th class="grid-header__date-cell" scope="col">
+                      <span class="grid-header__date-day">Wed</span>
+                      <span class="grid-header__date-md">May 27</span>
+                    </th>
+                    <th class="grid-header__date-cell" scope="col">
+                      <span class="grid-header__date-day">Fri</span>
+                      <span class="grid-header__date-md">May 29</span>
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  <!-- ASSEMBLY phase header -->
+                  <tr class="grid-phase-header grid-phase-header--assembly">
+                    <td class="grid-phase-header__label-cell" colspan="1">
+                      <span class="grid-phase-header__label">▾ Assembly (1)</span>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+
+                  <!-- Tepper (Assembly) WP row -->
+                  <tr class="grid-wp-row">
+                    <td class="grid-wp-row__name-cell">
+                      <div class="grid-wp-row__name-cell-inner">
+                        <span class="grid-wp-row__name">Tepper</span>
+                        <div class="grid-wp-row__tags">
+                          <span class="grid-wp-row__tag">TeppeFl</span>
+                          <span class="grid-wp-row__unit">· m²</span>
+                        </div>
+                        <span class="grid-wp-row__meta">2 345 m² · 42.6 h</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                  </tr>
+
+                  <!-- Spacer between phases -->
+                  <tr class="grid-spacer">
+                    <td colspan="4"></td>
+                  </tr>
+
+                  <!-- DISMANTLE phase header -->
+                  <tr class="grid-phase-header grid-phase-header--dismantle">
+                    <td class="grid-phase-header__label-cell" colspan="1">
+                      <span class="grid-phase-header__label">▾ Dismantle (1)</span>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+
+                  <!-- Tepper (Dismantle) WP row -->
+                  <tr class="grid-wp-row">
+                    <td class="grid-wp-row__name-cell">
+                      <div class="grid-wp-row__name-cell-inner">
+                        <span class="grid-wp-row__name">Tepper</span>
+                        <div class="grid-wp-row__tags">
+                          <span class="grid-wp-row__tag">TeppeFl</span>
+                          <span class="grid-wp-row__unit">· m²</span>
+                        </div>
+                        <span class="grid-wp-row__meta">2 345 m² · 29.2 h</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                    <td>
+                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
+                    </td>
+                  </tr>
+
+                </tbody>
+              </table>
+            </div>
+            <!-- /schedule-grid -->
+
+            <!-- Schedule Assistant Drawer -->
+            <aside class="assistant-drawer" id="assistantDrawer" aria-hidden="true">
+              <div class="assistant-drawer__inner">
+
+                <div class="assistant-drawer__header">
+                  <!-- Sparkle icon -->
+                  <svg class="assistant-drawer__header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0 L8.9 6.1 L15 7 L8.9 7.9 L8 14 L7.1 7.9 L1 7 L7.1 6.1 Z" opacity="0.9"/>
+                  </svg>
+                  <span class="assistant-drawer__title">Schedule Assistant</span>
+                  <button class="assistant-drawer__close" type="button" id="assistantClose" title="Close">×</button>
+                </div>
+
+                <!-- Issue 1: Warning -->
+                <div class="issue-card issue-card--warning">
+                  <div class="issue-card__header">
+                    <span class="issue-card__severity issue-card__severity--warning">Warning</span>
+                    <span class="issue-card__title">Tepper is unscheduled</span>
+                  </div>
+                  <p class="issue-card__desc">2345 m² of carpet laying has no hours allocated on any work day.</p>
+                  <p class="issue-card__impact">Impact: 42.6 person-hours unplaced</p>
+                  <button class="issue-card__action" type="button">Auto-schedule</button>
+                </div>
+
+                <!-- Issue 2: Info -->
+                <div class="issue-card issue-card--info">
+                  <div class="issue-card__header">
+                    <span class="issue-card__severity issue-card__severity--info">Info</span>
+                    <span class="issue-card__title">Wed May 27 is under-utilised</span>
+                  </div>
+                  <p class="issue-card__desc">Only 12 h of 96 h usable capacity is currently allocated.</p>
+                  <p class="issue-card__impact">84 h available</p>
+                  <button class="issue-card__action" type="button">View day</button>
+                </div>
+
+              </div>
+            </aside>
+            <!-- /assistant-drawer -->
+
+          </div>
+          <!-- /grid-and-drawer -->
+
+        </div>
+        <!-- /grid-column -->
+
+      </div>
+      <!-- /zone-b -->
+
+    </div>
+    <!-- /tab-content -->
+
+  </div>
+  <!-- /main-card -->
+
+</div>
+<!-- /workspace -->
+
+<script>
+  (function () {
+    // --- Schedule Assistant drawer ---
+    const toggleBtn   = document.getElementById('assistantToggle');
+    const closeBtn    = document.getElementById('assistantClose');
+    const drawer      = document.getElementById('assistantDrawer');
+    let isOpen = false;
+
+    function openDrawer() {
+      isOpen = true;
+      drawer.classList.add('assistant-drawer--open');
+      drawer.setAttribute('aria-hidden', 'false');
+      toggleBtn.classList.add('assistant-btn--active');
+    }
+
+    function closeDrawer() {
+      isOpen = false;
+      drawer.classList.remove('assistant-drawer--open');
+      drawer.setAttribute('aria-hidden', 'true');
+      toggleBtn.classList.remove('assistant-btn--active');
+    }
+
+    toggleBtn.addEventListener('click', function () {
+      isOpen ? closeDrawer() : openDrawer();
+    });
+
+    closeBtn.addEventListener('click', closeDrawer);
+
+    // --- Sidebar collapse ---
+    const sidebarToggleBtn = document.getElementById('sidebarToggle');
+    const sidebar          = document.querySelector('.sidebar');
+    let sidebarOpen = true;
+
+    sidebarToggleBtn.addEventListener('click', function () {
+      sidebarOpen = !sidebarOpen;
+      sidebar.classList.toggle('sidebar--collapsed', !sidebarOpen);
+    });
+  })();
+</script>
+
+</body>
+</html>
