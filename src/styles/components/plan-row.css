@@ -1,0 +1,151 @@
+/* ============================================================
+   Plan Row — individual plan item in the workspace sidebar list
+   ============================================================ */
+
+.plan-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+/* Inset divider between rows */
+.plan-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--space-md);
+  right: 0;
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
+
+.plan-row__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  transition: background-color 0.15s;
+}
+
+.plan-row__item:hover {
+  background: var(--surface-contained-hover);
+}
+
+.plan-row--selected .plan-row__item {
+  background: var(--surface-brand-subtle);
+}
+
+.plan-row--selected .plan-row__btn {
+  font-weight: 600;
+}
+
+/* Main select button */
+.plan-row__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: var(--font-small);
+  cursor: pointer;
+  text-align: left;
+  min-height: 40px;
+}
+
+.plan-row__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.plan-row__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-small);
+  font-weight: 500;
+}
+
+.plan-row--selected .plan-row__title {
+  font-weight: 600;
+}
+
+.plan-row__date {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Wrap-up / drill / delete icon buttons */
+.plan-row__wrapup-btn,
+.plan-row__drill,
+.plan-row__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.plan-row__wrapup-btn {
+  color: var(--state-success-fg);
+  margin-right: 2px;
+}
+
+.plan-row__wrapup-btn:hover {
+  background: var(--state-success-bg);
+}
+
+.plan-row__drill {
+  color: var(--color-text-muted);
+  opacity: 0;
+  margin-right: 2px;
+}
+
+.plan-row__item:hover .plan-row__drill,
+.plan-row--selected .plan-row__drill {
+  opacity: 0.7;
+}
+
+.plan-row__item:hover .plan-row__drill:hover,
+.plan-row--selected .plan-row__drill:hover {
+  opacity: 1;
+  background: var(--surface-contained-active);
+}
+
+.plan-row__delete {
+  color: var(--color-text-muted);
+  opacity: 0;
+  margin-right: var(--space-xs);
+}
+
+.plan-row__item:hover .plan-row__delete {
+  opacity: 0.5;
+}
+
+.plan-row__item:hover .plan-row__delete:hover {
+  opacity: 1;
+  color: var(--state-danger-fg);
+  background: var(--state-danger-bg-soft);
+}
+
+.plan-row__wrapup-icon,
+.plan-row__drill-icon,
+.plan-row__delete-icon {
+  width: 13px;
+  height: 13px;
+}

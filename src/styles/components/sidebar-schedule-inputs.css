@@ -1,0 +1,237 @@
+/* ============================================================
+   Sidebar Schedule Inputs — phase date rows + crew/efficiency
+   Rendered inside the WorkspaceSidebar drill-in detail panel.
+   ============================================================ */
+
+.sidebar-schedule-inputs {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-schedule-inputs__summary {
+  margin: 0;
+  padding: 6px var(--space-md) 8px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sidebar-schedule-inputs__summary-range {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-phase-stack {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--surface-contained-border);
+  border-bottom: 1px solid var(--surface-contained-border);
+  margin-bottom: 10px;
+}
+
+.sidebar-phase-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-phase-row + .sidebar-phase-row {
+  border-top: 1px solid var(--surface-contained-border);
+}
+
+.sidebar-phase-row__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px var(--space-md);
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  border-radius: 0;
+  transition: background-color 0.12s;
+  min-width: unset;
+  min-height: unset;
+}
+
+.sidebar-phase-row__btn:hover {
+  background: var(--surface-contained-hover);
+}
+
+.sidebar-phase-row__btn:hover .sidebar-phase-row__edit {
+  opacity: 1;
+}
+
+.sidebar-phase-row__btn:disabled {
+  cursor: default;
+}
+
+.sidebar-phase-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sidebar-phase-row__dot--assembly  { background: var(--phase-assembly-fg); }
+.sidebar-phase-row__dot--event     { background: var(--phase-event-fg); }
+.sidebar-phase-row__dot--dismantle { background: var(--phase-dismantle-fg); }
+
+.sidebar-phase-row__name {
+  flex: 1;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.sidebar-phase-row__dates {
+  font-size: 11px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.sidebar-phase-row__dates--empty {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  font-style: italic;
+  font-family: inherit;
+}
+
+.sidebar-phase-row__edit {
+  width: 12px;
+  height: 12px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.12s;
+}
+
+.sidebar-phase-row--expanded .sidebar-phase-row__edit {
+  opacity: 0.6;
+}
+
+.sidebar-phase-row__body {
+  padding: 0 var(--space-md) 10px;
+  background: var(--surface-contained-inset);
+}
+
+.sidebar-phase-row__inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.sidebar-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-date-field__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.sidebar-date-field__input {
+  font-size: var(--font-caption);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  background: var(--surface-contained-bg);
+  color: var(--color-text);
+  width: 100%;
+  min-width: unset;
+  min-height: unset;
+}
+
+.sidebar-date-field__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Crew + efficiency */
+
+.sidebar-crew-eff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  padding: 0 var(--space-md) 4px;
+}
+
+.sidebar-crew-eff__field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-crew-eff__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.sidebar-crew-eff__input {
+  font-size: var(--font-small);
+  font-family: inherit;
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 6px;
+  background: var(--surface-contained-bg);
+  color: var(--color-text);
+  width: 100%;
+  min-width: unset;
+  min-height: unset;
+}
+
+.sidebar-crew-eff__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.sidebar-crew-eff__input--select {
+  font-size: var(--font-caption);
+  padding: 4px 4px;
+}
+
+.sidebar-crew-eff__custom-wrap {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.sidebar-crew-eff__preset-reset {
+  font-size: var(--font-caption);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: unset;
+  min-height: unset;
+}
+
+.sidebar-schedule-inputs__errors {
+  padding: 8px var(--space-md);
+  font-size: var(--font-caption);
+  color: var(--state-danger-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-schedule-inputs__errors p {
+  margin: 0;
+}
