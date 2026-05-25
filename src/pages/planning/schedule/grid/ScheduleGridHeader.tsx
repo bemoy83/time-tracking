@@ -18,6 +18,7 @@ interface ScheduleGridHeaderProps {
   eventEndDate?: string | null;
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
+  onEditDay?: (date: string, anchor: HTMLElement) => void;
 }
 
 type DayPhase = 'assembly' | 'event' | 'dismantle' | null;
@@ -102,6 +103,7 @@ export function ScheduleGridHeader({
   eventEndDate,
   onToggleWorkday,
   todayIso,
+  onEditDay,
 }: ScheduleGridHeaderProps) {
   return (
     <div className="schedule-grid__header" role="row">
@@ -192,9 +194,20 @@ export function ScheduleGridHeader({
                   {formatUtilBadge(cap)}
                 </span>
                 {cap.assignedCrewTotal > 0 && (
-                  <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>
-                    {parseFloat(cap.assignedCrewTotal.toFixed(2))}/{cap.availableCrew} crew
-                  </span>
+                  onEditDay && !readOnly ? (
+                    <button
+                      type="button"
+                      className={`schedule-grid__day-crew schedule-grid__day-crew--editable${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}
+                      onClick={(e) => onEditDay(day.date, e.currentTarget)}
+                      title="Edit crew size and hours"
+                    >
+                      {parseFloat(cap.assignedCrewTotal.toFixed(2))}/{cap.availableCrew} crew
+                    </button>
+                  ) : (
+                    <span className={`schedule-grid__day-crew${cap.isOverAssignedCrew ? ' schedule-grid__day-crew--over' : ''}`}>
+                      {parseFloat(cap.assignedCrewTotal.toFixed(2))}/{cap.availableCrew} crew
+                    </span>
+                  )
                 )}
               </>
             )}

@@ -63,6 +63,7 @@ interface SingleScheduleGridProps {
   todayIso?: string;
   eventStartDate?: string | null;
   eventEndDate?: string | null;
+  onEditDay?: (date: string, anchor: HTMLElement) => void;
 }
 
 interface SharedScheduleGridProps {
@@ -199,6 +200,7 @@ function SingleScheduleGrid({
   todayIso,
   eventStartDate,
   eventEndDate,
+  onEditDay,
 }: SingleScheduleGridProps) {
   const dayByDate = useMemo(
     () => new Map(capacity.days.map((day) => [day.date, day])),
@@ -305,6 +307,7 @@ function SingleScheduleGrid({
           eventEndDate={eventEndDate}
           onToggleWorkday={onToggleWorkday}
           todayIso={todayIso}
+          onEditDay={onEditDay}
         />
       )}
       body={phaseGroups.length > 1

@@ -738,6 +738,7 @@ export function useScheduleViewState({
     handleToggleWorkday,
     handleClearRowSchedule,
     handlePersonHoursForDateChange,
+    handleUpdateCalendarDay,
     handleClearAllSchedules,
     handleAmendmentConfirm,
     handleAmendmentCancel,

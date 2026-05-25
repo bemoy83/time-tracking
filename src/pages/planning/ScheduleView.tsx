@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ChevronLeftIcon } from '../../components/icons';
 import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { type Plan } from '../../lib/planning/plan-model';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
+import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { ScheduleAssistantPanel } from './schedule/ScheduleAssistantPanel';
 import { type ScheduleEditContextValue } from './workspace/ScheduleEditContext';
 import { useScheduleViewState } from './hooks/useScheduleViewState';
@@ -27,6 +28,11 @@ export function ScheduleView({
 }: ScheduleViewProps) {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
+  const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
+
+  const handleEditDay = useCallback((date: string, anchor: HTMLElement) => {
+    setDayEdit((prev) => (prev?.date === date ? null : { date, anchor }));
+  }, []);
 
   const {
     currentPlan,
@@ -49,6 +55,7 @@ export function ScheduleView({
     handleToggleWorkday,
     handleClearRowSchedule,
     handlePersonHoursForDateChange,
+    handleUpdateCalendarDay,
     handleAmendmentConfirm,
     handleAmendmentCancel,
     handleRevertToDraft,
@@ -121,11 +128,26 @@ export function ScheduleView({
           unresolvedIssueKeys={unresolvedIssueKeys}
           activeIssueKey={activeAssistantIssue?.key ?? null}
           onToggleWorkday={readOnly ? undefined : handleToggleWorkday}
+          onEditDay={readOnly ? undefined : handleEditDay}
           todayIso={todayIso}
           eventStartDate={currentPlan.eventStartDate}
           eventEndDate={currentPlan.eventEndDate}
         />
       </div>
+
+      {dayEdit && (() => {
+        const editDay = currentPlan.workCalendar.find((d) => d.date === dayEdit.date);
+        if (!editDay) return null;
+        return (
+          <DayEditPopover
+            anchor={dayEdit.anchor}
+            day={editDay}
+            defaultCrewSize={currentPlan.defaultCrewSize}
+            onUpdate={handleUpdateCalendarDay}
+            onClose={() => setDayEdit(null)}
+          />
+        );
+      })()}
 
       {amendment && (
         <AmendmentPopover

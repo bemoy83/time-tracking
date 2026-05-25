@@ -80,11 +80,6 @@ function formatDayLabel(dateStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function shortTime(t: string | null | undefined): string {
-  if (!t) return '';
-  return t.replace(/^0/, '');
-}
-
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
