@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import type { WorkCalendarDay } from '../../../lib/planning/plan-model';
 import type { PhaseDateValues } from './schedule-date-ui';
 import { useScheduleEditContext } from '../workspace/ScheduleEditContext';
@@ -75,11 +75,21 @@ function getCalendarWeeks(calendar: WorkCalendarDay[]): string[][] {
   return weeks;
 }
 
+function formatDayLabel(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function shortTime(t: string | null | undefined): string {
+  if (!t) return '';
+  return t.replace(/^0/, '');
+}
+
 const DAY_HEADERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
   const ctx = useScheduleEditContext();
-  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const calendarByDate = new Map(calendar.map((d) => [d.date, d]));
   const weeks = getCalendarWeeks(calendar);
@@ -87,16 +97,24 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
   const calendarEnd = calendar[calendar.length - 1]?.date ?? '';
   const todayIso = new Date().toLocaleDateString('en-CA');
   const plan = ctx?.currentPlan ?? null;
+  const defaultCrew = ctx?.effectiveCrewSize ?? plan?.defaultCrewSize ?? null;
 
-  const handleCellClick = useCallback((date: string, el: HTMLButtonElement) => {
-    ctx?.onScrollToDate(date);
-    el.focus();
-    if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
-    el.dataset.focused = 'true';
-    focusTimeoutRef.current = setTimeout(() => {
-      delete el.dataset.focused;
-    }, 1500);
-  }, [ctx]);
+  const handleCellClick = useCallback((date: string) => {
+    setSelectedDate((prev) => (prev === date ? null : date));
+  }, []);
+
+  const selectedDay = selectedDate ? calendarByDate.get(selectedDate) ?? null : null;
+
+  const handleToggleWorkday = useCallback(() => {
+    if (!selectedDate || !selectedDay || !ctx) return;
+    const nowWork = !selectedDay.isWorkDay;
+    ctx.onUpdateCalendarDay(selectedDate, {
+      isWorkDay: nowWork,
+      accessStart: nowWork ? (selectedDay.accessStart ?? '08:00') : null,
+      accessEnd: nowWork ? (selectedDay.accessEnd ?? '16:00') : null,
+      crewSize: nowWork ? selectedDay.crewSize : null,
+    });
+  }, [ctx, selectedDate, selectedDay]);
 
   if (weeks.length === 0) return null;
 
@@ -117,6 +135,7 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
             const isOff = calDay ? !calDay.isWorkDay : false;
             const phase = inRange ? getCellPhase(date, phaseDates, plan) : null;
             const isToday = date === todayIso;
+            const isSelected = date === selectedDate;
             const dayNum = parseInt(date.slice(8), 10);
 
             if (!inRange) {
@@ -132,9 +151,11 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
                   phase ? `thumb-calendar__cell--${phase}` : '',
                   isOff ? 'thumb-calendar__cell--off' : '',
                   isToday ? 'thumb-calendar__cell--today' : '',
+                  isSelected ? 'thumb-calendar__cell--selected' : '',
                 ].filter(Boolean).join(' ')}
-                onClick={(e) => handleCellClick(date, e.currentTarget)}
-                aria-label={`${date}${isToday ? ' (today)' : ''}${isOff ? ' (off day)' : ''}`}
+                onClick={() => handleCellClick(date)}
+                aria-label={`${date}${isToday ? ' (today)' : ''}${isOff ? ' (off day)' : ''} — click to ${isSelected ? 'deselect' : 'edit'}`}
+                aria-pressed={isSelected}
                 disabled={!ctx}
               >
                 {dayNum}
@@ -144,6 +165,76 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
           })}
         </div>
       ))}
+
+      {selectedDate && selectedDay && ctx && (
+        <div className="thumb-calendar__day-editor">
+          <div className="thumb-calendar__day-editor-header">
+            <span className="thumb-calendar__day-editor-date">{formatDayLabel(selectedDate)}</span>
+            <button
+              type="button"
+              className={`thumb-calendar__day-editor-toggle${selectedDay.isWorkDay ? '' : ' thumb-calendar__day-editor-toggle--off'}`}
+              onClick={handleToggleWorkday}
+              disabled={ctx.readOnly}
+            >
+              {selectedDay.isWorkDay ? 'Work day' : 'Off day'}
+            </button>
+          </div>
+
+          {selectedDay.isWorkDay && (
+            <div className="thumb-calendar__day-editor-fields">
+              <label className="thumb-calendar__day-editor-field">
+                <span className="thumb-calendar__day-editor-label">Crew</span>
+                <input
+                  type="number"
+                  className="thumb-calendar__day-editor-input"
+                  min={0}
+                  step={1}
+                  value={selectedDay.crewSize ?? ''}
+                  placeholder={String(defaultCrew ?? '')}
+                  disabled={ctx.readOnly}
+                  onChange={(e) =>
+                    ctx.onUpdateCalendarDay(selectedDate, {
+                      crewSize: e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
+                    })
+                  }
+                />
+              </label>
+              <label className="thumb-calendar__day-editor-field">
+                <span className="thumb-calendar__day-editor-label">Start</span>
+                <input
+                  type="time"
+                  className="thumb-calendar__day-editor-input"
+                  value={selectedDay.accessStart ?? '08:00'}
+                  disabled={ctx.readOnly}
+                  onChange={(e) =>
+                    ctx.onUpdateCalendarDay(selectedDate, { accessStart: e.target.value || null })
+                  }
+                />
+              </label>
+              <label className="thumb-calendar__day-editor-field">
+                <span className="thumb-calendar__day-editor-label">End</span>
+                <input
+                  type="time"
+                  className="thumb-calendar__day-editor-input"
+                  value={selectedDay.accessEnd ?? '16:00'}
+                  disabled={ctx.readOnly}
+                  onChange={(e) =>
+                    ctx.onUpdateCalendarDay(selectedDate, { accessEnd: e.target.value || null })
+                  }
+                />
+              </label>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="thumb-calendar__day-editor-jump"
+            onClick={() => ctx.onScrollToDate(selectedDate)}
+          >
+            Jump to {formatDayLabel(selectedDate)} in grid ↗
+          </button>
+        </div>
+      )}
     </div>
   );
 }

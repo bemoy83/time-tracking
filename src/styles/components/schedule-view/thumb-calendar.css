@@ -108,3 +108,136 @@
   background: var(--color-primary);
   flex-shrink: 0;
 }
+
+.thumb-calendar__cell--selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0px;
+  z-index: 1;
+}
+
+/* --- Day editor panel --- */
+
+.thumb-calendar__day-editor {
+  margin-top: 8px;
+  padding: 10px 10px 8px;
+  border-radius: var(--radius-md);
+  background: var(--surface-contained-inset);
+  border: 1px solid var(--surface-contained-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thumb-calendar__day-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.thumb-calendar__day-editor-date {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.thumb-calendar__day-editor-toggle {
+  appearance: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: unset;
+  min-height: unset;
+  transition: background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.thumb-calendar__day-editor-toggle--off {
+  border-color: var(--color-text-muted);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.thumb-calendar__day-editor-toggle:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.thumb-calendar__day-editor-toggle--off:hover:not(:disabled) {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.thumb-calendar__day-editor-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.thumb-calendar__day-editor-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.thumb-calendar__day-editor-field {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.thumb-calendar__day-editor-label {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.thumb-calendar__day-editor-input {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-contained-bg);
+  color: var(--color-text);
+  font-size: var(--font-caption);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.thumb-calendar__day-editor-input:focus {
+  border-color: var(--color-primary);
+}
+
+.thumb-calendar__day-editor-input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.thumb-calendar__day-editor-jump {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  min-width: unset;
+  min-height: unset;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.thumb-calendar__day-editor-jump:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
