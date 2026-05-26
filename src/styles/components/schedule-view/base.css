@@ -5,48 +5,6 @@
   gap: 0;
 }
 
-.schedule-toolbar {
-  height: 44px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: 0 24px;
-  background: var(--surface-contained-bg);
-  border-bottom: 1px solid var(--surface-contained-border);
-}
-
-.schedule-toolbar__chips {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  flex-shrink: 0;
-}
-
-.schedule-view__planning-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 var(--space-sm);
-  border-radius: var(--radius-full);
-  background: var(--surface-contained-inset);
-  font-size: var(--font-caption);
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.schedule-view__planning-chip--critical {
-  background: var(--state-danger-bg);
-  color: var(--state-danger-fg-strong);
-  font-weight: 600;
-}
-
-.schedule-view__planning-chip--warning {
-  background: var(--state-warning-bg-soft);
-  color: var(--state-warning-fg-strong);
-  font-weight: 600;
-}
 
 .schedule-view__block {
   background: var(--card-bg);

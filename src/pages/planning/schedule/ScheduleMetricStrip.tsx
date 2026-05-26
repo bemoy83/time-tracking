@@ -7,9 +7,33 @@ interface ScheduleMetricStripProps {
   metrics: SidebarMetricDescriptor[];
   steps: SetupStep[];
   readOnly?: boolean;
+  criticalIssueCount?: number;
+  warningIssueCount?: number;
+  onOpenAssistant?: () => void;
+  isLocked?: boolean;
+  onRevertToDraft?: () => void;
 }
 
-export function ScheduleMetricStrip({ metrics, steps, readOnly = false }: ScheduleMetricStripProps) {
+export function ScheduleMetricStrip({
+  metrics,
+  steps,
+  readOnly = false,
+  criticalIssueCount = 0,
+  warningIssueCount = 0,
+  onOpenAssistant,
+  isLocked = false,
+  onRevertToDraft,
+}: ScheduleMetricStripProps) {
+  const assistantVariant =
+    criticalIssueCount > 0 ? 'critical' : warningIssueCount > 0 ? 'warning' : 'neutral';
+
+  const assistantLabel =
+    criticalIssueCount > 0
+      ? `${criticalIssueCount} critical ${criticalIssueCount === 1 ? 'issue' : 'issues'}`
+      : warningIssueCount > 0
+        ? `${warningIssueCount} ${warningIssueCount === 1 ? 'warning' : 'warnings'}`
+        : 'Schedule Assistant';
+
   return (
     <div className="schedule-metric-strip" role="status" aria-label="Schedule status">
       <div className="schedule-metric-strip__metrics">
@@ -53,6 +77,35 @@ export function ScheduleMetricStrip({ metrics, steps, readOnly = false }: Schedu
             </Fragment>
           );
         })}
+      </div>
+
+      <div className="schedule-metric-strip__actions">
+        {!readOnly && isLocked && onRevertToDraft && (
+          <button
+            type="button"
+            className="schedule-metric-strip__revert-btn"
+            onClick={onRevertToDraft}
+          >
+            Revert to Draft
+          </button>
+        )}
+        <button
+          type="button"
+          className={[
+            'schedule-metric-strip__assistant-btn',
+            assistantVariant === 'warning' ? 'schedule-metric-strip__assistant-btn--warning' : '',
+            assistantVariant === 'critical' ? 'schedule-metric-strip__assistant-btn--critical' : '',
+          ].filter(Boolean).join(' ')}
+          onClick={onOpenAssistant}
+          aria-haspopup="dialog"
+          aria-label={
+            assistantVariant === 'neutral'
+              ? 'Open schedule assistant'
+              : `${assistantLabel} — open schedule assistant`
+          }
+        >
+          {assistantLabel}
+        </button>
       </div>
     </div>
   );

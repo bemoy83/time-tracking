@@ -866,18 +866,23 @@
 .planning-workspace__plan-context-phases {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   flex-shrink: 0;
   margin-left: auto;
+  min-width: 0;
 }
 
 .planning-workspace__plan-context-phase {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   font-size: var(--font-caption);
   color: var(--color-text-muted);
   white-space: nowrap;
+  min-width: 0;
+  padding: 3px 7px;
+  border-radius: var(--radius-full);
+  background: var(--surface-contained-inset);
 }
 
 .planning-workspace__plan-context-phase-dot {
@@ -891,8 +896,33 @@
   background: var(--phase-assembly-fg);
 }
 
+.planning-workspace__plan-context-phase-dot--event {
+  background: var(--phase-event-fg);
+}
+
 .planning-workspace__plan-context-phase-dot--dismantle {
   background: var(--phase-dismantle-fg);
+}
+
+.planning-workspace__plan-context-phase-label {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.planning-workspace__plan-context-phase-date {
+  color: var(--color-text-muted);
+}
+
+.planning-workspace__plan-context-phase--assembly {
+  background: var(--wp-phase-assembly-header-bg);
+}
+
+.planning-workspace__plan-context-phase--event {
+  background: var(--wp-phase-event-header-bg);
+}
+
+.planning-workspace__plan-context-phase--dismantle {
+  background: var(--wp-phase-dismantle-header-bg);
 }
 
 /* ============================================================

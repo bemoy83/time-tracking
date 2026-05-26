@@ -2,8 +2,6 @@ import { useCallback } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode, Ref, RefObject } from 'react';
 
 interface ScheduleGridShellProps {
-  title: string;
-  unscheduledCount: number;
   emptyMessage: string;
   ariaLabel: string;
   calendarLength: number;
@@ -58,8 +56,6 @@ export function useScheduleGridKeyboardNavigation(columnCount: number) {
 }
 
 export function ScheduleGridShell({
-  title,
-  unscheduledCount,
   emptyMessage,
   ariaLabel,
   calendarLength,
@@ -70,18 +66,7 @@ export function ScheduleGridShell({
   body,
 }: ScheduleGridShellProps) {
   return (
-    <section className="schedule-view__block" aria-labelledby="schedule-grid-title">
-      <header className="schedule-view__block-header" id="schedule-grid-title">
-        <h3 className="schedule-view__block-title">
-          {title}
-          {unscheduledCount > 0 && (
-            <span className="schedule-grid__unscheduled-badge">
-              {unscheduledCount} unscheduled
-            </span>
-          )}
-        </h3>
-      </header>
-
+    <section className="schedule-view__block" aria-label={ariaLabel}>
       {calendarLength === 0 ? (
         <p className="schedule-view__muted">{emptyMessage}</p>
       ) : (

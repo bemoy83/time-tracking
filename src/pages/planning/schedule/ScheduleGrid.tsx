@@ -173,18 +173,6 @@ export function getSharedSchedulableUnscheduledCount(
   return count;
 }
 
-function getUnscheduledPhaseRowCount(lineItems: PlanLineItem[]): number {
-  let count = 0;
-  for (const item of lineItems) {
-    for (const phase of BUILD_PHASES) {
-      if (!isPhaseActive(item, phase)) continue;
-      const pf = getPhaseFields(item, phase);
-      if (getAssignedDates(pf).length === 0) count += 1;
-    }
-  }
-  return count;
-}
-
 function SingleScheduleGrid({
   lineItems,
   calendar,
@@ -208,10 +196,6 @@ function SingleScheduleGrid({
   );
   const hasPhaseWindows = hasCompletePhaseDates(phaseDates);
   const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
-  const unscheduledCount = useMemo(
-    () => getUnscheduledPhaseRowCount(lineItems),
-    [lineItems],
-  );
   const schedulableUnscheduledCount = useMemo(
     () => getSchedulableUnscheduledPhaseRowCount(lineItems, phaseDates, workDays),
     [lineItems, phaseDates, workDays],
@@ -285,8 +269,6 @@ function SingleScheduleGrid({
 
   return (
     <ScheduleGridShell
-      title="Schedule Grid"
-      unscheduledCount={unscheduledCount}
       emptyMessage="Set schedule dates to open the schedule grid."
       ariaLabel="Schedule grid"
       calendarLength={calendar.length}
@@ -397,18 +379,6 @@ function SharedScheduleGrid({
     [rows, calendar, itemByCompositeId, phaseDatesByPlanId, dayByDate],
   );
 
-  const unscheduledCount = useMemo(() => {
-    let count = 0;
-    for (const row of rows) {
-      if (row.type !== 'item') continue;
-      const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
-      if (!item) { count += 1; continue; }
-      const pf = getPhaseFields(item, row.phase);
-      if (getAssignedDates(pf).length === 0) count += 1;
-    }
-    return count;
-  }, [rows, itemByCompositeId]);
-
   const visibleRows = useMemo(() => rows.filter((row) => {
     if (row.type === 'project') return true;
     if (collapsedProjects.has(row.projectRowId)) return false;
@@ -440,8 +410,6 @@ function SharedScheduleGrid({
 
   return (
     <ScheduleGridShell
-      title="Shared Schedule Grid"
-      unscheduledCount={unscheduledCount}
       emptyMessage="Configure crew pool dates to open the shared schedule grid."
       ariaLabel="Shared schedule grid"
       calendarLength={calendar.length}

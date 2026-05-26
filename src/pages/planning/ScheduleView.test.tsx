@@ -35,14 +35,13 @@ function renderSchedule(plan: Plan, desktop = false) {
 }
 
 describe('ScheduleView', () => {
-  it('renders the toolbar row and schedule assistant entry point', () => {
+  it('renders the metric strip and schedule assistant entry point', () => {
     const plan = createPlan('Schedule Test');
     const { container } = renderSchedule(plan, true);
 
-    expect(container.querySelector('.schedule-toolbar')).toBeTruthy();
-    expect(container.querySelector('.schedule-toolbar__chips')).toBeTruthy();
-    expect(within(container).getByText(/Auto-schedule/i)).toBeTruthy();
-    expect(within(container).getByRole('button', { name: /Schedule Assistant/i })).toBeTruthy();
+    expect(container.querySelector('.schedule-metric-strip')).toBeTruthy();
+    expect(container.querySelector('.schedule-metric-strip__metrics')).toBeTruthy();
+    expect(within(container).getByRole('button', { name: /Open schedule assistant/i })).toBeTruthy();
     expect(within(container).getByText('Hand off')).toBeTruthy();
   });
 

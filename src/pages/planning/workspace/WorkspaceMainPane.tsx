@@ -20,6 +20,7 @@ function formatContextDateRange(start: string | null | undefined, end: string | 
     const [y, m, day] = d.split('-').map(Number);
     return new Date(y, m - 1, day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
+  if (start && end && start === end) return fmt(start);
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
   if (start) return fmt(start);
   return fmt(end!);
@@ -101,6 +102,7 @@ export function WorkspaceMainPane({
     : '';
 
   const assemblyDateRange = formatContextDateRange(plan.assemblyStartDate, plan.assemblyEndDate);
+  const eventDateRange = formatContextDateRange(plan.eventStartDate, plan.eventEndDate);
   const dismantleDateRange = formatContextDateRange(plan.dismantleStartDate, plan.dismantleEndDate);
 
   return (
@@ -112,18 +114,27 @@ export function WorkspaceMainPane({
       >
         <span className="planning-workspace__plan-context-title">{planDisplayName}</span>
         <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status === 'active' ? 'ready' : plan.status} />
-        {(assemblyDateRange || dismantleDateRange) && (
+        {(assemblyDateRange || eventDateRange || dismantleDateRange) && (
           <span className="planning-workspace__plan-context-phases">
             {assemblyDateRange && (
-              <span className="planning-workspace__plan-context-phase">
+              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--assembly">
                 <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--assembly" />
-                <span className="mono">{assemblyDateRange}</span>
+                <span className="planning-workspace__plan-context-phase-label">Assembly</span>
+                <span className="planning-workspace__plan-context-phase-date mono">{assemblyDateRange}</span>
+              </span>
+            )}
+            {eventDateRange && (
+              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--event">
+                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--event" />
+                <span className="planning-workspace__plan-context-phase-label">Event</span>
+                <span className="planning-workspace__plan-context-phase-date mono">{eventDateRange}</span>
               </span>
             )}
             {dismantleDateRange && (
-              <span className="planning-workspace__plan-context-phase">
+              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--dismantle">
                 <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--dismantle" />
-                <span className="mono">{dismantleDateRange}</span>
+                <span className="planning-workspace__plan-context-phase-label">Dismantle</span>
+                <span className="planning-workspace__plan-context-phase-date mono">{dismantleDateRange}</span>
               </span>
             )}
           </span>

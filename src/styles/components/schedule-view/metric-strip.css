@@ -1,27 +1,26 @@
 /* ============================================================
-   Schedule Metric Strip — replaces KPI tile row + stepper card
+   Schedule Metric Strip — unified bar: metrics · stepper · actions
    ============================================================ */
 
 .schedule-metric-strip {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   padding: 0 24px;
-  height: 40px;
+  height: 48px;
   border-bottom: 1px solid var(--surface-contained-border);
   background: var(--surface-contained-bg);
   flex-shrink: 0;
   overflow: hidden;
 }
 
-/* --- Metric pairs (left side) --- */
+/* --- Metric pairs (left zone) --- */
 
 .schedule-metric-strip__metrics {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
 }
@@ -58,13 +57,92 @@
   color: var(--state-danger-fg);
 }
 
-/* --- Stepper (right side) --- */
+/* --- Stepper (center zone) --- */
 
 .schedule-metric-strip__stepper {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+/* --- Actions (right zone) --- */
+
+.schedule-metric-strip__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  justify-content: flex-end;
+}
+
+.schedule-metric-strip__assistant-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-inset);
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  min-width: unset;
+  min-height: unset;
+}
+
+.schedule-metric-strip__assistant-btn:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.schedule-metric-strip__assistant-btn--warning {
+  border-color: var(--color-amber-solid);
+  background: color-mix(in srgb, var(--color-amber-solid) 10%, transparent);
+  color: var(--color-amber-solid);
+  font-weight: 600;
+}
+
+.schedule-metric-strip__assistant-btn--warning:hover {
+  background: color-mix(in srgb, var(--color-amber-solid) 18%, transparent);
+}
+
+.schedule-metric-strip__assistant-btn--critical {
+  border-color: var(--state-danger-fg);
+  background: var(--state-danger-bg);
+  color: var(--state-danger-fg-strong);
+  font-weight: 600;
+}
+
+.schedule-metric-strip__assistant-btn--critical:hover {
+  background: color-mix(in srgb, var(--state-danger-fg) 18%, transparent);
+}
+
+.schedule-metric-strip__revert-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--surface-contained-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+  min-width: unset;
+  min-height: unset;
+}
+
+.schedule-metric-strip__revert-btn:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
 }
 
 .schedule-metric-strip__step-sep {
