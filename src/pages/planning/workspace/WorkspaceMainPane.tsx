@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
-import type { Project, Task, TimeEntry, WorkType } from '../../../lib/types';
+import { getProjectDisplayColor, type Project, type Task, type TimeEntry, type WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
@@ -65,6 +65,7 @@ export function WorkspaceMainPane({
     ? projects.find((project) => project.id === plan.projectId) ?? null
     : null;
   const planDisplayName = getPlanDisplayName(plan, selectedProject);
+  const projectAccentColor = selectedProject ? getProjectDisplayColor(selectedProject.color) : null;
 
   const isReviewed = isPlanArchived(plan);
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
@@ -105,7 +106,10 @@ export function WorkspaceMainPane({
   return (
     <div className="planning-workspace__main-inner">
       {/* Plan context bar */}
-      <div className="planning-workspace__plan-context-bar">
+      <div
+        className={`planning-workspace__plan-context-bar${projectAccentColor ? ' planning-workspace__plan-context-bar--has-project' : ''}`}
+        style={projectAccentColor ? { '--planning-workspace-project-accent': projectAccentColor } as React.CSSProperties : undefined}
+      >
         <span className="planning-workspace__plan-context-title">{planDisplayName}</span>
         <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status === 'active' ? 'ready' : plan.status} />
         {(assemblyDateRange || dismantleDateRange) && (

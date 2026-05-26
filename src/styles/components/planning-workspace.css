@@ -848,6 +848,10 @@
   overflow: hidden;
 }
 
+.planning-workspace__plan-context-bar--has-project {
+  border-inline-start: 4px solid var(--planning-workspace-project-accent);
+}
+
 .planning-workspace__plan-context-title {
   font-size: var(--font-small);
   font-weight: 600;
