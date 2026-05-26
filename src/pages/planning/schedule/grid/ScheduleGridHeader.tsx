@@ -67,6 +67,19 @@ function formatDayLabel(date: string): string {
   return formatted;
 }
 
+function formatDayAbbr(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+}
+
+function formatDayNum(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric' });
+}
+
+function isWeekendDate(date: string): boolean {
+  const d = new Date(`${date}T00:00:00`).getDay();
+  return d === 0 || d === 6;
+}
+
 /**
  * Format: allocated crew capacity / total work required this day.
  * Numerator = assignedCapacityPersonHours (crew capacity deployed).
@@ -137,6 +150,7 @@ export function ScheduleGridHeader({
             data-date={day.date}
             className={[
               'schedule-grid__day-col',
+              isWeekendDate(day.date) ? 'schedule-grid__day-col--weekend' : '',
               day.isWorkDay ? '' : 'schedule-grid__day-col--off',
               isOver ? 'schedule-grid__day-col--over' : '',
               cap?.isOverAssignedCrew ? 'schedule-grid__day-col--over-crew' : '',
@@ -155,11 +169,13 @@ export function ScheduleGridHeader({
                   aria-label={day.isWorkDay ? `Remove ${formatDayLabel(day.date)} as work day` : `Add ${formatDayLabel(day.date)} as work day`}
                   title={day.isWorkDay ? 'Click to mark as off day' : 'Click to add as work day'}
                 >
-                  {formatDayLabel(day.date)}
+                  <span className="schedule-grid__day-abbr">{formatDayAbbr(day.date)}</span>
+                  <span className="schedule-grid__day-num">{formatDayNum(day.date)}</span>
                 </button>
               ) : (
                 <span className={`schedule-grid__day-label${isToday ? ' schedule-grid__day-label--today' : ''}`}>
-                  {formatDayLabel(day.date)}
+                  <span className="schedule-grid__day-abbr">{formatDayAbbr(day.date)}</span>
+                  <span className="schedule-grid__day-num">{formatDayNum(day.date)}</span>
                 </span>
               )}
               {isFragmented && cap && <FragmentationWarningIcon cap={cap} />}

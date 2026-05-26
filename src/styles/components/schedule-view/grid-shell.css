@@ -106,7 +106,9 @@
 }
 
 .schedule-grid__line-item-col {
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
 }
 
 .schedule-grid__line-item-col--with-action {
@@ -119,6 +121,11 @@
 
 .schedule-grid__line-item-col-label {
   display: block;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
 }
 
 .schedule-grid__auto-schedule-btn {
@@ -136,8 +143,12 @@
   padding: var(--space-sm) var(--space-md);
 }
 
-.schedule-grid__day-col--off {
-  opacity: 0.45;
+.schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--weekend {
+  background: #ebebeb;
+}
+
+.schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--off {
+  opacity: 0.55;
 }
 
 .schedule-grid__day-col--over {
@@ -168,11 +179,11 @@
 }
 
 .schedule-grid__day-label {
-  display: block;
-  font-size: var(--font-caption);
-  line-height: 1.4;
-  letter-spacing: 0;
-  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
 }
 
 .schedule-grid__day-label-row {
@@ -441,29 +452,49 @@
   border-top: 2px solid var(--color-primary);
 }
 
-.schedule-grid__day-label--today,
-.schedule-grid__day-toggle--today {
+.schedule-grid__day-label--today .schedule-grid__day-num,
+.schedule-grid__day-toggle--today .schedule-grid__day-num {
   color: var(--color-primary);
+}
+
+/* --- Two-tier day label (abbr + num) --- */
+
+.schedule-grid__day-abbr {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.schedule-grid__day-num {
+  font-size: 15px;
   font-weight: 700;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  line-height: 1;
 }
 
 /* --- Workday toggle button --- */
 
 .schedule-grid__day-toggle {
   appearance: none;
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
   background: transparent;
   border: none;
   padding: 0;
   margin: 0;
-  font-size: var(--font-caption);
-  line-height: 1.4;
-  letter-spacing: 0;
-  font-weight: 600;
   font-family: inherit;
   color: inherit;
   cursor: pointer;
-  text-align: center;
   min-width: unset;
   min-height: unset;
 }

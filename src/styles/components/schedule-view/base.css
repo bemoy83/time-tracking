@@ -2,7 +2,7 @@
   --schedule-view-section-gap: var(--space-md);
   --schedule-view-block-padding: var(--space-md);
   --schedule-view-block-gap: var(--space-sm);
-  gap: var(--schedule-view-section-gap);
+  gap: 0;
 }
 
 .schedule-toolbar {

@@ -753,6 +753,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0;
 }
 
 .planning-workspace__tab-content:has(.schedule-view) .planning-workspace__editor-canvas {

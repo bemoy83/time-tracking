@@ -6,9 +6,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  padding: 0 var(--space-md);
-  min-height: 36px;
+  gap: var(--space-lg);
+  padding: 0 24px;
+  height: 40px;
   border-bottom: 1px solid var(--surface-contained-border);
   background: var(--surface-contained-bg);
   flex-shrink: 0;
@@ -42,9 +42,11 @@
 }
 
 .schedule-metric-strip__value {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: var(--font-small);
   font-weight: 600;
-  color: var(--color-text);
   font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
 .schedule-metric-strip__label {
@@ -83,6 +85,11 @@
 
 .schedule-metric-strip__step--done {
   color: var(--state-success-fg);
+}
+
+.schedule-metric-strip__step--current {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .schedule-metric-strip__step-check {

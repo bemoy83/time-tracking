@@ -1,1765 +1,2118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=1440">
-  <title>Schedule View Redesign — Prototype</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-
-  <style>
-    /* ============================================================
-       Design Tokens — mirrored from _variables.css
-       ============================================================ */
-    :root {
-      /* Surface layers */
-      --surface-base-bg:          #e8eaf0;
-      --surface-base-border:      #e0e0e0;
-      --surface-contained-bg:     #ffffff;
-      --surface-contained-border: #e0e0e0;
-      --surface-contained-inset:  #f3f3f7;
-      --surface-border-hover:     #cbd5e1;
-      --surface-contained-hover:  #d4d6e0;
-      --surface-contained-active: #c8cad4;
-      --surface-brand-subtle:     rgba(37, 99, 235, 0.08);
-      --surface-brand-subtle-hover: rgba(37, 99, 235, 0.12);
-
-      /* Work-package phase tints */
-      --wp-phase-assembly-header-bg:    rgba(5, 150, 105, 0.09);
-      --wp-phase-dismantle-header-bg:   rgba(124, 58, 237, 0.09);
-      --phase-assembly-fg:   #059669;
-      --phase-dismantle-fg:  #7c3aed;
-
-      /* Semantic state palette */
-      --state-on-solid: #ffffff;
-
-      --state-info-fg:           #2563eb;
-      --state-info-fg-strong:    #1e40af;
-      --state-info-bg:           rgba(59, 130, 246, 0.08);
-      --state-info-bg-strong:    rgba(59, 130, 246, 0.12);
-
-      --state-success-fg:        #16a34a;
-      --state-success-bg:        rgba(22, 163, 74, 0.12);
-
-      --state-warning-fg:        #d97706;
-      --state-warning-fg-strong: #92400e;
-      --state-warning-bg-soft:   rgba(245, 158, 11, 0.06);
-      --state-warning-bg:        rgba(245, 158, 11, 0.10);
-      --state-warning-bg-strong: rgba(245, 158, 11, 0.15);
-      --state-warning-border:    rgba(245, 158, 11, 0.30);
-
-      --state-danger-fg:         #dc2626;
-      --state-danger-fg-strong:  #991b1b;
-      --state-danger-bg-soft:    rgba(239, 68, 68, 0.08);
-      --state-danger-bg:         rgba(239, 68, 68, 0.10);
-      --state-danger-border:     rgba(220, 38, 38, 0.30);
-
-      /* Core colors */
-      --color-bg:           var(--surface-base-bg);
-      --color-text:         #13131a;
-      --color-text-muted:   #65657a;
-      --color-border:       var(--surface-contained-border);
-      --color-primary:      #2563eb;
-      --color-primary-hover:#1d4ed8;
-      --color-amber:        var(--state-warning-fg);
-      --color-amber-solid:  #b45309;
-      --color-ready:        var(--state-success-fg);
-      --status-badge-draft-bg: #b45309;
-
-      /* Typography */
-      --font-large:   1.5rem;
-      --font-heading: 1.1875rem;
-      --font-body:    1rem;
-      --font-small:   0.8125rem;
-      --font-label:   0.75rem;
-      --font-caption: 0.75rem;
-      --font-sans:    'Outfit', system-ui, sans-serif;
-      --font-mono:    'DM Mono', ui-monospace, monospace;
-
-      /* Spacing */
-      --space-xs: 0.25rem;   /* 4px */
-      --space-sm: 0.5rem;    /* 8px */
-      --space-md: 1rem;      /* 16px */
-      --space-lg: 1.5rem;    /* 24px */
-      --space-xl: 2rem;      /* 32px */
-
-      /* Radius */
-      --radius-sm:   4px;
-      --radius-md:   8px;
-      --radius-lg:   14px;
-      --radius-xl:   20px;
-      --radius-2xl:  26px;
-      --radius-full: 9999px;
-
-      /* Shadows */
-      --shadow-xs: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-sm: 0 2px 12px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
-      --shadow-md: 0 6px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
-      --shadow-blue: 0 6px 20px rgba(37,99,235,0.30);
-
-      /* Easing */
-      --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
-      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    /* ============================================================
-       Reset & base
-       ============================================================ */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html, body {
-      width: 1440px;
-      height: 900px;
-      overflow: hidden;
-      font-family: var(--font-sans);
-      font-size: 16px;
-      color: var(--color-text);
-      background: var(--surface-base-bg);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    button {
-      font-family: var(--font-sans);
-      cursor: pointer;
-    }
-
-    /* ============================================================
-       Planning Workspace Shell
-       ============================================================ */
-    .workspace {
-      display: flex;
-      width: 1440px;
-      height: 900px;
-      padding: 12px;
-      gap: 10px;
-      background: var(--surface-base-bg);
-      overflow: hidden;
-    }
-
-    /* ---- Sidebar ---- */
-    .sidebar {
-      width: 288px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      background: var(--surface-contained-bg);
-      border-radius: var(--radius-2xl);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
-      transition: width 0.28s var(--ease-enter), opacity 0.2s, box-shadow 0.28s;
-    }
-
-    .sidebar--collapsed {
-      width: 0;
-      opacity: 0;
-      box-shadow: none;
-    }
-
-    /* Sidebar header — zone label + new plan button */
-    .sidebar__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px var(--space-md) 12px;
-      flex-shrink: 0;
-    }
-
-    .sidebar__zone-label {
-      font-size: var(--font-caption);
-      font-weight: 700;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: var(--color-text-muted);
-    }
-
-    .sidebar__new-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 5px 12px;
-      border: none;
-      border-radius: var(--radius-full);
-      background: var(--color-primary);
-      color: var(--state-on-solid);
-      font-size: var(--font-small);
-      font-weight: 600;
-      transition: opacity 0.15s, transform 0.15s;
-    }
-
-    .sidebar__new-btn:hover {
-      opacity: 0.88;
-      transform: translateY(-1px);
-    }
-
-    .sidebar__new-btn-icon {
-      font-size: 15px;
-      line-height: 1;
-      margin-top: -1px;
-    }
-
-    /* Sidebar plan list */
-    .sidebar__list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 var(--space-sm);
-      min-height: 0;
-    }
-
-    .plan-row {
-      display: flex;
-      align-items: center;
-      position: relative;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      transition: background-color 0.12s;
-    }
-
-    .plan-row:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: var(--space-md);
-      right: 0;
-      height: 1px;
-      background: var(--color-border);
-      pointer-events: none;
-    }
-
-    .plan-row--selected {
-      background: var(--surface-brand-subtle);
-    }
-
-    /* Orange accent bar for DRAFT status */
-    .plan-row--draft::before {
-      content: '';
-      position: absolute;
-      inset-block: 5px;
-      left: 0;
-      width: 3px;
-      border-radius: 0 2px 2px 0;
-      background: var(--color-amber);
-      pointer-events: none;
-    }
-
-    .plan-row:not(.plan-row--selected):hover {
-      background: var(--surface-contained-hover);
-    }
-
-    .plan-row__btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-      padding: 9px var(--space-sm) 9px calc(3px + var(--space-md));
-      border: none;
-      background: none;
-      text-align: left;
-      color: inherit;
-      font: inherit;
-      min-height: 40px;
-    }
-
-    .plan-row__content {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-
-    .plan-row__title {
-      font-size: var(--font-small);
-      font-weight: 500;
-      color: var(--color-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .plan-row--selected .plan-row__title {
-      font-weight: 700;
-    }
-
-    .plan-row__date {
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-    }
-
-    /* Status icon (amber solid circle) */
-    .plan-row__status-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      background: var(--color-amber-solid);
-      color: #fff;
-      margin-right: var(--space-xs);
-    }
-
-    .plan-row__status-icon svg {
-      width: 11px;
-      height: 11px;
-    }
-
-    /* Sidebar footer */
-    .sidebar__footer {
-      flex-shrink: 0;
-      padding: var(--space-sm) var(--space-md);
-      border-top: 1px solid var(--surface-contained-border);
-    }
-
-    .sidebar__footer-item {
-      display: flex;
-      align-items: center;
-      gap: var(--space-xs);
-      width: 100%;
-      padding: var(--space-sm);
-      border: none;
-      border-radius: var(--radius-md);
-      background: none;
-      color: var(--color-text-muted);
-      font-size: var(--font-small);
-      font-weight: 500;
-      transition: background-color 0.15s, color 0.15s;
-    }
-
-    .sidebar__footer-item:hover {
-      background: var(--surface-contained-hover);
-      color: var(--color-text);
-    }
-
-    .sidebar__footer-item svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-    }
-
-    /* ---- Main content card ---- */
-    .main-card {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      background: var(--surface-contained-bg);
-      border-radius: var(--radius-2xl);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
-    }
-
-    /* ============================================================
-       Context Bar
-       ============================================================ */
-    .context-bar {
-      display: flex;
-      align-items: center;
-      gap: var(--space-md);
-      padding: 0 20px;
-      min-height: 52px;
-      flex-shrink: 0;
-      background: var(--surface-contained-bg);
-    }
-
-    .sidebar-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-      flex-shrink: 0;
-      border: none;
-      border-radius: var(--radius-md);
-      background: none;
-      color: var(--color-text-muted);
-      cursor: pointer;
-      transition: background-color 0.15s, color 0.15s;
-      padding: 0;
-    }
-
-    .sidebar-toggle:hover {
-      background: var(--surface-contained-hover);
-      color: var(--color-text);
-    }
-
-    .sidebar-toggle svg {
-      width: 16px;
-      height: 16px;
-    }
-
-    .context-bar__title {
-      font-size: 0.9375rem;
-      font-weight: 600;
-      color: var(--color-text);
-      white-space: nowrap;
-    }
-
-    .context-bar__badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      background: var(--status-badge-draft-bg);
-      color: #fff;
-      font-size: var(--font-caption);
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
-    .context-bar__phases {
-      display: flex;
-      align-items: center;
-      gap: var(--space-md);
-      margin-left: auto;
-      flex-shrink: 0;
-    }
-
-    .context-bar__phase {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-      white-space: nowrap;
-    }
-
-    .context-bar__phase-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .context-bar__phase-dot--assembly  { background: var(--phase-assembly-fg); }
-    .context-bar__phase-dot--dismantle { background: var(--phase-dismantle-fg); }
-
-    /* ============================================================
-       Tab Strip (desktop pill style)
-       ============================================================ */
-    .tab-strip {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      padding: 8px 20px;
-      background: var(--surface-contained-inset);
-      flex-shrink: 0;
-    }
-
-    .tab-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 7px 15px;
-      border: none;
-      border-radius: var(--radius-full);
-      background: none;
-      color: var(--color-text-muted);
-      font-family: var(--font-sans);
-      font-size: var(--font-small);
-      font-weight: 500;
-      line-height: 1;
-      transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
-      white-space: nowrap;
-    }
-
-    .tab-btn:hover:not(.tab-btn--active) {
-      background: rgba(0,0,0,0.04);
-      color: var(--color-text);
-    }
-
-    .tab-btn--active {
-      background: var(--surface-contained-bg);
-      box-shadow: var(--shadow-sm);
-      color: var(--color-text);
-      font-weight: 600;
-    }
-
-    /* ============================================================
-       Tab Content Area (inset bg, flex column, fills remaining height)
-       ============================================================ */
-    .tab-content {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      background: var(--surface-contained-inset);
-      overflow: hidden;
-    }
-
-    /* ============================================================
-       Zone A — Metric Strip
-       ============================================================ */
-    .metric-strip {
-      display: flex;
-      align-items: center;
-      gap: var(--space-lg);
-      height: 36px;
-      flex-shrink: 0;
-      padding: 0 var(--space-md);
-      background: var(--surface-contained-bg);
-      border-bottom: 1px solid var(--surface-contained-border);
-    }
-
-    .metric-item {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
-
-    .metric-item__value {
-      font-family: var(--font-mono);
-      font-size: var(--font-small);
-      font-weight: 600;
-      line-height: 1;
-    }
-
-    .metric-item__label {
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-      line-height: 1;
-    }
-
-    .metric-item--muted .metric-item__value   { color: var(--color-text-muted); }
-    .metric-item--warning .metric-item__value { color: var(--state-warning-fg); }
-    .metric-item--normal .metric-item__value  { color: var(--color-text); }
-    .metric-item--danger .metric-item__value  { color: var(--state-danger-fg); }
-
-    .metric-strip__sep {
-      width: 1px;
-      height: 14px;
-      background: var(--surface-contained-border);
-      flex-shrink: 0;
-    }
-
-    /* Inline stepper (right side of metric strip) */
-    .progress-stepper {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: auto;
-    }
-
-    .progress-stepper__step {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      font-size: var(--font-caption);
-      white-space: nowrap;
-    }
-
-    .progress-stepper__step--done {
-      color: var(--state-success-fg);
-    }
-
-    .progress-stepper__step--current {
-      color: var(--color-primary);
-      font-weight: 700;
-    }
-
-    .progress-stepper__step--future {
-      color: var(--color-text-muted);
-    }
-
-    .progress-stepper__step-icon {
-      width: 12px;
-      height: 12px;
-      flex-shrink: 0;
-    }
-
-    .progress-stepper__dot {
-      font-size: 10px;
-      color: var(--color-text-muted);
-      line-height: 1;
-      margin: 0 1px;
-    }
-
-    /* ============================================================
-       Zone B — Two-column layout
-       ============================================================ */
-    .zone-b {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      overflow: hidden;
-    }
-
-    /* ---- Config Panel (left, 220px) ---- */
-    .config-panel {
-      width: 220px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-      padding: var(--space-md);
-      background: var(--surface-contained-bg);
-      border-right: 1px solid var(--surface-contained-border);
-      overflow-y: auto;
-    }
-
-    /* Section label */
-    .config-section__label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .config-section__label {
-      font-size: var(--font-caption);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--color-text-muted);
-    }
-
-    .config-section__edit-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      border: none;
-      background: none;
-      border-radius: var(--radius-sm);
-      color: var(--color-text-muted);
-      transition: background-color 0.12s, color 0.12s;
-    }
-
-    .config-section__edit-btn:hover {
-      background: var(--surface-contained-hover);
-      color: var(--color-text);
-    }
-
-    .config-section__edit-btn svg {
-      width: 13px;
-      height: 13px;
-    }
-
-    /* Schedule Inputs — label/value pairs */
-    .schedule-inputs {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-sm);
-    }
-
-    .schedule-input-pair {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .schedule-input-pair__label {
-      font-size: var(--font-caption);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--color-text-muted);
-    }
-
-    .schedule-input-pair__value {
-      font-size: var(--font-small);
-      font-weight: 500;
-      color: var(--color-text);
-      line-height: 1.3;
-    }
-
-    /* Work Calendar — rows */
-    .work-calendar {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .work-day-row {
-      display: flex;
-      align-items: center;
-      height: 36px;
-      padding: 0 var(--space-xs);
-      border-radius: var(--radius-sm);
-      transition: background-color 0.12s;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .work-day-row:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: var(--surface-contained-border);
-      pointer-events: none;
-    }
-
-    .work-day-row:hover {
-      background: var(--surface-contained-hover);
-    }
-
-    .work-day-row__day {
-      width: 32px;
-      font-size: var(--font-small);
-      font-weight: 700;
-      color: var(--color-text);
-      flex-shrink: 0;
-    }
-
-    .work-day-row__time {
-      flex: 1;
-      font-family: var(--font-mono);
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-    }
-
-    .work-day-row__crew {
-      width: 24px;
-      font-size: var(--font-small);
-      font-weight: 700;
-      color: var(--color-text);
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    /* Add day dashed button */
-    .add-day-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      width: 100%;
-      height: 32px;
-      margin-top: 8px;
-      border: 1.5px dashed var(--color-border);
-      border-radius: var(--radius-md);
-      background: none;
-      color: var(--color-text-muted);
-      font-family: var(--font-sans);
-      font-size: var(--font-caption);
-      transition: border-color 0.15s, color 0.15s;
-    }
-
-    .add-day-btn:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-
-    /* ============================================================
-       Zone B Right — Grid Column
-       ============================================================ */
-    .grid-column {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* ---- Grid Toolbar ---- */
-    .grid-toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-      height: 44px;
-      flex-shrink: 0;
-      padding: 0 var(--space-md);
-      background: var(--surface-contained-inset);
-      border-bottom: 1px solid var(--surface-contained-border);
-    }
-
-    .btn-primary-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      height: 32px;
-      padding: 0 var(--space-md);
-      border: none;
-      border-radius: var(--radius-full);
-      background: var(--color-primary);
-      color: var(--state-on-solid);
-      font-family: var(--font-sans);
-      font-size: var(--font-small);
-      font-weight: 600;
-      box-shadow: var(--shadow-blue);
-      transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s;
-    }
-
-    .btn-primary-pill:hover {
-      background: var(--color-primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 28px rgba(37,99,235,0.38);
-    }
-
-    .btn-primary-pill svg {
-      width: 13px;
-      height: 13px;
-      flex-shrink: 0;
-    }
-
-    .grid-toolbar__right {
-      display: flex;
-      align-items: center;
-      gap: var(--space-xs);
-      margin-left: auto;
-    }
-
-    /* Chip styles */
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      font-size: var(--font-caption);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .chip--danger {
-      background: var(--state-danger-bg);
-      color: var(--state-danger-fg);
-    }
-
-    .chip--warning {
-      background: var(--state-warning-bg);
-      color: var(--state-warning-fg);
-    }
-
-    /* Schedule Assistant toggle button */
-    .assistant-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      height: 32px;
-      padding: 0 var(--space-sm);
-      border: 1.5px solid var(--surface-contained-border);
-      border-radius: var(--radius-full);
-      background: var(--surface-contained-bg);
-      color: var(--color-text);
-      font-family: var(--font-sans);
-      font-size: var(--font-small);
-      font-weight: 500;
-      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    }
-
-    .assistant-btn:hover:not(.assistant-btn--active) {
-      background: var(--surface-contained-hover);
-    }
-
-    .assistant-btn--active {
-      background: var(--surface-brand-subtle);
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-
-    .assistant-btn svg {
-      width: 13px;
-      height: 13px;
-      flex-shrink: 0;
-    }
-
-    /* ---- Schedule Grid ---- */
-    .grid-and-drawer {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .schedule-grid {
-      flex: 1;
-      min-width: 0;
-      overflow: auto;
-      background: var(--surface-contained-bg);
-    }
-
-    /* Grid table */
-    .grid-table {
-      border-collapse: collapse;
-      min-width: 100%;
-      table-layout: fixed;
-    }
-
-    /* Sticky header */
-    .grid-header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .grid-header th {
-      background: var(--surface-contained-bg);
-      border-bottom: 2px solid var(--surface-contained-border);
-      vertical-align: bottom;
-      padding: 0;
-    }
-
-    .grid-header th:not(:first-child) {
-      border-left: 1px solid var(--surface-contained-border);
-    }
-
-    .grid-header__wp-cell {
-      width: 240px;
-      min-width: 240px;
-      padding: 0 var(--space-md);
-      height: 40px;
-      text-align: left;
-      position: sticky;
-      left: 0;
-      z-index: 11;
-      background: var(--surface-contained-bg);
-    }
-
-    .grid-header__wp-label {
-      font-size: var(--font-caption);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--color-text-muted);
-    }
-
-    .grid-header__date-cell {
-      width: 100px;
-      min-width: 100px;
-      height: 40px;
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    .grid-header__date-day {
-      display: block;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--color-text-muted);
-      letter-spacing: 0.03em;
-      line-height: 1.3;
-    }
-
-    .grid-header__date-md {
-      display: block;
-      font-family: var(--font-mono);
-      font-size: var(--font-caption);
-      font-weight: 700;
-      color: var(--color-text);
-      line-height: 1.3;
-    }
-
-    /* Phase group header row */
-    .grid-phase-header td {
-      height: 32px;
-      padding: 0 var(--space-md);
-      vertical-align: middle;
-      background: var(--surface-contained-inset);
-      border-top: 4px solid var(--surface-contained-inset);
-    }
-
-    .grid-phase-header td:not(:first-child) {
-      border-left: 1px solid var(--surface-contained-border);
-    }
-
-    .grid-phase-header__label-cell {
-      position: sticky;
-      left: 0;
-      z-index: 5;
-    }
-
-    .grid-phase-header--assembly td {
-      background: var(--wp-phase-assembly-header-bg);
-    }
-
-    .grid-phase-header--assembly .grid-phase-header__label-cell {
-      border-left: 3px solid var(--phase-assembly-fg);
-      background: var(--wp-phase-assembly-header-bg);
-    }
-
-    .grid-phase-header--dismantle td {
-      background: var(--wp-phase-dismantle-header-bg);
-    }
-
-    .grid-phase-header--dismantle .grid-phase-header__label-cell {
-      border-left: 3px solid var(--phase-dismantle-fg);
-      background: var(--wp-phase-dismantle-header-bg);
-    }
-
-    .grid-phase-header__label {
-      font-size: var(--font-caption);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .grid-phase-header--assembly .grid-phase-header__label { color: var(--phase-assembly-fg); }
-    .grid-phase-header--dismantle .grid-phase-header__label { color: var(--phase-dismantle-fg); }
-
-    /* Work package row */
-    .grid-wp-row td {
-      height: 72px;
-      vertical-align: middle;
-      border-bottom: 1px solid var(--surface-contained-border);
-    }
-
-    .grid-wp-row td:not(:first-child) {
-      border-left: 1px solid var(--surface-contained-border);
-    }
-
-    /* Sticky left column for WP name */
-    .grid-wp-row__name-cell {
-      position: sticky;
-      left: 0;
-      z-index: 5;
-      padding: 0 var(--space-md) 0 calc(var(--space-md) + 8px);
-      background: var(--surface-contained-bg);
-      vertical-align: middle;
-    }
-
-    .grid-wp-row__name-cell-inner {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .grid-wp-row__name {
-      font-size: var(--font-small);
-      font-weight: 600;
-      color: var(--color-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .grid-wp-row__tags {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .grid-wp-row__tag {
-      display: inline-flex;
-      align-items: center;
-      padding: 0 6px;
-      height: 16px;
-      border-radius: var(--radius-full);
-      background: rgba(37,99,235,0.10);
-      color: var(--color-primary);
-      font-size: var(--font-caption);
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .grid-wp-row__unit {
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-    }
-
-    .grid-wp-row__meta {
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-      font-family: var(--font-mono);
-    }
-
-    /* Unscheduled cell — dashed inset */
-    .grid-cell {
-      background: var(--surface-contained-inset);
-      border: 1px dashed var(--color-border);
-      border-radius: var(--radius-sm);
-      margin: 6px 8px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.12s, border-color 0.12s;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .grid-cell__plus {
-      opacity: 0;
-      color: var(--color-text-muted);
-      font-size: 18px;
-      line-height: 1;
-      transition: opacity 0.12s;
-      user-select: none;
-    }
-
-    .grid-wp-row td:not(.grid-wp-row__name-cell):hover .grid-cell {
-      border-color: var(--color-primary);
-      background: var(--surface-brand-subtle);
-    }
-
-    .grid-wp-row td:not(.grid-wp-row__name-cell):hover .grid-cell__plus {
-      opacity: 1;
-      color: var(--color-primary);
-    }
-
-    /* Spacer row between phase groups */
-    .grid-spacer td {
-      height: 8px;
-      background: var(--surface-contained-inset);
-    }
-
-    /* ============================================================
-       Schedule Assistant Drawer
-       ============================================================ */
-    .assistant-drawer {
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 0;
-      overflow: hidden;
-      background: var(--surface-contained-bg);
-      border-left: 0px solid var(--surface-contained-border);
-      box-shadow: none;
-      z-index: 10;
-      transition: width 0.25s var(--ease-enter), box-shadow 0.25s, border-left-width 0s 0.25s;
-    }
-
-    .assistant-drawer--open {
-      width: 300px;
-      border-left-width: 1px;
-      box-shadow: -6px 0 24px rgba(0, 0, 0, 0.07);
-      transition: width 0.25s var(--ease-enter), box-shadow 0.25s, border-left-width 0s 0s;
-    }
-
-    .assistant-drawer__inner {
-      width: 300px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-      padding: var(--space-md);
-      height: 100%;
-      overflow-y: auto;
-    }
-
-    .assistant-drawer__header {
-      display: flex;
-      align-items: center;
-      gap: var(--space-xs);
-    }
-
-    .assistant-drawer__header-icon {
-      width: 16px;
-      height: 16px;
-      color: var(--color-primary);
-      flex-shrink: 0;
-    }
-
-    .assistant-drawer__title {
-      flex: 1;
-      font-size: var(--font-body);
-      font-weight: 700;
-      color: var(--color-text);
-    }
-
-    .assistant-drawer__close {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      border: none;
-      background: none;
-      border-radius: var(--radius-sm);
-      color: var(--color-text-muted);
-      font-size: 18px;
-      line-height: 1;
-      transition: background-color 0.12s, color 0.12s;
-    }
-
-    .assistant-drawer__close:hover {
-      background: var(--surface-contained-hover);
-      color: var(--color-text);
-    }
-
-    /* Issue cards */
-    .issue-card {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      padding: var(--space-sm);
-      background: var(--surface-contained-inset);
-      border-radius: var(--radius-lg);
-      border-left: 3px solid transparent;
-    }
-
-    .issue-card--warning { border-left-color: var(--state-warning-fg); }
-    .issue-card--info    { border-left-color: var(--state-info-fg); }
-
-    .issue-card__header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .issue-card__severity {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px 6px;
-      border-radius: var(--radius-full);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .issue-card__severity--warning {
-      background: var(--state-warning-bg);
-      color: var(--state-warning-fg);
-    }
-
-    .issue-card__severity--info {
-      background: var(--state-info-bg);
-      color: var(--state-info-fg);
-    }
-
-    .issue-card__title {
-      font-size: var(--font-small);
-      font-weight: 700;
-      color: var(--color-text);
-    }
-
-    .issue-card__desc {
-      font-size: var(--font-caption);
-      color: var(--color-text);
-      line-height: 1.45;
-    }
-
-    .issue-card__impact {
-      font-size: var(--font-caption);
-      color: var(--color-text-muted);
-    }
-
-    .issue-card__action {
-      display: inline-flex;
-      align-items: center;
-      height: 28px;
-      padding: 0 10px;
-      border: 1.5px solid var(--surface-contained-border);
-      border-radius: var(--radius-full);
-      background: var(--surface-contained-bg);
-      color: var(--color-text);
-      font-family: var(--font-sans);
-      font-size: var(--font-caption);
-      font-weight: 600;
-      transition: background-color 0.12s, border-color 0.12s;
-      align-self: flex-start;
-    }
-
-    .issue-card__action:hover {
-      background: var(--surface-contained-hover);
-      border-color: var(--surface-border-hover);
-    }
-
-    /* ============================================================
-       Utility
-       ============================================================ */
-    .u-mono { font-family: var(--font-mono); }
-
-    /* Scrollbar styling for webkit */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--surface-contained-hover); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--surface-contained-border); }
-
-  </style>
+<meta charset="utf-8" />
+<title>Schedule View — Prototype</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Design tokens — mirrored from src/styles/_variables.css
+   ============================================================ */
+:root {
+  --surface-base-bg: #e8eaf0;
+  --surface-contained-bg: #ffffff;
+  --surface-contained-inset: #f3f3f7;
+  --surface-contained-border: #e0e0e0;
+  --surface-contained-hover: #d4d6e0;
+  --surface-contained-active: #c8cad4;
+  --surface-brand-subtle: rgba(37, 99, 235, 0.08);
+  --surface-brand-subtle-hover: rgba(37, 99, 235, 0.12);
+
+  --color-text: #13131a;
+  --color-text-muted: #65657a;
+  --color-border: #e0e0e0;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --state-on-solid: #ffffff;
+
+  --state-info-fg: #2563eb;
+  --state-info-bg: rgba(59, 130, 246, 0.08);
+  --state-info-bg-strong: rgba(59, 130, 246, 0.12);
+  --state-success-fg: #16a34a;
+  --state-success-fg-strong: #15803d;
+  --state-warning-fg: #d97706;
+  --state-warning-fg-strong: #92400e;
+  --state-warning-bg-soft: rgba(245, 158, 11, 0.06);
+  --state-warning-bg: rgba(245, 158, 11, 0.10);
+  --state-warning-bg-strong: rgba(245, 158, 11, 0.15);
+  --state-danger-fg: #dc2626;
+  --state-danger-bg: rgba(239, 68, 68, 0.10);
+  --state-danger-bg-strong: rgba(220, 38, 38, 0.15);
+
+  --phase-assembly-fg: #059669;
+  --phase-dismantle-fg: #7c3aed;
+  --phase-event-fg: #d97706;
+  --wp-phase-assembly-header-bg: rgba(5, 150, 105, 0.09);
+  --wp-phase-dismantle-header-bg: rgba(124, 58, 237, 0.09);
+  --wp-phase-event-header-bg: rgba(217, 119, 6, 0.10);
+
+  --color-amber-solid: #b45309;
+  --color-amber: var(--state-warning-fg);
+  --color-ready: var(--state-success-fg);
+
+  --font-large: 1.5rem;
+  --font-heading: 1.1875rem;
+  --font-body: 1rem;
+  --font-small: 0.8125rem;
+  --font-caption: 0.75rem;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 26px;
+  --radius-full: 9999px;
+
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.09), 0 1px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-blue: 0 6px 20px rgba(37, 99, 235, 0.30);
+
+  --header-height: 52px;
+  --assistant-w: 300px;
+  --sidebar-w: 288px;
+  --sidebar-w-collapsed: 56px;
+
+  --wp-col-w: 240px;
+  --day-col-w: 100px;
+  --col-count: 27;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: var(--font-body);
+  color: var(--color-text);
+  background: var(--surface-contained-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+button { font-family: inherit; }
+.mono { font-family: 'DM Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+.workspace {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  height: 100vh;
+  background: var(--surface-contained-bg);
+}
+
+/* ============================================================ */
+/* Sidebar                                                       */
+/* ============================================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-contained-bg);
+  border-right: 1px solid var(--surface-contained-border);
+  overflow: hidden;
+  transition: width 0.28s var(--ease-enter);
+}
+.sidebar.is-collapsed { width: var(--sidebar-w-collapsed); }
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding: 0 var(--space-sm);
+  min-height: var(--header-height);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.sidebar__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, transform 0.28s var(--ease-enter);
+  margin-left: auto;
+}
+.sidebar__toggle:hover { background: var(--surface-contained-hover); color: var(--color-text); }
+.sidebar__toggle svg { width: 16px; height: 16px; }
+.sidebar.is-collapsed .sidebar__toggle { margin: 0; transform: rotate(180deg); }
+
+/* Mode switcher: list <-> detail */
+.sidebar__view { display: none; flex-direction: column; flex: 1; min-height: 0; }
+.sidebar[data-mode="list"] .sidebar__view--list { display: flex; }
+.sidebar[data-mode="detail"] .sidebar__view--detail { display: flex; }
+
+/* ---------- List view ---------- */
+.sidebar__list-top {
+  flex-shrink: 0;
+  padding: 8px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sidebar__create {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: 7px var(--space-md);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--state-on-solid);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.sidebar__create:hover { opacity: 0.88; transform: translateY(-1px); }
+.sidebar__create svg { width: 16px; height: 16px; }
+
+.plan-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.plan-search svg {
+  position: absolute;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+.plan-search input {
+  width: 100%;
+  padding: 6px 8px 6px 28px;
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-contained-inset);
+  font-family: inherit;
+  font-size: var(--font-small);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.plan-search input::placeholder { color: var(--color-text-muted); }
+.plan-search input:focus { border-color: var(--color-primary); background: var(--surface-contained-bg); }
+
+.plan-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-group { display: flex; flex-direction: column; }
+.plan-group__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 6px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  transition: background-color 0.12s, color 0.12s;
+}
+.plan-group__header:hover { background: var(--surface-contained-hover); color: var(--color-text); }
+.plan-group__chevron {
+  width: 12px; height: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s var(--ease-enter);
+}
+.plan-group[aria-expanded="false"] .plan-group__chevron { transform: rotate(-90deg); }
+.plan-group__label { flex: 1; text-align: left; }
+.plan-group__count {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.plan-group__body {
+  overflow: hidden;
+  transition: max-height 0.32s var(--ease-enter), opacity 0.2s ease;
+  max-height: 1000px;
+  opacity: 1;
+}
+.plan-group[aria-expanded="false"] .plan-group__body {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Plan rows ---------- */
+.plan-list { list-style: none; padding: 0; margin: 0; }
+.plan-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+.plan-row + .plan-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: var(--space-md); right: 0;
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
+.plan-row__item {
+  flex: 1;
+  position: relative;
+  background: transparent;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: background-color 0.12s;
+  display: flex;
+  align-items: stretch;
+}
+.plan-row:hover .plan-row__item { background: var(--surface-contained-hover); }
+.plan-row--selected .plan-row__item { background: var(--surface-brand-subtle); }
+.plan-row--selected:hover .plan-row__item { background: var(--surface-brand-subtle-hover); }
+
+.plan-row--draft .plan-row__item::before {
+  content: '';
+  position: absolute;
+  inset-block: 4px; left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--color-amber);
+  pointer-events: none;
+}
+.plan-row--completed .plan-row__title,
+.plan-row--completed .plan-row__date { color: var(--color-text-muted); }
+
+.plan-row__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  background: none;
+  border: none;
+  padding: var(--space-sm);
+  padding-inline-start: calc(3px + var(--space-md));
+  min-height: 44px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.plan-row__content {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.plan-row__title {
+  font-size: var(--font-small);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-row--selected .plan-row__title { font-weight: 700; }
+.plan-row__date {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+.plan-row__badges { display: flex; align-items: center; }
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-amber-solid);
+}
+.status-icon svg { width: 11px; height: 11px; color: #fff; }
+.status-icon--ready { background: var(--state-success-fg); }
+.status-icon--completed {
+  background: transparent;
+  border: 1.5px solid var(--color-text-muted);
+}
+.status-icon--completed svg { color: var(--color-text-muted); }
+
+.plan-row__drill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  margin-right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+  align-self: center;
+  height: 28px;
+}
+.plan-row:hover .plan-row__drill,
+.plan-row--selected .plan-row__drill { opacity: 0.75; }
+.plan-row__drill:hover { opacity: 1; background: var(--surface-contained-hover); color: var(--color-primary); }
+.plan-row__drill svg { width: 14px; height: 14px; }
+
+/* ---------- Detail view (drill-in) ---------- */
+.sidebar__view--detail { padding: 0; }
+
+.drill-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--surface-contained-border);
+  min-height: 44px;
+}
+.drill-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.drill-back:hover { background: var(--surface-contained-hover); color: var(--color-text); }
+.drill-back svg { width: 16px; height: 16px; }
+.drill-title {
+  flex: 1;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drill-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  background: var(--color-amber-solid);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.drill-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.drill-section { display: flex; flex-direction: column; }
+.drill-section__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 0 0 10px;
+  padding: 0 4px;
+}
+
+/* ---------- Schedule Inputs (now inside drill view) ---------- */
+.inputs-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 6px 12px;
+  font-size: var(--font-small);
+}
+.inputs-summary__primary {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.inputs-summary__sep { color: var(--color-text-muted); }
+.inputs-summary__secondary {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.phase-stack {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--surface-contained-border);
+  border-bottom: 1px solid var(--surface-contained-border);
+  margin-bottom: 12px;
+  padding: 2px 0;
+}
+.phase-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.12s;
+  position: relative;
+}
+.phase-row + .phase-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 22px; right: 6px;
+  height: 1px;
+  background: var(--surface-contained-border);
+  pointer-events: none;
+}
+.phase-row:hover { background: var(--surface-contained-hover); }
+.phase-row:hover::before,
+.phase-row:hover + .phase-row::before { background: transparent; }
+.phase-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.phase-row__dot--assembly { background: var(--phase-assembly-fg); }
+.phase-row__dot--event    { background: var(--phase-event-fg); }
+.phase-row__dot--dismantle{ background: var(--phase-dismantle-fg); }
+.phase-row__name {
+  flex: 1;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text);
+}
+.phase-row__dates {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.phase-row__edit {
+  width: 12px;
+  height: 12px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.12s;
+}
+.phase-row:hover .phase-row__edit { opacity: 1; }
+
+.input-stack {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  padding: 0 6px;
+}
+.input-pair { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.input-pair__label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.input-pair__value {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* ---------- Thumbnail calendar (still inside drill view) ---------- */
+.thumb-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px;
+}
+.thumb-cal__col-heads {
+  display: grid;
+  grid-template-columns: 22px repeat(7, 1fr);
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+.thumb-cal__col-head { text-align: center; }
+.thumb-cal__col-head--weekend { opacity: 0.55; }
+.thumb-cal__grid {
+  display: grid;
+  grid-template-columns: 22px repeat(7, 1fr);
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-contained-bg);
+}
+.thumb-cal__week-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  background: var(--surface-contained-inset);
+  border-right: 1px solid var(--surface-contained-border);
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.thumb-cal__grid > .thumb-cal__week-label:nth-last-child(8) { border-bottom: 0; }
+.thumb-cell {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  border-right: 1px solid var(--surface-contained-border);
+  border-bottom: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  transition: filter 0.12s, background-color 0.12s;
+}
+.thumb-cell:nth-child(8n) { border-right: 0; }
+.thumb-cell:hover { filter: brightness(0.96); }
+.thumb-cell[data-phase="assembly"]  { background: var(--wp-phase-assembly-header-bg); }
+.thumb-cell[data-phase="dismantle"] { background: var(--wp-phase-dismantle-header-bg); }
+.thumb-cell[data-phase="event"]     { background: var(--wp-phase-event-header-bg); }
+.thumb-cell[data-phase="out"]       { background: transparent; cursor: default; color: transparent; }
+.thumb-cell[data-workday="no"]:not([data-phase="event"]):not([data-phase="out"]) {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  opacity: 0.75;
+}
+.thumb-cell[data-phase="event"] { color: var(--phase-event-fg); font-weight: 700; }
+.thumb-cell.is-today { color: var(--color-primary); }
+.thumb-cell.is-today::after {
+  content: '';
+  position: absolute;
+  left: 25%; right: 25%; bottom: 3px;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 1px;
+}
+.thumb-cell.is-focused {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.thumb-cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  padding: 6px 4px 4px;
+}
+.thumb-cal__legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.thumb-cal__legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.thumb-cal__legend-dot--assembly { background: var(--wp-phase-assembly-header-bg); border: 1px solid var(--phase-assembly-fg); }
+.thumb-cal__legend-dot--dismantle { background: var(--wp-phase-dismantle-header-bg); border: 1px solid var(--phase-dismantle-fg); }
+.thumb-cal__legend-dot--event { background: var(--wp-phase-event-header-bg); border: 1px solid var(--phase-event-fg); }
+
+/* ---------- Sidebar footer ---------- */
+.sidebar__footer {
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--surface-contained-border);
+}
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm);
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s, color 0.15s;
+}
+.footer-item:hover { background: var(--surface-contained-hover); color: var(--color-text); }
+.footer-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ---------- Collapsed-rail mode ---------- */
+.sidebar.is-collapsed .sidebar__create-label,
+.sidebar.is-collapsed .plan-row__content,
+.sidebar.is-collapsed .plan-row__drill,
+.sidebar.is-collapsed .plan-group__header,
+.sidebar.is-collapsed .plan-search,
+.sidebar.is-collapsed .footer-item-label,
+.sidebar.is-collapsed .drill-title,
+.sidebar.is-collapsed .drill-badge,
+.sidebar.is-collapsed .drill-body {
+  display: none;
+}
+.sidebar.is-collapsed .sidebar__list-top { padding: 8px 8px 0; }
+.sidebar.is-collapsed .plan-groups { padding: 0 8px 8px; align-items: center; }
+.sidebar.is-collapsed .sidebar__footer { padding: 8px; }
+.sidebar.is-collapsed .footer-item { justify-content: center; padding: 8px; }
+.sidebar.is-collapsed .sidebar__create {
+  width: 36px; height: 36px; padding: 0;
+  border-radius: 50%;
+}
+.sidebar.is-collapsed .sidebar__create svg { width: 14px; height: 14px; }
+.sidebar.is-collapsed .plan-list { width: 100%; }
+.sidebar.is-collapsed .plan-row { padding: 0; }
+.sidebar.is-collapsed .plan-row + .plan-row::before { display: none; }
+.sidebar.is-collapsed .plan-row__item { border-radius: var(--radius-md); }
+.sidebar.is-collapsed .plan-row__btn {
+  padding: 6px; padding-inline-start: 6px;
+  justify-content: center; min-height: 40px;
+}
+.sidebar.is-collapsed .plan-row__badges { margin: 0; }
+.sidebar.is-collapsed .plan-row--draft .plan-row__item::before {
+  inset-block: 6px; left: 2px; width: 2px;
+}
+.sidebar.is-collapsed .plan-group[aria-expanded="false"] .plan-group__body {
+  max-height: 1000px; opacity: 1; pointer-events: auto;
+}
+
+/* When in detail mode + collapsed, just show back button */
+.sidebar.is-collapsed[data-mode="detail"] .drill-header {
+  justify-content: center;
+  padding: 8px 4px;
+}
+
+/* ============================================================ */
+/* Main pane                                                     */
+/* ============================================================ */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-contained-bg);
+  overflow: hidden;
+}
+
+.context-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0 24px;
+  min-height: var(--header-height);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.context-bar__title { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); white-space: nowrap; }
+.draft-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--space-sm);
+  background: var(--color-amber-solid);
+  color: #fff;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+}
+.context-bar__phases {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
+}
+.phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.phase__dot { width: 6px; height: 6px; border-radius: 50%; }
+.phase__dot--assembly { background: var(--phase-assembly-fg); }
+.phase__dot--dismantle { background: var(--phase-dismantle-fg); }
+.phase__dot--event { background: var(--phase-event-fg); }
+.phase__date { font-family: 'DM Mono', ui-monospace, monospace; }
+
+.tabs {
+  display: flex;
+  gap: 3px;
+  padding: 6px 20px;
+  background: var(--surface-contained-inset);
+  flex-shrink: 0;
+  align-items: center;
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 15px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.tab:hover { background: rgba(0, 0, 0, 0.04); color: var(--color-text); }
+.tab--active { background: var(--surface-contained-bg); box-shadow: var(--shadow-sm); color: var(--color-text); }
+.tab--active:hover { background: var(--surface-contained-bg); }
+
+.tab-content {
+  flex: 1; min-height: 0;
+  background: var(--surface-contained-bg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.schedule-card { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface-contained-bg); overflow: hidden; }
+
+.metric-strip {
+  height: 40px;
+  display: flex; align-items: center; gap: var(--space-lg);
+  padding: 0 24px;
+  background: var(--surface-contained-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
+  flex-shrink: 0;
+}
+.metric { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; flex-shrink: 0; }
+.metric__value {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metric__label { font-size: var(--font-caption); color: var(--color-text-muted); white-space: nowrap; }
+.metric--zero .metric__value { color: var(--color-text-muted); }
+.metric--warning .metric__value { color: var(--state-warning-fg); }
+.metric--danger .metric__value { color: var(--state-danger-fg); }
+.metric--muted .metric__value { color: var(--color-text-muted); }
+.stepper {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  flex-shrink: 0;
+}
+.stepper__step {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap; flex-shrink: 0;
+}
+.stepper__step--done { color: var(--state-success-fg); }
+.stepper__step--done svg { width: 12px; height: 12px; }
+.stepper__step--current { color: var(--color-primary); font-weight: 600; }
+.stepper__sep { font-size: var(--font-caption); color: var(--color-text-muted); }
+
+.toolbar {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: var(--space-sm);
+  padding: 0 24px;
+  background: var(--surface-contained-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: var(--font-small);
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, transform 0.15s, box-shadow 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--state-on-solid);
+  box-shadow: var(--shadow-blue);
+}
+.btn--primary:hover { background: var(--color-primary-hover); transform: translateY(-1px); }
+.btn--primary svg { width: 14px; height: 14px; }
+.btn--secondary {
+  background: var(--surface-contained-bg);
+  border-color: var(--surface-contained-border);
+  color: var(--color-text);
+  font-weight: 500;
+  padding: 0 var(--space-sm);
+}
+.btn--secondary:hover { background: var(--surface-contained-hover); }
+.btn--secondary svg { width: 14px; height: 14px; }
+.btn--secondary.is-active {
+  background: var(--surface-brand-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.chips { display: inline-flex; align-items: center; gap: var(--space-xs); margin-left: auto; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chip svg { width: 11px; height: 11px; }
+.chip--danger { background: var(--state-danger-bg); color: var(--state-danger-fg); }
+.chip--warning { background: var(--state-warning-bg-strong); color: var(--state-warning-fg); }
+.toolbar__assistant-btn { margin-left: var(--space-sm); }
+.toolbar__assistant-btn svg { width: 14px; height: 14px; }
+
+/* ============================================================ */
+/* Schedule grid                                                 */
+/* ============================================================ */
+.grid-wrap { flex: 1; min-height: 0; display: flex; }
+.grid { flex: 1; min-width: 0; min-height: 0; overflow: auto; background: var(--surface-contained-bg); }
+.grid__inner { min-width: max-content; }
+.grid__row,
+.grid__wp-row,
+.cal-strip {
+  display: grid;
+  grid-template-columns: var(--wp-col-w) repeat(var(--col-count), var(--day-col-w));
+}
+
+.cal-strip {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface-contained-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+.cal-strip__label {
+  height: 64px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  background: var(--surface-contained-bg);
+  position: sticky; left: 0; z-index: 2;
+  border-right: 1px solid var(--surface-contained-border);
+}
+.cal-cell {
+  height: 64px;
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: 6px 8px 7px;
+  background: var(--surface-contained-bg);
+  border-right: 1px solid var(--surface-contained-border);
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+.cal-cell:hover { background: var(--surface-brand-subtle); }
+.cal-cell__head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+.cal-cell__day {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+.cal-cell__date {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.cal-cell__meta {
+  margin-top: auto;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap; overflow: hidden;
+}
+.cal-cell__crew { color: var(--color-text); font-weight: 700; font-family: 'DM Mono', ui-monospace, monospace; }
+.cal-cell__time { font-family: 'DM Mono', ui-monospace, monospace; }
+.cal-cell__phase-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: transparent;
+}
+.cal-cell[data-phase="assembly"] .cal-cell__phase-bar { background: var(--phase-assembly-fg); }
+.cal-cell[data-phase="dismantle"] .cal-cell__phase-bar { background: var(--phase-dismantle-fg); }
+.cal-cell[data-phase="event"] .cal-cell__phase-bar { background: var(--phase-event-fg); }
+.cal-cell[data-workday="no"] { background: var(--surface-contained-inset); }
+.cal-cell[data-workday="no"]:hover { background: var(--surface-brand-subtle); }
+.cal-cell[data-workday="no"] .cal-cell__date { color: var(--color-text-muted); }
+.cal-cell[data-workday="no"] .cal-cell__meta { display: none; }
+.cal-cell[data-phase="event"] .cal-cell__event-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 14px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--state-warning-bg-strong);
+  color: var(--state-warning-fg);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: auto;
+}
+.cal-cell__add {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 14px; height: 14px;
+  display: none;
+  align-items: center; justify-content: center;
+  color: var(--color-primary);
+  opacity: 0.65;
+}
+.cal-cell[data-workday="no"]:not([data-phase="event"]):hover .cal-cell__add { display: inline-flex; }
+.cal-cell__add svg { width: 12px; height: 12px; }
+.cal-cell.is-today .cal-cell__date { color: var(--color-primary); }
+.cal-cell.is-today::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+.cal-cell.is-focused {
+  background: var(--surface-brand-subtle-hover);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.grid__phase-header {
+  height: 32px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--surface-contained-inset);
+  border-bottom: 1px solid var(--surface-contained-border);
+  position: sticky; left: 0;
+}
+.grid__phase-header--assembly {
+  background: var(--wp-phase-assembly-header-bg);
+  color: var(--phase-assembly-fg);
+  border-left: 3px solid var(--phase-assembly-fg);
+}
+.grid__phase-header--dismantle {
+  background: var(--wp-phase-dismantle-header-bg);
+  color: var(--phase-dismantle-fg);
+  border-left: 3px solid var(--phase-dismantle-fg);
+}
+.grid__phase-header svg { width: 10px; height: 10px; margin-right: 6px; }
+.grid__phase-spacer {
+  height: 8px;
+  background: var(--surface-contained-inset);
+  border-bottom: 1px solid var(--surface-contained-border);
+}
+
+.grid__wp-row { border-bottom: 1px solid var(--surface-contained-border); }
+.grid__wp-cell {
+  height: 72px;
+  padding: var(--space-sm) var(--space-md) var(--space-sm) 24px;
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  background: var(--surface-contained-bg);
+  position: sticky; left: 0; z-index: 1;
+  border-right: 1px solid var(--surface-contained-border);
+}
+.grid__wp-name { font-size: var(--font-small); font-weight: 600; color: var(--color-text); }
+.grid__wp-meta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+.grid__wp-tag {
+  display: inline-flex; align-items: center;
+  padding: 0 6px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-primary);
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+.grid__wp-stats {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+.day-cell {
+  height: 72px;
+  margin: 4px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+  color: transparent;
+  font-size: 18px;
+  font-weight: 300;
+}
+.day-cell[data-state="schedulable"] {
+  background: var(--surface-contained-inset);
+  border: 1px dashed var(--color-border);
+}
+.day-cell[data-state="schedulable"]:hover {
+  background: var(--surface-brand-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.day-cell[data-state="off"] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--surface-contained-inset),
+    var(--surface-contained-inset) 6px,
+    var(--surface-contained-bg) 6px,
+    var(--surface-contained-bg) 10px
+  );
+  cursor: default;
+}
+.day-cell[data-state="out-of-phase"] { background: var(--surface-contained-bg); cursor: default; }
+.day-cell[data-state="event"] {
+  background: var(--wp-phase-event-header-bg);
+  cursor: default;
+  position: relative;
+}
+.day-cell[data-state="event"]::after {
+  content: 'EVENT';
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--phase-event-fg);
+}
+
+/* ============================================================ */
+/* Assistant drawer                                              */
+/* ============================================================ */
+.assistant {
+  width: 0;
+  flex-shrink: 0;
+  background: var(--surface-contained-bg);
+  border-left: 1px solid transparent;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: width 0.25s var(--ease-enter), border-color 0.25s var(--ease-enter);
+}
+.assistant.is-open { width: var(--assistant-w); border-left-color: var(--surface-contained-border); }
+.assistant__inner {
+  width: var(--assistant-w);
+  flex-shrink: 0;
+  height: 100%;
+  display: flex; flex-direction: column;
+  padding: var(--space-md); gap: var(--space-md);
+}
+.assistant__header { display: flex; align-items: center; gap: var(--space-sm); }
+.assistant__title { flex: 1; font-size: var(--font-body); font-weight: 600; color: var(--color-text); }
+.assistant__sparkle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border-radius: var(--radius-md);
+  background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+}
+.assistant__sparkle svg { width: 14px; height: 14px; }
+.assistant__close {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  background: none; border: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.assistant__close:hover { background: var(--surface-contained-hover); color: var(--color-text); }
+.assistant__close svg { width: 14px; height: 14px; }
+.assistant__cards {
+  display: flex; flex-direction: column; gap: var(--space-sm);
+  overflow-y: auto; min-height: 0;
+}
+.issue-card {
+  padding: var(--space-sm);
+  background: var(--surface-contained-inset);
+  border-radius: var(--radius-lg);
+  border-left: 3px solid var(--state-warning-fg);
+  display: flex; flex-direction: column; gap: var(--space-xs);
+}
+.issue-card--info { border-left-color: var(--state-info-fg); }
+.issue-card__head { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.severity-pill {
+  display: inline-flex; align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.severity-pill--warning { background: var(--state-warning-bg-strong); color: var(--state-warning-fg); }
+.severity-pill--info { background: var(--state-info-bg-strong); color: var(--state-info-fg); }
+.issue-card__title { font-size: var(--font-small); font-weight: 600; color: var(--color-text); }
+.issue-card__desc { font-size: var(--font-caption); line-height: 1.45; color: var(--color-text); margin: 0; }
+.issue-card__impact { font-size: var(--font-caption); color: var(--color-text-muted); }
+.issue-card__action {
+  align-self: flex-start; width: fit-content;
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 28px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--surface-contained-border);
+  background: var(--surface-contained-bg);
+  border-radius: var(--radius-full);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  margin-top: 2px;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.issue-card__action:hover {
+  background: var(--surface-brand-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.workspace { animation: fadeIn 0.3s var(--ease-enter) both; }
+
+/* Mode crossfade */
+.sidebar__view { animation: fadeIn 0.2s var(--ease-enter) both; }
+</style>
 </head>
 <body>
+  <div class="workspace">
 
-<div class="workspace">
-
-  <!-- =====================================================
-       SIDEBAR
-       ===================================================== -->
-  <aside class="sidebar">
-
-    <div class="sidebar__header">
-      <span class="sidebar__zone-label">Drafts</span>
-      <button class="sidebar__new-btn" type="button">
-        <!-- Plus icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
-        </svg>
-        New Plan
-      </button>
-    </div>
-
-    <div class="sidebar__list">
-      <ul style="list-style:none;padding:0;margin:0;">
-
-        <!-- Project 2 — SELECTED + DRAFT -->
-        <li class="plan-row plan-row--selected plan-row--draft">
-          <button class="plan-row__btn" type="button">
-            <div class="plan-row__content">
-              <span class="plan-row__title">Project 2</span>
-              <span class="plan-row__date u-mono">May 26 – May 31</span>
-            </div>
-            <!-- Amber solid status icon — draft/pencil -->
-            <span class="plan-row__status-icon" title="Draft">
-              <!-- Pencil icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
-              </svg>
-            </span>
-          </button>
-        </li>
-
-        <!-- Test — UNSELECTED + DRAFT -->
-        <li class="plan-row plan-row--draft">
-          <button class="plan-row__btn" type="button">
-            <div class="plan-row__content">
-              <span class="plan-row__title">Test</span>
-              <span class="plan-row__date u-mono">Jun 2 – Jun 6</span>
-            </div>
-            <span class="plan-row__status-icon" title="Draft">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
-              </svg>
-            </span>
-          </button>
-        </li>
-
-      </ul>
-    </div>
-
-    <div class="sidebar__footer">
-      <!-- Shared Schedule -->
-      <button class="sidebar__footer-item" type="button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="12" height="10" rx="2"/>
-          <line x1="2" y1="6" x2="14" y2="6"/>
-          <line x1="6" y1="3" x2="6" y2="2"/>
-          <line x1="10" y1="3" x2="10" y2="2"/>
-        </svg>
-        Shared Schedule
-      </button>
-      <!-- Insights -->
-      <button class="sidebar__footer-item" type="button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="2,12 5,8 8,10 11,5 14,7"/>
-          <circle cx="14" cy="7" r="1" fill="currentColor" stroke="none"/>
-        </svg>
-        Insights
-      </button>
-    </div>
-
-  </aside>
-
-
-  <!-- =====================================================
-       MAIN CONTENT CARD
-       ===================================================== -->
-  <div class="main-card">
-
-    <!-- Context Bar -->
-    <div class="context-bar">
-      <!-- Sidebar toggle -->
-      <button class="sidebar-toggle" type="button" id="sidebarToggle" title="Toggle plan list" aria-label="Toggle plan list">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" fill="none"/>
-          <line x1="6" y1="2" x2="6" y2="14"/>
-        </svg>
-      </button>
-      <span class="context-bar__title">Project 2</span>
-      <span class="context-bar__badge">Draft</span>
-
-      <div class="context-bar__phases">
-        <span class="context-bar__phase">
-          <span class="context-bar__phase-dot context-bar__phase-dot--assembly"></span>
-          Assembly
-        </span>
-        <span class="context-bar__phase" style="color:var(--color-text-muted);font-size:var(--font-caption);">·</span>
-        <span class="context-bar__phase">
-          <span class="context-bar__phase-dot context-bar__phase-dot--dismantle"></span>
-          Dismantle
-        </span>
-        <span style="font-size:var(--font-caption);color:var(--color-text-muted);margin-left:4px;">
-          May 26 – May 31
-        </span>
-      </div>
-    </div>
-
-    <!-- Tab Strip -->
-    <div class="tab-strip">
-      <button class="tab-btn" type="button">Edit</button>
-      <button class="tab-btn tab-btn--active" type="button">Schedule</button>
-      <button class="tab-btn" type="button">Progress</button>
-    </div>
-
-    <!-- Tab Content (Schedule tab active) -->
-    <div class="tab-content">
-
-      <!-- Zone A: Metric Strip -->
-      <div class="metric-strip">
-
-        <div class="metric-item metric-item--muted">
-          <span class="metric-item__value">0 h</span>
-          <span class="metric-item__label">Scheduled</span>
-        </div>
-
-        <div class="metric-item metric-item--warning">
-          <span class="metric-item__value">71.8 h</span>
-          <span class="metric-item__label">Unscheduled</span>
-        </div>
-
-        <div class="metric-item metric-item--muted">
-          <span class="metric-item__value">144 h</span>
-          <span class="metric-item__label">Usable</span>
-        </div>
-
-        <div class="metric-strip__sep"></div>
-
-        <div class="metric-item metric-item--muted">
-          <span class="metric-item__value">0</span>
-          <span class="metric-item__label">Over-allocated</span>
-        </div>
-
-        <!-- Inline progress stepper -->
-        <div class="progress-stepper">
-          <!-- Plan ✓ -->
-          <span class="progress-stepper__step progress-stepper__step--done">
-            <!-- Checkmark -->
-            <svg class="progress-stepper__step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="1.5,6.5 4.5,9.5 10.5,3.5"/>
-            </svg>
-            Plan
-          </span>
-          <span class="progress-stepper__dot">·</span>
-          <!-- Crew ✓ -->
-          <span class="progress-stepper__step progress-stepper__step--done">
-            <svg class="progress-stepper__step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="1.5,6.5 4.5,9.5 10.5,3.5"/>
-            </svg>
-            Crew
-          </span>
-          <span class="progress-stepper__dot">·</span>
-          <!-- Schedule (current) -->
-          <span class="progress-stepper__step progress-stepper__step--current">Schedule</span>
-          <span class="progress-stepper__dot">·</span>
-          <!-- Hand off (future) -->
-          <span class="progress-stepper__step progress-stepper__step--future">Hand off</span>
-        </div>
-
+    <!-- ====================== Sidebar ====================== -->
+    <aside class="sidebar" data-mode="list">
+      <div class="sidebar__header">
+        <button class="sidebar__toggle" id="sidebarToggle" type="button" aria-label="Collapse sidebar" aria-expanded="true">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+            <path d="M6 3V13" stroke="currentColor" stroke-width="1.4" />
+            <path d="M10.5 6.5L8.5 8L10.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
       </div>
 
-      <!-- Zone B -->
-      <div class="zone-b">
+      <!-- ============ LIST VIEW ============ -->
+      <div class="sidebar__view sidebar__view--list">
+        <div class="sidebar__list-top">
+          <button class="sidebar__create" type="button" aria-label="New Plan">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 3.5V12.5M3.5 8H12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+            </svg>
+            <span class="sidebar__create-label">New Plan</span>
+          </button>
+          <div class="plan-search">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4" />
+              <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+            <input type="text" placeholder="Search plans…" aria-label="Search plans" />
+          </div>
+        </div>
 
-        <!-- Left: Config Panel -->
-        <div class="config-panel">
+        <div class="plan-groups" id="planGroups">
+          <!-- Drafts -->
+          <section class="plan-group" data-group="drafts" aria-expanded="true">
+            <button class="plan-group__header" type="button">
+              <svg class="plan-group__chevron" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="plan-group__label">Drafts</span>
+              <span class="plan-group__count">2</span>
+            </button>
+            <div class="plan-group__body">
+              <ul class="plan-list">
+                <li class="plan-row plan-row--selected plan-row--draft" data-plan-id="p2">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Project 2</span>
+                        <span class="plan-row__date">May 26 – Jun 21</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon" title="Draft">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M8.5 2L10 3.5L4.5 9L2 9.5L2.5 7L8.5 2Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="p2" data-plan-title="Project 2" data-plan-status="draft" aria-label="Open schedule details for Project 2">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+                <li class="plan-row plan-row--draft" data-plan-id="test">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Test</span>
+                        <span class="plan-row__date">May 20 – May 22</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon" title="Draft">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M8.5 2L10 3.5L4.5 9L2 9.5L2.5 7L8.5 2Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="test" data-plan-title="Test" data-plan-status="draft" aria-label="Open schedule details for Test">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
 
-          <!-- Schedule Inputs -->
-          <div>
-            <div class="config-section__label-row">
-              <span class="config-section__label">Schedule Inputs</span>
-              <button class="config-section__edit-btn" type="button" title="Edit">
-                <!-- Pencil icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 10L10 2l2 2-8 8H2v-2z"/>
+          <!-- Ready -->
+          <section class="plan-group" data-group="ready" aria-expanded="true">
+            <button class="plan-group__header" type="button">
+              <svg class="plan-group__chevron" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="plan-group__label">Ready</span>
+              <span class="plan-group__count">3</span>
+            </button>
+            <div class="plan-group__body">
+              <ul class="plan-list">
+                <li class="plan-row" data-plan-id="showcase">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Spring Showcase '26</span>
+                        <span class="plan-row__date">Apr 14 – Apr 20</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--ready" title="Ready">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="showcase" data-plan-title="Spring Showcase '26" data-plan-status="ready" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+                <li class="plan-row" data-plan-id="gala">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Awards Gala</span>
+                        <span class="plan-row__date">May 12 – May 14</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--ready" title="Ready">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="gala" data-plan-title="Awards Gala" data-plan-status="ready" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+                <li class="plan-row" data-plan-id="investor">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Investor Day</span>
+                        <span class="plan-row__date">Jun 4 – Jun 5</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--ready" title="Ready">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="investor" data-plan-title="Investor Day" data-plan-status="ready" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- Completed -->
+          <section class="plan-group" data-group="completed" aria-expanded="false">
+            <button class="plan-group__header" type="button">
+              <svg class="plan-group__chevron" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="plan-group__label">Completed</span>
+              <span class="plan-group__count">3</span>
+            </button>
+            <div class="plan-group__body">
+              <ul class="plan-list">
+                <li class="plan-row plan-row--completed" data-plan-id="winter">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Winter Expo '25</span>
+                        <span class="plan-row__date">Dec 8 – Dec 14</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--completed" title="Completed">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="winter" data-plan-title="Winter Expo '25" data-plan-status="completed" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+                <li class="plan-row plan-row--completed" data-plan-id="roadshow">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Q4 Roadshow</span>
+                        <span class="plan-row__date">Oct 22 – Nov 6</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--completed" title="Completed">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="roadshow" data-plan-title="Q4 Roadshow" data-plan-status="completed" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+                <li class="plan-row plan-row--completed" data-plan-id="press">
+                  <div class="plan-row__item">
+                    <button class="plan-row__btn" type="button">
+                      <div class="plan-row__content">
+                        <span class="plan-row__title">Press Day</span>
+                        <span class="plan-row__date">Sep 3</span>
+                      </div>
+                      <span class="plan-row__badges">
+                        <span class="status-icon status-icon--completed" title="Completed">
+                          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 6L5 8.5L9.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                      </span>
+                    </button>
+                    <button class="plan-row__drill" type="button" data-plan-id="press" data-plan-title="Press Day" data-plan-status="completed" aria-label="Open schedule details">
+                      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="2" y="3.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+                        <path d="M5.5 2.5V4.5M10.5 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ============ DETAIL VIEW (drill-in) ============ -->
+      <div class="sidebar__view sidebar__view--detail">
+        <div class="drill-header">
+          <button class="drill-back" id="drillBack" type="button" aria-label="Back to plans">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <span class="drill-title" id="drillTitle">Project 2</span>
+          <span class="drill-badge" id="drillBadge">Draft</span>
+        </div>
+        <div class="drill-body">
+
+          <section class="drill-section">
+            <h3 class="drill-section__title">Schedule Inputs</h3>
+
+            <div class="inputs-summary">
+              <span class="inputs-summary__primary">May 26 – Jun 21</span>
+              <span class="inputs-summary__sep">·</span>
+              <span class="inputs-summary__secondary">27 days</span>
+            </div>
+
+            <div class="phase-stack">
+              <button class="phase-row" type="button" aria-label="Edit Assembly phase">
+                <span class="phase-row__dot phase-row__dot--assembly"></span>
+                <span class="phase-row__name">Assembly</span>
+                <span class="phase-row__dates">May 26 – Jun 6</span>
+                <svg class="phase-row__edit" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M8 2L10 4L4 10L1.5 10.5L2 8L8 2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <button class="phase-row" type="button" aria-label="Edit Event phase">
+                <span class="phase-row__dot phase-row__dot--event"></span>
+                <span class="phase-row__name">Event</span>
+                <span class="phase-row__dates">Jun 7</span>
+                <svg class="phase-row__edit" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M8 2L10 4L4 10L1.5 10.5L2 8L8 2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+                </svg>
+              </button>
+              <button class="phase-row" type="button" aria-label="Edit Dismantle phase">
+                <span class="phase-row__dot phase-row__dot--dismantle"></span>
+                <span class="phase-row__name">Dismantle</span>
+                <span class="phase-row__dates">Jun 8 – Jun 21</span>
+                <svg class="phase-row__edit" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M8 2L10 4L4 10L1.5 10.5L2 8L8 2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
                 </svg>
               </button>
             </div>
-            <div class="schedule-inputs">
-              <div class="schedule-input-pair">
-                <span class="schedule-input-pair__label">Dates</span>
-                <span class="schedule-input-pair__value u-mono">May 26 – May 31</span>
-              </div>
-              <div class="schedule-input-pair">
-                <span class="schedule-input-pair__label">Duration</span>
-                <span class="schedule-input-pair__value">5 days</span>
-              </div>
-              <div class="schedule-input-pair">
-                <span class="schedule-input-pair__label">Default Crew</span>
-                <span class="schedule-input-pair__value">6 workers</span>
-              </div>
-              <div class="schedule-input-pair">
-                <span class="schedule-input-pair__label">Efficiency</span>
-                <span class="schedule-input-pair__value">Full pace — 100%</span>
-              </div>
-              <div class="schedule-input-pair">
-                <span class="schedule-input-pair__label">Event</span>
-                <span class="schedule-input-pair__value u-mono">May 28 – May 28</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Work Calendar -->
-          <div>
-            <div class="config-section__label-row">
-              <span class="config-section__label">Work Calendar</span>
-            </div>
-            <div class="work-calendar">
-              <div class="work-day-row">
-                <span class="work-day-row__day">Tue</span>
-                <span class="work-day-row__time">8:00 – 16:00</span>
-                <span class="work-day-row__crew">6</span>
+            <div class="input-stack">
+              <div class="input-pair">
+                <span class="input-pair__label">Default crew</span>
+                <span class="input-pair__value">6 workers</span>
               </div>
-              <div class="work-day-row">
-                <span class="work-day-row__day">Wed</span>
-                <span class="work-day-row__time">8:00 – 16:00</span>
-                <span class="work-day-row__crew">6</span>
-              </div>
-              <div class="work-day-row">
-                <span class="work-day-row__day">Fri</span>
-                <span class="work-day-row__time">8:00 – 16:00</span>
-                <span class="work-day-row__crew">6</span>
+              <div class="input-pair">
+                <span class="input-pair__label">Efficiency</span>
+                <span class="input-pair__value">100%</span>
               </div>
             </div>
-            <button class="add-day-btn" type="button">
-              <!-- Plus icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
-              </svg>
-              Add day
-            </button>
-          </div>
+          </section>
+
+          <section class="drill-section">
+            <h3 class="drill-section__title">Work Calendar</h3>
+            <div class="thumb-cal" id="thumbCal">
+              <div class="thumb-cal__col-heads">
+                <span></span>
+                <span class="thumb-cal__col-head">M</span>
+                <span class="thumb-cal__col-head">T</span>
+                <span class="thumb-cal__col-head">W</span>
+                <span class="thumb-cal__col-head">T</span>
+                <span class="thumb-cal__col-head">F</span>
+                <span class="thumb-cal__col-head thumb-cal__col-head--weekend">S</span>
+                <span class="thumb-cal__col-head thumb-cal__col-head--weekend">S</span>
+              </div>
+              <div class="thumb-cal__grid" id="thumbCalGrid"></div>
+              <div class="thumb-cal__legend">
+                <span class="thumb-cal__legend-item">
+                  <span class="thumb-cal__legend-dot thumb-cal__legend-dot--assembly"></span>Assembly
+                </span>
+                <span class="thumb-cal__legend-item">
+                  <span class="thumb-cal__legend-dot thumb-cal__legend-dot--dismantle"></span>Dismantle
+                </span>
+                <span class="thumb-cal__legend-item">
+                  <span class="thumb-cal__legend-dot thumb-cal__legend-dot--event"></span>Event
+                </span>
+              </div>
+            </div>
+          </section>
 
         </div>
-        <!-- /config-panel -->
+      </div>
 
-        <!-- Right: Grid Column -->
-        <div class="grid-column" id="gridColumn">
+      <div class="sidebar__footer">
+        <button class="footer-item" type="button" aria-label="Shared Schedule" title="Shared Schedule">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" />
+            <path d="M2 6.5H14" stroke="currentColor" stroke-width="1.4" />
+            <path d="M5 2.5V4.5M11 2.5V4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          <span class="footer-item-label">Shared Schedule</span>
+        </button>
+        <button class="footer-item" type="button" aria-label="Insights" title="Insights">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 13V8M7 13V5M11 13V9M3 13H13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          <span class="footer-item-label">Insights</span>
+        </button>
+      </div>
+    </aside>
 
-          <!-- Grid Toolbar -->
-          <div class="grid-toolbar">
-            <!-- Auto-schedule button -->
-            <button class="btn-primary-pill" type="button">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="3,2 12,7 3,12"/>
+    <!-- ====================== Main pane ====================== -->
+    <section class="main">
+      <div class="context-bar">
+        <h1 class="context-bar__title">Project 2</h1>
+        <span class="draft-badge">Draft</span>
+        <div class="context-bar__phases">
+          <span class="phase">
+            <span class="phase__dot phase__dot--assembly"></span>
+            Assembly
+            <span class="phase__date">May 26 – Jun 6</span>
+          </span>
+          <span class="phase">
+            <span class="phase__dot phase__dot--event"></span>
+            Event
+            <span class="phase__date">Jun 7</span>
+          </span>
+          <span class="phase">
+            <span class="phase__dot phase__dot--dismantle"></span>
+            Dismantle
+            <span class="phase__date">Jun 8 – Jun 21</span>
+          </span>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab" type="button">Edit</button>
+        <button class="tab tab--active" type="button">Schedule</button>
+        <button class="tab" type="button">Progress</button>
+      </nav>
+
+      <div class="tab-content">
+        <div class="schedule-card">
+
+          <div class="metric-strip">
+            <span class="metric metric--zero">
+              <span class="metric__value mono">0 h</span>
+              <span class="metric__label">Scheduled</span>
+            </span>
+            <span class="metric metric--warning">
+              <span class="metric__value mono">71.8 h</span>
+              <span class="metric__label">Unscheduled</span>
+            </span>
+            <span class="metric metric--muted">
+              <span class="metric__value mono">1,024 h</span>
+              <span class="metric__label">Usable</span>
+            </span>
+            <span class="metric metric--zero">
+              <span class="metric__value mono">0</span>
+              <span class="metric__label">Over-allocated</span>
+            </span>
+            <div class="stepper">
+              <span class="stepper__step stepper__step--done">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.5L4.5 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                Plan
+              </span>
+              <span class="stepper__sep">·</span>
+              <span class="stepper__step stepper__step--done">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.5L4.5 8.5L9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                Crew
+              </span>
+              <span class="stepper__sep">·</span>
+              <span class="stepper__step stepper__step--current">Schedule</span>
+              <span class="stepper__sep">·</span>
+              <span class="stepper__step">Hand off</span>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn btn--primary" type="button">
+              <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2.5 7L6 10.5L11.5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               Auto-schedule (2)
             </button>
-
-            <div class="grid-toolbar__right">
-              <span class="chip chip--danger">1 issue</span>
-              <span class="chip chip--warning">1 warning</span>
-              <button class="assistant-btn" type="button" id="assistantToggle">
-                <!-- Sparkle icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="currentColor">
-                  <path d="M7 0 L7.7 5.3 L13 6 L7.7 6.7 L7 12 L6.3 6.7 L1 6 L6.3 5.3 Z" opacity="0.9"/>
+            <div class="chips">
+              <span class="chip chip--danger" title="1 issue">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.25" />
+                  <path d="M6 3.5V6.5M6 8.25V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                1 issue
+              </span>
+              <span class="chip chip--warning" title="1 warning">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M6 1.5L11 10.5H1L6 1.5Z" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" />
+                  <path d="M6 5V7M6 8.75V9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                </svg>
+                1 warning
+              </span>
+              <button class="btn btn--secondary toolbar__assistant-btn" id="assistantBtn" type="button" aria-pressed="false">
+                <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M7 1L8 5.5L12.5 6.5L8 7.5L7 12L6 7.5L1.5 6.5L6 5.5L7 1Z" fill="currentColor" />
                 </svg>
                 Schedule Assistant
-                <!-- Chevron indicator -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;opacity:0.6">
-                  <polyline points="3,3 6,6 9,3"/>
-                </svg>
               </button>
             </div>
           </div>
 
-          <!-- Grid + Drawer wrapper -->
-          <div class="grid-and-drawer">
-
-            <!-- Schedule Grid -->
-            <div class="schedule-grid" id="scheduleGrid">
-              <table class="grid-table">
-                <colgroup>
-                  <col style="width:240px;min-width:240px;">
-                  <col style="width:100px;min-width:100px;">
-                  <col style="width:100px;min-width:100px;">
-                  <col style="width:100px;min-width:100px;">
-                </colgroup>
-
-                <thead class="grid-header">
-                  <tr>
-                    <th class="grid-header__wp-cell" scope="col">
-                      <span class="grid-header__wp-label">Work Package</span>
-                    </th>
-                    <th class="grid-header__date-cell" scope="col">
-                      <span class="grid-header__date-day">Tue</span>
-                      <span class="grid-header__date-md">May 26</span>
-                    </th>
-                    <th class="grid-header__date-cell" scope="col">
-                      <span class="grid-header__date-day">Wed</span>
-                      <span class="grid-header__date-md">May 27</span>
-                    </th>
-                    <th class="grid-header__date-cell" scope="col">
-                      <span class="grid-header__date-day">Fri</span>
-                      <span class="grid-header__date-md">May 29</span>
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  <!-- ASSEMBLY phase header -->
-                  <tr class="grid-phase-header grid-phase-header--assembly">
-                    <td class="grid-phase-header__label-cell" colspan="1">
-                      <span class="grid-phase-header__label">▾ Assembly (1)</span>
-                    </td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-
-                  <!-- Tepper (Assembly) WP row -->
-                  <tr class="grid-wp-row">
-                    <td class="grid-wp-row__name-cell">
-                      <div class="grid-wp-row__name-cell-inner">
-                        <span class="grid-wp-row__name">Tepper</span>
-                        <div class="grid-wp-row__tags">
-                          <span class="grid-wp-row__tag">TeppeFl</span>
-                          <span class="grid-wp-row__unit">· m²</span>
-                        </div>
-                        <span class="grid-wp-row__meta">2 345 m² · 42.6 h</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                  </tr>
-
-                  <!-- Spacer between phases -->
-                  <tr class="grid-spacer">
-                    <td colspan="4"></td>
-                  </tr>
-
-                  <!-- DISMANTLE phase header -->
-                  <tr class="grid-phase-header grid-phase-header--dismantle">
-                    <td class="grid-phase-header__label-cell" colspan="1">
-                      <span class="grid-phase-header__label">▾ Dismantle (1)</span>
-                    </td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-
-                  <!-- Tepper (Dismantle) WP row -->
-                  <tr class="grid-wp-row">
-                    <td class="grid-wp-row__name-cell">
-                      <div class="grid-wp-row__name-cell-inner">
-                        <span class="grid-wp-row__name">Tepper</span>
-                        <div class="grid-wp-row__tags">
-                          <span class="grid-wp-row__tag">TeppeFl</span>
-                          <span class="grid-wp-row__unit">· m²</span>
-                        </div>
-                        <span class="grid-wp-row__meta">2 345 m² · 29.2 h</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                    <td>
-                      <div class="grid-cell"><span class="grid-cell__plus">+</span></div>
-                    </td>
-                  </tr>
-
-                </tbody>
-              </table>
-            </div>
-            <!-- /schedule-grid -->
-
-            <!-- Schedule Assistant Drawer -->
-            <aside class="assistant-drawer" id="assistantDrawer" aria-hidden="true">
-              <div class="assistant-drawer__inner">
-
-                <div class="assistant-drawer__header">
-                  <!-- Sparkle icon -->
-                  <svg class="assistant-drawer__header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 0 L8.9 6.1 L15 7 L8.9 7.9 L8 14 L7.1 7.9 L1 7 L7.1 6.1 Z" opacity="0.9"/>
+          <div class="grid-wrap">
+            <div class="grid" id="grid">
+              <div class="grid__inner">
+                <div class="cal-strip" id="calStrip">
+                  <div class="cal-strip__label">Work Package</div>
+                </div>
+                <div class="grid__phase-header grid__phase-header--assembly">
+                  <svg viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                  <span class="assistant-drawer__title">Schedule Assistant</span>
-                  <button class="assistant-drawer__close" type="button" id="assistantClose" title="Close">×</button>
+                  Assembly (1)
                 </div>
-
-                <!-- Issue 1: Warning -->
-                <div class="issue-card issue-card--warning">
-                  <div class="issue-card__header">
-                    <span class="issue-card__severity issue-card__severity--warning">Warning</span>
-                    <span class="issue-card__title">Tepper is unscheduled</span>
+                <div class="grid__wp-row" data-phase="assembly" id="wpRowAssembly">
+                  <div class="grid__wp-cell">
+                    <span class="grid__wp-name">Tepper</span>
+                    <span class="grid__wp-meta">
+                      <span class="grid__wp-tag">TeppeFl</span>
+                      <span>·</span>
+                      <span>m²</span>
+                    </span>
+                    <span class="grid__wp-stats">2345 m² · 42.6h</span>
                   </div>
-                  <p class="issue-card__desc">2345 m² of carpet laying has no hours allocated on any work day.</p>
-                  <p class="issue-card__impact">Impact: 42.6 person-hours unplaced</p>
-                  <button class="issue-card__action" type="button">Auto-schedule</button>
                 </div>
-
-                <!-- Issue 2: Info -->
-                <div class="issue-card issue-card--info">
-                  <div class="issue-card__header">
-                    <span class="issue-card__severity issue-card__severity--info">Info</span>
-                    <span class="issue-card__title">Wed May 27 is under-utilised</span>
+                <div class="grid__phase-spacer"></div>
+                <div class="grid__phase-header grid__phase-header--dismantle">
+                  <svg viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Dismantle (1)
+                </div>
+                <div class="grid__wp-row" data-phase="dismantle" id="wpRowDismantle">
+                  <div class="grid__wp-cell">
+                    <span class="grid__wp-name">Tepper</span>
+                    <span class="grid__wp-meta">
+                      <span class="grid__wp-tag">TeppeFl</span>
+                      <span>·</span>
+                      <span>m²</span>
+                    </span>
+                    <span class="grid__wp-stats">2345 m² · 29.2h</span>
                   </div>
-                  <p class="issue-card__desc">Only 12 h of 96 h usable capacity is currently allocated.</p>
-                  <p class="issue-card__impact">84 h available</p>
-                  <button class="issue-card__action" type="button">View day</button>
                 </div>
+              </div>
+            </div>
 
+            <aside class="assistant" id="assistant" aria-hidden="true">
+              <div class="assistant__inner">
+                <div class="assistant__header">
+                  <span class="assistant__sparkle" aria-hidden="true">
+                    <svg viewBox="0 0 14 14" fill="none">
+                      <path d="M7 1L8 5.5L12.5 6.5L8 7.5L7 12L6 7.5L1.5 6.5L6 5.5L7 1Z" fill="currentColor" />
+                    </svg>
+                  </span>
+                  <span class="assistant__title">Schedule Assistant</span>
+                  <button class="assistant__close" id="assistantClose" type="button" aria-label="Close Schedule Assistant">
+                    <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="assistant__cards">
+                  <article class="issue-card">
+                    <div class="issue-card__head">
+                      <span class="severity-pill severity-pill--warning">Warning</span>
+                    </div>
+                    <h3 class="issue-card__title">Tepper is unscheduled</h3>
+                    <p class="issue-card__desc">2345 m² of carpet laying has no hours allocated across assembly or dismantle.</p>
+                    <span class="issue-card__impact">71.8 person-hours unplaced</span>
+                    <button class="issue-card__action" type="button">Auto-schedule</button>
+                  </article>
+                  <article class="issue-card issue-card--info">
+                    <div class="issue-card__head">
+                      <span class="severity-pill severity-pill--info">Info</span>
+                    </div>
+                    <h3 class="issue-card__title">Dismantle has 2 weeks of slack</h3>
+                    <p class="issue-card__desc">29.2h of dismantle work fits well within Week 3 — Week 4 is currently empty.</p>
+                    <span class="issue-card__impact">~5 days available</span>
+                    <button class="issue-card__action" type="button">Review</button>
+                  </article>
+                </div>
               </div>
             </aside>
-            <!-- /assistant-drawer -->
 
           </div>
-          <!-- /grid-and-drawer -->
-
         </div>
-        <!-- /grid-column -->
-
       </div>
-      <!-- /zone-b -->
-
-    </div>
-    <!-- /tab-content -->
-
+    </section>
   </div>
-  <!-- /main-card -->
 
-</div>
-<!-- /workspace -->
+  <!-- ============================================================ -->
+  <script>
+    (function () {
+      // ---------- Data ----------
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const today = new Date(); today.setHours(0,0,0,0);
 
-<script>
-  (function () {
-    // --- Schedule Assistant drawer ---
-    const toggleBtn   = document.getElementById('assistantToggle');
-    const closeBtn    = document.getElementById('assistantClose');
-    const drawer      = document.getElementById('assistantDrawer');
-    let isOpen = false;
+      function buildDays() {
+        const start = new Date(2026, 4, 26);
+        const end   = new Date(2026, 5, 21);
+        const assemblyStart = new Date(2026, 4, 26);
+        const assemblyEnd   = new Date(2026, 5, 6);
+        const eventDay      = new Date(2026, 5, 7);
+        const dismantleStart= new Date(2026, 5, 8);
+        const dismantleEnd  = new Date(2026, 5, 21);
+        const out = [];
+        const cur = new Date(start);
+        while (cur <= end) {
+          const d = new Date(cur);
+          const dow = d.getDay();
+          const isWeekend = (dow === 0 || dow === 6);
+          let phase = 'out';
+          if (d >= assemblyStart && d <= assemblyEnd) phase = 'assembly';
+          else if (d.getTime() === eventDay.getTime()) phase = 'event';
+          else if (d >= dismantleStart && d <= dismantleEnd) phase = 'dismantle';
+          let isWorkday = !isWeekend;
+          const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+          if (key === '2026-4-30' || key === '2026-5-6') isWorkday = true;
+          if (phase === 'event') isWorkday = false;
+          out.push({
+            iso: d.toISOString().slice(0, 10),
+            date: d, dow, isWeekend, phase, isWorkday,
+            crew: isWorkday ? ((key === '2026-5-6') ? 8 : 6) : null,
+            time: isWorkday ? '8–16' : null,
+            dayName: dayNames[dow],
+            dayNum: d.getDate(),
+            isToday: d.getTime() === today.getTime(),
+          });
+          cur.setDate(cur.getDate() + 1);
+        }
+        return out;
+      }
 
-    function openDrawer() {
-      isOpen = true;
-      drawer.classList.add('assistant-drawer--open');
-      drawer.setAttribute('aria-hidden', 'false');
-      toggleBtn.classList.add('assistant-btn--active');
-    }
+      const days = buildDays();
+      document.documentElement.style.setProperty('--col-count', days.length);
 
-    function closeDrawer() {
-      isOpen = false;
-      drawer.classList.remove('assistant-drawer--open');
-      drawer.setAttribute('aria-hidden', 'true');
-      toggleBtn.classList.remove('assistant-btn--active');
-    }
+      // ---------- Calendar control strip ----------
+      function buildCalCell(d, idx) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell';
+        cell.dataset.phase = d.phase;
+        cell.dataset.workday = d.isWorkday ? 'yes' : 'no';
+        cell.dataset.weekend = d.isWeekend ? 'yes' : 'no';
+        cell.dataset.index = idx;
+        if (d.isToday) cell.classList.add('is-today');
+        cell.title = `${d.dayName} ${monthShort(d.date.getMonth())} ${d.dayNum} — ${
+          d.phase === 'event' ? 'Event day' :
+          d.isWorkday ? `${d.time}, ×${d.crew}` : 'Off'
+        }. Click to toggle.`;
+        const head = document.createElement('div');
+        head.className = 'cal-cell__head';
+        const day = document.createElement('span'); day.className = 'cal-cell__day'; day.textContent = d.dayName;
+        const date = document.createElement('span'); date.className = 'cal-cell__date'; date.textContent = String(d.dayNum);
+        head.append(day, date);
+        cell.appendChild(head);
+        if (d.phase === 'event') {
+          const tag = document.createElement('span');
+          tag.className = 'cal-cell__event-tag';
+          tag.textContent = 'Event';
+          cell.appendChild(tag);
+        } else {
+          const meta = document.createElement('div');
+          meta.className = 'cal-cell__meta';
+          const crew = document.createElement('span'); crew.className = 'cal-cell__crew'; crew.textContent = `×${d.crew || 6}`;
+          const time = document.createElement('span'); time.className = 'cal-cell__time'; time.textContent = d.time || '8–16';
+          meta.append(crew, time);
+          cell.appendChild(meta);
+        }
+        if (!d.isWorkday && d.phase !== 'event') {
+          const add = document.createElement('span');
+          add.className = 'cal-cell__add';
+          add.innerHTML = '<svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2V10M2 6H10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+          cell.appendChild(add);
+        }
+        const bar = document.createElement('div'); bar.className = 'cal-cell__phase-bar';
+        cell.appendChild(bar);
+        cell.addEventListener('click', () => {
+          if (d.phase === 'event') return;
+          d.isWorkday = !d.isWorkday;
+          d.crew = d.isWorkday ? (d.crew || 6) : null;
+          d.time = d.isWorkday ? (d.time || '8–16') : null;
+          rerenderDay(idx);
+        });
+        return cell;
+      }
+      function renderCalStrip() {
+        const strip = document.getElementById('calStrip');
+        days.forEach((d, idx) => strip.appendChild(buildCalCell(d, idx)));
+      }
+      function rerenderDay(idx) {
+        const strip = document.getElementById('calStrip');
+        const cells = strip.querySelectorAll('.cal-cell');
+        const old = cells[idx]; if (!old) return;
+        const fresh = buildCalCell(days[idx], idx);
+        old.replaceWith(fresh);
+        rerenderThumbCell(idx);
+        rerenderWpCell(idx);
+      }
+      function monthShort(m) { return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]; }
 
-    toggleBtn.addEventListener('click', function () {
-      isOpen ? closeDrawer() : openDrawer();
-    });
+      // ---------- WP rows ----------
+      function dayCellState(d, rowPhase) {
+        if (d.phase === 'event') return 'event';
+        if (!d.isWorkday) return 'off';
+        if (d.phase !== rowPhase) return 'out-of-phase';
+        return 'schedulable';
+      }
+      function renderWpRow(rowEl, rowPhase) {
+        days.forEach((d, idx) => {
+          const cell = document.createElement('div');
+          cell.className = 'day-cell';
+          cell.dataset.state = dayCellState(d, rowPhase);
+          cell.dataset.index = idx;
+          cell.textContent = cell.dataset.state === 'schedulable' ? '+' : '';
+          rowEl.appendChild(cell);
+        });
+      }
+      function rerenderWpCell(idx) {
+        ['Assembly','Dismantle'].forEach(name => {
+          const row = document.getElementById('wpRow' + name);
+          const cells = row.querySelectorAll('.day-cell');
+          const cell = cells[idx]; if (!cell) return;
+          const d = days[idx];
+          cell.dataset.state = dayCellState(d, name.toLowerCase());
+          cell.textContent = cell.dataset.state === 'schedulable' ? '+' : '';
+        });
+      }
 
-    closeBtn.addEventListener('click', closeDrawer);
+      // ---------- Thumbnail ----------
+      function renderThumb() {
+        const grid = document.getElementById('thumbCalGrid');
+        grid.innerHTML = '';
+        const projStart = new Date(2026, 4, 26);
+        const projEnd   = new Date(2026, 5, 21);
+        const firstWeekMonday = new Date(2026, 4, 25);
+        for (let w = 0; w < 4; w++) {
+          const wkLabel = document.createElement('span');
+          wkLabel.className = 'thumb-cal__week-label';
+          wkLabel.textContent = `W${w + 1}`;
+          grid.appendChild(wkLabel);
+          for (let dCol = 0; dCol < 7; dCol++) {
+            const dt = new Date(firstWeekMonday);
+            dt.setDate(dt.getDate() + w * 7 + dCol);
+            const cell = document.createElement('div');
+            cell.className = 'thumb-cell';
+            let phase = 'out';
+            let isWorkday = false;
+            let idx = -1;
+            let dayObj = null;
+            if (dt >= projStart && dt <= projEnd) {
+              idx = days.findIndex(x => x.date.getTime() === dt.getTime());
+              if (idx >= 0) {
+                dayObj = days[idx];
+                phase = dayObj.phase;
+                isWorkday = dayObj.isWorkday;
+              }
+            }
+            cell.dataset.phase = phase;
+            cell.dataset.workday = isWorkday ? 'yes' : 'no';
+            cell.dataset.index = idx;
+            cell.textContent = phase === 'out' ? '' : String(dt.getDate());
+            if (dayObj && dayObj.isToday) cell.classList.add('is-today');
+            if (idx >= 0) {
+              cell.title = `${dayObj.dayName} ${monthShort(dt.getMonth())} ${dt.getDate()} — ${
+                dayObj.phase === 'event' ? 'Event day' :
+                dayObj.isWorkday ? `${dayObj.time}, ×${dayObj.crew}` : 'Off'
+              }`;
+              cell.addEventListener('click', () => {
+                const cs = getComputedStyle(document.documentElement);
+                const colW = parseFloat(cs.getPropertyValue('--day-col-w'));
+                const wpW  = parseFloat(cs.getPropertyValue('--wp-col-w'));
+                const gridEl = document.getElementById('grid');
+                gridEl.scrollTo({
+                  left: wpW + idx * colW - gridEl.clientWidth / 2 + colW / 2,
+                  behavior: 'smooth',
+                });
+                highlightDay(idx);
+              });
+            }
+            grid.appendChild(cell);
+          }
+        }
+      }
+      function rerenderThumbCell(idx) {
+        const cell = document.querySelector(`.thumb-cell[data-index="${idx}"]`);
+        if (!cell) return;
+        const d = days[idx];
+        cell.dataset.phase = d.phase;
+        cell.dataset.workday = d.isWorkday ? 'yes' : 'no';
+      }
+      function highlightDay(idx) {
+        document.querySelectorAll('.cal-cell.is-focused, .thumb-cell.is-focused').forEach(c => c.classList.remove('is-focused'));
+        const strip = document.getElementById('calStrip');
+        const cells = strip.querySelectorAll('.cal-cell');
+        const calCell = cells[idx];
+        if (calCell) {
+          calCell.classList.add('is-focused');
+          setTimeout(() => calCell.classList.remove('is-focused'), 1200);
+        }
+        const thumb = document.querySelector(`.thumb-cell[data-index="${idx}"]`);
+        if (thumb) {
+          thumb.classList.add('is-focused');
+          setTimeout(() => thumb.classList.remove('is-focused'), 1200);
+        }
+      }
 
-    // --- Sidebar collapse ---
-    const sidebarToggleBtn = document.getElementById('sidebarToggle');
-    const sidebar          = document.querySelector('.sidebar');
-    let sidebarOpen = true;
+      // ---------- Init ----------
+      renderCalStrip();
+      renderWpRow(document.getElementById('wpRowAssembly'), 'assembly');
+      renderWpRow(document.getElementById('wpRowDismantle'), 'dismantle');
+      renderThumb();
 
-    sidebarToggleBtn.addEventListener('click', function () {
-      sidebarOpen = !sidebarOpen;
-      sidebar.classList.toggle('sidebar--collapsed', !sidebarOpen);
-    });
-  })();
-</script>
+      // ---------- Drawer ----------
+      const drawer = document.getElementById('assistant');
+      const drawerBtn = document.getElementById('assistantBtn');
+      const drawerClose = document.getElementById('assistantClose');
+      function setDrawerOpen(open) {
+        drawer.classList.toggle('is-open', open);
+        drawerBtn.classList.toggle('is-active', open);
+        drawerBtn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+      }
+      drawerBtn.addEventListener('click', () => setDrawerOpen(!drawer.classList.contains('is-open')));
+      drawerClose.addEventListener('click', () => setDrawerOpen(false));
 
+      // ---------- Sidebar collapse ----------
+      const sidebar = document.querySelector('.sidebar');
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const SB_KEY = 'rs.sidebar.collapsed';
+      function setSidebarCollapsed(collapsed) {
+        sidebar.classList.toggle('is-collapsed', collapsed);
+        sidebarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        try { localStorage.setItem(SB_KEY, collapsed ? '1' : '0'); } catch (e) {}
+      }
+      try { if (localStorage.getItem(SB_KEY) === '1') setSidebarCollapsed(true); } catch (e) {}
+      sidebarToggle.addEventListener('click', () => setSidebarCollapsed(!sidebar.classList.contains('is-collapsed')));
+
+      // ---------- Plan groups (accordion, persisted) ----------
+      const GROUP_KEY_PREFIX = 'rs.sidebar.group.';
+      document.querySelectorAll('.plan-group').forEach(group => {
+        const name = group.dataset.group;
+        const header = group.querySelector('.plan-group__header');
+        const storeKey = GROUP_KEY_PREFIX + name;
+        try {
+          const saved = localStorage.getItem(storeKey);
+          if (saved !== null) group.setAttribute('aria-expanded', saved === '1' ? 'true' : 'false');
+        } catch (e) {}
+        header.addEventListener('click', () => {
+          const open = group.getAttribute('aria-expanded') !== 'false';
+          group.setAttribute('aria-expanded', open ? 'false' : 'true');
+          try { localStorage.setItem(storeKey, open ? '0' : '1'); } catch (e) {}
+        });
+      });
+
+      // ---------- Drill-in / back ----------
+      const MODE_KEY = 'rs.sidebar.mode';
+      const DRILL_KEY = 'rs.sidebar.drillPlan';
+      const drillTitle = document.getElementById('drillTitle');
+      const drillBadge = document.getElementById('drillBadge');
+      const drillBack = document.getElementById('drillBack');
+
+      function setMode(mode, planMeta) {
+        sidebar.setAttribute('data-mode', mode);
+        try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+        if (mode === 'detail' && planMeta) {
+          drillTitle.textContent = planMeta.title;
+          drillBadge.textContent = planMeta.status;
+          drillBadge.style.background = (planMeta.status === 'Draft') ? 'var(--color-amber-solid)' :
+                                        (planMeta.status === 'Ready') ? 'var(--state-success-fg)' :
+                                        'var(--color-text-muted)';
+          try { localStorage.setItem(DRILL_KEY, JSON.stringify(planMeta)); } catch (e) {}
+        }
+      }
+
+      // Restore mode + drill plan
+      try {
+        const savedMode = localStorage.getItem(MODE_KEY);
+        const savedPlan = localStorage.getItem(DRILL_KEY);
+        if (savedMode === 'detail' && savedPlan) {
+          const meta = JSON.parse(savedPlan);
+          setMode('detail', meta);
+        }
+      } catch (e) {}
+
+      document.querySelectorAll('.plan-row__drill').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const meta = {
+            id: btn.dataset.planId,
+            title: btn.dataset.planTitle,
+            status: btn.dataset.planStatus.charAt(0).toUpperCase() + btn.dataset.planStatus.slice(1),
+          };
+          setMode('detail', meta);
+        });
+      });
+
+      drillBack.addEventListener('click', () => setMode('list'));
+    })();
+  </script>
 </body>
 </html>

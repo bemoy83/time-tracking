@@ -31,37 +31,25 @@ export function ScheduleMetricStrip({ metrics, steps, readOnly = false }: Schedu
       <div className="schedule-metric-strip__stepper" aria-label="Setup steps">
         {steps.map((step, i) => {
           const isCompleted = step.complete;
-          const isActiveCta = step.isCta && !readOnly && (!step.complete || step.persistCta);
+          const isCurrent = step.isCta && !readOnly && (!step.complete || step.persistCta);
 
           return (
             <Fragment key={step.id}>
               {i > 0 && (
-                <span className="schedule-metric-strip__step-sep" aria-hidden>→</span>
+                <span className="schedule-metric-strip__step-sep" aria-hidden>·</span>
               )}
-              {isActiveCta && step.onClick ? (
-                <button
-                  type="button"
-                  className="schedule-metric-strip__step-cta"
-                  onClick={step.onClick}
-                  disabled={step.disabled}
-                  title={step.disabledReason ?? undefined}
-                  aria-label={step.disabledReason ? `${step.label}: ${step.disabledReason}` : step.label}
-                >
-                  {step.activeLabel ?? step.label}
-                </button>
-              ) : (
-                <span
-                  className={[
-                    'schedule-metric-strip__step',
-                    isCompleted ? 'schedule-metric-strip__step--done' : '',
-                  ].filter(Boolean).join(' ')}
-                >
-                  {isCompleted && (
-                    <CheckIcon className="schedule-metric-strip__step-check" aria-hidden />
-                  )}
-                  {step.label}
-                </span>
-              )}
+              <span
+                className={[
+                  'schedule-metric-strip__step',
+                  isCompleted ? 'schedule-metric-strip__step--done' : '',
+                  isCurrent ? 'schedule-metric-strip__step--current' : '',
+                ].filter(Boolean).join(' ')}
+              >
+                {isCompleted && (
+                  <CheckIcon className="schedule-metric-strip__step-check" aria-hidden />
+                )}
+                {step.activeLabel && isCurrent ? step.activeLabel : step.label}
+              </span>
             </Fragment>
           );
         })}

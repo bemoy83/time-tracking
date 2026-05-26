@@ -42,6 +42,10 @@
   background: var(--surface-contained-bg);
 }
 
+.schedule-view .schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--weekend {
+  background: var(--surface-contained-inset);
+}
+
 .schedule-view .schedule-grid__line-item-col {
   box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15);
 }
