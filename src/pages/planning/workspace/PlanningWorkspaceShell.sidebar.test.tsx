@@ -3,7 +3,7 @@
  */
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, within } from '@testing-library/react';
+import { fireEvent, render, within } from '@testing-library/react';
 import { createPlan } from '../../../lib/planning/plan-model';
 import { PlanningWorkspaceShell } from './PlanningWorkspaceShell';
 
@@ -53,5 +53,32 @@ describe('PlanningWorkspaceShell sidebar', () => {
     const props = createProps();
     const { container } = render(<PlanningWorkspaceShell {...props} />);
     expect(within(container).getByText('Plan A')).toBeTruthy();
+  });
+
+  it('toggles shared schedule plan selection from the sidebar', () => {
+    const onSetSelectedPlanIdsForSharedSchedule = vi.fn();
+    const props = createProps({ onSetSelectedPlanIdsForSharedSchedule });
+
+    const { getByLabelText } = render(<PlanningWorkspaceShell {...props} />);
+    fireEvent.click(getByLabelText('Add Plan A to shared schedule'));
+
+    expect(onSetSelectedPlanIdsForSharedSchedule).toHaveBeenCalledTimes(1);
+    expect([...onSetSelectedPlanIdsForSharedSchedule.mock.calls[0][0]]).toEqual([props.plans[0].id]);
+  });
+
+  it('returns to the active plan when the shared schedule footer item is clicked while active', () => {
+    const plan = createPlan('Plan A');
+    const onSetActiveTab = vi.fn();
+    const props = createProps({
+      plans: [plan],
+      activePlan: plan,
+      activeTab: 'shared-schedule',
+      onSetActiveTab,
+    });
+
+    const { getByLabelText } = render(<PlanningWorkspaceShell {...props} />);
+    fireEvent.click(getByLabelText('Shared Schedule'));
+
+    expect(onSetActiveTab).toHaveBeenCalledWith('edit');
   });
 });

@@ -119,8 +119,6 @@ export function SharedScheduleView({
     trackTelemetryEvent('shared_schedule_tab_open');
   }, []);
 
-  /* No default selection — user explicitly adds plans via sidebar button */
-
   const selectedPlans = useMemo(
     () => selectablePlans
       .filter((plan) => selectedPlanIds.has(plan.id))

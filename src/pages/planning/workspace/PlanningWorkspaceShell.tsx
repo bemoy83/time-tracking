@@ -5,7 +5,7 @@
  * The exit control in the top-left returns the user to the previous app tab.
  */
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Plan } from '../../../lib/planning/plan-model';
 import type { Task, WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
@@ -89,11 +89,27 @@ export function PlanningWorkspaceShell({
 }: PlanningWorkspaceShellProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const [scheduleCtx, setScheduleCtx] = useState<ScheduleEditContextValue | null>(null);
+
+  const handleOpenPlanWorkspace = useCallback(() => {
+    if (activePlan) {
+      onSetActiveTab('edit');
+      return;
+    }
+    const firstPlan = plans[0];
+    if (firstPlan) {
+      onSelectPlan(firstPlan);
+      return;
+    }
+    onSetActiveTab('edit');
+  }, [activePlan, onSelectPlan, onSetActiveTab, plans]);
+
   const sidebarTabContext: WorkspaceRenderContext = {
     hasLinkedTasks,
     isReviewed: activePlan ? isPlanArchived(activePlan) : false,
     reviewReady: false,
     showScheduleTab: activePlan ? !isPlanArchived(activePlan) : false,
+    activeTab,
+    onOpenPlanWorkspace: handleOpenPlanWorkspace,
     onOpenProgress,
     onOpenInsights,
     onSetActiveTab,
@@ -137,7 +153,6 @@ export function PlanningWorkspaceShell({
         onOpenWrapUp={onOpenWrapUp}
         onExit={onExit}
         footer={sidebarFooter}
-        showAddToScheduleButton={activeTab === 'shared-schedule'}
         selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
         onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}
       />

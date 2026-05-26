@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
 import { getProjectDisplayColor, type Project, type Task } from '../../../lib/types';
-import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
+import { isPlanArchived, isPlanInPlannerState, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithImportedExecutionReturns';
 import { groupPlans } from '../planning-list-groups';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
@@ -41,9 +41,8 @@ export interface WorkspaceSidebarProps {
   onOpenWrapUp: (plan: Plan) => void;
   onExit: () => void;
   footer?: React.ReactNode;
-  showAddToScheduleButton?: boolean;
-  selectedPlanIdsForSharedSchedule?: Set<string>;
-  onSelectedPlanIdsChange?: (planIds: Set<string>) => void;
+  selectedPlanIdsForSharedSchedule: Set<string>;
+  onSelectedPlanIdsChange: (planIds: Set<string>) => void;
 }
 
 export function WorkspaceSidebar({
@@ -58,6 +57,8 @@ export function WorkspaceSidebar({
   onOpenWrapUp,
   onExit,
   footer,
+  selectedPlanIdsForSharedSchedule,
+  onSelectedPlanIdsChange,
 }: WorkspaceSidebarProps) {
   const [collapsed, setCollapsed] = useState(() =>
     readLocalStorage('workspace-sidebar-collapsed', false),
@@ -129,6 +130,18 @@ export function WorkspaceSidebar({
   );
 
   const showDrillIcon = activeTab === 'schedule';
+  const showSharedScheduleSelector = activeTab === 'shared-schedule';
+
+  const handleToggleSharedSchedulePlan = useCallback(
+    (plan: Plan) => {
+      if (!isPlanInPlannerState(plan)) return;
+      const next = new Set(selectedPlanIdsForSharedSchedule);
+      if (next.has(plan.id)) next.delete(plan.id);
+      else next.add(plan.id);
+      onSelectedPlanIdsChange(next);
+    },
+    [onSelectedPlanIdsChange, selectedPlanIdsForSharedSchedule],
+  );
 
   const sidebarClass = [
     'planning-workspace__sidebar',
@@ -181,7 +194,7 @@ export function WorkspaceSidebar({
       </div>
 
       {collapsed ? (
-        /* Collapsed rail: status dots for selected plan + create button */
+        /* Collapsed rail: all plans + create button */
         <div className="workspace-sidebar__rail">
           <button
             type="button"
@@ -196,16 +209,33 @@ export function WorkspaceSidebar({
             const project = plan.projectId ? projectById.get(plan.projectId) : undefined;
             const accentColor = project ? getProjectDisplayColor(project.color) : null;
             const displayName = getPlanDisplayName(plan, project ?? null);
-            const isSelected = activePlan?.id === plan.id;
+            const isSelected = showSharedScheduleSelector
+              ? selectedPlanIdsForSharedSchedule.has(plan.id)
+              : activePlan?.id === plan.id;
             return (
               <button
                 key={plan.id}
                 type="button"
                 className={`workspace-sidebar__rail-item${isSelected ? ' workspace-sidebar__rail-item--selected' : ''}${accentColor ? ' workspace-sidebar__rail-item--has-project' : ''}`}
                 style={accentColor ? { '--workspace-sidebar-rail-accent': accentColor } as React.CSSProperties : undefined}
-                onClick={() => onSelectPlan(plan)}
-                aria-label={displayName}
-                title={displayName}
+                onClick={() => {
+                  if (showSharedScheduleSelector) {
+                    handleToggleSharedSchedulePlan(plan);
+                    return;
+                  }
+                  onSelectPlan(plan);
+                }}
+                aria-label={
+                  showSharedScheduleSelector
+                    ? `${isSelected ? 'Remove' : 'Add'} ${displayName} ${isSelected ? 'from' : 'to'} shared schedule`
+                    : displayName
+                }
+                aria-pressed={showSharedScheduleSelector ? isSelected : undefined}
+                title={
+                  showSharedScheduleSelector
+                    ? `${isSelected ? 'Remove from' : 'Add to'} shared schedule`
+                    : displayName
+                }
               >
                 <SidebarStatusDot
                   plan={plan}
@@ -217,7 +247,7 @@ export function WorkspaceSidebar({
           })}
         </div>
       ) : mode === 'detail' && drillPlan ? (
-        /* Detail mode: schedule inputs + work calendar (wired via ScheduleEditContext in Step 4) */
+        /* Detail mode: schedule inputs + thumb calendar */
         <div className="workspace-sidebar__detail">
           <div className="workspace-sidebar__detail-header">
             <button
@@ -274,8 +304,11 @@ export function WorkspaceSidebar({
                 tasks={tasks}
                 planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 showDrillIcon={showDrillIcon}
+                showSharedScheduleSelector={showSharedScheduleSelector}
+                selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
                 onSelectPlan={onSelectPlan}
                 onDrillIn={handleDrillIn}
+                onToggleSharedSchedulePlan={handleToggleSharedSchedulePlan}
                 onDeletePlan={onDeletePlan}
                 onOpenWrapUp={onOpenWrapUp}
               />
@@ -291,8 +324,11 @@ export function WorkspaceSidebar({
                 tasks={tasks}
                 planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 showDrillIcon={showDrillIcon}
+                showSharedScheduleSelector={showSharedScheduleSelector}
+                selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
                 onSelectPlan={onSelectPlan}
                 onDrillIn={handleDrillIn}
+                onToggleSharedSchedulePlan={handleToggleSharedSchedulePlan}
                 onDeletePlan={onDeletePlan}
                 onOpenWrapUp={onOpenWrapUp}
               />
@@ -308,8 +344,11 @@ export function WorkspaceSidebar({
                 tasks={tasks}
                 planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 showDrillIcon={showDrillIcon}
+                showSharedScheduleSelector={showSharedScheduleSelector}
+                selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
                 onSelectPlan={onSelectPlan}
                 onDrillIn={handleDrillIn}
+                onToggleSharedSchedulePlan={handleToggleSharedSchedulePlan}
                 onDeletePlan={onDeletePlan}
                 onOpenWrapUp={onOpenWrapUp}
               />
@@ -325,8 +364,11 @@ export function WorkspaceSidebar({
                 tasks={tasks}
                 planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 showDrillIcon={false}
+                showSharedScheduleSelector={showSharedScheduleSelector}
+                selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
                 onSelectPlan={onSelectPlan}
                 onDrillIn={handleDrillIn}
+                onToggleSharedSchedulePlan={handleToggleSharedSchedulePlan}
                 onDeletePlan={onDeletePlan}
                 onOpenWrapUp={onOpenWrapUp}
               />
@@ -455,8 +497,11 @@ interface PlanGroupProps {
   tasks: Task[];
   planIdsWithImportedExecutionReturns: Set<string>;
   showDrillIcon: boolean;
+  showSharedScheduleSelector: boolean;
+  selectedPlanIdsForSharedSchedule: Set<string>;
   onSelectPlan: (plan: Plan) => void;
   onDrillIn: (plan: Plan) => void;
+  onToggleSharedSchedulePlan: (plan: Plan) => void;
   onDeletePlan: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
 }
@@ -471,8 +516,11 @@ function PlanGroup({
   tasks,
   planIdsWithImportedExecutionReturns,
   showDrillIcon,
+  showSharedScheduleSelector,
+  selectedPlanIdsForSharedSchedule,
   onSelectPlan,
   onDrillIn,
+  onToggleSharedSchedulePlan,
   onDeletePlan,
   onOpenWrapUp,
 }: PlanGroupProps) {
@@ -502,8 +550,11 @@ function PlanGroup({
                 isSelected={activePlanId === plan.id}
                 planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
                 showDrillIcon={showDrillIcon}
+                showSharedScheduleSelector={showSharedScheduleSelector}
+                isSharedScheduleSelected={selectedPlanIdsForSharedSchedule.has(plan.id)}
                 onSelect={onSelectPlan}
                 onDrillIn={onDrillIn}
+                onToggleSharedSchedule={onToggleSharedSchedulePlan}
                 onDelete={onDeletePlan}
                 onOpenWrapUp={onOpenWrapUp}
               />
@@ -541,8 +592,11 @@ interface PlanRowProps {
   isSelected: boolean;
   planIdsWithImportedExecutionReturns: Set<string>;
   showDrillIcon: boolean;
+  showSharedScheduleSelector: boolean;
+  isSharedScheduleSelected: boolean;
   onSelect: (plan: Plan) => void;
   onDrillIn: (plan: Plan) => void;
+  onToggleSharedSchedule: (plan: Plan) => void;
   onDelete: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
 }
@@ -554,8 +608,11 @@ function PlanRow({
   isSelected,
   planIdsWithImportedExecutionReturns,
   showDrillIcon,
+  showSharedScheduleSelector,
+  isSharedScheduleSelected,
   onSelect,
   onDrillIn,
+  onToggleSharedSchedule,
   onDelete,
   onOpenWrapUp,
 }: PlanRowProps) {
@@ -566,6 +623,7 @@ function PlanRow({
   const project = plan.projectId ? projectById.get(plan.projectId) : undefined;
   const projectAccentColor = project ? getProjectDisplayColor(project.color) : null;
   const archived = isPlanArchived(plan);
+  const isSharedScheduleSelectable = isPlanInPlannerState(plan);
   const wrapUpEligible = isPlanWrapUpEligible(
     plan,
     tasks,
@@ -588,6 +646,9 @@ function PlanRow({
     plan.status === 'draft' ? 'plan-row--draft' : '',
     archived ? 'plan-row--completed' : '',
     plan.handedOffAt != null && !archived ? 'plan-row--inprogress' : '',
+    showSharedScheduleSelector ? 'plan-row--shared-schedule' : '',
+    isSharedScheduleSelected ? 'plan-row--shared-selected' : '',
+    showSharedScheduleSelector && !isSharedScheduleSelectable ? 'plan-row--shared-disabled' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -598,11 +659,36 @@ function PlanRow({
       style={projectAccentColor ? { '--plan-row-accent': projectAccentColor } as React.CSSProperties : undefined}
     >
       <div className="plan-row__item">
+        {showSharedScheduleSelector && (
+          <button
+            type="button"
+            className="plan-row__shared-toggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSharedSchedule(plan);
+            }}
+            aria-pressed={isSharedScheduleSelected}
+            aria-label={`${isSharedScheduleSelected ? 'Remove' : 'Add'} ${displayName} ${isSharedScheduleSelected ? 'from' : 'to'} shared schedule`}
+            title={isSharedScheduleSelected ? 'Remove from shared schedule' : 'Add to shared schedule'}
+            disabled={!isSharedScheduleSelectable}
+          >
+            {isSharedScheduleSelected && (
+              <CheckIcon className="plan-row__shared-toggle-icon" aria-hidden />
+            )}
+          </button>
+        )}
         <button
           type="button"
           className="plan-row__btn"
-          onClick={() => onSelect(plan)}
+          onClick={() => {
+            if (showSharedScheduleSelector) {
+              onToggleSharedSchedule(plan);
+              return;
+            }
+            onSelect(plan);
+          }}
           aria-current={isSelected ? 'page' : undefined}
+          aria-pressed={showSharedScheduleSelector ? isSharedScheduleSelected : undefined}
         >
           <StatusDot variant={statusVariant} />
           <span className="plan-row__content">

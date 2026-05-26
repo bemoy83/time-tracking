@@ -77,10 +77,6 @@
   transition: background-color 0.15s;
 }
 
-.planning-view__row:has(.planning-view__add-to-schedule-btn) .planning-view__item {
-  margin-inline-end: var(--space-xs);
-}
-
 .planning-view__row:hover .planning-view__item {
   background: var(--surface-contained-hover);
 }

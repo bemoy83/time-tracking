@@ -45,6 +45,10 @@
   font-weight: 600;
 }
 
+.plan-row--shared-selected .plan-row__item {
+  background: var(--surface-brand-subtle);
+}
+
 /* Main select button */
 .plan-row__btn {
   display: flex;
@@ -60,6 +64,51 @@
   cursor: pointer;
   text-align: left;
   min-height: 40px;
+}
+
+.plan-row--shared-schedule .plan-row__btn {
+  padding-inline-start: var(--space-sm);
+}
+
+.plan-row__shared-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  margin-left: var(--space-sm);
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-contained-bg);
+  color: var(--state-on-solid);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.plan-row__shared-toggle:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+}
+
+.plan-row__shared-toggle[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--state-on-solid);
+}
+
+.plan-row__shared-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.plan-row__shared-toggle-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .plan-row__content {

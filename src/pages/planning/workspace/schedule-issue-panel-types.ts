@@ -65,7 +65,6 @@ export interface ScheduleIssuePanelActions {
   focusPrev: () => void;
   runAssistant: () => Promise<void>;
   clearAllSchedules: () => void;
-  openCalendar: () => void;
 }
 
 export interface ScheduleIssuePanelPayload {

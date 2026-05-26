@@ -8,7 +8,6 @@ export interface ScheduleEditContextValue {
   primaryRange: { start: string; end: string } | null;
   workCalendarRange: { start: string; end: string } | null;
   effectiveCrewSize: number | null;
-  totalAvailable: number;
   readOnly: boolean;
   onPhaseDateChange: (field: PhaseDateField, value: string) => void;
   onEventDateChange: (field: 'eventStartDate' | 'eventEndDate', value: string) => void;

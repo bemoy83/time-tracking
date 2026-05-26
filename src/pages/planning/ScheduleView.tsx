@@ -37,8 +37,9 @@ export function ScheduleView({
     scheduleSteps,
     phaseDates,
     capacity,
-    criticalIssueCount,
-    warningIssueCount,
+    assistantIssueCount,
+    assistantCriticalIssueCount,
+    assistantWarningIssueCount,
     issuePanelPayload,
     unresolvedIssueKeys,
     activeAssistantIssue,
@@ -61,8 +62,9 @@ export function ScheduleView({
         metrics={scheduleKpiMetrics}
         steps={scheduleSteps}
         readOnly={readOnly}
-        criticalIssueCount={criticalIssueCount}
-        warningIssueCount={warningIssueCount}
+        issueCount={assistantIssueCount}
+        criticalIssueCount={assistantCriticalIssueCount}
+        warningIssueCount={assistantWarningIssueCount}
         onOpenAssistant={() => setIsAssistantPanelOpen(true)}
         isLocked={isLocked}
         onRevertToDraft={handleRevertToDraft}

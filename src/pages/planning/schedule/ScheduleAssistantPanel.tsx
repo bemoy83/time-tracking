@@ -6,6 +6,7 @@ import type {
   ScheduleIssueItem,
   ScheduleIssuePanelPayload,
 } from '../workspace/schedule-issue-panel-types';
+import { getVisibleScheduleIssues } from '../workspace/schedule-issue-visibility';
 
 interface ScheduleAssistantPanelProps {
   payload: ScheduleIssuePanelPayload | null;
@@ -53,11 +54,7 @@ function groupIssues(issues: ScheduleIssueItem[]): Array<{
 export function ScheduleAssistantPanel({ payload, isOpen, onClose }: ScheduleAssistantPanelProps) {
   const visibleIssues = useMemo(() => {
     if (!payload) return [];
-    return payload.state.issues.filter((issue) => {
-      if (issue.kind === 'assistant-stale') return false;
-      if (payload.state.isStale && issue.kind === 'assistant-unresolved') return false;
-      return true;
-    });
+    return getVisibleScheduleIssues(payload.state);
   }, [payload]);
 
   const issueGroups = useMemo(() => groupIssues(visibleIssues), [visibleIssues]);
@@ -99,7 +96,7 @@ export function ScheduleAssistantPanel({ payload, isOpen, onClose }: ScheduleAss
                 {statusLabel(payload.state.assistantStatus, payload)}
               </span>
               <span className="schedule-assistant-panel__header-count">
-                {payload.state.issues.length} issues · {payload.state.unresolvedCount} unresolved
+                {visibleIssues.length} issues · {payload.state.unresolvedCount} unresolved
               </span>
             </div>
           )}

@@ -5,6 +5,8 @@ export interface WorkspaceRenderContext {
   isReviewed: boolean;
   reviewReady: boolean;
   showScheduleTab: boolean;
+  activeTab?: WorkspaceTab;
+  onOpenPlanWorkspace?: () => void;
   onOpenProgress: () => void;
   onOpenInsights: () => void;
   onSetActiveTab: (tab: WorkspaceTab) => void;
@@ -30,7 +32,13 @@ const GLOBAL_TAB_DESCRIPTORS: WorkspaceTabDescriptor[] = [
     scope: 'global',
     label: 'Shared Schedule',
     isVisible: () => true,
-    onSelect: (context) => context.onSetActiveTab('shared-schedule'),
+    onSelect: (context) => {
+      if (context.activeTab === 'shared-schedule' && context.onOpenPlanWorkspace) {
+        context.onOpenPlanWorkspace();
+        return;
+      }
+      context.onSetActiveTab('shared-schedule');
+    },
   },
   {
     id: 'insights',

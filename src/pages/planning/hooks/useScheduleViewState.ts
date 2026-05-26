@@ -47,6 +47,7 @@ import { type ScheduleEditContextValue } from '../workspace/ScheduleEditContext'
 import type { ScheduleIssuePanelPayload } from '../workspace/schedule-issue-panel-types';
 import { synthesizeScheduleAssistant } from '../workspace/schedule-assistant-synthesis';
 import { buildScheduleViewIssues } from '../workspace/schedule-view-issues';
+import { getVisibleScheduleIssues } from '../workspace/schedule-issue-visibility';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -526,10 +527,6 @@ export function useScheduleViewState({
     trackTelemetryEvent('planning_lock_toggle');
   };
 
-  const handleOpenWorkCalendar = useCallback(() => {
-    // Work calendar is now in the sidebar drill-in — no-op for now
-  }, []);
-
   const handleOpenScheduleGrid = useCallback(() => {
     const el = scheduleGridRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
@@ -576,6 +573,11 @@ export function useScheduleViewState({
     [capacity, conflictSuggestions, schedulableUnscheduledCount, assistantReportStale, assistantReviewIssues, assistantUnresolvedCount],
   );
 
+  const visibleAssistantIssues = useMemo(
+    () => getVisibleScheduleIssues({ issues: panelIssues, isStale: assistantReportStale }),
+    [assistantReportStale, panelIssues],
+  );
+
   const assistantSynthesis = useMemo(
     () =>
       synthesizeScheduleAssistant({
@@ -612,7 +614,6 @@ export function useScheduleViewState({
         focusPrev: handlePrevAssistantIssue,
         runAssistant: runAssistantFromPanel,
         clearAllSchedules: handleClearAllSchedules,
-        openCalendar: handleOpenWorkCalendar,
       },
     }),
     [
@@ -629,12 +630,14 @@ export function useScheduleViewState({
       handlePrevAssistantIssue,
       runAssistantFromPanel,
       handleClearAllSchedules,
-      handleOpenWorkCalendar,
     ],
   );
 
   const criticalIssueCount = planningIssues.filter((issue) => issue.severity === 'critical').length;
   const warningIssueCount = planningIssues.filter((issue) => issue.severity === 'warning').length;
+  const assistantIssueCount = visibleAssistantIssues.length;
+  const assistantCriticalIssueCount = visibleAssistantIssues.filter((issue) => issue.severity === 'critical').length;
+  const assistantWarningIssueCount = visibleAssistantIssues.filter((issue) => issue.severity === 'warning').length;
 
   const scheduleBlockReason =
     criticalIssueCount > 0
@@ -684,7 +687,6 @@ export function useScheduleViewState({
       primaryRange,
       workCalendarRange,
       effectiveCrewSize: effectiveCrewSize ?? null,
-      totalAvailable: capacity.totalEffectiveAvailablePersonHours,
       readOnly,
       onPhaseDateChange: handlePlanPhaseDateChange,
       onEventDateChange: handlePlanDateChange,
@@ -699,7 +701,6 @@ export function useScheduleViewState({
       primaryRange,
       workCalendarRange,
       effectiveCrewSize,
-      capacity.totalEffectiveAvailablePersonHours,
       readOnly,
       handlePlanPhaseDateChange,
       handlePlanDateChange,
@@ -726,6 +727,9 @@ export function useScheduleViewState({
     schedulableUnscheduledCount,
     criticalIssueCount,
     warningIssueCount,
+    assistantIssueCount,
+    assistantCriticalIssueCount,
+    assistantWarningIssueCount,
     planningIssues,
     issuePanelPayload,
     unresolvedIssueKeys,

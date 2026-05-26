@@ -11,6 +11,8 @@ function createContext(overrides: Partial<WorkspaceRenderContext> = {}): Workspa
     isReviewed: false,
     reviewReady: false,
     showScheduleTab: true,
+    activeTab: 'edit',
+    onOpenPlanWorkspace: vi.fn(),
     onOpenProgress: vi.fn(),
     onOpenInsights: vi.fn(),
     onSetActiveTab: vi.fn(),
@@ -22,6 +24,21 @@ describe('workspace-tabs', () => {
   it('returns global tabs regardless of plan context', () => {
     const tabs = getVisibleGlobalWorkspaceTabs(createContext({ isReviewed: true, hasLinkedTasks: false }));
     expect(tabs.map((tab) => tab.id)).toEqual(['shared-schedule', 'insights']);
+  });
+
+  it('toggles shared schedule back to plan workspace when already active', () => {
+    const onOpenPlanWorkspace = vi.fn();
+    const onSetActiveTab = vi.fn();
+    const tabs = getVisibleGlobalWorkspaceTabs(createContext({
+      activeTab: 'shared-schedule',
+      onOpenPlanWorkspace,
+      onSetActiveTab,
+    }));
+
+    tabs.find((tab) => tab.id === 'shared-schedule')?.onSelect();
+
+    expect(onOpenPlanWorkspace).toHaveBeenCalledTimes(1);
+    expect(onSetActiveTab).not.toHaveBeenCalled();
   });
 
   it('builds base editable plan tab set', () => {

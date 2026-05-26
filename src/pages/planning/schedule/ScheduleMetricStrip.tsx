@@ -7,6 +7,7 @@ interface ScheduleMetricStripProps {
   metrics: SidebarMetricDescriptor[];
   steps: SetupStep[];
   readOnly?: boolean;
+  issueCount?: number;
   criticalIssueCount?: number;
   warningIssueCount?: number;
   onOpenAssistant?: () => void;
@@ -18,6 +19,7 @@ export function ScheduleMetricStrip({
   metrics,
   steps,
   readOnly = false,
+  issueCount = 0,
   criticalIssueCount = 0,
   warningIssueCount = 0,
   onOpenAssistant,
@@ -25,14 +27,16 @@ export function ScheduleMetricStrip({
   onRevertToDraft,
 }: ScheduleMetricStripProps) {
   const assistantVariant =
-    criticalIssueCount > 0 ? 'critical' : warningIssueCount > 0 ? 'warning' : 'neutral';
+    criticalIssueCount > 0
+      ? 'critical'
+      : issueCount > 0 || warningIssueCount > 0
+        ? 'warning'
+        : 'neutral';
 
   const assistantLabel =
-    criticalIssueCount > 0
-      ? `${criticalIssueCount} critical ${criticalIssueCount === 1 ? 'issue' : 'issues'}`
-      : warningIssueCount > 0
-        ? `${warningIssueCount} ${warningIssueCount === 1 ? 'warning' : 'warnings'}`
-        : 'Schedule Assistant';
+    issueCount > 0
+      ? `${issueCount} ${issueCount === 1 ? 'issue' : 'issues'}`
+      : 'Schedule Assistant';
 
   return (
     <div className="schedule-metric-strip" role="status" aria-label="Schedule status">
@@ -83,7 +87,7 @@ export function ScheduleMetricStrip({
         {!readOnly && isLocked && onRevertToDraft && (
           <button
             type="button"
-            className="schedule-metric-strip__revert-btn"
+            className="btn btn--xs btn--ghost schedule-metric-strip__revert-btn"
             onClick={onRevertToDraft}
           >
             Revert to Draft
@@ -92,6 +96,9 @@ export function ScheduleMetricStrip({
         <button
           type="button"
           className={[
+            'btn',
+            'btn--xs',
+            assistantVariant === 'neutral' ? 'btn--secondary' : '',
             'schedule-metric-strip__assistant-btn',
             assistantVariant === 'warning' ? 'schedule-metric-strip__assistant-btn--warning' : '',
             assistantVariant === 'critical' ? 'schedule-metric-strip__assistant-btn--critical' : '',
