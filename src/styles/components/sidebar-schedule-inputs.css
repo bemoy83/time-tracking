@@ -9,16 +9,29 @@
 }
 
 .sidebar-schedule-inputs__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   margin: 0;
-  padding: 6px var(--space-md) 8px;
+  padding: 0 var(--space-md) 12px;
   font-size: var(--font-small);
-  font-weight: 600;
-  color: var(--color-text);
 }
 
 .sidebar-schedule-inputs__summary-range {
   font-family: 'DM Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.sidebar-schedule-inputs__summary-sep {
+  color: var(--color-text-muted);
+}
+
+.sidebar-schedule-inputs__summary-count {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 .sidebar-phase-stack {

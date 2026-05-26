@@ -262,37 +262,43 @@
 
 .workspace-sidebar__detail-header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-sm) var(--space-md);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--surface-contained-border);
   flex-shrink: 0;
+  min-height: 44px;
 }
 
 .workspace-sidebar__back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 0;
-  border: none;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   background: none;
-  color: var(--color-primary);
-  font-size: var(--font-caption);
-  font-weight: 500;
+  border: none;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  width: fit-content;
+  transition: background-color 0.15s, color 0.15s;
+  min-width: unset;
+  min-height: unset;
 }
 
 .workspace-sidebar__back-btn:hover {
-  text-decoration: underline;
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
 }
 
 .workspace-sidebar__back-icon {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
 }
 
 .workspace-sidebar__detail-title {
+  flex: 1;
   font-size: var(--font-small);
   font-weight: 600;
   color: var(--color-text);
@@ -301,15 +307,35 @@
   white-space: nowrap;
 }
 
+.workspace-sidebar__detail-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.workspace-sidebar__detail-badge--draft   { background: var(--color-amber-solid); }
+.workspace-sidebar__detail-badge--active  { background: var(--color-primary); }
+.workspace-sidebar__detail-badge--archived { background: var(--state-success-fg); }
+
 .workspace-sidebar__detail-body {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: var(--space-md);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace-sidebar__detail-placeholder {
-  margin: 0;
+  margin: var(--space-md);
   padding: var(--space-lg);
   font-size: var(--font-small);
   color: var(--color-text-muted);
@@ -321,15 +347,14 @@
 .workspace-sidebar__drill-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-md) var(--space-md) 0;
 }
 
 .workspace-sidebar__drill-section-label {
-  font-size: var(--font-caption);
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  padding: 16px var(--space-md) 10px;
 }
 

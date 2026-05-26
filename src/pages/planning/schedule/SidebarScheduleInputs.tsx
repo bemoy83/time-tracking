@@ -6,6 +6,12 @@ import {
   getScheduleDateValidationErrors,
 } from './schedule-date-ui';
 
+function countDays(start: string, end: string): number {
+  const a = new Date(`${start}T00:00:00`);
+  const b = new Date(`${end}T00:00:00`);
+  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
+
 function formatShortDate(dateStr: string | null): string {
   if (!dateStr) return '—';
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -151,6 +157,10 @@ export function SidebarScheduleInputs({
         <p className="sidebar-schedule-inputs__summary">
           <span className="sidebar-schedule-inputs__summary-range">
             {formatShortDate(primaryRange.start)} – {formatShortDate(primaryRange.end)}
+          </span>
+          <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>
+          <span className="sidebar-schedule-inputs__summary-count">
+            {countDays(primaryRange.start, primaryRange.end)} days
           </span>
         </p>
       )}

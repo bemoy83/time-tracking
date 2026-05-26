@@ -7,7 +7,6 @@ import { groupPlans } from '../planning-list-groups';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { useScheduleEditContext } from './ScheduleEditContext';
 import { SidebarScheduleInputs } from '../schedule/SidebarScheduleInputs';
-import { WorkCalendarEditor } from '../schedule/WorkCalendarEditor';
 import { ThumbCalendar } from '../schedule/ThumbCalendar';
 import {
   PlusIcon,
@@ -216,13 +215,15 @@ export function WorkspaceSidebar({
               aria-label="Back to plan list"
             >
               <ChevronLeftIcon className="workspace-sidebar__back-icon" />
-              <span>Plans</span>
             </button>
             <span className="workspace-sidebar__detail-title">
               {getPlanDisplayName(
                 drillPlan,
                 drillPlan.projectId ? (projectById.get(drillPlan.projectId) ?? null) : null,
               )}
+            </span>
+            <span className={`workspace-sidebar__detail-badge workspace-sidebar__detail-badge--${isPlanArchived(drillPlan) ? 'archived' : drillPlan.status}`}>
+              {isPlanArchived(drillPlan) ? 'Done' : drillPlan.status === 'active' ? 'Active' : 'Draft'}
             </span>
           </div>
           <div className="workspace-sidebar__detail-body">
@@ -336,35 +337,32 @@ function DrillInContent() {
     );
   }
 
-  const { currentPlan, phaseDates, workCalendarRange, primaryRange, effectiveCrewSize, readOnly } = ctx;
+  const { currentPlan, phaseDates, workCalendarRange, primaryRange, readOnly } = ctx;
 
   return (
     <>
-      <SidebarScheduleInputs
-        assemblyStartDate={phaseDates.assemblyStartDate}
-        assemblyEndDate={phaseDates.assemblyEndDate}
-        dismantleStartDate={phaseDates.dismantleStartDate}
-        dismantleEndDate={phaseDates.dismantleEndDate}
-        eventStartDate={currentPlan.eventStartDate}
-        eventEndDate={currentPlan.eventEndDate}
-        defaultCrewSize={currentPlan.defaultCrewSize}
-        defaultEfficiency={currentPlan.defaultEfficiency}
-        readOnly={readOnly}
-        primaryRange={workCalendarRange ?? primaryRange}
-        onPhaseDateChange={ctx.onPhaseDateChange}
-        onEventDateChange={ctx.onEventDateChange}
-        onDefaultCrewSizeChange={ctx.onDefaultCrewChange}
-        onDefaultEfficiencyChange={ctx.onDefaultEfficiencyChange}
-      />
-      <WorkCalendarEditor
-        calendar={currentPlan.workCalendar}
-        readOnly={readOnly}
-        onUpdateDay={ctx.onUpdateCalendarDay}
-        planDefaultCrewSize={effectiveCrewSize ?? currentPlan.defaultCrewSize}
-      />
+      <div className="workspace-sidebar__drill-section">
+        <span className="workspace-sidebar__drill-section-label">Schedule Inputs</span>
+        <SidebarScheduleInputs
+          assemblyStartDate={phaseDates.assemblyStartDate}
+          assemblyEndDate={phaseDates.assemblyEndDate}
+          dismantleStartDate={phaseDates.dismantleStartDate}
+          dismantleEndDate={phaseDates.dismantleEndDate}
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
+          defaultCrewSize={currentPlan.defaultCrewSize}
+          defaultEfficiency={currentPlan.defaultEfficiency}
+          readOnly={readOnly}
+          primaryRange={workCalendarRange ?? primaryRange}
+          onPhaseDateChange={ctx.onPhaseDateChange}
+          onEventDateChange={ctx.onEventDateChange}
+          onDefaultCrewSizeChange={ctx.onDefaultCrewChange}
+          onDefaultEfficiencyChange={ctx.onDefaultEfficiencyChange}
+        />
+      </div>
       {currentPlan.workCalendar.length > 0 && (
         <div className="workspace-sidebar__drill-section">
-          <span className="workspace-sidebar__drill-section-label">Overview</span>
+          <span className="workspace-sidebar__drill-section-label">Work Calendar</span>
           <ThumbCalendar
             calendar={currentPlan.workCalendar}
             phaseDates={phaseDates}

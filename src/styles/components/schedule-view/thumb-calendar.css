@@ -8,6 +8,7 @@
   gap: 1px;
   width: 100%;
   user-select: none;
+  padding: 0 var(--space-md) var(--space-md);
 }
 
 .thumb-calendar__header,

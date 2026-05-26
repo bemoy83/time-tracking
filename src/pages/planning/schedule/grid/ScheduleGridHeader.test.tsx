@@ -101,4 +101,45 @@ describe('ScheduleGridHeader', () => {
     expect(icon?.className).toContain('schedule-grid__day-warning-icon--high');
     expect(dayCol?.className).not.toContain('schedule-grid__day-col--fragmented');
   });
+
+  it('keeps staffed crew count visible in the editable header control', () => {
+    const onEditDay = vi.fn();
+
+    render(
+      <ScheduleGridHeader
+        calendar={[makeDay({ accessStart: '07:30', accessEnd: '15:30' })]}
+        dayByDate={new Map([[ '2026-03-24', makeCapacity({ availableCrew: 6 }) ]])}
+        gridColumns="220px 144px"
+        label="Schedule"
+        onEditDay={onEditDay}
+      />,
+    );
+
+    const editButton = screen.getByRole('button', {
+      name: /edit crew and hours.*1\.5\/6 crew, 7:30-15:30/i,
+    });
+
+    expect(editButton.textContent).toContain('1.5/6 crew');
+    expect(editButton.textContent).toContain('7:30-15:30');
+
+    fireEvent.click(editButton);
+
+    expect(onEditDay).toHaveBeenCalledWith('2026-03-24', editButton);
+  });
+
+  it('reserves the utilization bar slot when a work day has no utilization', () => {
+    const { container } = render(
+      <ScheduleGridHeader
+        calendar={[makeDay()]}
+        dayByDate={new Map([[ '2026-03-24', makeCapacity({ assignedCrewTotal: 0 }) ]])}
+        gridColumns="220px 144px"
+        label="Schedule"
+      />,
+    );
+
+    const placeholder = container.querySelector('.schedule-grid__day-bar--placeholder');
+
+    expect(placeholder).toBeTruthy();
+    expect(placeholder?.getAttribute('aria-hidden')).toBe('true');
+  });
 });
