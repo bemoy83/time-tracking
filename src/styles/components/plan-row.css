@@ -14,7 +14,7 @@
   position: absolute;
   bottom: 0;
   left: var(--space-md);
-  right: 0;
+  right: var(--space-md);
   height: 1px;
   background: var(--color-border);
   pointer-events: none;
@@ -27,6 +27,10 @@
   min-width: 0;
   position: relative;
   transition: background-color 0.15s;
+}
+
+.plan-row--has-project .plan-row__item {
+  border-inline-start: 4px solid var(--plan-row-accent);
 }
 
 .plan-row__item:hover {

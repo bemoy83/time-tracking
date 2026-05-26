@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
-import type { Project, Task } from '../../../lib/types';
+import { getProjectDisplayColor, type Project, type Task } from '../../../lib/types';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithImportedExecutionReturns';
 import { groupPlans } from '../planning-list-groups';
@@ -83,6 +83,10 @@ export function WorkspaceSidebar({
   const { inProgressPlans, readyPlans, draftPlans, archivedPlans } = useMemo(
     () => groupPlans(plans, tasks, planIdsWithImportedExecutionReturns),
     [plans, tasks, planIdsWithImportedExecutionReturns],
+  );
+  const railPlans = useMemo(
+    () => [...inProgressPlans, ...readyPlans, ...draftPlans, ...archivedPlans],
+    [inProgressPlans, readyPlans, draftPlans, archivedPlans],
   );
 
   const handleToggleCollapsed = useCallback(() => {
@@ -188,21 +192,29 @@ export function WorkspaceSidebar({
           >
             <PlusIcon className="workspace-sidebar__rail-icon" />
           </button>
-          {activePlan && (
-            <button
-              type="button"
-              className="workspace-sidebar__rail-item workspace-sidebar__rail-item--selected"
-              onClick={() => onSelectPlan(activePlan)}
-              aria-label={getPlanDisplayName(activePlan, null)}
-              title={getPlanDisplayName(activePlan, null)}
-            >
-              <SidebarStatusDot
-                plan={activePlan}
-                tasks={tasks}
-                planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
-              />
-            </button>
-          )}
+          {railPlans.map((plan) => {
+            const project = plan.projectId ? projectById.get(plan.projectId) : undefined;
+            const accentColor = project ? getProjectDisplayColor(project.color) : null;
+            const displayName = getPlanDisplayName(plan, project ?? null);
+            const isSelected = activePlan?.id === plan.id;
+            return (
+              <button
+                key={plan.id}
+                type="button"
+                className={`workspace-sidebar__rail-item${isSelected ? ' workspace-sidebar__rail-item--selected' : ''}${accentColor ? ' workspace-sidebar__rail-item--has-project' : ''}`}
+                style={accentColor ? { '--workspace-sidebar-rail-accent': accentColor } as React.CSSProperties : undefined}
+                onClick={() => onSelectPlan(plan)}
+                aria-label={displayName}
+                title={displayName}
+              >
+                <SidebarStatusDot
+                  plan={plan}
+                  tasks={tasks}
+                  planIdsWithImportedExecutionReturns={planIdsWithImportedExecutionReturns}
+                />
+              </button>
+            );
+          })}
         </div>
       ) : mode === 'detail' && drillPlan ? (
         /* Detail mode: schedule inputs + work calendar (wired via ScheduleEditContext in Step 4) */
@@ -231,9 +243,18 @@ export function WorkspaceSidebar({
           </div>
         </div>
       ) : (
-        /* List mode: search + accordion groups */
+        /* List mode: new plan pill + search + accordion groups */
         <>
-          <div className="workspace-sidebar__search">
+          <div className="workspace-sidebar__list-top">
+            <button
+              type="button"
+              className="workspace-sidebar__new-plan-pill"
+              onClick={onCreatePlan}
+              aria-label="New plan"
+            >
+              <PlusIcon className="workspace-sidebar__new-plan-pill-icon" />
+              New Plan
+            </button>
             <input
               type="search"
               className="workspace-sidebar__search-input"
@@ -542,6 +563,8 @@ function PlanRow({
     plan,
     plan.projectId ? (projectById.get(plan.projectId) ?? null) : null,
   );
+  const project = plan.projectId ? projectById.get(plan.projectId) : undefined;
+  const projectAccentColor = project ? getProjectDisplayColor(project.color) : null;
   const archived = isPlanArchived(plan);
   const wrapUpEligible = isPlanWrapUpEligible(
     plan,
@@ -560,6 +583,7 @@ function PlanRow({
 
   const rowClass = [
     'plan-row',
+    projectAccentColor ? 'plan-row--has-project' : '',
     isSelected ? 'plan-row--selected' : '',
     plan.status === 'draft' ? 'plan-row--draft' : '',
     archived ? 'plan-row--completed' : '',
@@ -569,7 +593,10 @@ function PlanRow({
     .join(' ');
 
   return (
-    <li className={rowClass}>
+    <li
+      className={rowClass}
+      style={projectAccentColor ? { '--plan-row-accent': projectAccentColor } as React.CSSProperties : undefined}
+    >
       <div className="plan-row__item">
         <button
           type="button"

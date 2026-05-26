@@ -94,7 +94,8 @@
   padding: var(--space-sm) 0;
   gap: var(--space-xs);
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .workspace-sidebar__rail-create,
@@ -124,6 +125,10 @@
   background: var(--surface-brand-subtle);
 }
 
+.workspace-sidebar__rail-item--has-project {
+  box-shadow: inset 4px 0 0 var(--workspace-sidebar-rail-accent);
+}
+
 .workspace-sidebar__rail-item:hover {
   background: var(--surface-contained-hover);
 }
@@ -133,12 +138,48 @@
   height: 16px;
 }
 
-/* --- Search --- */
+/* --- List top: new plan pill + search --- */
 
-.workspace-sidebar__search {
-  padding: var(--space-sm) var(--space-md);
+.workspace-sidebar__list-top {
   flex-shrink: 0;
+  padding: 8px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+
+.workspace-sidebar__new-plan-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: 7px var(--space-md);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--state-on-solid);
+  font-size: var(--font-small);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.15s;
+  min-width: unset;
+  min-height: unset;
+}
+
+.workspace-sidebar__new-plan-pill:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.workspace-sidebar__new-plan-pill-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Search input (lives inside .workspace-sidebar__list-top) --- */
 
 .workspace-sidebar__search-input {
   width: 100%;
@@ -357,4 +398,3 @@
   letter-spacing: 0.06em;
   padding: 16px var(--space-md) 10px;
 }
-
