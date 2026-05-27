@@ -175,6 +175,29 @@ export function syncPlanWorkCalendarFromCrewPool(
 }
 
 /**
+ * Add or enable a day that lies outside the commercial phase spans (e.g. Moving In / Moving Out).
+ * Used when the user explicitly toggles on an extended-zone day in the schedule grid.
+ * The day is appended to plan.workCalendar with isWorkDay: true and default access hours.
+ */
+export function addExtendedZoneDayToPlan(plan: Plan, date: string): Plan {
+  const existing = plan.workCalendar.find((d) => d.date === date);
+  if (existing) {
+    return updatePlanCalendarDay(plan, date, { isWorkDay: true });
+  }
+  const newDay: WorkCalendarDay = {
+    date,
+    isWorkDay: true,
+    accessStart: '08:00',
+    accessEnd: '16:00',
+    crewSize: null,
+  };
+  const workCalendar = [...plan.workCalendar, newDay].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+  return { ...plan, workCalendar };
+}
+
+/**
  * Sync the full crew pool calendar to a plan's workCalendar.
  * Used when the global default crew changes -- all work days get the crew pool's
  * effective crew (day.crewSize ?? crewPoolDefaultCrewSize) so the global default

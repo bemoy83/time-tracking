@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { type Plan } from '../../lib/planning/plan-model';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
@@ -7,6 +7,8 @@ import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { ScheduleAssistantPanel } from './schedule/ScheduleAssistantPanel';
 import { type ScheduleEditContextValue } from './workspace/ScheduleEditContext';
 import { useScheduleViewState } from './hooks/useScheduleViewState';
+import { generateFullSpanVirtualDays } from '../../lib/planning/scheduling/work-calendar';
+import { getFullEventSpan } from './schedule/schedule-date-ui';
 
 interface ScheduleViewProps {
   plan: Plan;
@@ -26,10 +28,13 @@ export function ScheduleView({
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
   const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
+  const [showFullSpan, setShowFullSpan] = useState(false);
 
   const handleEditDay = useCallback((date: string, anchor: HTMLElement) => {
     setDayEdit((prev) => (prev?.date === date ? null : { date, anchor }));
   }, []);
+
+  const handleToggleFullSpan = useCallback(() => setShowFullSpan((prev) => !prev), []);
 
   const {
     currentPlan,
@@ -56,6 +61,16 @@ export function ScheduleView({
     handleRevertToDraft,
   } = useScheduleViewState({ plan, onSave, readOnly, onScheduleContextChange, scheduleGridRef });
 
+  const fullEventSpan = useMemo(
+    () => getFullEventSpan(phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate),
+    [phaseDates, currentPlan.eventStartDate, currentPlan.eventEndDate],
+  );
+
+  const displayCalendar = useMemo(() => {
+    if (!showFullSpan || fullEventSpan == null) return currentPlan.workCalendar;
+    return generateFullSpanVirtualDays(fullEventSpan, currentPlan.workCalendar, currentPlan.defaultCrewSize);
+  }, [showFullSpan, fullEventSpan, currentPlan.workCalendar, currentPlan.defaultCrewSize]);
+
   return (
     <div className="planning-view schedule-view">
       <ScheduleMetricStrip
@@ -68,12 +83,14 @@ export function ScheduleView({
         onOpenAssistant={() => setIsAssistantPanelOpen(true)}
         isLocked={isLocked}
         onRevertToDraft={handleRevertToDraft}
+        showFullSpan={showFullSpan}
+        onToggleFullSpan={fullEventSpan != null ? handleToggleFullSpan : undefined}
       />
 
       <div ref={scheduleGridRef} className="schedule-view__grid-stack">
         <ScheduleGrid
           lineItems={currentPlan.lineItems}
-          calendar={currentPlan.workCalendar}
+          calendar={displayCalendar}
           capacity={capacity}
           phaseDates={phaseDates}
           eventStartDate={currentPlan.eventStartDate}

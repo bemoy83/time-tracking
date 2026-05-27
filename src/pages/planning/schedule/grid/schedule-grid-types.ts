@@ -16,6 +16,7 @@ export interface ItemRowRenderInput {
   dayByDate: GridDayContext;
   gridColumns: string;
   phaseRange: DateSpan | null;
+  commercialPhaseRange: DateSpan | null;
   hasPhaseWindows: boolean;
   readOnly: boolean;
   metaPrefix?: string;

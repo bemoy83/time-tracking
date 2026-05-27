@@ -11,7 +11,8 @@ export type ScheduleIssueKind =
   | 'assistant-stale'
   | 'unscheduled'
   | 'fragmentation'
-  | 'overstaffed';
+  | 'overstaffed'
+  | 'extended-phase';
 
 export type ScheduleIssueScope = 'plan' | 'item';
 

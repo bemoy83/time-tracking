@@ -1,8 +1,12 @@
 export {
   type DateSpan,
+  type DayZone,
   type PhaseDateField,
   type PhaseDateValues,
   type PrimaryScheduleRange,
+  classifyDayZone,
+  getExtendedPhaseRange,
+  getFullEventSpan,
   getPhaseRange,
   getPhaseSpan,
   getPlanEffectiveSpan,

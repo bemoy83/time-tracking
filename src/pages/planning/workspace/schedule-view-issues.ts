@@ -3,6 +3,9 @@ import { generateConflictSuggestions } from '../../../lib/planning/scheduling/co
 import type { AutoScheduleUnresolvedReason } from '../../../lib/planning/scheduling/auto-schedule';
 import type { AssistantReviewIssue } from '../hooks/useScheduleAssistantState';
 import type { ScheduleIssueItem } from './schedule-issue-panel-types';
+import { getPhaseFields, type PlanLineItem } from '../../../lib/planning/plan-model';
+import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
+import { classifyDayZone, type PhaseDateValues } from '../../../lib/planning/scheduling/schedule-span';
 
 export type PlanningIssueSeverity = 'critical' | 'warning' | 'info';
 
@@ -19,6 +22,10 @@ interface BuildScheduleViewIssuesParams {
   assistantReportStale: boolean;
   assistantUnresolvedCount: number;
   assistantReviewIssues: AssistantReviewIssue[];
+  lineItems?: PlanLineItem[];
+  phaseDates?: Partial<PhaseDateValues>;
+  eventStartDate?: string | null;
+  eventEndDate?: string | null;
 }
 
 interface ScheduleIssueBuildResult {
@@ -309,6 +316,78 @@ function buildOverstaffedIssues(capacity: CapacitySummary): ScheduleIssueBuildRe
   };
 }
 
+function buildExtendedPhaseIssues(
+  lineItems: PlanLineItem[],
+  phaseDates: Partial<PhaseDateValues>,
+  eventStartDate: string | null,
+  eventEndDate: string | null,
+): ScheduleIssueBuildResult {
+  // Extended-zone warnings only apply when event dates exist
+  if (!eventStartDate || !eventEndDate) return emptyIssueResult();
+  const { assemblyEndDate, dismantleStartDate } = phaseDates;
+
+  let assemblyExtendedCount = 0;
+  let dismantleExtendedCount = 0;
+
+  for (const item of lineItems) {
+    const assemblyPf = getPhaseFields(item, 'assembly');
+    let hasAssemblyExtended = false;
+    for (const date of getAssignedDates(assemblyPf)) {
+      if (classifyDayZone(date, phaseDates, eventStartDate, eventEndDate) === 'moving-in') {
+        hasAssemblyExtended = true;
+        break;
+      }
+    }
+    if (hasAssemblyExtended) assemblyExtendedCount++;
+
+    const dismantlePf = getPhaseFields(item, 'dismantle');
+    let hasDismantleExtended = false;
+    for (const date of getAssignedDates(dismantlePf)) {
+      if (classifyDayZone(date, phaseDates, eventStartDate, eventEndDate) === 'moving-out') {
+        hasDismantleExtended = true;
+        break;
+      }
+    }
+    if (hasDismantleExtended) dismantleExtendedCount++;
+  }
+
+  const result = emptyIssueResult();
+
+  if (assemblyExtendedCount > 0) {
+    const label = `${assemblyExtendedCount} ${assemblyExtendedCount === 1 ? 'package extends' : 'packages extend'} past prep deadline`;
+    result.planningIssues.push({ id: 'extended-phase-assembly', severity: 'warning', label });
+    result.panelIssues.push({
+      id: 'extended-phase-assembly',
+      kind: 'extended-phase',
+      severity: 'warning',
+      label,
+      scope: 'plan',
+      category: 'adjustment',
+      detail: assemblyEndDate
+        ? `Work is scheduled into the Moving In window after ${formatShortDate(assemblyEndDate)}. Aim to complete assembly before customers arrive.`
+        : 'Work is scheduled into the Moving In window. Aim to complete assembly before customers arrive.',
+    });
+  }
+
+  if (dismantleExtendedCount > 0) {
+    const label = `${dismantleExtendedCount} ${dismantleExtendedCount === 1 ? 'package extends' : 'packages extend'} before dismantle window`;
+    result.planningIssues.push({ id: 'extended-phase-dismantle', severity: 'warning', label });
+    result.panelIssues.push({
+      id: 'extended-phase-dismantle',
+      kind: 'extended-phase',
+      severity: 'warning',
+      label,
+      scope: 'plan',
+      category: 'adjustment',
+      detail: dismantleStartDate
+        ? `Work is scheduled into the Moving Out window before ${formatShortDate(dismantleStartDate)}. Aim to start dismantle after customers leave.`
+        : 'Work is scheduled into the Moving Out window. Aim to start dismantle after customers leave.',
+    });
+  }
+
+  return result;
+}
+
 export function buildScheduleViewIssues({
   capacity,
   conflictSuggestions,
@@ -316,6 +395,10 @@ export function buildScheduleViewIssues({
   assistantReportStale,
   assistantUnresolvedCount,
   assistantReviewIssues,
+  lineItems,
+  phaseDates,
+  eventStartDate,
+  eventEndDate,
 }: BuildScheduleViewIssuesParams): ScheduleIssueBuildResult {
   return combineIssueResults(
     buildCapacityIssues({ capacity, conflictSuggestions }),
@@ -327,5 +410,8 @@ export function buildScheduleViewIssues({
     ),
     buildFragmentationIssues(capacity),
     buildOverstaffedIssues(capacity),
+    lineItems != null && phaseDates != null
+      ? buildExtendedPhaseIssues(lineItems, phaseDates, eventStartDate ?? null, eventEndDate ?? null)
+      : emptyIssueResult(),
   );
 }

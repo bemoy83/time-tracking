@@ -205,6 +205,113 @@ export function getPrimaryScheduleRange(
   return null;
 }
 
+// ─── Extended phase / full-span helpers ──────────────────────────────────────
+
+/** Shift an ISO date string by `delta` calendar days (+/-). */
+function offsetDate(date: string, delta: number): string {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  parsed.setDate(parsed.getDate() + delta);
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, '0');
+  const d = String(parsed.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * The full contiguous event span: assemblyStartDate → dismantleEndDate.
+ * Falls back to event-only span if phase dates are absent.
+ */
+export function getFullEventSpan(
+  phaseDates: Partial<PhaseDateValues> | null | undefined,
+  eventStartDate: string | null,
+  eventEndDate: string | null,
+): DateSpan | null {
+  const normalized = readPhaseDateValues(phaseDates);
+  if (hasPhaseDates(normalized)) {
+    const c = normalized as CompletePhaseDateValues;
+    return { start: c.assemblyStartDate, end: c.dismantleEndDate };
+  }
+  if (isFilledDate(eventStartDate) && isFilledDate(eventEndDate)) {
+    return { start: eventStartDate, end: eventEndDate };
+  }
+  return null;
+}
+
+/**
+ * The extended scheduling window for a phase, reaching to the event boundary.
+ *
+ * Assembly extends to the day before eventStartDate (moving-in window).
+ * Dismantle starts the day after eventEndDate (moving-out window).
+ * Falls back to the commercial phase dates if event dates are absent.
+ */
+export function getExtendedPhaseRange(
+  phaseDates: Partial<PhaseDateValues> | null | undefined,
+  phase: BuildPhase,
+  eventStartDate: string | null,
+  eventEndDate: string | null,
+): DateSpan | null {
+  const normalized = readPhaseDateValues(phaseDates);
+  if (!hasPhaseDatesFor(normalized, phase)) return null;
+
+  if (phase === 'assembly') {
+    const start = normalized.assemblyStartDate!;
+    const end = isFilledDate(eventStartDate)
+      ? offsetDate(eventStartDate, -1)
+      : normalized.assemblyEndDate!;
+    // Guard: extended end must be ≥ commercial end (event start already validated upstream)
+    return { start, end: end >= normalized.assemblyEndDate! ? end : normalized.assemblyEndDate! };
+  }
+
+  // dismantle
+  const end = normalized.dismantleEndDate!;
+  const start = isFilledDate(eventEndDate)
+    ? offsetDate(eventEndDate, 1)
+    : normalized.dismantleStartDate!;
+  return { start: start <= normalized.dismantleStartDate! ? start : normalized.dismantleStartDate!, end };
+}
+
+/** Zone classification for a single date within the full event timeline. */
+export type DayZone = 'assembly' | 'moving-in' | 'event' | 'moving-out' | 'dismantle' | 'outside';
+
+export function classifyDayZone(
+  date: string,
+  phaseDates: Partial<PhaseDateValues> | null | undefined,
+  eventStartDate: string | null,
+  eventEndDate: string | null,
+): DayZone {
+  const n = readPhaseDateValues(phaseDates);
+
+  if (hasPhaseDatesFor(n, 'assembly') && date >= n.assemblyStartDate! && date <= n.assemblyEndDate!) {
+    return 'assembly';
+  }
+  if (hasPhaseDatesFor(n, 'dismantle') && date >= n.dismantleStartDate! && date <= n.dismantleEndDate!) {
+    return 'dismantle';
+  }
+  if (isFilledDate(eventStartDate) && isFilledDate(eventEndDate) && date >= eventStartDate && date <= eventEndDate) {
+    return 'event';
+  }
+  // Moving-in: after assembly end, before event start
+  if (
+    hasPhaseDatesFor(n, 'assembly')
+    && isFilledDate(eventStartDate)
+    && date > n.assemblyEndDate!
+    && date < eventStartDate
+  ) {
+    return 'moving-in';
+  }
+  // Moving-out: after event end, before dismantle start
+  if (
+    hasPhaseDatesFor(n, 'dismantle')
+    && isFilledDate(eventEndDate)
+    && date > eventEndDate
+    && date < n.dismantleStartDate!
+  ) {
+    return 'moving-out';
+  }
+  return 'outside';
+}
+
 export function getScheduleDateValidationErrors(
   phaseDates: PhaseDateValues,
   eventStartDate: string | null,

@@ -177,6 +177,20 @@
   color: var(--color-text-muted);
 }
 
+/* Extended-zone day that has not been enabled by the planner.
+   Diagonal stripe matches the phase-locked pattern at lower intensity — the
+   stripe clears when the planner toggles the day on, and the spacer row above
+   receives the stripe instead (schedule-grid__phase-spacer--in-extended). */
+.schedule-grid__cell--extended-off {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.02) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
 .schedule-grid__cell--phase-mismatch {
   box-shadow:
     inset -1px 0 0 rgba(0, 0, 0, 0.06),

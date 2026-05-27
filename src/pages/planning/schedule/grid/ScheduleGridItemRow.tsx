@@ -24,6 +24,7 @@ export function ScheduleGridItemRow({
   dayByDate,
   gridColumns: _gridColumns,
   phaseRange,
+  commercialPhaseRange,
   hasPhaseWindows,
   readOnly,
   metaPrefix,
@@ -164,7 +165,14 @@ export function ScheduleGridItemRow({
         </div>
         {calendar.map((day, colIdx) => {
           const isAssigned = assigned.has(day.date);
+          // isOutOfPhase uses the EXTENDED range (assemblyStart → eventStart-1 etc.)
           const isOutOfPhase = hasPhaseWindows && !isDateWithinSpan(day.date, phaseRange);
+          // isExtendedZone: in extended range but outside commercial window
+          const isExtendedZone = hasPhaseWindows
+            && !isOutOfPhase
+            && commercialPhaseRange != null
+            && !isDateWithinSpan(day.date, commercialPhaseRange);
+          const isExtendedOff = isExtendedZone && !day.isWorkDay;
           const isPhaseMismatch = isAssigned && isOutOfPhase;
           const cap = dayByDate.get(day.date);
           const isOver = cap?.isOverAllocated ?? false;
@@ -193,7 +201,7 @@ export function ScheduleGridItemRow({
               aria-colindex={colIdx + 2}
               aria-disabled={isCellDisabled ? 'true' : undefined}
               tabIndex={isCellDisabled ? -1 : 0}
-              className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOutOfPhase ? ' schedule-grid__cell--phase-locked' : ''}${isPhaseMismatch ? ' schedule-grid__cell--phase-mismatch' : ''}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
+              className={`schedule-grid__cell${isAssigned ? ' schedule-grid__cell--assigned' : ''}${isTargetMet ? ' schedule-grid__cell--on-target' : ''}${isOverTargetCell ? ' schedule-grid__cell--over-target' : ''}${day.isWorkDay ? '' : ' schedule-grid__cell--off'}${isOutOfPhase ? ' schedule-grid__cell--phase-locked' : ''}${isExtendedOff ? ' schedule-grid__cell--extended-off' : ''}${isPhaseMismatch ? ' schedule-grid__cell--phase-mismatch' : ''}${isOver && isAssigned ? ' schedule-grid__cell--over' : ''}${isOverCrew && isAssigned ? ' schedule-grid__cell--over-crew' : ''}${isOverWorker ? ' schedule-grid__cell--over-worker' : ''}`}
               onClick={(e) => {
                 if (isCellDisabled) return;
                 if ((e.target as HTMLElement).closest('.schedule-grid__cell-hours-btn, .schedule-grid__cell-editor')) return;

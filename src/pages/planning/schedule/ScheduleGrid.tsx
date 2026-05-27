@@ -16,6 +16,7 @@ import type {
 } from '../../../lib/planning/scheduling/shared-schedule-types';
 import {
   type PhaseDateValues,
+  getExtendedPhaseRange,
   getPhaseRange,
   hasCompletePhaseDates,
 } from './schedule-date-ui';
@@ -55,6 +56,7 @@ interface SingleScheduleGridProps {
   phaseDates: PhaseDateValues;
   eventStartDate?: string | null;
   eventEndDate?: string | null;
+  showFullSpan?: boolean;
   readOnly: boolean;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
   onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
@@ -180,6 +182,7 @@ function SingleScheduleGrid({
   phaseDates,
   eventStartDate,
   eventEndDate,
+  showFullSpan: _showFullSpan,
   readOnly,
   onToggleAssignment,
   onClearRowSchedule,
@@ -246,7 +249,10 @@ function SingleScheduleGrid({
     const rowKey = `${item.id}:${phase}`;
     const pf = getPhaseFields(item, phase);
     const assignedDates = getAssignedDates(pf);
-    const phaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, phase) : null;
+    const commercialPhaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, phase) : null;
+    const phaseRange = hasPhaseWindows
+      ? (getExtendedPhaseRange(phaseDates, phase, eventStartDate ?? null, eventEndDate ?? null) ?? commercialPhaseRange)
+      : null;
 
     return (
       <ScheduleGridItemRow
@@ -260,6 +266,7 @@ function SingleScheduleGrid({
         dayByDate={dayByDate}
         gridColumns={gridColumns}
         phaseRange={phaseRange}
+        commercialPhaseRange={commercialPhaseRange}
         hasPhaseWindows={hasPhaseWindows}
         readOnly={readOnly}
         onToggleAssignment={(date, cellElement) => onToggleAssignment(item, phase, date, cellElement)}
@@ -296,6 +303,8 @@ function SingleScheduleGrid({
           onToggleWorkday={onToggleWorkday}
           todayIso={todayIso}
           onEditDay={onEditDay}
+          eventStartDate={eventStartDate}
+          eventEndDate={eventEndDate}
         />
       )}
       body={(() => {
@@ -335,6 +344,9 @@ function SingleScheduleGrid({
                 const startIdx = globalRowIdx;
                 globalRowIdx += group.rows.length;
                 const groupPhaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, group.phase) : null;
+                const groupExtendedRange = hasPhaseWindows
+                  ? getExtendedPhaseRange(phaseDates, group.phase, eventStartDate ?? null, eventEndDate ?? null)
+                  : null;
                 return (
                   <div key={group.phase} className="schedule-grid__phase-group">
                     <button
@@ -350,13 +362,17 @@ function SingleScheduleGrid({
                         {group.label} ({group.rows.length})
                       </span>
                       {calendar.map((day) => {
-                        const inPhase = groupPhaseRange != null
+                        const inCommercial = groupPhaseRange != null
                           && day.date >= groupPhaseRange.start
                           && day.date <= groupPhaseRange.end;
+                        const inExtended = !inCommercial
+                          && groupExtendedRange != null
+                          && day.date >= groupExtendedRange.start
+                          && day.date <= groupExtendedRange.end;
                         return (
                           <span
                             key={day.date}
-                            className={`schedule-grid__phase-spacer${inPhase ? ' schedule-grid__phase-spacer--in-range' : ''}`}
+                            className={`schedule-grid__phase-spacer${inCommercial ? ' schedule-grid__phase-spacer--in-range' : ''}${inExtended ? ' schedule-grid__phase-spacer--in-extended' : ''}`}
                             aria-hidden="true"
                           />
                         );
@@ -494,6 +510,7 @@ function SharedScheduleGrid({
               dayByDate={dayByDate}
               gridColumns={gridColumns}
               phaseRange={phaseRange}
+              commercialPhaseRange={phaseRange}
               hasPhaseWindows={hasPhaseWindows}
               readOnly={row.readOnly}
               metaPrefix={metaPrefix}

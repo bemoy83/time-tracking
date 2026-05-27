@@ -13,6 +13,8 @@ interface ScheduleMetricStripProps {
   onOpenAssistant?: () => void;
   isLocked?: boolean;
   onRevertToDraft?: () => void;
+  showFullSpan?: boolean;
+  onToggleFullSpan?: () => void;
 }
 
 export function ScheduleMetricStrip({
@@ -25,6 +27,8 @@ export function ScheduleMetricStrip({
   onOpenAssistant,
   isLocked = false,
   onRevertToDraft,
+  showFullSpan = false,
+  onToggleFullSpan,
 }: ScheduleMetricStripProps) {
   const assistantVariant =
     criticalIssueCount > 0
@@ -103,6 +107,23 @@ export function ScheduleMetricStrip({
       </div>
 
       <div className="schedule-metric-strip__actions">
+        {onToggleFullSpan && (
+          <button
+            type="button"
+            className={[
+              'btn',
+              'btn--xs',
+              'btn--ghost',
+              'schedule-metric-strip__span-toggle',
+              showFullSpan ? 'schedule-metric-strip__span-toggle--active' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={onToggleFullSpan}
+            aria-pressed={showFullSpan}
+            title={showFullSpan ? 'Switch to work days only' : 'Show full event span including Moving In and Out days'}
+          >
+            {showFullSpan ? 'Work days' : 'Full span'}
+          </button>
+        )}
         {!readOnly && isLocked && onRevertToDraft && (
           <button
             type="button"

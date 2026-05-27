@@ -222,6 +222,38 @@ export function dayEffectiveAvailablePersonHours(
   return dayAvailablePersonHours(day, defaultCrewSize) * resolveDayEfficiency(day, planEfficiency);
 }
 
+/**
+ * Augment an existing phase-bounded work calendar with virtual (view-only) entries
+ * for all days in the full event span — covering Moving In, Event, and Moving Out gaps.
+ *
+ * Days already in existingCalendar are preserved as-is (user overrides intact).
+ * New gap days always default to isWorkDay: false — they must be explicitly enabled.
+ */
+export function generateFullSpanVirtualDays(
+  fullSpan: DateSpan,
+  existingCalendar: WorkCalendarDay[],
+  defaultCrewSize: number | null,
+): WorkCalendarDay[] {
+  const allDates = listDateRange(fullSpan.start, fullSpan.end);
+  if (allDates.length === 0) return existingCalendar;
+
+  const existingByDate = new Map(existingCalendar.map((d) => [d.date, d]));
+
+  return allDates.map((date) => {
+    const existing = existingByDate.get(date);
+    if (existing) return existing;
+    // Gap day (moving-in, event, moving-out) — always off by default
+    return {
+      date,
+      isWorkDay: false,
+      accessStart: null,
+      accessEnd: null,
+      crewSize: defaultCrewSize,
+      efficiency: null,
+    };
+  });
+}
+
 export function hasSchedulingCalendar(plan: Pick<Plan, 'workCalendar'>): boolean {
   return plan.workCalendar.length > 0;
 }

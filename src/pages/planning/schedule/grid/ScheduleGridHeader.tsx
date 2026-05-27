@@ -15,6 +15,8 @@ interface ScheduleGridHeaderProps {
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
   onEditDay?: (date: string, anchor: HTMLElement) => void;
+  eventStartDate?: string | null;
+  eventEndDate?: string | null;
 }
 
 function formatDayLabel(date: string): string {
@@ -71,6 +73,8 @@ export function ScheduleGridHeader({
   onToggleWorkday,
   todayIso,
   onEditDay,
+  eventStartDate,
+  eventEndDate,
 }: ScheduleGridHeaderProps) {
   return (
     <div className="schedule-grid__header" role="row">
@@ -98,6 +102,8 @@ export function ScheduleGridHeader({
         const showOverStaffedWarning = (cap?.isOverStaffed ?? false) && utilizationPct < OVER_STAFFED_AMBER_THRESHOLD;
         const isFragmented = cap?.fragmentationRisk === 'moderate' || cap?.fragmentationRisk === 'high';
         const isToday = todayIso != null && day.date === todayIso;
+        const isEventDay = !!(eventStartDate && eventEndDate
+          && day.date >= eventStartDate && day.date <= eventEndDate);
         const accessWindow = formatAccessWindow(day);
         const crewCount = cap ? formatStaffedCrewCount(cap) : '';
         const dayMetaLabel = `${crewCount}${accessWindow ? `, ${accessWindow}` : ''}`;
@@ -121,6 +127,7 @@ export function ScheduleGridHeader({
               'schedule-grid__day-col',
               isWeekendDate(day.date) ? 'schedule-grid__day-col--weekend' : '',
               day.isWorkDay ? '' : 'schedule-grid__day-col--off',
+              isEventDay ? 'schedule-grid__day-col--event-day' : '',
               isOver ? 'schedule-grid__day-col--over' : '',
               cap?.isOverAssignedCrew ? 'schedule-grid__day-col--over-crew' : '',
               cap?.isOverWorkerCapacity ? 'schedule-grid__day-col--over-worker' : '',
@@ -130,7 +137,7 @@ export function ScheduleGridHeader({
             title={buildDayTitle(cap, day.isWorkDay)}
           >
             <span className="schedule-grid__day-label-row">
-              {onToggleWorkday && !readOnly ? (
+              {onToggleWorkday && !readOnly && !isEventDay ? (
                 <button
                   type="button"
                   className={`schedule-grid__day-toggle${isToday ? ' schedule-grid__day-toggle--today' : ''}`}

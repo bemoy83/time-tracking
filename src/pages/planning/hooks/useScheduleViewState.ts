@@ -28,6 +28,7 @@ import {
 import { trackTelemetryEvent } from '../../../lib/telemetry/telemetry';
 import { BUILD_PHASES, type BuildPhase } from '../../../lib/types';
 import {
+  addExtendedZoneDayToPlan,
   setPlanDefaultCrewSize,
   setPlanDefaultEfficiency,
   setPlanEventDate,
@@ -53,6 +54,7 @@ import {
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
   getWorkCalendarPhaseSpans,
+  isDateWithinAnySpan,
   readPhaseDateValues,
 } from '../schedule/schedule-date-ui';
 
@@ -257,7 +259,13 @@ export function useScheduleViewState({
         if (existing) {
           return updatePlanCalendarDay(prev, date, { isWorkDay: !existing.isWorkDay });
         }
-        return syncPlanWorkCalendarFromCrewPool(prev, date, { isWorkDay: true });
+        // Date not yet in calendar — check if it's in the commercial phase spans
+        const spans = getWorkCalendarPhaseSpans(readPhaseDateValues(prev));
+        if (isDateWithinAnySpan(date, spans)) {
+          return syncPlanWorkCalendarFromCrewPool(prev, date, { isWorkDay: true });
+        }
+        // Extended zone day (moving-in / moving-out): add directly without span guard
+        return addExtendedZoneDayToPlan(prev, date);
       });
       trackTelemetryEvent('schedule_calendar_edit');
     },
@@ -569,8 +577,23 @@ export function useScheduleViewState({
         assistantReportStale,
         assistantUnresolvedCount,
         assistantReviewIssues,
+        lineItems: currentPlan.lineItems,
+        phaseDates,
+        eventStartDate: currentPlan.eventStartDate,
+        eventEndDate: currentPlan.eventEndDate,
       }),
-    [capacity, conflictSuggestions, schedulableUnscheduledCount, assistantReportStale, assistantReviewIssues, assistantUnresolvedCount],
+    [
+      capacity,
+      conflictSuggestions,
+      schedulableUnscheduledCount,
+      assistantReportStale,
+      assistantReviewIssues,
+      assistantUnresolvedCount,
+      currentPlan.lineItems,
+      phaseDates,
+      currentPlan.eventStartDate,
+      currentPlan.eventEndDate,
+    ],
   );
 
   const visibleAssistantIssues = useMemo(

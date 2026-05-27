@@ -90,6 +90,18 @@
   background: var(--phase-header-spacer-bg, transparent);
 }
 
+/* Extended zone (Moving In / Moving Out) — same phase tint but rendered as a
+   diagonal stripe so the planner can distinguish extended territory at a glance. */
+.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-extended {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--phase-header-spacer-bg, rgba(0, 0, 0, 0.06)) 0,
+    var(--phase-header-spacer-bg, rgba(0, 0, 0, 0.06)) 3px,
+    transparent 3px,
+    transparent 9px
+  );
+}
+
 .schedule-grid__group-count {
   color: var(--color-text-muted);
   font-weight: 500;
