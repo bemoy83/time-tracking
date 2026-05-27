@@ -1,7 +1,6 @@
 import type { WorkCalendarDay } from '../../../../lib/planning/plan-model';
 import type { DailyCapacity } from '../../../../lib/planning/scheduling/capacity';
 import { OVER_STAFFED_AMBER_THRESHOLD } from '../../../../lib/planning/scheduling/capacity-core';
-import type { PhaseDateValues } from '../schedule-date-ui';
 import { FragmentationWarningIcon } from './FragmentationWarningIcon';
 
 interface ScheduleGridHeaderProps {
@@ -13,58 +12,18 @@ interface ScheduleGridHeaderProps {
   unscheduledCount?: number;
   readOnly?: boolean;
   hasWorkDays?: boolean;
-  phaseDates?: PhaseDateValues;
-  eventStartDate?: string | null;
-  eventEndDate?: string | null;
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
   onEditDay?: (date: string, anchor: HTMLElement) => void;
 }
 
-type DayPhase = 'assembly' | 'event' | 'dismantle' | null;
-
-function getDayPhase(
-  date: string,
-  phaseDates: PhaseDateValues | undefined,
-  eventStartDate: string | null | undefined,
-  eventEndDate: string | null | undefined,
-): DayPhase {
-  if (!phaseDates) return null;
-  if (
-    phaseDates.assemblyStartDate &&
-    phaseDates.assemblyEndDate &&
-    date >= phaseDates.assemblyStartDate &&
-    date <= phaseDates.assemblyEndDate
-  ) {
-    return 'assembly';
-  }
-  if (
-    eventStartDate &&
-    eventEndDate &&
-    date >= eventStartDate &&
-    date <= eventEndDate
-  ) {
-    return 'event';
-  }
-  if (
-    phaseDates.dismantleStartDate &&
-    phaseDates.dismantleEndDate &&
-    date >= phaseDates.dismantleStartDate &&
-    date <= phaseDates.dismantleEndDate
-  ) {
-    return 'dismantle';
-  }
-  return null;
-}
-
 function formatDayLabel(date: string): string {
   const parsed = new Date(`${date}T00:00:00`);
-  const formatted = parsed.toLocaleDateString(undefined, {
+  return parsed.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
-  return formatted;
 }
 
 function formatDayAbbr(date: string): string {
@@ -96,26 +55,8 @@ function isWeekendDate(date: string): boolean {
   return d === 0 || d === 6;
 }
 
-/**
- * Format: allocated crew capacity / total work required this day.
- * Numerator = assignedCapacityPersonHours (crew capacity deployed).
- * Denominator = requiredPersonHours + shortfallPersonHours (work needed to meet all targets).
- * Under-allocated when numerator < denominator (shortfall exists).
- * Over-allocated when numerator > denominator (excess crew, flagged by warning color).
- */
-function formatUtilBadge(cap: DailyCapacity): string {
-  const allocated = cap.assignedCapacityPersonHours;
-  const required = cap.requiredPersonHours + cap.shortfallPersonHours;
-
-  if (required <= 0 && allocated <= 0) return '—';
-  if (required <= 0) return `${allocated.toFixed(0)}h`;
-  if (allocated <= 0) return `${required.toFixed(0)}h needed`;
-  return `${allocated.toFixed(0)} / ${required.toFixed(0)}h`;
-}
-
 function buildDayTitle(cap: DailyCapacity | undefined, isWorkDay: boolean): string | undefined {
   if (!cap || !isWorkDay || cap.rawAvailablePersonHours <= 0) return undefined;
-
   return `${cap.availableCrew} crew · ${cap.accessHours}h/day\nTotal: ${cap.rawAvailablePersonHours.toFixed(1)}h · Usable time: ${cap.effectiveAvailablePersonHours.toFixed(1)}h\nIncludes buffer for movement, setup & coordination`;
 }
 
@@ -127,9 +68,6 @@ export function ScheduleGridHeader({
   onAutoSchedule,
   unscheduledCount,
   readOnly = false,
-  phaseDates,
-  eventStartDate,
-  eventEndDate,
   onToggleWorkday,
   todayIso,
   onEditDay,
@@ -154,14 +92,26 @@ export function ScheduleGridHeader({
       {calendar.map((day) => {
         const cap = dayByDate.get(day.date);
         const isOver = cap?.isOverAllocated ?? false;
-        const utilizationPct = cap && cap.availableCrew > 0 ? (cap.assignedCrewTotal / cap.availableCrew) * 100 : 0;
+        const utilizationPct = cap && cap.availableCrew > 0
+          ? (cap.assignedCrewTotal / cap.availableCrew) * 100
+          : 0;
         const showOverStaffedWarning = (cap?.isOverStaffed ?? false) && utilizationPct < OVER_STAFFED_AMBER_THRESHOLD;
         const isFragmented = cap?.fragmentationRisk === 'moderate' || cap?.fragmentationRisk === 'high';
         const isToday = todayIso != null && day.date === todayIso;
-        const dayPhase = getDayPhase(day.date, phaseDates, eventStartDate, eventEndDate);
         const accessWindow = formatAccessWindow(day);
         const crewCount = cap ? formatStaffedCrewCount(cap) : '';
         const dayMetaLabel = `${crewCount}${accessWindow ? `, ${accessWindow}` : ''}`;
+
+        // Utilization bar at absolute bottom
+        const utilPct = cap && cap.availableCrew > 0
+          ? Math.min(Math.round((cap.assignedCrewTotal / cap.availableCrew) * 100), 100)
+          : 0;
+        const utilBarVariant = isOver
+          ? ' schedule-grid__day-util-bar--over'
+          : showOverStaffedWarning
+            ? ' schedule-grid__day-util-bar--under'
+            : '';
+
         return (
           <span
             key={day.date}
@@ -199,61 +149,36 @@ export function ScheduleGridHeader({
               )}
               {isFragmented && cap && <FragmentationWarningIcon cap={cap} />}
             </span>
+
             {cap && day.isWorkDay && (
-              <>
-                {(() => {
-                  const hasUtilization = cap.availableCrew > 0 && cap.assignedCrewTotal > 0;
-                  const pct = hasUtilization
-                    ? Math.min(Math.round((cap.assignedCrewTotal / cap.availableCrew) * 100), 100)
-                    : 0;
-                  const fillClass = cap.isOverAllocated
-                    ? ' schedule-grid__day-bar-fill--over'
-                    : showOverStaffedWarning
-                      ? ' schedule-grid__day-bar-fill--under'
-                      : '';
-                  return (
-                    <span
-                      className={`schedule-grid__day-bar${hasUtilization ? '' : ' schedule-grid__day-bar--placeholder'}`}
-                      role={hasUtilization ? 'progressbar' : undefined}
-                      aria-valuenow={hasUtilization ? pct : undefined}
-                      aria-valuemin={hasUtilization ? 0 : undefined}
-                      aria-valuemax={hasUtilization ? 100 : undefined}
-                      aria-label={hasUtilization ? `${pct}% crew utilization` : undefined}
-                      aria-hidden={hasUtilization ? undefined : true}
-                    >
-                      <span
-                        className={`schedule-grid__day-bar-fill${fillClass}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </span>
-                  );
-                })()}
-                <span className={`schedule-grid__day-util${isOver ? ' schedule-grid__day-util--over' : ''}${cap.isOverWorkerCapacity ? ' schedule-grid__day-util--over-worker' : ''}${isFragmented && !isOver && !cap.isOverWorkerCapacity && !showOverStaffedWarning ? ' schedule-grid__day-util--fragmented' : ''}`}>
-                  {formatUtilBadge(cap)}
+              onEditDay && !readOnly ? (
+                <button
+                  type="button"
+                  className={`schedule-grid__day-meta schedule-grid__day-meta--editable${cap.isOverAssignedCrew ? ' schedule-grid__day-meta--over' : ''}`}
+                  onClick={(e) => onEditDay(day.date, e.currentTarget)}
+                  aria-label={`Edit crew and hours for ${formatDayLabel(day.date)}: ${dayMetaLabel}`}
+                  title="Edit crew size and hours"
+                >
+                  <span className="schedule-grid__day-meta-crew">{crewCount}</span>
+                  <span className="schedule-grid__day-meta-time">{accessWindow}</span>
+                </button>
+              ) : (
+                <span className={`schedule-grid__day-meta${cap.isOverAssignedCrew ? ' schedule-grid__day-meta--over' : ''}`}>
+                  <span className="schedule-grid__day-meta-crew">{crewCount}</span>
+                  <span className="schedule-grid__day-meta-time">{accessWindow}</span>
                 </span>
-                {onEditDay && !readOnly ? (
-                  <button
-                    type="button"
-                    className={`schedule-grid__day-meta schedule-grid__day-meta--editable${cap.isOverAssignedCrew ? ' schedule-grid__day-meta--over' : ''}`}
-                    onClick={(e) => onEditDay(day.date, e.currentTarget)}
-                    aria-label={`Edit crew and hours for ${formatDayLabel(day.date)}: ${dayMetaLabel}`}
-                    title="Edit crew size and hours"
-                  >
-                    <span className="schedule-grid__day-meta-crew">{crewCount}</span>
-                    <span className="schedule-grid__day-meta-time">{accessWindow}</span>
-                  </button>
-                ) : (
-                  <span className={`schedule-grid__day-meta${cap.isOverAssignedCrew ? ' schedule-grid__day-meta--over' : ''}`}>
-                    <span className="schedule-grid__day-meta-crew">{crewCount}</span>
-                    <span className="schedule-grid__day-meta-time">{accessWindow}</span>
-                  </span>
-                )}
-              </>
+              )
             )}
-            {dayPhase && (
+
+            {cap && day.isWorkDay && utilPct > 0 && (
               <span
-                className={`schedule-grid__day-phase-bar schedule-grid__day-phase-bar--${dayPhase}`}
-                aria-hidden
+                className={`schedule-grid__day-util-bar${utilBarVariant}`}
+                style={{ '--util-pct': `${utilPct}%` } as React.CSSProperties}
+                role="progressbar"
+                aria-valuenow={utilPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${utilPct}% crew utilization`}
               />
             )}
           </span>

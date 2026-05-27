@@ -61,8 +61,6 @@ interface SingleScheduleGridProps {
   activeIssueKey?: string | null;
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
-  eventStartDate?: string | null;
-  eventEndDate?: string | null;
   onEditDay?: (date: string, anchor: HTMLElement) => void;
 }
 
@@ -186,8 +184,6 @@ function SingleScheduleGrid({
   activeIssueKey,
   onToggleWorkday,
   todayIso,
-  eventStartDate,
-  eventEndDate,
   onEditDay,
 }: SingleScheduleGridProps) {
   const dayByDate = useMemo(
@@ -284,9 +280,6 @@ function SingleScheduleGrid({
           unscheduledCount={schedulableUnscheduledCount}
           readOnly={readOnly}
           hasWorkDays={workDays.length > 0}
-          phaseDates={phaseDates}
-          eventStartDate={eventStartDate}
-          eventEndDate={eventEndDate}
           onToggleWorkday={onToggleWorkday}
           todayIso={todayIso}
           onEditDay={onEditDay}

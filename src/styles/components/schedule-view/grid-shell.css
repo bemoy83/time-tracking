@@ -139,8 +139,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: var(--space-sm) var(--space-md);
+  justify-content: space-between;
+  padding: 6px 8px 8px;
+  min-height: 64px;
 }
 
 .schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--weekend {
@@ -297,63 +298,29 @@
   color: var(--state-warning-fg-strong);
 }
 
-.schedule-grid__day-bar {
-  display: block;
-  width: 100%;
-  height: 4px;
-  background: var(--surface-contained-inset);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
-  border-radius: 2px;
-  overflow: hidden;
+/* --- Utilization bar (absolute bottom, replaces phase bar) --- */
+
+.schedule-grid__day-util-bar {
+  --util-bar-fill: var(--state-success-fg);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    var(--util-bar-fill) var(--util-pct, 0%),
+    var(--surface-contained-inset) var(--util-pct, 0%)
+  );
 }
 
-.schedule-grid__day-bar--placeholder {
-  visibility: hidden;
+.schedule-grid__day-util-bar--over {
+  --util-bar-fill: var(--state-danger-fg);
 }
 
-.schedule-grid__day-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--color-primary);
-  transition: width 0.25s ease;
-}
-
-.schedule-grid__day-bar-fill--over {
-  background: var(--color-recording);
-}
-
-.schedule-grid__day-bar-fill--under {
-  background: var(--color-amber);
-}
-
-.schedule-grid__day-util {
-  display: block;
-  font-size: var(--font-caption);
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--color-text-muted);
-  font-family: 'DM Mono', ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-}
-
-.schedule-grid__day-util--over {
-  color: var(--color-recording);
-  font-weight: 700;
-}
-
-.schedule-grid__day-util--over-worker {
-  color: var(--color-recording);
-  font-weight: 700;
-}
-
-.schedule-grid__day-util--fragmented {
-  color: var(--state-warning-fg-strong);
-}
-
-.schedule-grid__day-util--over-staffed {
-  color: var(--color-amber);
-  font-weight: 700;
+.schedule-grid__day-util-bar--under {
+  --util-bar-fill: var(--color-amber);
 }
 
 
@@ -536,30 +503,6 @@
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 2px;
-}
-
-/* --- Phase color bar (bottom of each day column) --- */
-
-.schedule-grid__day-phase-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  border-radius: 0;
-  pointer-events: none;
-}
-
-.schedule-grid__day-phase-bar--assembly {
-  background: var(--phase-assembly-fg);
-}
-
-.schedule-grid__day-phase-bar--event {
-  background: var(--phase-event-fg);
-}
-
-.schedule-grid__day-phase-bar--dismantle {
-  background: var(--phase-dismantle-fg);
 }
 
 /* --- Editable crew/time button in header --- */

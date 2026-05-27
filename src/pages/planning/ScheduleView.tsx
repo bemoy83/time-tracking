@@ -85,8 +85,7 @@ export function ScheduleView({
           onToggleWorkday={readOnly ? undefined : handleToggleWorkday}
           onEditDay={readOnly ? undefined : handleEditDay}
           todayIso={todayIso}
-          eventStartDate={currentPlan.eventStartDate}
-          eventEndDate={currentPlan.eventEndDate}
+
         />
       </div>
 
