@@ -600,13 +600,18 @@
   }
 
   .planning-workspace__editor-canvas .schedule-grid__phase-header--assembly .schedule-grid__phase-label {
-    background: var(--wp-phase-assembly-header-bg);
+    background: color-mix(in srgb, var(--phase-assembly-fg) 9%, var(--surface-contained-bg));
     color: var(--phase-assembly-fg);
   }
 
   .planning-workspace__editor-canvas .schedule-grid__phase-header--dismantle .schedule-grid__phase-label {
-    background: var(--wp-phase-dismantle-header-bg);
+    background: color-mix(in srgb, var(--phase-dismantle-fg) 9%, var(--surface-contained-bg));
     color: var(--phase-dismantle-fg);
+  }
+
+  .planning-workspace__editor-canvas .schedule-grid__phase-header--event .schedule-grid__phase-label {
+    background: color-mix(in srgb, var(--phase-event-fg) 9%, var(--surface-contained-bg));
+    color: var(--phase-event-fg);
   }
 
   .planning-workspace__editor-canvas .schedule-grid__day-col {

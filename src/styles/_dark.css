@@ -111,6 +111,7 @@
     --wp-phase-assembly-header-col-bg: rgba(52, 211, 153, 0.08);
     --wp-phase-dismantle-header-bg: rgba(167, 139, 250, 0.12);
     --wp-phase-dismantle-header-col-bg: rgba(167, 139, 250, 0.08);
+    --wp-phase-event-header-bg: rgba(251, 191, 36, 0.10);
     --phase-assembly-fg: #34d399;
     --phase-dismantle-fg: #a78bfa;
     --phase-event-fg: #fbbf24;

@@ -76,6 +76,8 @@ export function ScheduleView({
           calendar={currentPlan.workCalendar}
           capacity={capacity}
           phaseDates={phaseDates}
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
           readOnly={readOnly}
           onToggleAssignment={handleToggleAssignment}
           onClearRowSchedule={handleClearRowSchedule}

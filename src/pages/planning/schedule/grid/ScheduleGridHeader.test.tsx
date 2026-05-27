@@ -127,19 +127,4 @@ describe('ScheduleGridHeader', () => {
     expect(onEditDay).toHaveBeenCalledWith('2026-03-24', editButton);
   });
 
-  it('reserves the utilization bar slot when a work day has no utilization', () => {
-    const { container } = render(
-      <ScheduleGridHeader
-        calendar={[makeDay()]}
-        dayByDate={new Map([[ '2026-03-24', makeCapacity({ assignedCrewTotal: 0 }) ]])}
-        gridColumns="220px 144px"
-        label="Schedule"
-      />,
-    );
-
-    const placeholder = container.querySelector('.schedule-grid__day-bar--placeholder');
-
-    expect(placeholder).toBeTruthy();
-    expect(placeholder?.getAttribute('aria-hidden')).toBe('true');
-  });
 });

@@ -50,9 +50,11 @@
   color: var(--color-text);
 }
 
-/* Phase-specific semantic colors (assembly / dismantle) */
+/* Phase-specific semantic colors — label styling.
+   color-mix produces an opaque solid equivalent of the tint so the label
+   fully blocks phase-band spacers scrolling underneath it. */
 .schedule-grid__phase-header--assembly .schedule-grid__phase-label {
-  background: var(--wp-phase-assembly-header-bg);
+  background: color-mix(in srgb, var(--phase-assembly-fg) 9%, var(--color-surface-subtle));
   color: var(--phase-assembly-fg);
 }
 
@@ -61,12 +63,31 @@
 }
 
 .schedule-grid__phase-header--dismantle .schedule-grid__phase-label {
-  background: var(--wp-phase-dismantle-header-bg);
+  background: color-mix(in srgb, var(--phase-dismantle-fg) 9%, var(--color-surface-subtle));
   color: var(--phase-dismantle-fg);
 }
 
 .schedule-grid__phase-header--dismantle .schedule-grid__phase-label:hover {
   color: var(--phase-dismantle-fg);
+}
+
+.schedule-grid__phase-header--event .schedule-grid__phase-label {
+  background: color-mix(in srgb, var(--phase-event-fg) 9%, var(--color-surface-subtle));
+  color: var(--phase-event-fg);
+}
+
+.schedule-grid__phase-header--event .schedule-grid__phase-label:hover {
+  color: var(--phase-event-fg);
+}
+
+/* Phase spacer band — each phase modifier sets its own background via a custom property.
+   Adding a new phase only requires one new rule below; the spacer itself is generic. */
+.schedule-grid__phase-header--assembly  { --phase-header-spacer-bg: var(--wp-phase-assembly-header-bg); }
+.schedule-grid__phase-header--dismantle { --phase-header-spacer-bg: var(--wp-phase-dismantle-header-bg); }
+.schedule-grid__phase-header--event     { --phase-header-spacer-bg: var(--wp-phase-event-header-bg); }
+
+.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-range {
+  background: var(--phase-header-spacer-bg, transparent);
 }
 
 .schedule-grid__group-count {

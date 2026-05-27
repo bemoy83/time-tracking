@@ -53,6 +53,8 @@ interface SingleScheduleGridProps {
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
   phaseDates: PhaseDateValues;
+  eventStartDate?: string | null;
+  eventEndDate?: string | null;
   readOnly: boolean;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
   onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
@@ -176,6 +178,8 @@ function SingleScheduleGrid({
   calendar,
   capacity,
   phaseDates,
+  eventStartDate,
+  eventEndDate,
   readOnly,
   onToggleAssignment,
   onClearRowSchedule,
@@ -197,6 +201,12 @@ function SingleScheduleGrid({
     [lineItems, phaseDates, workDays],
   );
   const phaseGroups = useMemo(() => groupByPhase(lineItems), [lineItems]);
+  const eventDateRange = useMemo(
+    () => (eventStartDate && eventEndDate ? { start: eventStartDate, end: eventEndDate } : null),
+    [eventStartDate, eventEndDate],
+  );
+  const totalItemCount = phaseGroups.reduce((acc, g) => acc + g.rows.length, 0);
+  const [isEventCollapsed, setIsEventCollapsed] = useState(false);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
   const unresolvedKeys = unresolvedIssueKeys ?? new Set<string>();
 
@@ -208,6 +218,7 @@ function SingleScheduleGrid({
     if (!activeIssueKey) return;
     const phase = activeIssueKey.split(':').slice(-1)[0] as BuildPhase;
     if (!BUILD_PHASES.includes(phase)) return;
+    setIsEventCollapsed(false);
     setCollapsedPhases((prev) => {
       if (!prev.has(phase)) return prev;
       const next = new Set(prev);
@@ -224,6 +235,8 @@ function SingleScheduleGrid({
     });
     return () => cancelAnimationFrame(frame);
   }, [activeIssueKey]);
+
+  const toggleEvent = () => setIsEventCollapsed((prev) => !prev);
 
   const togglePhase = (phase: BuildPhase) => {
     setCollapsedPhases((prev) => toggleSetValue(prev, phase));
@@ -285,40 +298,79 @@ function SingleScheduleGrid({
           onEditDay={onEditDay}
         />
       )}
-      body={phaseGroups.length > 1
-        ? (() => {
-            let globalRowIdx = 0;
-            return phaseGroups.map((group) => {
-              const isCollapsed = collapsedPhases.has(group.phase);
-              const startIdx = globalRowIdx;
-              globalRowIdx += group.rows.length;
-              return (
-                <div key={group.phase} className="schedule-grid__phase-group">
-                  <button
-                    type="button"
-                    className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
-                    onClick={() => togglePhase(group.phase)}
-                    aria-expanded={!isCollapsed}
-                  >
-                    <span className="schedule-grid__phase-label">
-                      <ChevronIcon className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`} />
-                      {group.label} ({group.rows.length})
-                    </span>
-                    {calendar.map((day) => (
-                      <span key={day.date} className="schedule-grid__phase-spacer" aria-hidden="true" />
-                    ))}
-                  </button>
-                  {!isCollapsed && group.rows.map(({ item, phase }, i) => renderRow(item, phase, startIdx + i))}
-                </div>
-              );
-            });
-          })()
-        : phaseGroups.length === 1
-          ? phaseGroups[0].rows.map(({ item, phase }, i) => renderRow(item, phase, i))
-          : lineItems.map((item, i) => {
-              const activePhase = BUILD_PHASES.find((phase) => isPhaseActive(item, phase)) ?? 'assembly';
-              return renderRow(item, activePhase, i);
-            })}
+      body={(() => {
+          let globalRowIdx = 0;
+          return (
+            <div className="schedule-grid__phase-group">
+              {/* ── Event header (depth 0) ──────────────────────────────── */}
+              <button
+                type="button"
+                className="schedule-grid__phase-header schedule-grid__phase-header--event"
+                onClick={toggleEvent}
+                aria-expanded={!isEventCollapsed}
+              >
+                <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-0">
+                  <ChevronIcon
+                    className={`schedule-grid__phase-chevron${!isEventCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
+                  />
+                  Event ({totalItemCount})
+                </span>
+                {calendar.map((day) => {
+                  const inEvent = eventDateRange != null
+                    && day.date >= eventDateRange.start
+                    && day.date <= eventDateRange.end;
+                  return (
+                    <span
+                      key={day.date}
+                      className={`schedule-grid__phase-spacer${inEvent ? ' schedule-grid__phase-spacer--in-range' : ''}`}
+                      aria-hidden="true"
+                    />
+                  );
+                })}
+              </button>
+
+              {/* ── Phase rows (depth 1) — only when event not collapsed ── */}
+              {!isEventCollapsed && phaseGroups.map((group) => {
+                const isCollapsed = collapsedPhases.has(group.phase);
+                const startIdx = globalRowIdx;
+                globalRowIdx += group.rows.length;
+                const groupPhaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, group.phase) : null;
+                return (
+                  <div key={group.phase} className="schedule-grid__phase-group">
+                    <button
+                      type="button"
+                      className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
+                      onClick={() => togglePhase(group.phase)}
+                      aria-expanded={!isCollapsed}
+                    >
+                      <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-1">
+                        <ChevronIcon
+                          className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
+                        />
+                        {group.label} ({group.rows.length})
+                      </span>
+                      {calendar.map((day) => {
+                        const inPhase = groupPhaseRange != null
+                          && day.date >= groupPhaseRange.start
+                          && day.date <= groupPhaseRange.end;
+                        return (
+                          <span
+                            key={day.date}
+                            className={`schedule-grid__phase-spacer${inPhase ? ' schedule-grid__phase-spacer--in-range' : ''}`}
+                            aria-hidden="true"
+                          />
+                        );
+                      })}
+                    </button>
+                    {!isCollapsed && group.rows.map(({ item, phase }, i) =>
+                      renderRow(item, phase, startIdx + i),
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
     />
   );
 }
