@@ -310,6 +310,13 @@
   margin-inline: auto;
 }
 
+.planning-workspace__editor-canvas--full-bleed {
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Full-height variant for wrap-up pane (height: 100% child) */
 .planning-workspace__editor-canvas--fill {
   min-height: 100%;

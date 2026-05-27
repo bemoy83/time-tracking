@@ -26,6 +26,7 @@ import { ScheduleEditContext, type ScheduleEditContextValue } from './ScheduleEd
 import { WrapUpMainPane } from './WrapUpMainPane';
 import { SharedScheduleMainPane } from './SharedScheduleMainPane';
 import { WorkspaceMainPane } from './WorkspaceMainPane';
+import { WorkspacePaneFrame } from './WorkspacePaneFrame';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -207,42 +208,36 @@ export function PlanningWorkspaceShell({
             onScheduleContextChange={setScheduleCtx}
           />
         ) : activeTab === 'progress' ? (
-          <div className="planning-workspace__main-inner">
-            <div className="planning-workspace__tab-content" role="tabpanel">
-              <div className="planning-workspace__editor-canvas">
-                <div className="planning-workspace__empty">
-                  <p className="planning-workspace__empty-heading">No active plan</p>
-                  <p className="planning-workspace__empty-desc">Select a plan from the sidebar to view its progress.</p>
-                </div>
-              </div>
+          <WorkspacePaneFrame ariaLabel="Progress workspace">
+            <div className="planning-workspace__empty">
+              <p className="planning-workspace__empty-heading">No active plan</p>
+              <p className="planning-workspace__empty-desc">Select a plan from the sidebar to view its progress.</p>
             </div>
-          </div>
+          </WorkspacePaneFrame>
         ) : activeTab === 'insights' ? (
-          <div className="planning-workspace__main-inner">
-            <div className="planning-workspace__tab-content" role="tabpanel">
-              <div className="planning-workspace__editor-canvas">
-                <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} projects={projects} />
-              </div>
-            </div>
-          </div>
+          <WorkspacePaneFrame ariaLabel="Insights workspace">
+            <InsightsView tasks={tasks} workTypes={workTypes} plans={plans} projects={projects} />
+          </WorkspacePaneFrame>
         ) : (
-          <div className="planning-workspace__empty">
-            <TaskListIcon className="planning-workspace__empty-icon" />
-            {plans.length === 0 ? (
-              <>
-                <p className="planning-workspace__empty-heading">Create your first plan</p>
-                <p className="planning-workspace__empty-desc">Get started by creating a plan to organise your work packages.</p>
-                <button type="button" className="btn btn--primary" onClick={onCreatePlan}>
-                  New Plan
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="planning-workspace__empty-heading">Select a plan to edit</p>
-                <p className="planning-workspace__empty-desc">Choose a plan from the sidebar, or create a new one.</p>
-              </>
-            )}
-          </div>
+          <WorkspacePaneFrame ariaLabel="Planning workspace">
+            <div className="planning-workspace__empty">
+              <TaskListIcon className="planning-workspace__empty-icon" />
+              {plans.length === 0 ? (
+                <>
+                  <p className="planning-workspace__empty-heading">Create your first plan</p>
+                  <p className="planning-workspace__empty-desc">Get started by creating a plan to organise your work packages.</p>
+                  <button type="button" className="btn btn--primary" onClick={onCreatePlan}>
+                    New Plan
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="planning-workspace__empty-heading">Select a plan to edit</p>
+                  <p className="planning-workspace__empty-desc">Choose a plan from the sidebar, or create a new one.</p>
+                </>
+              )}
+            </div>
+          </WorkspacePaneFrame>
         )}
       </section>
     </div>

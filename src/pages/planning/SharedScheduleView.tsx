@@ -9,6 +9,7 @@ import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-li
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
 import {
   computeSharedCapacitySummary,
+  type CapacitySummary,
 } from '../../lib/planning/scheduling/capacity';
 import {
   deriveCrewPoolCalendar,
@@ -31,12 +32,12 @@ import {
   runSharedAutoSchedule,
   type SharedAutoScheduleReport,
 } from '../../lib/planning/scheduling/shared-auto-schedule';
-import type { ScheduledLineItemRef } from '../../lib/planning/scheduling/shared-schedule-types';
+import type { ScheduledLineItemRef, SharedScheduleRow } from '../../lib/planning/scheduling/shared-schedule-types';
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
-import { readPhaseDateValues } from './schedule/schedule-date-ui';
+import { readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
 import {
   loadCrewPoolOverride,
   saveCrewPoolOverride,
@@ -50,6 +51,35 @@ interface SharedScheduleViewProps {
   projects: Project[];
   selectedPlanIds: Set<string>;
   onSavePlan: (plan: Plan) => void;
+}
+
+interface SharedScheduleWorkspaceSectionsProps {
+  selectedPlans: Plan[];
+  capacity: CapacitySummary;
+  assistantReport: SharedAutoScheduleReport | null;
+  crewPoolCalendar: WorkCalendarDay[];
+  crewPoolDefaultCrewSize: number;
+  rows: SharedScheduleRow[];
+  phaseDatesByPlanId: Map<string, PhaseDateValues>;
+  planDisplayNameByPlanId: Map<string, string>;
+  itemByCompositeId: Map<string, PlanLineItem>;
+  onDefaultCrewSizeChange: (value: string) => void;
+  onUpdateCalendarDay: (date: string, updates: Partial<WorkCalendarDay>) => void;
+  onAutoScheduleShared: () => void;
+  onToggleAssignment: (
+    planId: string,
+    lineItemId: string,
+    phase: BuildPhase,
+    date: string,
+    cellElement?: HTMLElement,
+  ) => void;
+  onPersonHoursForDateChange: (
+    planId: string,
+    lineItemId: string,
+    phase: BuildPhase,
+    date: string,
+    personHours: number,
+  ) => void;
 }
 
 function mapKey(planId: string, lineItemId: string): string {
@@ -378,13 +408,43 @@ export function SharedScheduleView({
   };
 
   return (
-    <div className="planning-view schedule-view">
-      <header className="planning-view__editor-header">
-        <h2 className="planning-view__title" style={{ flex: 1 }}>
-          Shared Schedule
-        </h2>
-      </header>
+    <SharedScheduleWorkspaceSections
+      selectedPlans={selectedPlans}
+      capacity={capacity}
+      assistantReport={assistantReport}
+      crewPoolCalendar={crewPoolCalendar}
+      crewPoolDefaultCrewSize={crewPoolDefaultCrewSize}
+      rows={rows}
+      phaseDatesByPlanId={phaseDatesByPlanId}
+      planDisplayNameByPlanId={planDisplayNameByPlanId}
+      itemByCompositeId={itemByCompositeId}
+      onDefaultCrewSizeChange={handleDefaultCrewSizeChange}
+      onUpdateCalendarDay={handleUpdateCalendarDay}
+      onAutoScheduleShared={handleAutoScheduleShared}
+      onToggleAssignment={handleToggleAssignment}
+      onPersonHoursForDateChange={handlePersonHoursForDateChange}
+    />
+  );
+}
 
+function SharedScheduleWorkspaceSections({
+  selectedPlans,
+  capacity,
+  assistantReport,
+  crewPoolCalendar,
+  crewPoolDefaultCrewSize,
+  rows,
+  phaseDatesByPlanId,
+  planDisplayNameByPlanId,
+  itemByCompositeId,
+  onDefaultCrewSizeChange,
+  onUpdateCalendarDay,
+  onAutoScheduleShared,
+  onToggleAssignment,
+  onPersonHoursForDateChange,
+}: SharedScheduleWorkspaceSectionsProps) {
+  return (
+    <div className="planning-view schedule-view">
       {selectedPlans.length === 0 ? (
         <section className="schedule-view__block">
           <p className="schedule-view__muted">Select at least one plan to build a shared schedule.</p>
@@ -393,19 +453,19 @@ export function SharedScheduleView({
         <>
           <FeasibilityBar capacity={capacity} />
           <ConflictResolutionBanner capacity={capacity} />
-            {assistantReport && (
-              <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
-                <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
-                <p className="schedule-view__muted">
-                  {assistantReport.changed.length} updated across {new Set(assistantReport.changed.map((r) => r.planId)).size} plan{new Set(assistantReport.changed.map((r) => r.planId)).size === 1 ? '' : 's'} · {assistantReport.unresolved.length} unresolved
-                </p>
-                <p className="schedule-view__muted">
-                  Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-                  {' · '}
-                  Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-                </p>
-              </section>
-            )}
+          {assistantReport && (
+            <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
+              <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
+              <p className="schedule-view__muted">
+                {assistantReport.changed.length} updated across {new Set(assistantReport.changed.map((r) => r.planId)).size} plan{new Set(assistantReport.changed.map((r) => r.planId)).size === 1 ? '' : 's'} · {assistantReport.unresolved.length} unresolved
+              </p>
+              <p className="schedule-view__muted">
+                Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
+                {' · '}
+                Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
+              </p>
+            </section>
+          )}
 
           <section className="schedule-view__block schedule-view__block--compact schedule-view__block--row">
             <h3 className="schedule-view__block-title">Crew Pool</h3>
@@ -419,7 +479,7 @@ export function SharedScheduleView({
                     min={0}
                     step={1}
                     value={crewPoolDefaultCrewSize}
-                    onChange={(event) => handleDefaultCrewSizeChange(event.target.value)}
+                    onChange={(event) => onDefaultCrewSizeChange(event.target.value)}
                   />
                 </label>
               </div>
@@ -429,7 +489,7 @@ export function SharedScheduleView({
           <WorkCalendarEditor
             calendar={crewPoolCalendar}
             readOnly={false}
-            onUpdateDay={handleUpdateCalendarDay}
+            onUpdateDay={onUpdateCalendarDay}
             planDefaultCrewSize={crewPoolDefaultCrewSize}
           />
 
@@ -441,9 +501,9 @@ export function SharedScheduleView({
             phaseDatesByPlanId={phaseDatesByPlanId}
             planDisplayNameByPlanId={planDisplayNameByPlanId}
             itemByCompositeId={itemByCompositeId}
-            onAutoSchedule={handleAutoScheduleShared}
-            onToggleAssignment={handleToggleAssignment}
-            onPersonHoursForDateChange={handlePersonHoursForDateChange}
+            onAutoSchedule={onAutoScheduleShared}
+            onToggleAssignment={onToggleAssignment}
+            onPersonHoursForDateChange={onPersonHoursForDateChange}
           />
         </>
       )}

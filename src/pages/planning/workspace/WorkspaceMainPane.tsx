@@ -5,26 +5,14 @@ import type { WorkTypeKpi } from '../../../lib/kpi';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { getVisiblePlanWorkspaceTabs } from './workspace-tabs';
-import { WorkspaceTabButton } from './WorkspaceTabButton';
 import { PlanEditor } from '../PlanEditor';
 import { ScheduleView } from '../ScheduleView';
 import { ProgressView } from '../ProgressView';
 import { InsightsView } from '../InsightsView';
 import { EventReportView } from '../EventReportView';
-import { StatusBadge } from '../../../components/StatusBadge';
 import type { ScheduleEditContextValue } from './ScheduleEditContext';
-
-function formatContextDateRange(start: string | null | undefined, end: string | null | undefined): string | null {
-  if (!start && !end) return null;
-  const fmt = (d: string) => {
-    const [y, m, day] = d.split('-').map(Number);
-    return new Date(y, m - 1, day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  };
-  if (start && end && start === end) return fmt(start);
-  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
-  if (start) return fmt(start);
-  return fmt(end!);
-}
+import { PlanContextStrip, getPlanContextPhases } from './PlanContextStrip';
+import { WorkspacePaneFrame } from './WorkspacePaneFrame';
 
 export interface WorkspaceMainPaneProps {
   plan: Plan;
@@ -97,149 +85,96 @@ export function WorkspaceMainPane({
     showScheduleTab,
     onOpenInsights: () => onSetActiveTab('insights'),
   });
-  const reviewedDateText = plan.reviewedAt
-    ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}`
-    : '';
-
-  const assemblyDateRange = formatContextDateRange(plan.assemblyStartDate, plan.assemblyEndDate);
-  const eventDateRange = formatContextDateRange(plan.eventStartDate, plan.eventEndDate);
-  const dismantleDateRange = formatContextDateRange(plan.dismantleStartDate, plan.dismantleEndDate);
+  const reviewedDateText = plan.reviewedAt ? ` on ${new Date(plan.reviewedAt).toLocaleDateString()}` : '';
+  const contextStrip = (
+    <PlanContextStrip
+      title={planDisplayName}
+      status={wrapUpEligible ? 'review-ready' : plan.status === 'active' ? 'ready' : plan.status}
+      projectAccentColor={projectAccentColor}
+      phases={getPlanContextPhases(plan)}
+    />
+  );
 
   return (
-    <div className="planning-workspace__main-inner">
-      {/* Plan context bar */}
-      <div
-        className={`planning-workspace__plan-context-bar${projectAccentColor ? ' planning-workspace__plan-context-bar--has-project' : ''}`}
-        style={projectAccentColor ? { '--planning-workspace-project-accent': projectAccentColor } as React.CSSProperties : undefined}
-      >
-        <span className="planning-workspace__plan-context-title">{planDisplayName}</span>
-        <StatusBadge variant={wrapUpEligible ? 'review-ready' : plan.status === 'active' ? 'ready' : plan.status} />
-        {(assemblyDateRange || eventDateRange || dismantleDateRange) && (
-          <span className="planning-workspace__plan-context-phases">
-            {assemblyDateRange && (
-              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--assembly">
-                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--assembly" />
-                <span className="planning-workspace__plan-context-phase-label">Assembly</span>
-                <span className="planning-workspace__plan-context-phase-date mono">{assemblyDateRange}</span>
-              </span>
-            )}
-            {eventDateRange && (
-              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--event">
-                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--event" />
-                <span className="planning-workspace__plan-context-phase-label">Event</span>
-                <span className="planning-workspace__plan-context-phase-date mono">{eventDateRange}</span>
-              </span>
-            )}
-            {dismantleDateRange && (
-              <span className="planning-workspace__plan-context-phase planning-workspace__plan-context-phase--dismantle">
-                <span className="planning-workspace__plan-context-phase-dot planning-workspace__plan-context-phase-dot--dismantle" />
-                <span className="planning-workspace__plan-context-phase-label">Dismantle</span>
-                <span className="planning-workspace__plan-context-phase-date mono">{dismantleDateRange}</span>
-              </span>
-            )}
-          </span>
-        )}
-      </div>
-      {/* Context-aware tab strip */}
-      <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
-        {tabs.map((tab) => (
-          <WorkspaceTabButton
-            key={tab.id}
-            tab={tab.id}
-            activeTab={effectiveActiveTab}
-            onClick={tab.onSelect}
+    <WorkspacePaneFrame
+      tabs={tabs}
+      activeTab={effectiveActiveTab}
+      contextStrip={contextStrip}
+      ariaLabel={`${planDisplayName} workspace`}
+    >
+      {isReviewed && (
+        <div className="planning-workspace__reviewed-banner">
+          This plan was reviewed and archived{reviewedDateText}.
+        </div>
+      )}
+      {effectiveActiveTab === 'edit' && (
+        <PlanEditor
+          plan={plan}
+          kpis={kpis}
+          projects={projects}
+          canOpenProgress={hasLinkedTasks}
+          showBackButton={false}
+          readOnly={isReviewed}
+          onSave={onSavePlan}
+          onBack={() => onSetActiveTab('edit')}
+          onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
+          onOpenProgress={onOpenProgress}
+          onOpenReport={() => onSetActiveTab('report')}
+          onRegisterBeforeScheduleSwitch={(fn) => {
+            beforeScheduleTabRef.current = fn ?? null;
+          }}
+        />
+      )}
+      {effectiveActiveTab === 'progress' && (
+        <ProgressView
+          plan={plan}
+          tasks={tasks}
+          timeEntries={timeEntries}
+          showBackButton={false}
+          onBack={() => onSetActiveTab('edit')}
+          onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
+        />
+      )}
+      {effectiveActiveTab === 'insights' && (
+        <InsightsView
+          tasks={tasks}
+          workTypes={workTypes}
+          planId={plan.id}
+          planTitle={planDisplayName}
+          projects={projects}
+        />
+      )}
+      {effectiveActiveTab === 'schedule' && showScheduleTab && (
+        <ScheduleView
+          plan={plan}
+          onSave={onSavePlan}
+          showBackButton={false}
+          onBack={() => onSetActiveTab('edit')}
+          readOnly={isReviewed}
+          onScheduleContextChange={onScheduleContextChange}
+        />
+      )}
+      {effectiveActiveTab === 'review' && (
+        <div className="planning-workspace__review-prompt">
+          <p>This plan is ready for review and wrap-up.</p>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => onOpenWrapUp(plan)}
           >
-            {tab.label}
-          </WorkspaceTabButton>
-        ))}
-      </nav>
-
-      {/* Tab content */}
-      <div className="planning-workspace__tab-content" role="tabpanel">
-        {isReviewed && (
-          <div className="planning-workspace__reviewed-banner">
-            This plan was reviewed and archived{reviewedDateText}.
-          </div>
-        )}
-        {effectiveActiveTab === 'edit' && (
-          <div className="planning-workspace__editor-canvas">
-            <PlanEditor
-              plan={plan}
-              kpis={kpis}
-              projects={projects}
-              canOpenProgress={hasLinkedTasks}
-              showBackButton={false}
-              readOnly={isReviewed}
-              onSave={onSavePlan}
-              onBack={() => onSetActiveTab('edit')}
-              onOpenSchedule={showScheduleTab ? () => onSetActiveTab('schedule') : undefined}
-              onOpenProgress={onOpenProgress}
-              onOpenReport={() => onSetActiveTab('report')}
-              onRegisterBeforeScheduleSwitch={(fn) => {
-                beforeScheduleTabRef.current = fn ?? null;
-              }}
-            />
-          </div>
-        )}
-        {effectiveActiveTab === 'progress' && (
-          <div className="planning-workspace__editor-canvas">
-            <ProgressView
-              plan={plan}
-              tasks={tasks}
-              timeEntries={timeEntries}
-              showBackButton={false}
-              onBack={() => onSetActiveTab('edit')}
-              onWrapUp={!isReviewed && wrapUpEligible ? () => onOpenWrapUp(plan) : undefined}
-            />
-          </div>
-        )}
-        {effectiveActiveTab === 'insights' && (
-          <div className="planning-workspace__editor-canvas">
-            <InsightsView
-              tasks={tasks}
-              workTypes={workTypes}
-              planId={plan.id}
-              planTitle={planDisplayName}
-              projects={projects}
-            />
-          </div>
-        )}
-        {effectiveActiveTab === 'schedule' && showScheduleTab && (
-          <div className="planning-workspace__editor-canvas">
-            <ScheduleView
-              plan={plan}
-              onSave={onSavePlan}
-              showBackButton={false}
-              onBack={() => onSetActiveTab('edit')}
-              readOnly={isReviewed}
-              onScheduleContextChange={onScheduleContextChange}
-            />
-          </div>
-        )}
-        {effectiveActiveTab === 'review' && (
-          <div className="planning-workspace__editor-canvas">
-            <div className="planning-workspace__review-prompt">
-              <p>This plan is ready for review and wrap-up.</p>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => onOpenWrapUp(plan)}
-              >
-                Start Wrap Up
-              </button>
-            </div>
-          </div>
-        )}
-        {effectiveActiveTab === 'report' && isReviewed && (
-          <EventReportView
-            plan={plan}
-            tasks={tasks}
-            timeEntriesByTask={timeEntriesByTask}
-            showBackButton={false}
-            onBack={() => onSetActiveTab('edit')}
-          />
-        )}
-      </div>
-    </div>
+            Start Wrap Up
+          </button>
+        </div>
+      )}
+      {effectiveActiveTab === 'report' && isReviewed && (
+        <EventReportView
+          plan={plan}
+          tasks={tasks}
+          timeEntriesByTask={timeEntriesByTask}
+          showBackButton={false}
+          onBack={() => onSetActiveTab('edit')}
+        />
+      )}
+    </WorkspacePaneFrame>
   );
 }

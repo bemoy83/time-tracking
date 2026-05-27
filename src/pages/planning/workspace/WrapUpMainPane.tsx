@@ -4,7 +4,7 @@ import type { Task } from '../../../lib/types';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { getVisiblePlanWorkspaceTabs } from './workspace-tabs';
-import { WorkspaceTabButton } from './WorkspaceTabButton';
+import { WorkspacePaneFrame } from './WorkspacePaneFrame';
 
 export interface WrapUpMainPaneProps {
   plan: Plan;
@@ -56,24 +56,13 @@ export function WrapUpMainPane({
   });
 
   return (
-    <div className="planning-workspace__main-inner">
-      <nav className="planning-workspace__tabs" role="tablist" aria-label="Plan views">
-        {tabs.map((tab) => (
-          <WorkspaceTabButton
-            key={tab.id}
-            tab={tab.id}
-            activeTab="review"
-            onClick={tab.onSelect}
-          >
-            {tab.label}
-          </WorkspaceTabButton>
-        ))}
-      </nav>
-      <div className="planning-workspace__tab-content" role="tabpanel">
-        <div className="planning-workspace__editor-canvas planning-workspace__editor-canvas--fill">
-          {children}
-        </div>
-      </div>
-    </div>
+    <WorkspacePaneFrame
+      tabs={tabs}
+      activeTab="review"
+      canvasMode="fill"
+      ariaLabel="Wrap up workspace"
+    >
+      {children}
+    </WorkspacePaneFrame>
   );
 }
