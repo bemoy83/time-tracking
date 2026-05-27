@@ -506,12 +506,13 @@
 
   /* --- WorkspaceSidebar --- */
   .workspace-sidebar {
-    background: var(--surface-contained-bg);
+    /* Sidebar chrome stays on --surface-contained-inset in dark (base style wins by load order) */
+    background: var(--surface-contained-inset);
   }
 
   .workspace-sidebar__detail-header {
     border-bottom-color: var(--surface-base-border);
-    background: var(--surface-contained-bg);
+    /* No explicit background — inherits sidebar's --surface-contained-inset surface */
   }
 
   .workspace-sidebar__drill-section-label {

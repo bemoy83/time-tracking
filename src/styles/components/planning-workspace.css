@@ -18,7 +18,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--surface-contained-border);
-  background: var(--surface-contained-bg);
+  background: var(--surface-contained-inset);
   overflow: hidden;
 }
 
@@ -167,10 +167,10 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: var(--surface-contained-bg);
+  background-color: var(--surface-contained-inset);
   /* Scroll shadow indicators — fade at overflowing edges */
   --_scroll-shadow-size: 24px;
-  --_scroll-shadow-color: var(--surface-contained-bg);
+  --_scroll-shadow-color: var(--surface-contained-inset);
   background-image:
     linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / var(--_scroll-shadow-size) 100% no-repeat local,
     linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / var(--_scroll-shadow-size) 100% no-repeat local,
@@ -370,7 +370,7 @@
   gap: var(--space-md);
   padding: 0 var(--space-md);
   border-bottom: 1px solid var(--surface-contained-border);
-  background: var(--surface-contained-bg);
+  background: var(--surface-contained-inset);
   flex-shrink: 0;
   min-height: var(--planning-workspace-header-height);
   overflow: hidden;
@@ -496,30 +496,20 @@
     letter-spacing: 0.09em;
   }
 
-  /* Tab strip — gray pill container */
+  /* Tab strip — underline style, unified with context bar and metric strip */
   .planning-workspace__tabs {
     background: var(--surface-contained-inset);
-    border-bottom: none;
+    border-bottom: 1px solid var(--surface-contained-border);
     min-height: unset;
-    padding: 8px 20px;
-    gap: 3px;
-    align-items: center;
+    padding: 0 20px;
+    gap: 0;
+    align-items: stretch;
     background-image: none;
-    --_scroll-shadow-color: var(--surface-contained-inset);
-    background-image:
-      linear-gradient(to right, var(--_scroll-shadow-color) 30%, transparent) left / 24px 100% no-repeat local,
-      linear-gradient(to left, var(--_scroll-shadow-color) 30%, transparent) right / 24px 100% no-repeat local,
-      linear-gradient(to right, rgba(0,0,0,0.05), transparent) left / 24px 100% no-repeat scroll,
-      linear-gradient(to left, rgba(0,0,0,0.05), transparent) right / 24px 100% no-repeat scroll;
   }
 
-  /* Tab items — pill proportions; override global a11y min-size (desktop only) */
+  /* Tab items — override global a11y min-size; use underline active indicator */
   .planning-workspace__tab {
-    border: none;
-    border-bottom: none;
-    border-radius: 9999px;
-    color: var(--color-text-muted);
-    padding: 7px 15px;
+    padding: 10px 16px;
     min-height: unset;
     min-width: unset;
     line-height: 1;
@@ -528,14 +518,6 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
-  }
-
-  /* Active tab — white pill with shadow */
-  .planning-workspace__tab--active {
-    background: var(--surface-contained-bg);
-    box-shadow: var(--shadow-sm);
-    color: var(--color-text);
   }
 
   /* Context bar */
