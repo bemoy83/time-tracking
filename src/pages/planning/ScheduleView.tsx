@@ -13,8 +13,6 @@ import { getFullEventSpan } from './schedule/schedule-date-ui';
 interface ScheduleViewProps {
   plan: Plan;
   onSave: (plan: Plan) => void;
-  onBack: () => void;
-  showBackButton?: boolean;
   readOnly: boolean;
   onScheduleContextChange?: (ctx: ScheduleEditContextValue | null) => void;
 }

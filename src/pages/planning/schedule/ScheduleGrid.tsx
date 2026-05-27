@@ -56,7 +56,6 @@ interface SingleScheduleGridProps {
   phaseDates: PhaseDateValues;
   eventStartDate?: string | null;
   eventEndDate?: string | null;
-  showFullSpan?: boolean;
   readOnly: boolean;
   onToggleAssignment: (lineItem: PlanLineItem, phase: BuildPhase, date: string, cellElement?: HTMLElement) => void;
   onClearRowSchedule?: (lineItem: PlanLineItem, phase: BuildPhase) => void;
@@ -182,7 +181,6 @@ function SingleScheduleGrid({
   phaseDates,
   eventStartDate,
   eventEndDate,
-  showFullSpan: _showFullSpan,
   readOnly,
   onToggleAssignment,
   onClearRowSchedule,
@@ -299,7 +297,6 @@ function SingleScheduleGrid({
           label="Work package"
           unscheduledCount={schedulableUnscheduledCount}
           readOnly={readOnly}
-          hasWorkDays={workDays.length > 0}
           onToggleWorkday={onToggleWorkday}
           todayIso={todayIso}
           onEditDay={onEditDay}
@@ -408,7 +405,6 @@ function SharedScheduleGrid({
   );
   const gridRef = useRef<HTMLDivElement>(null);
   const gridColumns = `minmax(280px, 1.6fr) repeat(${calendar.length}, minmax(144px, 1fr))`;
-  const workDays = useMemo(() => calendar.filter((d) => d.isWorkDay), [calendar]);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(new Set());
   const handleGridKeyboard = useScheduleGridKeyboardNavigation(calendar.length);
@@ -485,7 +481,6 @@ function SharedScheduleGrid({
           label="Shared crew pool"
           onAutoSchedule={onAutoSchedule}
           unscheduledCount={schedulableUnscheduledCount}
-          hasWorkDays={workDays.length > 0}
         />
       )}
       body={visibleRows.map((row, idx) => {

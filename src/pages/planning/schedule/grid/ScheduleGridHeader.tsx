@@ -11,7 +11,6 @@ interface ScheduleGridHeaderProps {
   onAutoSchedule?: () => void;
   unscheduledCount?: number;
   readOnly?: boolean;
-  hasWorkDays?: boolean;
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
   onEditDay?: (date: string, anchor: HTMLElement) => void;

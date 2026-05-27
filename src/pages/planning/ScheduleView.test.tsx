@@ -27,8 +27,6 @@ function renderSchedule(plan: Plan, desktop = false) {
     <ScheduleView
       plan={plan}
       onSave={onSave}
-      onBack={vi.fn()}
-      showBackButton={false}
       readOnly={false}
     />
   );
@@ -185,8 +183,6 @@ describe('ScheduleView', () => {
       <ScheduleView
         plan={plan}
         onSave={onSave}
-        onBack={vi.fn()}
-        showBackButton={false}
         readOnly={false}
       />,
     );

@@ -148,8 +148,6 @@ export function WorkspaceMainPane({
         <ScheduleView
           plan={plan}
           onSave={onSavePlan}
-          showBackButton={false}
-          onBack={() => onSetActiveTab('edit')}
           readOnly={isReviewed}
           onScheduleContextChange={onScheduleContextChange}
         />
