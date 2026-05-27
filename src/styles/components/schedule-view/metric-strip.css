@@ -134,41 +134,40 @@
   color: var(--state-success-fg);
 }
 
-.schedule-metric-strip__step--current {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
 .schedule-metric-strip__step-check {
   width: 12px;
   height: 12px;
   flex-shrink: 0;
 }
 
-.schedule-metric-strip__step-cta {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
+/* CTA step — rendered as an inline button */
+button.schedule-metric-strip__step--cta {
+  appearance: none;
+  background: none;
   border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--state-on-solid);
+  padding: 0;
+  font: inherit;
   font-size: var(--font-caption);
-  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, opacity 0.15s;
 }
 
-.schedule-metric-strip__step-cta:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+.schedule-metric-strip__step--cta {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
-.schedule-metric-strip__step-cta:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+button.schedule-metric-strip__step--cta:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.schedule-metric-strip__step-cta:focus-visible {
+button.schedule-metric-strip__step--cta:focus-visible {
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.schedule-metric-strip__step--cta-blocked {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

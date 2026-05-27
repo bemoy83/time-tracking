@@ -59,25 +59,44 @@ export function ScheduleMetricStrip({
       <div className="schedule-metric-strip__stepper" aria-label="Setup steps">
         {steps.map((step, i) => {
           const isCompleted = step.complete;
-          const isCurrent = step.isCta && !readOnly && (!step.complete || step.persistCta);
+          const isCta = step.isCta && !readOnly && (!step.complete || step.persistCta === true);
+          const label = step.activeLabel && isCta ? step.activeLabel : step.label;
+
+          const stepClass = [
+            'schedule-metric-strip__step',
+            isCompleted && !isCta ? 'schedule-metric-strip__step--done' : '',
+            isCta ? 'schedule-metric-strip__step--cta' : '',
+            isCta && step.disabled ? 'schedule-metric-strip__step--cta-blocked' : '',
+          ].filter(Boolean).join(' ');
+
+          const inner = (
+            <>
+              {isCompleted && (
+                <CheckIcon className="schedule-metric-strip__step-check" aria-hidden />
+              )}
+              {label}
+            </>
+          );
 
           return (
             <Fragment key={step.id}>
               {i > 0 && (
                 <span className="schedule-metric-strip__step-sep" aria-hidden>·</span>
               )}
-              <span
-                className={[
-                  'schedule-metric-strip__step',
-                  isCompleted ? 'schedule-metric-strip__step--done' : '',
-                  isCurrent ? 'schedule-metric-strip__step--current' : '',
-                ].filter(Boolean).join(' ')}
-              >
-                {isCompleted && (
-                  <CheckIcon className="schedule-metric-strip__step-check" aria-hidden />
-                )}
-                {step.activeLabel && isCurrent ? step.activeLabel : step.label}
-              </span>
+              {isCta ? (
+                <button
+                  type="button"
+                  className={stepClass}
+                  onClick={() => void step.onClick?.()}
+                  disabled={step.disabled === true}
+                  title={step.disabled && step.disabledReason ? step.disabledReason : label}
+                  aria-label={`${label}${step.disabled && step.disabledReason ? ` — ${step.disabledReason}` : ''}`}
+                >
+                  {inner}
+                </button>
+              ) : (
+                <span className={stepClass}>{inner}</span>
+              )}
             </Fragment>
           );
         })}
