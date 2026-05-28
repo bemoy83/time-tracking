@@ -27,6 +27,7 @@ import { WrapUpMainPane } from './WrapUpMainPane';
 import { SharedScheduleMainPane } from './SharedScheduleMainPane';
 import { WorkspaceMainPane } from './WorkspaceMainPane';
 import { WorkspacePaneFrame } from './WorkspacePaneFrame';
+import { SharedScheduleContext, type SharedScheduleContextValue } from './SharedScheduleContext';
 
 interface PlanningWorkspaceShellProps {
   // Data
@@ -90,6 +91,7 @@ export function PlanningWorkspaceShell({
 }: PlanningWorkspaceShellProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const [scheduleCtx, setScheduleCtx] = useState<ScheduleEditContextValue | null>(null);
+  const [sharedScheduleCtx, setSharedScheduleCtx] = useState<SharedScheduleContextValue | null>(null);
 
   const handleOpenPlanWorkspace = useCallback(() => {
     if (activePlan) {
@@ -139,6 +141,7 @@ export function PlanningWorkspaceShell({
   ) : null;
 
   return (
+    <SharedScheduleContext.Provider value={sharedScheduleCtx}>
     <ScheduleEditContext.Provider value={scheduleCtx}>
     <div className="planning-workspace">
       {/* Sidebar */}
@@ -188,6 +191,7 @@ export function PlanningWorkspaceShell({
               projects={projects}
               selectedPlanIds={selectedPlanIdsForSharedSchedule}
               onSavePlan={onSavePlan}
+              onSharedScheduleContextChange={setSharedScheduleCtx}
             />
           </SharedScheduleMainPane>
         ) : activePlan ? (
@@ -243,5 +247,6 @@ export function PlanningWorkspaceShell({
       </section>
     </div>
     </ScheduleEditContext.Provider>
+    </SharedScheduleContext.Provider>
   );
 }

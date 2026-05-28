@@ -44,6 +44,7 @@ import {
   saveCrewPoolOverride,
 } from './hooks/useCrewPoolStorage';
 import { useSharedSchedulePersistence } from './hooks/useSharedSchedulePersistence';
+import { type SharedScheduleContextValue } from './workspace/SharedScheduleContext';
 
 const AUTOSAVE_DELAY = 500;
 
@@ -52,6 +53,7 @@ interface SharedScheduleViewProps {
   projects: Project[];
   selectedPlanIds: Set<string>;
   onSavePlan: (plan: Plan) => void;
+  onSharedScheduleContextChange?: (ctx: SharedScheduleContextValue | null) => void;
 }
 
 interface SharedScheduleWorkspaceSectionsProps {
@@ -65,7 +67,6 @@ interface SharedScheduleWorkspaceSectionsProps {
   planDisplayNameByPlanId: Map<string, string>;
   projectAccentColorByPlanId: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
-  onDefaultCrewSizeChange: (value: string) => void;
   onUpdateCalendarDay: (date: string, updates: Partial<WorkCalendarDay>) => void;
   onAutoScheduleShared: () => void;
   onToggleWorkday: (date: string) => void;
@@ -107,6 +108,7 @@ export function SharedScheduleView({
   projects,
   selectedPlanIds,
   onSavePlan,
+  onSharedScheduleContextChange,
 }: SharedScheduleViewProps) {
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
@@ -310,7 +312,7 @@ export function SharedScheduleView({
     }
   }, [applyPlanMutation]);
 
-  const handleDefaultCrewSizeChange = (value: string) => {
+  const handleDefaultCrewSizeChange = useCallback((value: string) => {
     const newCrew = normalizeCrew(value);
     setCrewPoolDefaultCrewSize(newCrew);
     // Clear per-day crew overrides so all days inherit the new global default.
@@ -326,7 +328,16 @@ export function SharedScheduleView({
       );
     }
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
-  };
+  }, [crewPoolCalendar, selectedPlans, applyPlanMutation]);
+
+  useEffect(() => {
+    onSharedScheduleContextChange?.({
+      crewPoolDefaultCrewSize,
+      onDefaultCrewSizeChange: handleDefaultCrewSizeChange,
+    });
+    return () => onSharedScheduleContextChange?.(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [crewPoolDefaultCrewSize, handleDefaultCrewSizeChange]);
 
   const handleUpdateCalendarDay = (date: string, updates: Partial<WorkCalendarDay>) => {
     setCrewPoolCalendar((prev) => prev.map((day) => (
@@ -447,7 +458,6 @@ export function SharedScheduleView({
       planDisplayNameByPlanId={planDisplayNameByPlanId}
       projectAccentColorByPlanId={projectAccentColorByPlanId}
       itemByCompositeId={itemByCompositeId}
-      onDefaultCrewSizeChange={handleDefaultCrewSizeChange}
       onUpdateCalendarDay={handleUpdateCalendarDay}
       onAutoScheduleShared={handleAutoScheduleShared}
       onToggleWorkday={handleToggleWorkday}
@@ -471,7 +481,6 @@ function SharedScheduleWorkspaceSections({
   planDisplayNameByPlanId,
   projectAccentColorByPlanId,
   itemByCompositeId,
-  onDefaultCrewSizeChange,
   onUpdateCalendarDay,
   onAutoScheduleShared,
   onToggleWorkday,
@@ -507,25 +516,6 @@ function SharedScheduleWorkspaceSections({
               </p>
             </section>
           )}
-
-          <section className="schedule-view__block schedule-view__block--compact schedule-view__block--row">
-            <h3 className="schedule-view__block-title">Crew Pool</h3>
-            <fieldset className="planning-view__schedule-group">
-              <div className="planning-view__schedule-group-grid planning-view__schedule-group-grid--single">
-                <label className="planning-view__schedule-input">
-                  <span className="planning-view__schedule-label-text">Global default crew</span>
-                  <input
-                    className="input"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={crewPoolDefaultCrewSize}
-                    onChange={(event) => onDefaultCrewSizeChange(event.target.value)}
-                  />
-                </label>
-              </div>
-            </fieldset>
-          </section>
 
           <WorkCalendarEditor
             calendar={crewPoolCalendar}

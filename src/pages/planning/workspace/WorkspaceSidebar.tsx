@@ -6,6 +6,7 @@ import { usePlanIdsWithImportedExecutionReturns } from '../hooks/usePlanIdsWithI
 import { groupPlans } from '../planning-list-groups';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
 import { useScheduleEditContext } from './ScheduleEditContext';
+import { useSharedScheduleContext } from './SharedScheduleContext';
 import { SidebarScheduleInputs } from '../schedule/SidebarScheduleInputs';
 import { ThumbCalendar } from '../schedule/ThumbCalendar';
 import {
@@ -377,6 +378,7 @@ export function WorkspaceSidebar({
               <p className="workspace-sidebar__empty">No plans yet.</p>
             )}
           </div>
+          {showSharedScheduleSelector && <CrewPoolSidebarSection />}
         </>
       )}
 
@@ -433,6 +435,32 @@ function DrillInContent() {
         </div>
       )}
     </>
+  );
+}
+
+// ---- Crew pool (shared schedule) ----
+
+function CrewPoolSidebarSection() {
+  const ctx = useSharedScheduleContext();
+  if (!ctx) return null;
+
+  return (
+    <div className="workspace-sidebar__crew-pool">
+      <span className="workspace-sidebar__drill-section-label">Crew Pool</span>
+      <div className="workspace-sidebar__crew-pool-body">
+        <label className="workspace-sidebar__crew-pool-field">
+          <span className="workspace-sidebar__crew-pool-label">Default crew</span>
+          <input
+            type="number"
+            className="input input--sm"
+            min={0}
+            step={1}
+            value={ctx.crewPoolDefaultCrewSize}
+            onChange={(e) => ctx.onDefaultCrewSizeChange(e.target.value)}
+          />
+        </label>
+      </div>
+    </div>
   );
 }
 

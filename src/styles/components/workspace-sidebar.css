@@ -398,3 +398,26 @@
   letter-spacing: 0.06em;
   padding: 16px var(--space-md) 10px;
 }
+
+/* --- Crew pool section (shared schedule list mode) --- */
+
+.workspace-sidebar__crew-pool {
+  flex-shrink: 0;
+  border-top: 1px solid var(--surface-contained-border);
+}
+
+.workspace-sidebar__crew-pool-body {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.workspace-sidebar__crew-pool-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.workspace-sidebar__crew-pool-label {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
