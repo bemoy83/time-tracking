@@ -323,21 +323,30 @@ function SingleScheduleGrid({
                   Event ({totalItemCount})
                 </span>
                 {calendar.map((day) => {
-                  const zone = classifyDayZone(day.date, phaseDates, eventStartDate ?? null, eventEndDate ?? null);
-                  const rangeClass =
-                    zone === 'assembly' || zone === 'event' || zone === 'dismantle'
-                      ? ' schedule-grid__phase-spacer--in-range'
-                      : zone === 'moving-in' || zone === 'moving-out'
-                        ? ' schedule-grid__phase-spacer--in-extended'
-                        : '';
-                  const bgVar =
-                    zone === 'assembly' || zone === 'moving-in'
-                      ? 'var(--wp-phase-assembly-header-bg)'
-                      : zone === 'dismantle' || zone === 'moving-out'
-                        ? 'var(--wp-phase-dismantle-header-bg)'
-                        : zone === 'event'
-                          ? 'var(--wp-phase-event-header-bg)'
-                          : undefined;
+                  let rangeClass = '';
+                  let bgVar: string | undefined;
+                  if (isEventCollapsed) {
+                    const zone = classifyDayZone(day.date, phaseDates, eventStartDate ?? null, eventEndDate ?? null);
+                    rangeClass =
+                      zone === 'assembly' || zone === 'event' || zone === 'dismantle'
+                        ? ' schedule-grid__phase-spacer--in-range'
+                        : zone === 'moving-in' || zone === 'moving-out'
+                          ? ' schedule-grid__phase-spacer--in-extended'
+                          : '';
+                    bgVar =
+                      zone === 'assembly' || zone === 'moving-in'
+                        ? 'var(--wp-phase-assembly-header-bg)'
+                        : zone === 'dismantle' || zone === 'moving-out'
+                          ? 'var(--wp-phase-dismantle-header-bg)'
+                          : zone === 'event'
+                            ? 'var(--wp-phase-event-header-bg)'
+                            : undefined;
+                  } else {
+                    const inEvent = eventDateRange != null
+                      && day.date >= eventDateRange.start
+                      && day.date <= eventDateRange.end;
+                    if (inEvent) rangeClass = ' schedule-grid__phase-spacer--in-range';
+                  }
                   return (
                     <span
                       key={day.date}
