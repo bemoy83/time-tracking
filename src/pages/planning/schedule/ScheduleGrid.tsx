@@ -81,6 +81,8 @@ interface SharedScheduleGridProps {
   projectAccentColorByPlanId?: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
   onAutoSchedule?: () => void;
+  onToggleWorkday?: (date: string) => void;
+  onEditDay?: (date: string, anchor: HTMLElement) => void;
   onToggleAssignment: (
     planId: string,
     lineItemId: string,
@@ -419,6 +421,8 @@ function SharedScheduleGrid({
   projectAccentColorByPlanId,
   itemByCompositeId,
   onAutoSchedule,
+  onToggleWorkday,
+  onEditDay,
   onToggleAssignment,
   onPersonHoursForDateChange,
 }: SharedScheduleGridProps) {
@@ -503,6 +507,8 @@ function SharedScheduleGrid({
           gridColumns={gridColumns}
           label="Shared crew pool"
           onAutoSchedule={onAutoSchedule}
+          onToggleWorkday={onToggleWorkday}
+          onEditDay={onEditDay}
           unscheduledCount={schedulableUnscheduledCount}
         />
       )}

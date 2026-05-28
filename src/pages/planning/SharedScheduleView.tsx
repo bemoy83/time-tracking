@@ -36,6 +36,7 @@ import type { ScheduledLineItemRef, SharedScheduleRow } from '../../lib/planning
 import { FeasibilityBar } from './schedule/FeasibilityBar';
 import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
+import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
 import {
@@ -67,6 +68,10 @@ interface SharedScheduleWorkspaceSectionsProps {
   onDefaultCrewSizeChange: (value: string) => void;
   onUpdateCalendarDay: (date: string, updates: Partial<WorkCalendarDay>) => void;
   onAutoScheduleShared: () => void;
+  onToggleWorkday: (date: string) => void;
+  onEditDay: (date: string, anchor: HTMLElement) => void;
+  dayEdit: { date: string; anchor: HTMLElement } | null;
+  onCloseDayEdit: () => void;
   onToggleAssignment: (
     planId: string,
     lineItemId: string,
@@ -106,6 +111,7 @@ export function SharedScheduleView({
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
   const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
+  const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
   const { allocations: crewPoolAllocations, dailyDeployments: crewPoolDailyDeployments, defaultCrewSize: crewPoolSystemDefaultCrewSize, taskSwitchingFactor: crewPoolTaskSwitchingFactor } = useCrewPoolStore();
@@ -419,6 +425,16 @@ export function SharedScheduleView({
     });
   };
 
+  const handleToggleWorkday = useCallback((date: string) => {
+    const day = crewPoolCalendar.find((d) => d.date === date);
+    if (!day) return;
+    handleUpdateCalendarDay(date, { isWorkDay: !day.isWorkDay });
+  }, [crewPoolCalendar, handleUpdateCalendarDay]);
+
+  const handleEditDay = useCallback((date: string, anchor: HTMLElement) => {
+    setDayEdit((prev) => (prev?.date === date ? null : { date, anchor }));
+  }, []);
+
   return (
     <SharedScheduleWorkspaceSections
       selectedPlans={selectedPlans}
@@ -434,6 +450,10 @@ export function SharedScheduleView({
       onDefaultCrewSizeChange={handleDefaultCrewSizeChange}
       onUpdateCalendarDay={handleUpdateCalendarDay}
       onAutoScheduleShared={handleAutoScheduleShared}
+      onToggleWorkday={handleToggleWorkday}
+      onEditDay={handleEditDay}
+      dayEdit={dayEdit}
+      onCloseDayEdit={() => setDayEdit(null)}
       onToggleAssignment={handleToggleAssignment}
       onPersonHoursForDateChange={handlePersonHoursForDateChange}
     />
@@ -454,6 +474,10 @@ function SharedScheduleWorkspaceSections({
   onDefaultCrewSizeChange,
   onUpdateCalendarDay,
   onAutoScheduleShared,
+  onToggleWorkday,
+  onEditDay,
+  dayEdit,
+  onCloseDayEdit,
   onToggleAssignment,
   onPersonHoursForDateChange,
 }: SharedScheduleWorkspaceSectionsProps) {
@@ -517,9 +541,24 @@ function SharedScheduleWorkspaceSections({
             projectAccentColorByPlanId={projectAccentColorByPlanId}
             itemByCompositeId={itemByCompositeId}
             onAutoSchedule={onAutoScheduleShared}
+            onToggleWorkday={onToggleWorkday}
+            onEditDay={onEditDay}
             onToggleAssignment={onToggleAssignment}
             onPersonHoursForDateChange={onPersonHoursForDateChange}
           />
+          {dayEdit && (() => {
+            const editDay = crewPoolCalendar.find((d) => d.date === dayEdit.date);
+            if (!editDay) return null;
+            return (
+              <DayEditPopover
+                anchor={dayEdit.anchor}
+                day={editDay}
+                defaultCrewSize={crewPoolDefaultCrewSize}
+                onUpdate={onUpdateCalendarDay}
+                onClose={onCloseDayEdit}
+              />
+            );
+          })()}
         </>
       )}
     </div>
