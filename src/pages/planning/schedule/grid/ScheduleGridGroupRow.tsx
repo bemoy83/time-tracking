@@ -25,6 +25,9 @@ export function ScheduleGridGroupRow({
     ? { '--schedule-top-group-fg': topLevelAccentColor } as CSSProperties
     : undefined;
   const itemCount = itemCountOverride ?? ('itemCount' in row ? row.itemCount : undefined);
+  /** Top-level rollups duplicate phase rows when expanded; show only when collapsed. */
+  const isTopLevelRollupRow = headerVariant === 'event' || (row.type === 'project' && row.depth === 0);
+  const showDayAggregates = !isTopLevelRollupRow || isCollapsed;
   return (
     <div className={`schedule-grid__${row.type}-group`}>
       <button
@@ -56,7 +59,7 @@ export function ScheduleGridGroupRow({
               style={tint.style}
               aria-hidden="true"
             >
-              {aggregate && (aggregate.requiredHours + aggregate.shortfallHours > 0 || aggregate.assignedCapacityHours > 0) && (
+              {showDayAggregates && aggregate && (aggregate.requiredHours + aggregate.shortfallHours > 0 || aggregate.assignedCapacityHours > 0) && (
                 <>
                   <span className="schedule-grid__group-day-hours">
                     {(() => {

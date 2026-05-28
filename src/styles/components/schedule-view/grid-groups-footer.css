@@ -135,7 +135,7 @@
 }
 
 .schedule-grid__group-count {
-  color: var(--color-text-muted);
+  color: inherit;
   font-weight: 500;
   font-size: var(--font-caption);
 }
