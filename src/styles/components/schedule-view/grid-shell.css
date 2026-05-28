@@ -177,19 +177,6 @@
   color: inherit;
 }
 
-/* Event days are shown in full-span mode but are not interactive.
-   Amber tint from the event phase token signals that these are live event days. */
-.schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--event-day {
-  background: color-mix(in srgb, var(--phase-event-fg) 6%, var(--card-bg));
-  cursor: default;
-  /* Same opacity-avoidance rationale as --off above */
-  color: var(--color-text-muted);
-}
-
-.schedule-grid__header .schedule-grid__day-col.schedule-grid__day-col--event-day .schedule-grid__day-num {
-  color: inherit;
-}
-
 .schedule-grid__day-col--over {
   background: var(--state-danger-bg-soft);
 }

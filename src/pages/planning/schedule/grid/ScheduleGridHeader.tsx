@@ -126,7 +126,6 @@ export function ScheduleGridHeader({
               'schedule-grid__day-col',
               isWeekendDate(day.date) ? 'schedule-grid__day-col--weekend' : '',
               day.isWorkDay ? '' : 'schedule-grid__day-col--off',
-              isEventDay ? 'schedule-grid__day-col--event-day' : '',
               isOver ? 'schedule-grid__day-col--over' : '',
               cap?.isOverAssignedCrew ? 'schedule-grid__day-col--over-crew' : '',
               cap?.isOverWorkerCapacity ? 'schedule-grid__day-col--over-worker' : '',

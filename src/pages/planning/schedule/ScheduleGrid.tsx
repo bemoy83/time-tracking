@@ -549,6 +549,14 @@ function SharedScheduleGrid({
           ? collapsedProjects.has(row.id)
           : collapsedPhases.has(row.phaseRowId);
 
+        let phaseRange = null;
+        if (row.type === 'phase') {
+          const pd = phaseDatesByPlanId.get(row.planId);
+          if (pd && hasCompletePhaseDates(pd)) {
+            phaseRange = getPhaseRange(pd, row.phase);
+          }
+        }
+
         return (
           <ScheduleGridGroupRow
             key={row.id}
@@ -557,6 +565,7 @@ function SharedScheduleGrid({
             gridColumns={gridColumns}
             aggregateByDate={rowAggregatesByDate.get(row.id)}
             topLevelAccentColor={isProject ? projectAccentColorByPlanId?.get(row.planId) : undefined}
+            getGroupDayTint={phaseRange ? (day) => getPhaseGroupDayTint(day.date, phaseRange, null) : undefined}
             isCollapsed={isCollapsed}
             onToggle={() => {
               if (isProject) toggleProject(row.id);
