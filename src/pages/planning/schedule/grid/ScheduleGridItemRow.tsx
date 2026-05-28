@@ -101,7 +101,8 @@ export function ScheduleGridItemRow({
         role="row"
         aria-rowindex={rowIndex + 2}
       >
-        <div className={`schedule-grid__line-item${metaPrefix ? ' schedule-grid__line-item--shared' : ''}`} role="rowheader">
+        <div className="schedule-grid__sticky-cell">
+          <div className={`schedule-grid__line-item${metaPrefix ? ' schedule-grid__line-item--shared' : ''}`} role="rowheader">
           <span className="schedule-grid__line-item-heading">
             <span className="schedule-grid__line-item-heading-main">
               <span className="schedule-grid__line-item-title">{item.title}</span>
@@ -162,6 +163,7 @@ export function ScheduleGridItemRow({
               <span>{estimateHours.toFixed(1)}h</span>
             )}
           </span>
+          </div>
         </div>
         {calendar.map((day, colIdx) => {
           const isAssigned = assigned.has(day.date);

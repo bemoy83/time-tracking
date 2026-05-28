@@ -27,10 +27,6 @@
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
   background: var(--color-surface-subtle);
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 

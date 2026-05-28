@@ -78,8 +78,26 @@
   z-index: 3;
 }
 
-.schedule-grid__line-item-col,
-.schedule-grid__line-item {
+/* Sticky wrapper that masks scrolling content behind rounded left-column cells.
+   Rectangular (no border-radius) so its solid background blocks content bleed-through
+   at the corners of the inner element's border-radius. */
+.schedule-grid__sticky-cell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-surface-subtle);
+  min-width: 0;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-grid__sticky-cell > .schedule-grid__line-item,
+.schedule-grid__sticky-cell > .schedule-grid__phase-label {
+  flex: 1;
+}
+
+.schedule-grid__line-item-col {
   position: sticky;
   left: 0;
   z-index: 2;
@@ -102,7 +120,7 @@
   gap: var(--space-2xs);
   border-radius: var(--radius-md) 0 0 var(--radius-md);
   border-bottom: none;
-  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 .schedule-grid__line-item-col {

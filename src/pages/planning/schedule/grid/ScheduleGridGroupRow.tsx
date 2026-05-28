@@ -19,15 +19,17 @@ export function ScheduleGridGroupRow({
         onClick={onToggle}
         aria-expanded={!isCollapsed}
       >
-        <span className={`schedule-grid__phase-label schedule-grid__phase-label--depth-${row.depth}`}>
-          <ChevronIcon
-            className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
-          />
-          {row.label}
-          {'itemCount' in row && (
-            <span className="schedule-grid__group-count">({row.itemCount})</span>
-          )}
-          {row.readOnly && <span className="schedule-grid__readonly-badge">Read-only</span>}
+        <span className="schedule-grid__sticky-cell">
+          <span className={`schedule-grid__phase-label schedule-grid__phase-label--depth-${row.depth}`}>
+            <ChevronIcon
+              className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
+            />
+            {row.label}
+            {'itemCount' in row && (
+              <span className="schedule-grid__group-count">({row.itemCount})</span>
+            )}
+            {row.readOnly && <span className="schedule-grid__readonly-badge">Read-only</span>}
+          </span>
         </span>
         {calendar.map((day) => {
           const aggregate = aggregateByDate?.get(day.date);

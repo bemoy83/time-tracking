@@ -574,6 +574,7 @@
   /* Grid sticky-header background */
   .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__line-item-col,
   .planning-workspace__editor-canvas .schedule-grid__header .schedule-grid__day-col,
+  .planning-workspace__editor-canvas .schedule-grid__sticky-cell,
   .planning-workspace__editor-canvas .schedule-grid__line-item-col,
   .planning-workspace__editor-canvas .schedule-grid__line-item,
   .planning-workspace__editor-canvas .schedule-grid__phase-label,

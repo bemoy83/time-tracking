@@ -316,11 +316,13 @@ function SingleScheduleGrid({
                 onClick={toggleEvent}
                 aria-expanded={!isEventCollapsed}
               >
-                <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-0">
-                  <ChevronIcon
-                    className={`schedule-grid__phase-chevron${!isEventCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
-                  />
-                  Event ({totalItemCount})
+                <span className="schedule-grid__sticky-cell">
+                  <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-0">
+                    <ChevronIcon
+                      className={`schedule-grid__phase-chevron${!isEventCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
+                    />
+                    Event ({totalItemCount})
+                  </span>
                 </span>
                 {calendar.map((day) => {
                   let rangeClass = '';
@@ -375,11 +377,13 @@ function SingleScheduleGrid({
                       onClick={() => togglePhase(group.phase)}
                       aria-expanded={!isCollapsed}
                     >
-                      <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-1">
-                        <ChevronIcon
-                          className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
-                        />
-                        {group.label} ({group.rows.length})
+                      <span className="schedule-grid__sticky-cell">
+                        <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-1">
+                          <ChevronIcon
+                            className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
+                          />
+                          {group.label} ({group.rows.length})
+                        </span>
                       </span>
                       {calendar.map((day) => {
                         const inCommercial = groupPhaseRange != null
