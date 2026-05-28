@@ -2,7 +2,7 @@ import type { BuildPhase } from '../../types';
 import { isPlanArchived } from '../plan-lifecycle';
 import type { Plan } from '../plan-model';
 import { getPhaseFields } from '../plan-model';
-import { toggleAssignmentDate } from './assignment';
+import { resolveDefaultPersonHoursForAssignment, toggleAssignmentDate } from './assignment';
 import { applyScheduleAmendment } from './amendments';
 import { resolveRequiredPersonHoursForPhase } from './auto-schedule';
 import { dayAccessHours } from './work-calendar';
@@ -26,9 +26,10 @@ export function toggleSharedAssignment(
   const requiredPH = resolveRequiredPersonHoursForPhase(lineItem, phase) ?? 0;
   const scheduledPH = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
   const preferredDayPH = accessHours * Math.max(pf.crew, 1);
-  const defaultPersonHours = Math.max(
-    Math.min(Math.max(requiredPH - scheduledPH, 0) || preferredDayPH, preferredDayPH),
-    0.01,
+  const defaultPersonHours = resolveDefaultPersonHoursForAssignment(
+    requiredPH,
+    scheduledPH,
+    preferredDayPH,
   );
   const result = toggleAssignmentDate({ personHoursByDate: pf.personHoursByDate }, date, defaultPersonHours);
 

@@ -18,6 +18,25 @@ export function getAssignedDates(
 }
 
 /**
+ * Person-hours to place when the user assigns a new day.
+ * Uses remaining row effort when meaningful; otherwise a full preferred day
+ * (e.g. row already at 100% or only floating-point dust is left).
+ */
+export function resolveDefaultPersonHoursForAssignment(
+  requiredPH: number,
+  alreadyScheduledPH: number,
+  preferredDayPH: number,
+): number {
+  const remainingPH = Math.max(requiredPH - alreadyScheduledPH, 0);
+  const minMeaningfulRemainder = Math.min(Math.max(preferredDayPH * 0.05, 0), 1);
+  const fillPH =
+    remainingPH < minMeaningfulRemainder
+      ? preferredDayPH
+      : Math.min(remainingPH, preferredDayPH);
+  return Math.max(fillPH, 0.01);
+}
+
+/**
  * Toggle day assignment with sparse personHoursByDate support.
  * Gaps are allowed within the span — toggling a middle day removes its effort
  * instead of clearing the entire span.
@@ -31,7 +50,9 @@ export function toggleAssignmentDate(
   if ((nextPersonHoursByDate[date] ?? 0) > 0) {
     delete nextPersonHoursByDate[date];
   } else {
-    nextPersonHoursByDate[date] = Number(Math.max(defaultPersonHours, 0.01).toFixed(2));
+    nextPersonHoursByDate[date] = Number(
+      Math.max(defaultPersonHours, 0.01).toFixed(2),
+    );
   }
 
   const normalized = Object.keys(nextPersonHoursByDate).length > 0

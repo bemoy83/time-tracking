@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getAssignedDates, toggleAssignmentDate } from './assignment';
+import {
+  getAssignedDates,
+  resolveDefaultPersonHoursForAssignment,
+  toggleAssignmentDate,
+} from './assignment';
 
 describe('toggleAssignmentDate', () => {
   it('adds first scheduled day when unscheduled', () => {
@@ -30,6 +34,22 @@ describe('toggleAssignmentDate', () => {
     );
     expect(result.span).toEqual({ scheduledStart: '2026-03-02', scheduledEnd: '2026-03-04' });
     expect(result.personHoursByDate).toEqual({ '2026-03-02': 4, '2026-03-04': 4 });
+  });
+});
+
+describe('resolveDefaultPersonHoursForAssignment', () => {
+  it('uses a full preferred day when the row is already at target', () => {
+    expect(resolveDefaultPersonHoursForAssignment(80, 80, 8)).toBe(8);
+  });
+
+  it('uses a full preferred day for dust remainders at 100%', () => {
+    expect(resolveDefaultPersonHoursForAssignment(80, 79.99, 8)).toBe(8);
+    expect(resolveDefaultPersonHoursForAssignment(80, 79.99, 8)).not.toBe(0.01);
+  });
+
+  it('caps to remaining effort when a meaningful amount is left', () => {
+    expect(resolveDefaultPersonHoursForAssignment(80, 72, 8)).toBe(8);
+    expect(resolveDefaultPersonHoursForAssignment(80, 77, 8)).toBe(3);
   });
 });
 

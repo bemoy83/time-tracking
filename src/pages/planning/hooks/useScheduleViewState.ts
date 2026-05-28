@@ -19,7 +19,11 @@ import { useScheduleAssistantState } from './useScheduleAssistantState';
 import { useScheduleSequenceTagIds } from './useScheduleSequenceTagIds';
 import { computeCapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { generateConflictSuggestions } from '../../../lib/planning/scheduling/conflict-resolution';
-import { toggleAssignmentDate, getAssignedDates } from '../../../lib/planning/scheduling/assignment';
+import {
+  getAssignedDates,
+  resolveDefaultPersonHoursForAssignment,
+  toggleAssignmentDate,
+} from '../../../lib/planning/scheduling/assignment';
 import {
   applyBulkScheduleAmendment,
   applyScheduleAmendment,
@@ -286,8 +290,11 @@ export function useScheduleViewState({
       const requiredPH = resolveRequiredPersonHoursForPhase(currentLineItem, phase) ?? 0;
       const alreadyScheduledPH = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
       const preferredDayPH = accessHours * Math.max(pf.crew, 1);
-      const remainingPH = Math.max(requiredPH - alreadyScheduledPH, 0);
-      const defaultPersonHours = Math.max(Math.min(remainingPH || preferredDayPH, preferredDayPH), 0.01);
+      const defaultPersonHours = resolveDefaultPersonHoursForAssignment(
+        requiredPH,
+        alreadyScheduledPH,
+        preferredDayPH,
+      );
       const result = toggleAssignmentDate({ personHoursByDate: pf.personHoursByDate }, date, defaultPersonHours);
       if (prev.status === 'active') {
         return applyScheduleAmendment(

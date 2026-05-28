@@ -16,6 +16,24 @@ function makePlanWithItem(status: Plan['status']): { plan: Plan; itemId: string 
 }
 
 describe('shared-schedule-mutations', () => {
+  it('assigns a full day when toggling onto a row already at 100%', () => {
+    const { plan, itemId } = makePlanWithItem('draft');
+    const scheduled = toggleSharedAssignment(plan, itemId, 'assembly', '2026-03-02');
+    const item = scheduled.lineItems.find((lineItem) => lineItem.id === itemId)!;
+    const pf = getPhaseFields(item, 'assembly');
+    const totalPH = Object.values(pf.personHoursByDate ?? {}).reduce((sum, value) => sum + value, 0);
+    expect(totalPH).toBeGreaterThan(0);
+
+    const updated = toggleSharedAssignment(scheduled, itemId, 'assembly', '2026-03-03');
+    const nextPf = getPhaseFields(
+      updated.lineItems.find((lineItem) => lineItem.id === itemId)!,
+      'assembly',
+    );
+
+    expect(nextPf.personHoursByDate?.['2026-03-03']).toBe(8);
+    expect(nextPf.personHoursByDate?.['2026-03-03']).toBeGreaterThan(1);
+  });
+
   it('toggles assignment for editable plans', () => {
     const { plan, itemId } = makePlanWithItem('draft');
 
