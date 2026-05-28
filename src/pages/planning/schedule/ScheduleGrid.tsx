@@ -29,7 +29,11 @@ import {
   useScheduleGridKeyboardNavigation,
 } from './grid/ScheduleGridShell';
 import { getEventGroupDayTint, getPhaseGroupDayTint } from './grid/schedule-grid-group-day-tint';
-import { getAssignedDatesWithinPhase } from './grid/schedule-grid-metrics';
+
+export interface ScheduleGridEventDates {
+  eventStartDate: string | null;
+  eventEndDate: string | null;
+}
 
 interface PhaseGroup {
   phase: BuildPhase;
@@ -77,6 +81,7 @@ interface SharedScheduleGridProps {
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
+  eventDatesByPlanId: Map<string, ScheduleGridEventDates>;
   planDisplayNameByPlanId: Map<string, string>;
   projectAccentColorByPlanId?: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
@@ -417,6 +422,7 @@ function SharedScheduleGrid({
   calendar,
   capacity,
   phaseDatesByPlanId,
+  eventDatesByPlanId,
   planDisplayNameByPlanId,
   projectAccentColorByPlanId,
   itemByCompositeId,
@@ -517,9 +523,20 @@ function SharedScheduleGrid({
           const item = itemByCompositeId.get(mapKey(row.planId, row.lineItemId));
           if (!item) return null;
           const rowPhaseDates = phaseDatesByPlanId.get(row.planId);
+          const rowEventDates = eventDatesByPlanId.get(row.planId);
           const hasPhaseWindows = rowPhaseDates ? hasCompletePhaseDates(rowPhaseDates) : false;
-          const assignedDates = getAssignedDatesWithinPhase(item, row.phase, rowPhaseDates);
-          const phaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
+          const assignedDates = getAssignedDates(getPhaseFields(item, row.phase));
+          const commercialPhaseRange = hasPhaseWindows ? getPhaseRange(rowPhaseDates, row.phase) : null;
+          const phaseRange = hasPhaseWindows
+            ? (
+                getExtendedPhaseRange(
+                  rowPhaseDates,
+                  row.phase,
+                  rowEventDates?.eventStartDate ?? null,
+                  rowEventDates?.eventEndDate ?? null,
+                ) ?? commercialPhaseRange
+              )
+            : null;
           const metaPrefix = planDisplayNameByPlanId.get(row.planId) ?? row.planId;
 
           return (
@@ -534,7 +551,7 @@ function SharedScheduleGrid({
               dayByDate={dayByDate}
               gridColumns={gridColumns}
               phaseRange={phaseRange}
-              commercialPhaseRange={phaseRange}
+              commercialPhaseRange={commercialPhaseRange}
               hasPhaseWindows={hasPhaseWindows}
               readOnly={row.readOnly}
               metaPrefix={metaPrefix}
@@ -556,12 +573,26 @@ function SharedScheduleGrid({
           : collapsedPhases.has(row.phaseRowId);
 
         let phaseRange = null;
+        let phaseExtendedRange = null;
         if (row.type === 'phase') {
           const pd = phaseDatesByPlanId.get(row.planId);
+          const eventDates = eventDatesByPlanId.get(row.planId);
           if (pd && hasCompletePhaseDates(pd)) {
             phaseRange = getPhaseRange(pd, row.phase);
+            phaseExtendedRange = getExtendedPhaseRange(
+              pd,
+              row.phase,
+              eventDates?.eventStartDate ?? null,
+              eventDates?.eventEndDate ?? null,
+            );
           }
         }
+
+        const projectPhaseDates = isProject ? phaseDatesByPlanId.get(row.planId) : undefined;
+        const projectEventDates = isProject ? eventDatesByPlanId.get(row.planId) : undefined;
+        const projectEventDateRange = projectEventDates?.eventStartDate && projectEventDates.eventEndDate
+          ? { start: projectEventDates.eventStartDate, end: projectEventDates.eventEndDate }
+          : null;
 
         return (
           <ScheduleGridGroupRow
@@ -571,7 +602,19 @@ function SharedScheduleGrid({
             gridColumns={gridColumns}
             aggregateByDate={rowAggregatesByDate.get(row.id)}
             topLevelAccentColor={isProject ? projectAccentColorByPlanId?.get(row.planId) : undefined}
-            getGroupDayTint={phaseRange ? (day) => getPhaseGroupDayTint(day.date, phaseRange, null) : undefined}
+            getGroupDayTint={
+              isProject && projectPhaseDates
+                ? (day) => getEventGroupDayTint(day.date, {
+                    isEventCollapsed: isCollapsed,
+                    phaseDates: projectPhaseDates,
+                    eventStartDate: projectEventDates?.eventStartDate ?? null,
+                    eventEndDate: projectEventDates?.eventEndDate ?? null,
+                    eventDateRange: projectEventDateRange,
+                  })
+                : phaseRange
+                  ? (day) => getPhaseGroupDayTint(day.date, phaseRange, phaseExtendedRange)
+                  : undefined
+            }
             isCollapsed={isCollapsed}
             onToggle={() => {
               if (isProject) toggleProject(row.id);

@@ -21,8 +21,10 @@ import {
   toggleSharedAssignment,
 } from '../../lib/planning/scheduling/shared-schedule-mutations';
 import {
+  addExtendedZoneDayToPlan,
   syncPlanWorkCalendarFromCrewPool,
   syncCrewPoolCalendarToPlan,
+  updatePlanCalendarDay,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
   applyBulkScheduleAmendment,
@@ -31,10 +33,17 @@ import {
 import { runSharedAutoSchedule } from '../../lib/planning/scheduling/shared-auto-schedule';
 import type { ScheduledLineItemRef, SharedScheduleRow } from '../../lib/planning/scheduling/shared-schedule-types';
 import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
-import { ScheduleGrid } from './schedule/ScheduleGrid';
+import { ScheduleGrid, type ScheduleGridEventDates } from './schedule/ScheduleGrid';
 import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { buildSharedCapacityMetrics } from './workspace/workspace-metrics';
-import { getFullEventSpan, readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
+import {
+  getFullEventSpan,
+  getWorkCalendarPhaseSpans,
+  isDateWithinAnySpan,
+  isDateWithinSpan,
+  readPhaseDateValues,
+  type PhaseDateValues,
+} from './schedule/schedule-date-ui';
 import { generateFullSpanVirtualDays } from '../../lib/planning/scheduling/work-calendar';
 import {
   loadCrewPoolOverride,
@@ -63,6 +72,7 @@ interface SharedScheduleWorkspaceSectionsProps {
   onToggleFullSpan?: () => void;
   rows: SharedScheduleRow[];
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
+  eventDatesByPlanId: Map<string, ScheduleGridEventDates>;
   planDisplayNameByPlanId: Map<string, string>;
   projectAccentColorByPlanId: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
@@ -96,6 +106,56 @@ function normalizeCrew(value: string): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
   return Math.max(0, Math.floor(parsed));
+}
+
+export function buildSharedCrewPoolWorkDay(date: string): WorkCalendarDay {
+  return {
+    date,
+    isWorkDay: true,
+    accessStart: '08:00',
+    accessEnd: '16:00',
+    crewSize: null,
+    efficiency: null,
+  };
+}
+
+function sortCalendarDays(days: WorkCalendarDay[]): WorkCalendarDay[] {
+  return [...days].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function updateSharedCrewPoolCalendarDay(
+  calendar: WorkCalendarDay[],
+  date: string,
+  updates: Partial<WorkCalendarDay>,
+): WorkCalendarDay[] {
+  const existing = calendar.find((day) => day.date === date);
+  if (existing) {
+    return calendar.map((day) => (
+      day.date === date ? { ...day, ...updates } : day
+    ));
+  }
+  return sortCalendarDays([...calendar, { ...buildSharedCrewPoolWorkDay(date), ...updates, date }]);
+}
+
+export function syncSharedCrewPoolDayToPlan(
+  plan: Plan,
+  date: string,
+  updates: Partial<WorkCalendarDay>,
+): Plan {
+  const fullSpan = getFullEventSpan(plan, plan.eventStartDate, plan.eventEndDate);
+  if (!isDateWithinSpan(date, fullSpan)) return plan;
+
+  const phaseSpans = getWorkCalendarPhaseSpans(readPhaseDateValues(plan));
+  if (isDateWithinAnySpan(date, phaseSpans)) {
+    return syncPlanWorkCalendarFromCrewPool(plan, date, updates);
+  }
+
+  const existing = plan.workCalendar.find((day) => day.date === date);
+  if (existing) {
+    return updatePlanCalendarDay(plan, date, updates);
+  }
+  if (updates.isWorkDay === false) return plan;
+  return addExtendedZoneDayToPlan(plan, date);
 }
 
 export function SharedScheduleView({
@@ -278,6 +338,17 @@ export function SharedScheduleView({
     return map;
   }, [selectedPlans]);
 
+  const eventDatesByPlanId = useMemo(() => {
+    const map = new Map<string, ScheduleGridEventDates>();
+    for (const plan of selectedPlans) {
+      map.set(plan.id, {
+        eventStartDate: plan.eventStartDate,
+        eventEndDate: plan.eventEndDate,
+      });
+    }
+    return map;
+  }, [selectedPlans]);
+
   const sharedFullEventSpan = useMemo(() => {
     let minStart: string | null = null;
     let maxEnd: string | null = null;
@@ -354,13 +425,12 @@ export function SharedScheduleView({
   }, [crewPoolDefaultCrewSize, handleDefaultCrewSizeChange]);
 
   const handleUpdateCalendarDay = (date: string, updates: Partial<WorkCalendarDay>) => {
-    setCrewPoolCalendar((prev) => prev.map((day) => (
-      day.date === date ? { ...day, ...updates } : day
-    )));
+    setCrewPoolCalendar((prev) => updateSharedCrewPoolCalendarDay(prev, date, updates));
+
     // Propagate to each plan so assignment/crew mutations persist (they use plan.workCalendar)
     for (const plan of selectedPlans) {
       if (isPlanArchived(plan)) continue;
-      applyPlanMutation(plan.id, (currentPlan) => syncPlanWorkCalendarFromCrewPool(currentPlan, date, updates));
+      applyPlanMutation(plan.id, (currentPlan) => syncSharedCrewPoolDayToPlan(currentPlan, date, updates));
     }
     trackTelemetryEvent('shared_schedule_crew_pool_edit');
   };
@@ -447,10 +517,10 @@ export function SharedScheduleView({
   };
 
   const handleToggleWorkday = useCallback((date: string) => {
-    const day = crewPoolCalendar.find((d) => d.date === date);
+    const day = displayCalendar.find((d) => d.date === date);
     if (!day) return;
     handleUpdateCalendarDay(date, { isWorkDay: !day.isWorkDay });
-  }, [crewPoolCalendar, handleUpdateCalendarDay]);
+  }, [displayCalendar, handleUpdateCalendarDay]);
 
   const handleEditDay = useCallback((date: string, anchor: HTMLElement) => {
     setDayEdit((prev) => (prev?.date === date ? null : { date, anchor }));
@@ -467,6 +537,7 @@ export function SharedScheduleView({
       onToggleFullSpan={sharedFullEventSpan != null ? handleToggleFullSpan : undefined}
       rows={rows}
       phaseDatesByPlanId={phaseDatesByPlanId}
+      eventDatesByPlanId={eventDatesByPlanId}
       planDisplayNameByPlanId={planDisplayNameByPlanId}
       projectAccentColorByPlanId={projectAccentColorByPlanId}
       itemByCompositeId={itemByCompositeId}
@@ -492,6 +563,7 @@ function SharedScheduleWorkspaceSections({
   onToggleFullSpan,
   rows,
   phaseDatesByPlanId,
+  eventDatesByPlanId,
   planDisplayNameByPlanId,
   projectAccentColorByPlanId,
   itemByCompositeId,
@@ -526,6 +598,7 @@ function SharedScheduleWorkspaceSections({
               calendar={displayCalendar}
               capacity={capacity}
               phaseDatesByPlanId={phaseDatesByPlanId}
+              eventDatesByPlanId={eventDatesByPlanId}
               planDisplayNameByPlanId={planDisplayNameByPlanId}
               projectAccentColorByPlanId={projectAccentColorByPlanId}
               itemByCompositeId={itemByCompositeId}
