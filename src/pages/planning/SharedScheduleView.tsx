@@ -37,7 +37,6 @@ import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { buildSharedCapacityMetrics } from './workspace/workspace-metrics';
-import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
 import {
   loadCrewPoolOverride,
@@ -516,13 +515,6 @@ function SharedScheduleWorkspaceSections({
               </p>
             </section>
           )}
-
-          <WorkCalendarEditor
-            calendar={crewPoolCalendar}
-            readOnly={false}
-            onUpdateDay={onUpdateCalendarDay}
-            planDefaultCrewSize={crewPoolDefaultCrewSize}
-          />
 
           <div className="schedule-view__grid-stack">
             <ScheduleGrid
