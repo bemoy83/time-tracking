@@ -400,6 +400,52 @@ export function getSharedScheduleMetrics(
   ];
 }
 
+export function buildSharedCapacityMetrics(capacity: CapacitySummary): SidebarMetricDescriptor[] {
+  const headroom = capacity.headroomPersonHours;
+  const headroomStr = `${headroom >= 0 ? '+' : ''}${formatHoursMetricValue(headroom)}h`;
+
+  const metrics: SidebarMetricDescriptor[] = [
+    {
+      value: `${formatHoursMetricValue(capacity.totalRequiredPersonHours)}h`,
+      label: 'Required',
+      icon: <ClockIcon />,
+      iconVariant: 'time',
+    },
+    {
+      value: `${formatHoursMetricValue(capacity.totalEffectiveAvailablePersonHours)}h`,
+      label: 'Usable',
+      icon: <PeopleIcon />,
+      iconVariant: 'people',
+    },
+    {
+      value: headroomStr,
+      label: 'Headroom',
+      variant: headroom < 0 ? 'risk' : 'default',
+      icon: headroom < 0 ? <WarningIcon /> : <CheckIcon />,
+      iconVariant: headroom < 0 ? 'blocked' : 'done',
+    },
+  ];
+
+  if (capacity.overAllocatedDayCount > 0) {
+    metrics.push({
+      value: capacity.overAllocatedDayCount,
+      label: 'Overloaded days',
+      variant: 'risk',
+      icon: <WarningIcon />,
+      iconVariant: 'blocked',
+    });
+  } else if (capacity.overStaffedWarningDayCount > 0) {
+    metrics.push({
+      value: capacity.overStaffedWarningDayCount,
+      label: 'Overstaffed days',
+      icon: <WarningIcon />,
+      iconVariant: 'blocked',
+    });
+  }
+
+  return metrics;
+}
+
 export function getInsightsViewMetrics(kpis: WorkTypeKpi[]): SidebarMetricDescriptor[] {
   const highConfidence = kpis.filter((k) => k.confidence === 'high').length;
   return [

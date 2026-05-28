@@ -33,10 +33,10 @@ import {
   type SharedAutoScheduleReport,
 } from '../../lib/planning/scheduling/shared-auto-schedule';
 import type { ScheduledLineItemRef, SharedScheduleRow } from '../../lib/planning/scheduling/shared-schedule-types';
-import { FeasibilityBar } from './schedule/FeasibilityBar';
-import { ConflictResolutionBanner } from './schedule/ConflictResolutionBanner';
+import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { DayEditPopover } from './schedule/grid/DayEditPopover';
+import { buildSharedCapacityMetrics } from './workspace/workspace-metrics';
 import { WorkCalendarEditor } from './schedule/WorkCalendarEditor';
 import { readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
 import {
@@ -489,8 +489,11 @@ function SharedScheduleWorkspaceSections({
         </section>
       ) : (
         <>
-          <FeasibilityBar capacity={capacity} />
-          <ConflictResolutionBanner capacity={capacity} />
+          <ScheduleMetricStrip
+            metrics={buildSharedCapacityMetrics(capacity)}
+            steps={[]}
+            onOpenAssistant={onAutoScheduleShared}
+          />
           {assistantReport && (
             <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
               <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
@@ -531,21 +534,23 @@ function SharedScheduleWorkspaceSections({
             planDefaultCrewSize={crewPoolDefaultCrewSize}
           />
 
-          <ScheduleGrid
-            mode="shared"
-            rows={rows}
-            calendar={crewPoolCalendar}
-            capacity={capacity}
-            phaseDatesByPlanId={phaseDatesByPlanId}
-            planDisplayNameByPlanId={planDisplayNameByPlanId}
-            projectAccentColorByPlanId={projectAccentColorByPlanId}
-            itemByCompositeId={itemByCompositeId}
-            onAutoSchedule={onAutoScheduleShared}
-            onToggleWorkday={onToggleWorkday}
-            onEditDay={onEditDay}
-            onToggleAssignment={onToggleAssignment}
-            onPersonHoursForDateChange={onPersonHoursForDateChange}
-          />
+          <div className="schedule-view__grid-stack">
+            <ScheduleGrid
+              mode="shared"
+              rows={rows}
+              calendar={crewPoolCalendar}
+              capacity={capacity}
+              phaseDatesByPlanId={phaseDatesByPlanId}
+              planDisplayNameByPlanId={planDisplayNameByPlanId}
+              projectAccentColorByPlanId={projectAccentColorByPlanId}
+              itemByCompositeId={itemByCompositeId}
+              onAutoSchedule={onAutoScheduleShared}
+              onToggleWorkday={onToggleWorkday}
+              onEditDay={onEditDay}
+              onToggleAssignment={onToggleAssignment}
+              onPersonHoursForDateChange={onPersonHoursForDateChange}
+            />
+          </div>
           {dayEdit && (() => {
             const editDay = crewPoolCalendar.find((d) => d.date === dayEdit.date);
             if (!editDay) return null;
