@@ -181,6 +181,7 @@ export function PlanningWorkspaceShell({
           <SharedScheduleMainPane
             activeTab={activeTab}
             sidebarTabContext={sidebarTabContext}
+            selectedPlanCount={selectedPlanIdsForSharedSchedule.size}
           >
             <SharedScheduleView
               plans={plans}
