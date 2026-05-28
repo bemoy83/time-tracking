@@ -16,6 +16,7 @@ import type {
 } from '../../../lib/planning/scheduling/shared-schedule-types';
 import {
   type PhaseDateValues,
+  classifyDayZone,
   getExtendedPhaseRange,
   getPhaseRange,
   hasCompletePhaseDates,
@@ -322,13 +323,26 @@ function SingleScheduleGrid({
                   Event ({totalItemCount})
                 </span>
                 {calendar.map((day) => {
-                  const inEvent = eventDateRange != null
-                    && day.date >= eventDateRange.start
-                    && day.date <= eventDateRange.end;
+                  const zone = classifyDayZone(day.date, phaseDates, eventStartDate ?? null, eventEndDate ?? null);
+                  const rangeClass =
+                    zone === 'assembly' || zone === 'event' || zone === 'dismantle'
+                      ? ' schedule-grid__phase-spacer--in-range'
+                      : zone === 'moving-in' || zone === 'moving-out'
+                        ? ' schedule-grid__phase-spacer--in-extended'
+                        : '';
+                  const bgVar =
+                    zone === 'assembly' || zone === 'moving-in'
+                      ? 'var(--wp-phase-assembly-header-bg)'
+                      : zone === 'dismantle' || zone === 'moving-out'
+                        ? 'var(--wp-phase-dismantle-header-bg)'
+                        : zone === 'event'
+                          ? 'var(--wp-phase-event-header-bg)'
+                          : undefined;
                   return (
                     <span
                       key={day.date}
-                      className={`schedule-grid__phase-spacer${inEvent ? ' schedule-grid__phase-spacer--in-range' : ''}`}
+                      className={`schedule-grid__phase-spacer${rangeClass}`}
+                      style={bgVar ? { '--phase-header-spacer-bg': bgVar } as React.CSSProperties : undefined}
                       aria-hidden="true"
                     />
                   );
