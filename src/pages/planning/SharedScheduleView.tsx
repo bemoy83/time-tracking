@@ -34,7 +34,8 @@ import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { DayEditPopover } from './schedule/grid/DayEditPopover';
 import { buildSharedCapacityMetrics } from './workspace/workspace-metrics';
-import { readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
+import { getFullEventSpan, readPhaseDateValues, type PhaseDateValues } from './schedule/schedule-date-ui';
+import { generateFullSpanVirtualDays } from '../../lib/planning/scheduling/work-calendar';
 import {
   loadCrewPoolOverride,
   saveCrewPoolOverride,
@@ -56,7 +57,10 @@ interface SharedScheduleWorkspaceSectionsProps {
   selectedPlans: Plan[];
   capacity: CapacitySummary;
   crewPoolCalendar: WorkCalendarDay[];
+  displayCalendar: WorkCalendarDay[];
   crewPoolDefaultCrewSize: number;
+  showFullSpan: boolean;
+  onToggleFullSpan?: () => void;
   rows: SharedScheduleRow[];
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
   planDisplayNameByPlanId: Map<string, string>;
@@ -103,6 +107,7 @@ export function SharedScheduleView({
 }: SharedScheduleViewProps) {
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
+  const [showFullSpan, setShowFullSpan] = useState(false);
   const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
@@ -273,6 +278,25 @@ export function SharedScheduleView({
     return map;
   }, [selectedPlans]);
 
+  const sharedFullEventSpan = useMemo(() => {
+    let minStart: string | null = null;
+    let maxEnd: string | null = null;
+    for (const plan of selectedPlans) {
+      const span = getFullEventSpan(plan, plan.eventStartDate, plan.eventEndDate);
+      if (span == null) continue;
+      if (minStart == null || span.start < minStart) minStart = span.start;
+      if (maxEnd == null || span.end > maxEnd) maxEnd = span.end;
+    }
+    return minStart != null && maxEnd != null ? { start: minStart, end: maxEnd } : null;
+  }, [selectedPlans]);
+
+  const displayCalendar = useMemo(() => {
+    if (!showFullSpan || sharedFullEventSpan == null) return crewPoolCalendar;
+    return generateFullSpanVirtualDays(sharedFullEventSpan, crewPoolCalendar, crewPoolDefaultCrewSize);
+  }, [showFullSpan, sharedFullEventSpan, crewPoolCalendar, crewPoolDefaultCrewSize]);
+
+  const handleToggleFullSpan = useCallback(() => setShowFullSpan((prev) => !prev), []);
+
   const capacity = useMemo(() => computeSharedCapacitySummary({
     calendar: crewPoolCalendar,
     defaultCrewSize: crewPoolDefaultCrewSize,
@@ -437,7 +461,10 @@ export function SharedScheduleView({
       selectedPlans={selectedPlans}
       capacity={capacity}
       crewPoolCalendar={crewPoolCalendar}
+      displayCalendar={displayCalendar}
       crewPoolDefaultCrewSize={crewPoolDefaultCrewSize}
+      showFullSpan={showFullSpan}
+      onToggleFullSpan={sharedFullEventSpan != null ? handleToggleFullSpan : undefined}
       rows={rows}
       phaseDatesByPlanId={phaseDatesByPlanId}
       planDisplayNameByPlanId={planDisplayNameByPlanId}
@@ -459,7 +486,10 @@ function SharedScheduleWorkspaceSections({
   selectedPlans,
   capacity,
   crewPoolCalendar,
+  displayCalendar,
   crewPoolDefaultCrewSize,
+  showFullSpan,
+  onToggleFullSpan,
   rows,
   phaseDatesByPlanId,
   planDisplayNameByPlanId,
@@ -486,12 +516,14 @@ function SharedScheduleWorkspaceSections({
             metrics={buildSharedCapacityMetrics(capacity)}
             steps={[]}
             onOpenAssistant={onAutoScheduleShared}
+            showFullSpan={showFullSpan}
+            onToggleFullSpan={onToggleFullSpan}
           />
           <div className="schedule-view__grid-stack">
             <ScheduleGrid
               mode="shared"
               rows={rows}
-              calendar={crewPoolCalendar}
+              calendar={displayCalendar}
               capacity={capacity}
               phaseDatesByPlanId={phaseDatesByPlanId}
               planDisplayNameByPlanId={planDisplayNameByPlanId}
