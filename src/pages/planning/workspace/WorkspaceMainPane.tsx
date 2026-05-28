@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { getPlanDisplayName, type Plan } from '../../../lib/planning/plan-model';
-import { getProjectDisplayColor, type Project, type Task, type TimeEntry, type WorkType } from '../../../lib/types';
+import { getProjectDisplayColor, isProjectColorUnassigned, type Project, type Task, type TimeEntry, type WorkType } from '../../../lib/types';
 import type { WorkTypeKpi } from '../../../lib/kpi';
 import { isPlanArchived, isPlanWrapUpEligible } from '../../../lib/planning/plan-lifecycle';
 import type { WorkspaceTab } from '../hooks/usePlanningWorkspaceState';
@@ -55,6 +55,9 @@ export function WorkspaceMainPane({
     : null;
   const planDisplayName = getPlanDisplayName(plan, selectedProject);
   const projectAccentColor = selectedProject ? getProjectDisplayColor(selectedProject.color) : null;
+  const scheduleTopLevelAccentColor = selectedProject && !isProjectColorUnassigned(selectedProject.color)
+    ? selectedProject.color
+    : null;
 
   const isReviewed = isPlanArchived(plan);
   const wrapUpEligible = isPlanWrapUpEligible(plan, tasks, planIdsWithImportedExecutionReturns.has(plan.id));
@@ -150,6 +153,7 @@ export function WorkspaceMainPane({
           onSave={onSavePlan}
           readOnly={isReviewed}
           onScheduleContextChange={onScheduleContextChange}
+          topLevelAccentColor={scheduleTopLevelAccentColor}
         />
       )}
       {effectiveActiveTab === 'review' && (

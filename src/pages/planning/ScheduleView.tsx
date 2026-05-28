@@ -15,6 +15,7 @@ interface ScheduleViewProps {
   onSave: (plan: Plan) => void;
   readOnly: boolean;
   onScheduleContextChange?: (ctx: ScheduleEditContextValue | null) => void;
+  topLevelAccentColor?: string | null;
 }
 
 export function ScheduleView({
@@ -22,6 +23,7 @@ export function ScheduleView({
   onSave,
   readOnly,
   onScheduleContextChange,
+  topLevelAccentColor,
 }: ScheduleViewProps) {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
@@ -87,6 +89,7 @@ export function ScheduleView({
 
       <div ref={scheduleGridRef} className="schedule-view__grid-stack">
         <ScheduleGrid
+          planId={currentPlan.id}
           lineItems={currentPlan.lineItems}
           calendar={displayCalendar}
           capacity={capacity}
@@ -102,6 +105,7 @@ export function ScheduleView({
           onToggleWorkday={readOnly ? undefined : handleToggleWorkday}
           onEditDay={readOnly ? undefined : handleEditDay}
           todayIso={todayIso}
+          topLevelAccentColor={topLevelAccentColor}
 
         />
       </div>

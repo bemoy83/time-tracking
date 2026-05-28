@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronIcon } from '../../../components/icons';
-import type { PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import type { Plan, PlanLineItem, WorkCalendarDay } from '../../../lib/planning/plan-model';
+import { createPlan } from '../../../lib/planning/plan-model';
 import { getPhaseFields, isPhaseActive } from '../../../lib/planning/plan-model';
 import type { CapacitySummary } from '../../../lib/planning/scheduling/capacity';
 import { getAssignedDates } from '../../../lib/planning/scheduling/assignment';
+import { buildSharedRows } from '../../../lib/planning/scheduling/schedule-hierarchy';
 import { computeSharedRowAggregates } from '../../../lib/planning/scheduling/shared-row-aggregates';
 import { resolveRequiredPersonHoursForPhase } from '../../../lib/planning/scheduling/auto-schedule';
 import {
@@ -16,7 +17,6 @@ import type {
 } from '../../../lib/planning/scheduling/shared-schedule-types';
 import {
   type PhaseDateValues,
-  classifyDayZone,
   getExtendedPhaseRange,
   getPhaseRange,
   hasCompletePhaseDates,
@@ -28,6 +28,7 @@ import {
   ScheduleGridShell,
   useScheduleGridKeyboardNavigation,
 } from './grid/ScheduleGridShell';
+import { getEventGroupDayTint, getPhaseGroupDayTint } from './grid/schedule-grid-group-day-tint';
 import { getAssignedDatesWithinPhase } from './grid/schedule-grid-metrics';
 
 interface PhaseGroup {
@@ -51,6 +52,7 @@ function groupByPhase(lineItems: PlanLineItem[]): PhaseGroup[] {
 
 interface SingleScheduleGridProps {
   mode?: 'single';
+  planId: string;
   lineItems: PlanLineItem[];
   calendar: WorkCalendarDay[];
   capacity: CapacitySummary;
@@ -66,6 +68,7 @@ interface SingleScheduleGridProps {
   onToggleWorkday?: (date: string) => void;
   todayIso?: string;
   onEditDay?: (date: string, anchor: HTMLElement) => void;
+  topLevelAccentColor?: string | null;
 }
 
 interface SharedScheduleGridProps {
@@ -75,6 +78,7 @@ interface SharedScheduleGridProps {
   capacity: CapacitySummary;
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
   planDisplayNameByPlanId: Map<string, string>;
+  projectAccentColorByPlanId?: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
   onAutoSchedule?: () => void;
   onToggleAssignment: (
@@ -176,6 +180,7 @@ export function getSharedSchedulableUnscheduledCount(
 }
 
 function SingleScheduleGrid({
+  planId,
   lineItems,
   calendar,
   capacity,
@@ -191,6 +196,7 @@ function SingleScheduleGrid({
   onToggleWorkday,
   todayIso,
   onEditDay,
+  topLevelAccentColor,
 }: SingleScheduleGridProps) {
   const dayByDate = useMemo(
     () => new Map(capacity.days.map((day) => [day.date, day])),
@@ -208,6 +214,40 @@ function SingleScheduleGrid({
     [eventStartDate, eventEndDate],
   );
   const totalItemCount = phaseGroups.reduce((acc, g) => acc + g.rows.length, 0);
+  const aggregatePlan = useMemo((): Plan => {
+    const plan = createPlan('Event');
+    plan.id = planId;
+    plan.lineItems = lineItems;
+    if (readOnly) {
+      plan.status = 'reviewed';
+      plan.reviewedAt = plan.updatedAt;
+    }
+    return plan;
+  }, [planId, lineItems, readOnly]);
+  const aggregateRows = useMemo(() => buildSharedRows([aggregatePlan]), [aggregatePlan]);
+  const itemByCompositeId = useMemo(
+    () => new Map(lineItems.map((item) => [mapKey(planId, item.id), item])),
+    [planId, lineItems],
+  );
+  const phaseDatesByPlanId = useMemo(
+    () => new Map([[planId, phaseDates]]),
+    [planId, phaseDates],
+  );
+  const aggregateDayByDate = useMemo(
+    () => new Map(capacity.days.map((day) => [day.date, { isWorkDay: day.isWorkDay, accessHours: day.accessHours }])),
+    [capacity.days],
+  );
+  const rowAggregatesByDate = useMemo(
+    () => computeSharedRowAggregates({
+      rows: aggregateRows,
+      calendar,
+      itemByCompositeId,
+      phaseDatesByPlanId,
+      dayByDate: aggregateDayByDate,
+    }),
+    [aggregateRows, calendar, itemByCompositeId, phaseDatesByPlanId, aggregateDayByDate],
+  );
+  const projectRowId = `project:${planId}`;
   const [isEventCollapsed, setIsEventCollapsed] = useState(false);
   const [collapsedPhases, setCollapsedPhases] = useState<Set<BuildPhase>>(new Set());
   const unresolvedKeys = unresolvedIssueKeys ?? new Set<string>();
@@ -309,99 +349,54 @@ function SingleScheduleGrid({
           let globalRowIdx = 0;
           return (
             <div className="schedule-grid__phase-group">
-              {/* ── Event header (depth 0) ──────────────────────────────── */}
-              <button
-                type="button"
-                className="schedule-grid__phase-header schedule-grid__phase-header--event"
-                onClick={toggleEvent}
-                aria-expanded={!isEventCollapsed}
-              >
-                <span className="schedule-grid__sticky-cell">
-                  <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-0">
-                    <ChevronIcon
-                      className={`schedule-grid__phase-chevron${!isEventCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
-                    />
-                    Event ({totalItemCount})
-                  </span>
-                </span>
-                {calendar.map((day) => {
-                  let rangeClass = '';
-                  let bgVar: string | undefined;
-                  if (isEventCollapsed) {
-                    const zone = classifyDayZone(day.date, phaseDates, eventStartDate ?? null, eventEndDate ?? null);
-                    rangeClass =
-                      zone === 'assembly' || zone === 'event' || zone === 'dismantle'
-                        ? ' schedule-grid__phase-spacer--in-range'
-                        : zone === 'moving-in' || zone === 'moving-out'
-                          ? ' schedule-grid__phase-spacer--in-extended'
-                          : '';
-                    bgVar =
-                      zone === 'assembly' || zone === 'moving-in'
-                        ? 'var(--wp-phase-assembly-header-bg)'
-                        : zone === 'dismantle' || zone === 'moving-out'
-                          ? 'var(--wp-phase-dismantle-header-bg)'
-                          : zone === 'event'
-                            ? 'var(--wp-phase-event-header-bg)'
-                            : undefined;
-                  } else {
-                    const inEvent = eventDateRange != null
-                      && day.date >= eventDateRange.start
-                      && day.date <= eventDateRange.end;
-                    if (inEvent) rangeClass = ' schedule-grid__phase-spacer--in-range';
-                  }
-                  return (
-                    <span
-                      key={day.date}
-                      className={`schedule-grid__phase-spacer${rangeClass}`}
-                      style={bgVar ? { '--phase-header-spacer-bg': bgVar } as React.CSSProperties : undefined}
-                      aria-hidden="true"
-                    />
-                  );
-                })}
-              </button>
+              {(() => {
+                const eventRow = aggregateRows.find((row) => row.id === projectRowId && row.type === 'project');
+                if (!eventRow) return null;
+                return (
+                  <ScheduleGridGroupRow
+                    row={eventRow}
+                    calendar={calendar}
+                    gridColumns={gridColumns}
+                    aggregateByDate={rowAggregatesByDate.get(projectRowId)}
+                    topLevelAccentColor={topLevelAccentColor}
+                    headerVariant="event"
+                    itemCountOverride={totalItemCount}
+                    getGroupDayTint={(day) => getEventGroupDayTint(day.date, {
+                      isEventCollapsed,
+                      phaseDates,
+                      eventStartDate,
+                      eventEndDate,
+                      eventDateRange,
+                    })}
+                    isCollapsed={isEventCollapsed}
+                    onToggle={toggleEvent}
+                  />
+                );
+              })()}
 
               {/* ── Phase rows (depth 1) — only when event not collapsed ── */}
               {!isEventCollapsed && phaseGroups.map((group) => {
                 const isCollapsed = collapsedPhases.has(group.phase);
                 const startIdx = globalRowIdx;
                 globalRowIdx += group.rows.length;
+                const phaseRowId = `phase:${planId}:${group.phase}`;
+                const phaseRow = aggregateRows.find((row) => row.id === phaseRowId && row.type === 'phase');
+                if (!phaseRow || phaseRow.type !== 'phase') return null;
                 const groupPhaseRange = hasPhaseWindows ? getPhaseRange(phaseDates, group.phase) : null;
                 const groupExtendedRange = hasPhaseWindows
                   ? getExtendedPhaseRange(phaseDates, group.phase, eventStartDate ?? null, eventEndDate ?? null)
                   : null;
                 return (
                   <div key={group.phase} className="schedule-grid__phase-group">
-                    <button
-                      type="button"
-                      className={`schedule-grid__phase-header schedule-grid__phase-header--${group.phase}`}
-                      onClick={() => togglePhase(group.phase)}
-                      aria-expanded={!isCollapsed}
-                    >
-                      <span className="schedule-grid__sticky-cell">
-                        <span className="schedule-grid__phase-label schedule-grid__phase-label--depth-1">
-                          <ChevronIcon
-                            className={`schedule-grid__phase-chevron${!isCollapsed ? ' schedule-grid__phase-chevron--expanded' : ''}`}
-                          />
-                          {group.label} ({group.rows.length})
-                        </span>
-                      </span>
-                      {calendar.map((day) => {
-                        const inCommercial = groupPhaseRange != null
-                          && day.date >= groupPhaseRange.start
-                          && day.date <= groupPhaseRange.end;
-                        const inExtended = !inCommercial
-                          && groupExtendedRange != null
-                          && day.date >= groupExtendedRange.start
-                          && day.date <= groupExtendedRange.end;
-                        return (
-                          <span
-                            key={day.date}
-                            className={`schedule-grid__phase-spacer${inCommercial ? ' schedule-grid__phase-spacer--in-range' : ''}${inExtended ? ' schedule-grid__phase-spacer--in-extended' : ''}`}
-                            aria-hidden="true"
-                          />
-                        );
-                      })}
-                    </button>
+                    <ScheduleGridGroupRow
+                      row={phaseRow}
+                      calendar={calendar}
+                      gridColumns={gridColumns}
+                      aggregateByDate={rowAggregatesByDate.get(phaseRowId)}
+                      getGroupDayTint={(day) => getPhaseGroupDayTint(day.date, groupPhaseRange, groupExtendedRange)}
+                      isCollapsed={isCollapsed}
+                      onToggle={() => togglePhase(group.phase)}
+                    />
                     {!isCollapsed && group.rows.map(({ item, phase }, i) =>
                       renderRow(item, phase, startIdx + i),
                     )}
@@ -421,6 +416,7 @@ function SharedScheduleGrid({
   capacity,
   phaseDatesByPlanId,
   planDisplayNameByPlanId,
+  projectAccentColorByPlanId,
   itemByCompositeId,
   onAutoSchedule,
   onToggleAssignment,
@@ -560,6 +556,7 @@ function SharedScheduleGrid({
             calendar={calendar}
             gridColumns={gridColumns}
             aggregateByDate={rowAggregatesByDate.get(row.id)}
+            topLevelAccentColor={isProject ? projectAccentColorByPlanId?.get(row.planId) : undefined}
             isCollapsed={isCollapsed}
             onToggle={() => {
               if (isProject) toggleProject(row.id);

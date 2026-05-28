@@ -597,6 +597,15 @@
     color: var(--phase-event-fg);
   }
 
+  .planning-workspace__editor-canvas .schedule-grid__phase-header--top-level {
+    --schedule-top-group-label-bg: color-mix(in srgb, var(--schedule-top-group-fg, var(--phase-event-fg)) 9%, var(--surface-contained-bg));
+  }
+
+  .planning-workspace__editor-canvas .schedule-grid__phase-header--top-level .schedule-grid__phase-label {
+    background: var(--schedule-top-group-label-bg);
+    color: var(--schedule-top-group-fg, var(--phase-event-fg));
+  }
+
   .planning-workspace__editor-canvas .schedule-grid__day-col {
     padding: var(--space-sm) 10px;
   }

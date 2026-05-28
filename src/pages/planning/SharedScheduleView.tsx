@@ -3,7 +3,7 @@ import { useTagSequenceStore } from '../../lib/stores/tag-sequence-store';
 import { useTagStore } from '../../lib/stores/tag-store';
 import { useCrewPoolStore } from '../../lib/stores/crew-pool-store';
 import { useWorkTypeStore } from '../../lib/stores/work-type-store';
-import type { BuildPhase, Project } from '../../lib/types';
+import { isProjectColorUnassigned, type BuildPhase, type Project } from '../../lib/types';
 import { getPlanDisplayName, type Plan, type PlanLineItem, type WorkCalendarDay } from '../../lib/planning/plan-model';
 import { isPlanArchived, isPlanInPlannerState } from '../../lib/planning/plan-lifecycle';
 import { trackTelemetryEvent } from '../../lib/telemetry/telemetry';
@@ -62,6 +62,7 @@ interface SharedScheduleWorkspaceSectionsProps {
   rows: SharedScheduleRow[];
   phaseDatesByPlanId: Map<string, PhaseDateValues>;
   planDisplayNameByPlanId: Map<string, string>;
+  projectAccentColorByPlanId: Map<string, string>;
   itemByCompositeId: Map<string, PlanLineItem>;
   onDefaultCrewSizeChange: (value: string) => void;
   onUpdateCalendarDay: (date: string, updates: Partial<WorkCalendarDay>) => void;
@@ -226,6 +227,17 @@ export function SharedScheduleView({
       );
     }
     return names;
+  }, [projects, selectedPlans]);
+
+  const projectAccentColorByPlanId = useMemo(() => {
+    const projectById = new Map(projects.map((project) => [project.id, project]));
+    const colors = new Map<string, string>();
+    for (const plan of selectedPlans) {
+      const project = plan.projectId ? projectById.get(plan.projectId) ?? null : null;
+      if (!project || isProjectColorUnassigned(project.color)) continue;
+      colors.set(plan.id, project.color);
+    }
+    return colors;
   }, [projects, selectedPlans]);
 
   const lineItemRefs = useMemo(() => {
@@ -417,6 +429,7 @@ export function SharedScheduleView({
       rows={rows}
       phaseDatesByPlanId={phaseDatesByPlanId}
       planDisplayNameByPlanId={planDisplayNameByPlanId}
+      projectAccentColorByPlanId={projectAccentColorByPlanId}
       itemByCompositeId={itemByCompositeId}
       onDefaultCrewSizeChange={handleDefaultCrewSizeChange}
       onUpdateCalendarDay={handleUpdateCalendarDay}
@@ -436,6 +449,7 @@ function SharedScheduleWorkspaceSections({
   rows,
   phaseDatesByPlanId,
   planDisplayNameByPlanId,
+  projectAccentColorByPlanId,
   itemByCompositeId,
   onDefaultCrewSizeChange,
   onUpdateCalendarDay,
@@ -500,6 +514,7 @@ function SharedScheduleWorkspaceSections({
             capacity={capacity}
             phaseDatesByPlanId={phaseDatesByPlanId}
             planDisplayNameByPlanId={planDisplayNameByPlanId}
+            projectAccentColorByPlanId={projectAccentColorByPlanId}
             itemByCompositeId={itemByCompositeId}
             onAutoSchedule={onAutoScheduleShared}
             onToggleAssignment={onToggleAssignment}

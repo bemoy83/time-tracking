@@ -76,19 +76,55 @@
   color: var(--phase-event-fg);
 }
 
+.schedule-grid__phase-header--top-level {
+  --schedule-top-group-fg: var(--phase-event-fg);
+  --schedule-top-group-label-bg: color-mix(in srgb, var(--schedule-top-group-fg) 9%, var(--color-surface-subtle));
+  --schedule-top-group-band-bg: color-mix(in srgb, var(--schedule-top-group-fg) 10%, transparent);
+  --phase-header-spacer-bg: var(--schedule-top-group-band-bg);
+}
+
+.schedule-grid__phase-header--top-level .schedule-grid__phase-label {
+  background: var(--schedule-top-group-label-bg);
+  color: var(--schedule-top-group-fg);
+}
+
+.schedule-grid__phase-header--top-level .schedule-grid__phase-label:hover {
+  color: var(--schedule-top-group-fg);
+}
+
+/* Full-span band for shared project rows only — event header tints per-day via getEventGroupDayTint. */
+.schedule-grid__phase-header--top-level:not(.schedule-grid__phase-header--event) .schedule-grid__group-day:not(.schedule-grid__phase-spacer--in-range):not(.schedule-grid__phase-spacer--in-extended) {
+  background: var(--schedule-top-group-band-bg);
+}
+
 /* Phase spacer band — each phase modifier sets its own background via a custom property.
    Adding a new phase only requires one new rule below; the spacer itself is generic. */
 .schedule-grid__phase-header--assembly  { --phase-header-spacer-bg: var(--wp-phase-assembly-header-bg); }
 .schedule-grid__phase-header--dismantle { --phase-header-spacer-bg: var(--wp-phase-dismantle-header-bg); }
-.schedule-grid__phase-header--event     { --phase-header-spacer-bg: var(--wp-phase-event-header-bg); }
 
-.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-range {
+.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-range,
+.schedule-grid__group-day.schedule-grid__phase-spacer--in-range {
   background: var(--phase-header-spacer-bg, transparent);
 }
 
 /* Extended zone (Moving In / Moving Out) — same phase tint but rendered as a
    diagonal stripe so the planner can distinguish extended territory at a glance. */
-.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-extended {
+.schedule-grid__phase-spacer.schedule-grid__phase-spacer--in-extended,
+.schedule-grid__group-day.schedule-grid__phase-spacer--in-extended {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--phase-header-spacer-bg, rgba(0, 0, 0, 0.06)) 0,
+    var(--phase-header-spacer-bg, rgba(0, 0, 0, 0.06)) 3px,
+    transparent 3px,
+    transparent 9px
+  );
+}
+
+.schedule-grid__phase-header--top-level .schedule-grid__group-day.schedule-grid__phase-spacer--in-range {
+  background: var(--phase-header-spacer-bg, var(--schedule-top-group-band-bg, var(--wp-phase-event-header-bg)));
+}
+
+.schedule-grid__phase-header--top-level .schedule-grid__group-day.schedule-grid__phase-spacer--in-extended {
   background: repeating-linear-gradient(
     135deg,
     var(--phase-header-spacer-bg, rgba(0, 0, 0, 0.06)) 0,
