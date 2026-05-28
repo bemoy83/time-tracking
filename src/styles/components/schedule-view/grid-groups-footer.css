@@ -92,11 +92,6 @@
   color: var(--schedule-top-group-fg);
 }
 
-/* Full-span band for shared project rows only — event header tints per-day via getEventGroupDayTint. */
-.schedule-grid__phase-header--top-level:not(.schedule-grid__phase-header--event) .schedule-grid__group-day:not(.schedule-grid__phase-spacer--in-range):not(.schedule-grid__phase-spacer--in-extended) {
-  background: var(--schedule-top-group-band-bg);
-}
-
 /* Phase spacer band — each phase modifier sets its own background via a custom property.
    Adding a new phase only requires one new rule below; the spacer itself is generic. */
 .schedule-grid__phase-header--assembly  { --phase-header-spacer-bg: var(--wp-phase-assembly-header-bg); }

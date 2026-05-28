@@ -28,10 +28,7 @@ import {
   applyBulkScheduleAmendment,
   type BulkScheduleAmendmentChange,
 } from '../../lib/planning/scheduling/amendments';
-import {
-  runSharedAutoSchedule,
-  type SharedAutoScheduleReport,
-} from '../../lib/planning/scheduling/shared-auto-schedule';
+import { runSharedAutoSchedule } from '../../lib/planning/scheduling/shared-auto-schedule';
 import type { ScheduledLineItemRef, SharedScheduleRow } from '../../lib/planning/scheduling/shared-schedule-types';
 import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
@@ -58,7 +55,6 @@ interface SharedScheduleViewProps {
 interface SharedScheduleWorkspaceSectionsProps {
   selectedPlans: Plan[];
   capacity: CapacitySummary;
-  assistantReport: SharedAutoScheduleReport | null;
   crewPoolCalendar: WorkCalendarDay[];
   crewPoolDefaultCrewSize: number;
   rows: SharedScheduleRow[];
@@ -92,10 +88,6 @@ function mapKey(planId: string, lineItemId: string): string {
   return `${planId}:${lineItemId}`;
 }
 
-function toPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
 function normalizeCrew(value: string): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -111,7 +103,6 @@ export function SharedScheduleView({
 }: SharedScheduleViewProps) {
   const [crewPoolCalendar, setCrewPoolCalendar] = useState<WorkCalendarDay[]>([]);
   const [crewPoolDefaultCrewSize, setCrewPoolDefaultCrewSize] = useState<number>(0);
-  const [assistantReport, setAssistantReport] = useState<SharedAutoScheduleReport | null>(null);
   const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
   const { tags } = useTagStore();
   const { tagIds: storedSequenceTagIds } = useTagSequenceStore();
@@ -370,10 +361,7 @@ export function SharedScheduleView({
       workTypes: workTypesById,
     });
 
-    if (report.changed.length === 0) {
-      setAssistantReport(report);
-      return;
-    }
+    if (report.changed.length === 0) return;
 
     // Check if any active plans were changed — require one global amendment note
     const changedPlanIds = new Set(report.changed.map((row) => row.planId));
@@ -422,7 +410,6 @@ export function SharedScheduleView({
       }
     }
 
-    setAssistantReport(report);
     trackTelemetryEvent('shared_schedule_assignment_edit');
     trackTelemetryEvent('shared_schedule_assistant_run', {
       changed_count: report.changed.length,
@@ -449,7 +436,6 @@ export function SharedScheduleView({
     <SharedScheduleWorkspaceSections
       selectedPlans={selectedPlans}
       capacity={capacity}
-      assistantReport={assistantReport}
       crewPoolCalendar={crewPoolCalendar}
       crewPoolDefaultCrewSize={crewPoolDefaultCrewSize}
       rows={rows}
@@ -472,7 +458,6 @@ export function SharedScheduleView({
 function SharedScheduleWorkspaceSections({
   selectedPlans,
   capacity,
-  assistantReport,
   crewPoolCalendar,
   crewPoolDefaultCrewSize,
   rows,
@@ -502,20 +487,6 @@ function SharedScheduleWorkspaceSections({
             steps={[]}
             onOpenAssistant={onAutoScheduleShared}
           />
-          {assistantReport && (
-            <section className="schedule-view__block schedule-view__block--compact" aria-live="polite">
-              <h3 className="schedule-view__block-title">Assistant Run Summary</h3>
-              <p className="schedule-view__muted">
-                {assistantReport.changed.length} updated across {new Set(assistantReport.changed.map((r) => r.planId)).size} plan{new Set(assistantReport.changed.map((r) => r.planId)).size === 1 ? '' : 's'} · {assistantReport.unresolved.length} unresolved
-              </p>
-              <p className="schedule-view__muted">
-                Coverage {toPercent(assistantReport.before.coverageRatio)} → {toPercent(assistantReport.after.coverageRatio)}
-                {' · '}
-                Over-capacity days {assistantReport.before.overCapacityDays} → {assistantReport.after.overCapacityDays}
-              </p>
-            </section>
-          )}
-
           <div className="schedule-view__grid-stack">
             <ScheduleGrid
               mode="shared"

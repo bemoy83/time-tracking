@@ -1,2 +1,4 @@
 {
+  "livePreview.openPreviewTarget": "EmbeddedPreview",
+  "portsPicker.defaultPortAction": "openPreview"
 }
