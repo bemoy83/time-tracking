@@ -666,16 +666,18 @@ function PlanRow({
       : plan.status === 'active'
         ? 'ready'
         : 'draft';
+  const showSinglePlanSelection = isSelected && !showSharedScheduleSelector;
+  const showSharedScheduleSelection = showSharedScheduleSelector && isSharedScheduleSelected;
 
   const rowClass = [
     'plan-row',
     projectAccentColor ? 'plan-row--has-project' : '',
-    isSelected ? 'plan-row--selected' : '',
+    showSinglePlanSelection ? 'plan-row--selected' : '',
     plan.status === 'draft' ? 'plan-row--draft' : '',
     archived ? 'plan-row--completed' : '',
     plan.handedOffAt != null && !archived ? 'plan-row--inprogress' : '',
     showSharedScheduleSelector ? 'plan-row--shared-schedule' : '',
-    isSharedScheduleSelected ? 'plan-row--shared-selected' : '',
+    showSharedScheduleSelection ? 'plan-row--shared-selected' : '',
     showSharedScheduleSelector && !isSharedScheduleSelectable ? 'plan-row--shared-disabled' : '',
   ]
     .filter(Boolean)
@@ -715,7 +717,7 @@ function PlanRow({
             }
             onSelect(plan);
           }}
-          aria-current={isSelected ? 'page' : undefined}
+          aria-current={showSinglePlanSelection ? 'page' : undefined}
           aria-pressed={showSharedScheduleSelector ? isSharedScheduleSelected : undefined}
         >
           <StatusDot variant={statusVariant} />

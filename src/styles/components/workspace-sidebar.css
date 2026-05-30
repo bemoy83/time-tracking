@@ -286,8 +286,11 @@
 /* --- Plan list --- */
 
 .plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
   list-style: none;
-  padding: 0;
+  padding: 0 var(--space-sm);
   margin: 0;
 }
 
