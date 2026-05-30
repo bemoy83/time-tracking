@@ -25,10 +25,31 @@ function formatRange(start: string | null, end: string | null): string {
   return `${formatShortDate(start)} – ${formatShortDate(end)}`;
 }
 
+function shiftDate(date: string, delta: number): string {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return d.toLocaleDateString('en-CA');
+}
+
+// Derived span: the gap between two contiguous phase boundaries.
+// Returns null if either anchor is missing or dates are contiguous (no gap).
+function getDerivedSpan(
+  afterDate: string | null,
+  beforeDate: string | null,
+): { start: string; end: string } | null {
+  if (!afterDate || !beforeDate) return null;
+  const start = shiftDate(afterDate, 1);
+  const end = shiftDate(beforeDate, -1);
+  if (start > end) return null; // contiguous, no gap
+  return { start, end };
+}
+
 function PhaseRow({
   phase,
   name,
+  tag,
   dateLabel,
+  dayCount,
   expanded,
   onToggle,
   readOnly,
@@ -36,7 +57,9 @@ function PhaseRow({
 }: {
   phase: 'assembly' | 'event' | 'dismantle';
   name: string;
+  tag?: string;
   dateLabel: string;
+  dayCount: number | null;
   expanded: boolean;
   onToggle: () => void;
   readOnly: boolean;
@@ -53,10 +76,16 @@ function PhaseRow({
         disabled={readOnly}
       >
         <span className={`sidebar-phase-row__dot sidebar-phase-row__dot--${phase}`} />
-        <span className="sidebar-phase-row__name">{name}</span>
+        <span className="sidebar-phase-row__name">
+          {name}
+          {tag && <span className="sidebar-phase-row__tag">{tag}</span>}
+        </span>
         <span className={`sidebar-phase-row__dates${!hasDate ? ' sidebar-phase-row__dates--empty' : ''}`}>
           {dateLabel}
         </span>
+        {dayCount !== null && (
+          <span className="sidebar-phase-row__day-count">{dayCount}d</span>
+        )}
         {!readOnly && (
           <svg className="sidebar-phase-row__edit" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path d="M8 2L10 4L4 10L1.5 10.5L2 8L8 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
@@ -68,6 +97,30 @@ function PhaseRow({
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+function DerivedPhaseRow({
+  zone,
+  name,
+  start,
+  end,
+}: {
+  zone: 'moving-in' | 'moving-out';
+  name: string;
+  start: string;
+  end: string;
+}) {
+  const days = countDays(start, end);
+  return (
+    <div className="sidebar-phase-row sidebar-derived-row">
+      <div className="sidebar-phase-row__btn sidebar-derived-row__inner">
+        <span className={`sidebar-phase-row__dot sidebar-phase-row__dot--${zone}`} />
+        <span className="sidebar-phase-row__name sidebar-derived-row__name">{name}</span>
+        <span className="sidebar-phase-row__dates">{formatRange(start, end)}</span>
+        <span className="sidebar-phase-row__day-count">{days}d</span>
+      </div>
     </div>
   );
 }
@@ -147,9 +200,42 @@ export function SidebarScheduleInputs({
     [assemblyStartDate, assemblyEndDate, dismantleStartDate, dismantleEndDate, eventStartDate, eventEndDate],
   );
 
+  const movingInSpan = useMemo(
+    () => getDerivedSpan(assemblyEndDate, eventStartDate),
+    [assemblyEndDate, eventStartDate],
+  );
+
+  const movingOutSpan = useMemo(
+    () => getDerivedSpan(eventEndDate, dismantleStartDate),
+    [eventEndDate, dismantleStartDate],
+  );
+
+  // Per-phase day counts for summary
+  const phaseCounts = useMemo(() => {
+    const counts: { label: string; days: number }[] = [];
+    if (assemblyStartDate && assemblyEndDate)
+      counts.push({ label: 'Assembly', days: countDays(assemblyStartDate, assemblyEndDate) });
+    if (movingInSpan)
+      counts.push({ label: 'Moving In', days: countDays(movingInSpan.start, movingInSpan.end) });
+    if (eventStartDate && eventEndDate)
+      counts.push({ label: 'Event', days: countDays(eventStartDate, eventEndDate) });
+    if (movingOutSpan)
+      counts.push({ label: 'Moving Out', days: countDays(movingOutSpan.start, movingOutSpan.end) });
+    if (dismantleStartDate && dismantleEndDate)
+      counts.push({ label: 'Dismantle', days: countDays(dismantleStartDate, dismantleEndDate) });
+    return counts;
+  }, [assemblyStartDate, assemblyEndDate, movingInSpan, eventStartDate, eventEndDate, movingOutSpan, dismantleStartDate, dismantleEndDate]);
+
   function toggle(phase: 'assembly' | 'event' | 'dismantle') {
     setExpandedPhase((prev) => (prev === phase ? null : phase));
   }
+
+  const assemblyDays = assemblyStartDate && assemblyEndDate
+    ? countDays(assemblyStartDate, assemblyEndDate) : null;
+  const eventDays = eventStartDate && eventEndDate
+    ? countDays(eventStartDate, eventEndDate) : null;
+  const dismantleDays = dismantleStartDate && dismantleEndDate
+    ? countDays(dismantleStartDate, dismantleEndDate) : null;
 
   return (
     <div className="sidebar-schedule-inputs">
@@ -158,10 +244,24 @@ export function SidebarScheduleInputs({
           <span className="sidebar-schedule-inputs__summary-range">
             {formatShortDate(primaryRange.start)} – {formatShortDate(primaryRange.end)}
           </span>
-          <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>
-          <span className="sidebar-schedule-inputs__summary-count">
-            {countDays(primaryRange.start, primaryRange.end)} days
-          </span>
+          {phaseCounts.length > 1 ? (
+            phaseCounts.map((p, i) => (
+              <span key={p.label} className="sidebar-schedule-inputs__summary-phase">
+                {i === 0 && <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>}
+                {i > 0 && <span className="sidebar-schedule-inputs__summary-dot" aria-hidden>·</span>}
+                <span className="sidebar-schedule-inputs__summary-phase-label">{p.label}</span>
+                {' '}
+                <span className="sidebar-schedule-inputs__summary-phase-count">{p.days}d</span>
+              </span>
+            ))
+          ) : (
+            <>
+              <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>
+              <span className="sidebar-schedule-inputs__summary-count">
+                {countDays(primaryRange.start, primaryRange.end)} days
+              </span>
+            </>
+          )}
         </p>
       )}
 
@@ -170,6 +270,7 @@ export function SidebarScheduleInputs({
           phase="assembly"
           name="Assembly"
           dateLabel={formatRange(assemblyStartDate, assemblyEndDate)}
+          dayCount={assemblyDays}
           expanded={expandedPhase === 'assembly'}
           onToggle={() => toggle('assembly')}
           readOnly={readOnly}
@@ -188,10 +289,21 @@ export function SidebarScheduleInputs({
           </div>
         </PhaseRow>
 
+        {movingInSpan && (
+          <DerivedPhaseRow
+            zone="moving-in"
+            name="Moving In"
+            start={movingInSpan.start}
+            end={movingInSpan.end}
+          />
+        )}
+
         <PhaseRow
           phase="event"
           name="Event"
+          tag="Show"
           dateLabel={formatRange(eventStartDate, eventEndDate)}
+          dayCount={eventDays}
           expanded={expandedPhase === 'event'}
           onToggle={() => toggle('event')}
           readOnly={readOnly}
@@ -210,10 +322,20 @@ export function SidebarScheduleInputs({
           </div>
         </PhaseRow>
 
+        {movingOutSpan && (
+          <DerivedPhaseRow
+            zone="moving-out"
+            name="Moving Out"
+            start={movingOutSpan.start}
+            end={movingOutSpan.end}
+          />
+        )}
+
         <PhaseRow
           phase="dismantle"
           name="Dismantle"
           dateLabel={formatRange(dismantleStartDate, dismantleEndDate)}
+          dayCount={dismantleDays}
           expanded={expandedPhase === 'dismantle'}
           onToggle={() => toggle('dismantle')}
           readOnly={readOnly}

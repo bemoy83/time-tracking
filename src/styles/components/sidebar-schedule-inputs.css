@@ -34,6 +34,29 @@
   font-weight: 500;
 }
 
+.sidebar-schedule-inputs__summary-phase {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: var(--font-caption);
+}
+
+.sidebar-schedule-inputs__summary-dot {
+  color: var(--color-text-muted);
+  margin: 0 1px;
+}
+
+.sidebar-schedule-inputs__summary-phase-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.sidebar-schedule-inputs__summary-phase-count {
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
 .sidebar-phase-stack {
   display: flex;
   flex-direction: column;
@@ -82,15 +105,93 @@
 }
 
 .sidebar-phase-row__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .sidebar-phase-row__dot--assembly  { background: var(--phase-assembly-fg); }
 .sidebar-phase-row__dot--event     { background: var(--phase-event-fg); }
 .sidebar-phase-row__dot--dismantle { background: var(--phase-dismantle-fg); }
+
+.sidebar-phase-row__dot--moving-in {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--phase-assembly-fg) 40%, transparent);
+}
+
+.sidebar-phase-row__dot--moving-out {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--phase-dismantle-fg) 40%, transparent);
+}
+
+.sidebar-phase-row__dot--moving-in::before,
+.sidebar-phase-row__dot--moving-out::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  transform-origin: center;
+}
+
+.sidebar-phase-row__dot--moving-in::before {
+  background: var(--phase-assembly-fg);
+}
+
+.sidebar-phase-row__dot--moving-out::before {
+  background: var(--phase-dismantle-fg);
+}
+
+/* Derived row (Moving In / Moving Out) — read-only, non-interactive */
+
+.sidebar-derived-row__inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px var(--space-md);
+  cursor: default;
+  pointer-events: none;
+}
+
+.sidebar-derived-row__name {
+  opacity: 0.7;
+}
+
+/* Day count badge */
+
+.sidebar-phase-row__day-count {
+  font-size: 10px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* Event "Show" tag */
+
+.sidebar-phase-row__tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: color-mix(in srgb, var(--phase-event-fg) 14%, transparent);
+  color: var(--phase-event-fg);
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
 
 .sidebar-phase-row__name {
   flex: 1;
