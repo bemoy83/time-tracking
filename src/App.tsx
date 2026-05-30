@@ -32,6 +32,7 @@ type SettingsSection =
   | 'attribution'
   | 'remediation'
   | 'telemetry'
+  | 'cloudSync'
   | 'dataTransfer';
 type ReturnTo =
   | { type: 'tab'; tab: Tab }
@@ -59,6 +60,7 @@ const SettingsTagsView = lazyNamedExport(() => import('./pages/settings/Settings
 const SettingsTagSequenceView = lazyNamedExport(() => import('./pages/settings/SettingsTagSequenceView'), 'SettingsTagSequenceView');
 const SettingsCrewView = lazyNamedExport(() => import('./pages/settings/SettingsCrewView'), 'SettingsCrewView');
 const SettingsTelemetryView = lazyNamedExport(() => import('./pages/settings/SettingsTelemetryView'), 'SettingsTelemetryView');
+const SettingsCloudSyncView = lazyNamedExport(() => import('./pages/settings/SettingsCloudSyncView'), 'SettingsCloudSyncView');
 const SettingsDataTransferView = lazyNamedExport(() => import('./pages/settings/SettingsDataTransferView'), 'SettingsDataTransferView');
 const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlanView'), 'FieldPlanView');
 
@@ -290,6 +292,9 @@ function App() {
       )}
       {view.type === 'settingsDetail' && view.section === 'telemetry' && (
         <SettingsTelemetryView onBack={handleBack} />
+      )}
+      {view.type === 'settingsDetail' && view.section === 'cloudSync' && (
+        <SettingsCloudSyncView onBack={handleBack} />
       )}
       {view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
         <SettingsDataTransferView onBack={handleBack} />

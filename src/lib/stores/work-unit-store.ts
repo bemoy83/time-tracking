@@ -83,6 +83,16 @@ export async function initializeWorkUnitStore(): Promise<void> {
   }
 }
 
+export async function refreshWorkUnitStore(): Promise<void> {
+  const seeded = await loadSeededWorkUnitDefinitions();
+  setState({
+    definitions: seeded,
+    isLoading: false,
+    error: null,
+  });
+  initialized = true;
+}
+
 export function resetWorkUnitState(): void {
   initialized = false;
   setState({

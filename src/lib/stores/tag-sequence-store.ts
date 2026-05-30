@@ -56,6 +56,12 @@ export async function initializeTagSequenceStore(): Promise<void> {
   }
 }
 
+export async function refreshTagSequenceStore(): Promise<void> {
+  const seq = await getGlobalTagSequence();
+  setState({ tagIds: seq?.tagIds ?? [], isLoading: false });
+  initialized = true;
+}
+
 export function resetTagSequenceStoreState(): void {
   initialized = false;
   setState({ tagIds: [], isLoading: true });

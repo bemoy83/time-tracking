@@ -62,6 +62,12 @@ export async function initializeWorkTypeStore(): Promise<void> {
   }
 }
 
+export async function refreshWorkTypeStore(): Promise<void> {
+  const workTypes = await getAllWorkTypes();
+  setState({ workTypes, isLoading: false });
+  initialized = true;
+}
+
 // ============================================================
 // Work Type Actions
 // ============================================================

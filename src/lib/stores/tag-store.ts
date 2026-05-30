@@ -78,6 +78,15 @@ export async function initializeTagStore(): Promise<void> {
   }
 }
 
+export async function refreshTagStore(): Promise<void> {
+  const [categories, tags] = await Promise.all([
+    getAllTagCategories(),
+    getAllTags(),
+  ]);
+  setState({ categories, tags, isLoading: false });
+  initialized = true;
+}
+
 export function resetTagStoreState(): void {
   initialized = false;
   setState({ categories: [], tags: [], isLoading: true });

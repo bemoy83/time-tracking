@@ -79,6 +79,25 @@ export async function initializeCrewPoolStore(): Promise<void> {
   }
 }
 
+export async function refreshCrewPoolStore(): Promise<void> {
+  const pool = await getCrewPool();
+  const allocations = pool?.allocations ?? {};
+  const rawDeployments = pool?.dailyDeployments ?? {};
+  const dailyDeployments: Record<string, number> = {};
+  for (const [id, cap] of Object.entries(rawDeployments)) {
+    const workers = allocations[id];
+    dailyDeployments[id] = workers != null && cap > workers ? workers : cap;
+  }
+  setState({
+    defaultCrewSize: pool?.defaultCrewSize ?? null,
+    taskSwitchingFactor: pool?.taskSwitchingFactor ?? null,
+    allocations,
+    dailyDeployments,
+    isLoading: false,
+  });
+  initialized = true;
+}
+
 export function resetCrewPoolStoreState(): void {
   initialized = false;
   setState({ defaultCrewSize: null, taskSwitchingFactor: null, allocations: {}, dailyDeployments: {}, isLoading: true });
