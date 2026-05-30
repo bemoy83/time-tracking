@@ -2,35 +2,6 @@
    Work Package Table (Phase 4 unified row editor)
    ============================================================ */
 
-.planning-view__items-summary {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  font-size: var(--font-small);
-  color: var(--color-text-muted);
-}
-
-.planning-view__items-summary span {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: var(--radius-xl);
-  background: var(--surface-contained-inset);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.planning-view__items-summary-asm {
-  background: rgba(5, 150, 105, 0.08);
-  color: var(--phase-assembly-fg);
-}
-
-.planning-view__items-summary-dis {
-  background: rgba(124, 58, 237, 0.08);
-  color: var(--phase-dismantle-fg);
-}
-
 .planning-view__work-packages-section {
   display: flex;
   flex-direction: column;
@@ -49,22 +20,19 @@
   overflow: hidden;
 }
 
-.planning-view__wp-surface > .planning-view__items-header {
-  padding: var(--wp-card-padding) var(--wp-card-padding) var(--space-sm);
-}
-
 .planning-view__wp-table-zone {
   min-width: 0;
 }
 
-.planning-view__wp-add-zone + .planning-view__wp-table-zone {
+/* Add zone sits below the table — top divider + top padding for breathing room */
+.planning-view__wp-table-zone + .planning-view__wp-add-zone {
   border-top: 1px solid var(--surface-contained-border);
   padding-top: var(--wp-card-padding);
 }
 
 .planning-view__wp-add-zone {
   padding: var(--wp-card-padding);
-  padding-top: 0;
+  padding-bottom: 0;
   background: var(--surface-contained-bg);
   border-bottom: none;
 }
@@ -556,13 +524,9 @@
     --wp-card-padding: var(--space-md);
   }
 
-  .planning-workspace__editor-canvas .planning-view__wp-surface > .planning-view__items-header {
-    padding: var(--wp-card-padding) var(--wp-card-padding) var(--space-sm);
-  }
-
   .planning-workspace__editor-canvas .planning-view__wp-add-zone {
     padding: var(--wp-card-padding);
-    padding-top: 0;
+    padding-bottom: 0;
   }
 
   .planning-workspace__editor-canvas .planning-view__wp-add-zone .planning-view__wp-add-bar {
@@ -575,16 +539,12 @@
     --wp-card-padding: var(--space-sm);
   }
 
-  .planning-view__wp-surface > .planning-view__items-header {
-    padding: var(--wp-card-padding);
-  }
-
   .planning-view__wp-add-zone {
     padding: var(--wp-card-padding);
-    padding-top: 0;
+    padding-bottom: 0;
   }
 
-  .planning-view__wp-add-zone + .planning-view__wp-table-zone {
+  .planning-view__wp-table-zone + .planning-view__wp-add-zone {
     padding-top: var(--wp-card-padding);
   }
 

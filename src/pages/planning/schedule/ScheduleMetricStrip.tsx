@@ -133,26 +133,28 @@ export function ScheduleMetricStrip({
             Revert to Draft
           </button>
         )}
-        <button
-          type="button"
-          className={[
-            'btn',
-            'btn--xs',
-            assistantVariant === 'neutral' ? 'btn--secondary' : '',
-            'schedule-metric-strip__assistant-btn',
-            assistantVariant === 'warning' ? 'schedule-metric-strip__assistant-btn--warning' : '',
-            assistantVariant === 'critical' ? 'schedule-metric-strip__assistant-btn--critical' : '',
-          ].filter(Boolean).join(' ')}
-          onClick={onOpenAssistant}
-          aria-haspopup="dialog"
-          aria-label={
-            assistantVariant === 'neutral'
-              ? 'Open schedule assistant'
-              : `${assistantLabel} — open schedule assistant`
-          }
-        >
-          {assistantLabel}
-        </button>
+        {onOpenAssistant && (
+          <button
+            type="button"
+            className={[
+              'btn',
+              'btn--xs',
+              assistantVariant === 'neutral' ? 'btn--secondary' : '',
+              'schedule-metric-strip__assistant-btn',
+              assistantVariant === 'warning' ? 'schedule-metric-strip__assistant-btn--warning' : '',
+              assistantVariant === 'critical' ? 'schedule-metric-strip__assistant-btn--critical' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={onOpenAssistant}
+            aria-haspopup="dialog"
+            aria-label={
+              assistantVariant === 'neutral'
+                ? 'Open schedule assistant'
+                : `${assistantLabel} — open schedule assistant`
+            }
+          >
+            {assistantLabel}
+          </button>
+        )}
       </div>
     </div>
   );

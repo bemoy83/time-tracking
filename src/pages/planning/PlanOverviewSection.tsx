@@ -1,7 +1,6 @@
 import type { Project } from '../../lib/types';
 import { ProjectColorDot } from '../../components/ProjectColorDot';
-import { ChevronRightIcon, ChevronUpIcon, FolderIcon, PencilIcon } from '../../components/icons';
-import { PlanSetupStepper, type SetupStep } from './PlanSetupStepper';
+import { ChevronRightIcon, FolderIcon, PencilIcon } from '../../components/icons';
 
 interface PlanOverviewSectionProps {
   title: string;
@@ -10,10 +9,6 @@ interface PlanOverviewSectionProps {
   readOnly: boolean;
   isLocked: boolean;
   identityError: string | null;
-  overviewHelperText: string;
-  setupSteps: SetupStep[];
-  collapsed: boolean;
-  onCollapse: () => void;
   onOpenProjectPicker: () => void;
 }
 
@@ -24,27 +19,13 @@ export function PlanOverviewSection({
   readOnly,
   isLocked,
   identityError,
-  overviewHelperText,
-  setupSteps,
-  collapsed,
-  onCollapse,
   onOpenProjectPicker,
 }: PlanOverviewSectionProps) {
   return (
     <section
-      className={`planning-view__overview-block${collapsed ? ' planning-view__summary-section--hidden' : ''}`}
+      className="planning-view__overview-block"
       aria-label="Plan overview"
     >
-      <button
-        type="button"
-        className="planning-view__summary-collapse-btn planning-view__summary-collapse-btn--card"
-        onClick={onCollapse}
-        aria-label="Collapse plan setup"
-        title="Collapse plan setup"
-      >
-        <ChevronUpIcon className="planning-view__summary-collapse-icon" />
-      </button>
-
       <div className="planning-view__overview-identity">
         <div className="planning-view__overview-field planning-view__overview-field--identity">
           <span className="planning-view__overview-label">Event/Project</span>
@@ -102,14 +83,6 @@ export function PlanOverviewSection({
           )}
         </div>
       </div>
-
-      <div className="planning-view__overview-content">
-        <div className="planning-view__overview-context">
-          <p className="planning-view__overview-helper">{overviewHelperText}</p>
-        </div>
-      </div>
-
-      <PlanSetupStepper steps={setupSteps} readOnly={readOnly} />
     </section>
   );
 }

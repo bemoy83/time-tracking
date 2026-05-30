@@ -4,7 +4,7 @@ import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { usePlanLineItemImport } from './hooks/usePlanLineItemImport';
 import { type Project } from '../../lib/types';
 import type { WorkTypeKpi } from '../../lib/kpi';
-import { generatePlanSuggestions, getPhaseWorkDayCount } from '../../lib/planning/plan-suggestions';
+import { generatePlanSuggestions } from '../../lib/planning/plan-suggestions';
 import {
   type Plan,
   type PlanLineItem,
@@ -12,7 +12,6 @@ import {
   duplicateAllLineItemsInPlan,
   duplicateLineItem,
   getPlanDisplayName,
-  planPhasePersonHours,
   planTotalPersonHours,
   removeAllLineItemsFromPlan,
   removeLineItemFromPlan,
@@ -30,7 +29,6 @@ import {
   generateDefaultWorkCalendarForSpans,
 } from '../../lib/planning/scheduling/work-calendar';
 import { ChevronLeftIcon } from '../../components/icons';
-import { PlanEditorKpiRow } from './PlanEditorKpiRow';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
 import { shouldClearPlanProjectId } from './plan-editor-state';
@@ -47,9 +45,10 @@ import {
   getProjectById,
   hasProjectPhaseDates,
 } from '../../lib/stores/task-store';
-import { PlanSummaryBar } from './PlanSummaryBar';
 import { PlanOverviewSection } from './PlanOverviewSection';
 import { AddWorkPackageBar } from './AddWorkPackageBar';
+import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
+import { getPlanEditorMetrics } from './workspace/workspace-metrics';
 
 interface PlanEditorProps {
   plan: Plan;
@@ -97,7 +96,6 @@ export function PlanEditor({
   const [title, setTitle] = useState(plan.title);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
 
   useEffect(() => {
     setTitle(currentPlan.title);
@@ -151,8 +149,6 @@ export function PlanEditor({
     [suggestions.items],
   );
   const totalPersonHours = planTotalPersonHours(currentPlan);
-  const assemblyPersonHours = planPhasePersonHours(currentPlan, 'assembly');
-  const dismantlePersonHours = planPhasePersonHours(currentPlan, 'dismantle');
 
   const availableScope = (() => {
     const { workCalendar } = currentPlan;
@@ -170,8 +166,18 @@ export function PlanEditor({
     return { workDayCount: workDays.length, totalAvailable, headroom };
   })();
 
-  const assemblyWorkDays = getPhaseWorkDayCount(currentPlan, 'assembly');
-  const dismantleWorkDays = getPhaseWorkDayCount(currentPlan, 'dismantle');
+  const planEditorMetrics = useMemo(
+    () => getPlanEditorMetrics(currentPlan),
+    [
+      currentPlan.lineItems,
+      currentPlan.workCalendar,
+      currentPlan.defaultCrewSize,
+      currentPlan.assemblyStartDate,
+      currentPlan.assemblyEndDate,
+      currentPlan.dismantleStartDate,
+      currentPlan.dismantleEndDate,
+    ],
+  );
 
   const isLocked = currentPlan.status === 'active';
   const selectedProject = currentPlan.projectId
@@ -282,17 +288,6 @@ export function PlanEditor({
     onOpenSchedule();
   };
 
-  const reviewedDateLabel = currentPlan.reviewedAt
-    ? new Date(currentPlan.reviewedAt).toLocaleDateString()
-    : null;
-  const overviewHelperText = readOnly
-    ? reviewedDateLabel
-      ? `This plan is archived (reviewed ${reviewedDateLabel}) with its event or project identity preserved.`
-      : 'This plan is archived with its event or project identity preserved.'
-    : isLocked
-      ? 'This plan is live. Its event or project identity is locked while execution is in progress.'
-      : 'Name the event or work you are planning, or link it to a project if delivery should follow that project.';
-
   const scheduleActionBlockedReason =
     summaryRange == null
       ? 'Set schedule dates before building schedule.'
@@ -303,7 +298,7 @@ export function PlanEditor({
   const setupSteps = [
     {
       id: 'identity',
-      label: 'Event/Project',
+      label: 'Identity',
       complete: hasIdentity,
       isCta: false as const,
     },
@@ -331,22 +326,10 @@ export function PlanEditor({
     },
   ];
 
-  const utilizationPct =
-    availableScope && availableScope.totalAvailable > 0
-      ? Math.round((totalPersonHours / availableScope.totalAvailable) * 100)
-      : null;
-
   const canAddWorkPackages = !(readOnly || isLocked);
 
   return (
     <div className="planning-view planning-view--editor">
-      <PlanEditorKpiRow
-        packageCount={currentPlan.lineItems.length}
-        personHours={totalPersonHours}
-        utilizationPct={utilizationPct}
-        workDays={availableScope?.workDayCount ?? null}
-        workDaysSecondary={{ assembly: assemblyWorkDays, dismantle: dismantleWorkDays }}
-      />
       {showBackButton && (
         <header className="planning-view__editor-header">
           <button className="planning-view__back" onClick={onBack} aria-label="Back to plans">
@@ -356,21 +339,15 @@ export function PlanEditor({
         </header>
       )}
 
-      <div
-        className={`planning-view__sticky-summary${summaryCollapsed ? ' planning-view__sticky-summary--collapsed' : ''}`}
-      >
-        {summaryCollapsed && (
-          <PlanSummaryBar
-            planDisplayName={planDisplayName}
-            selectedProject={selectedProject}
-            summaryRange={summaryRange}
-            canOpenScheduleAction={canOpenScheduleAction}
-            scheduleActionBlockedReason={scheduleActionBlockedReason}
-            onOpenSchedule={handleOpenSchedule}
-            onExpand={() => setSummaryCollapsed(false)}
-          />
-        )}
+      <div className="planning-view__metric-strip-sticky">
+        <ScheduleMetricStrip
+          metrics={planEditorMetrics}
+          steps={setupSteps}
+          readOnly={readOnly}
+        />
+      </div>
 
+      <div className="planning-view__overview-card">
         <PlanOverviewSection
           title={title}
           selectedProject={selectedProject}
@@ -378,16 +355,9 @@ export function PlanEditor({
           readOnly={readOnly}
           isLocked={isLocked}
           identityError={identityError}
-          overviewHelperText={overviewHelperText}
-          setupSteps={setupSteps}
-          collapsed={summaryCollapsed}
-          onCollapse={() => setSummaryCollapsed(true)}
           onOpenProjectPicker={() => setShowProjectPicker(true)}
         />
-
-        <div
-          className={`planning-view__schedule-inputs-wrap${summaryCollapsed ? ' planning-view__summary-section--hidden' : ''}`}
-        >
+        <div className="planning-view__schedule-inputs-wrap">
           <PlanScheduleInputsPanel
             assemblyStartDate={phaseDates.assemblyStartDate}
             assemblyEndDate={phaseDates.assemblyEndDate}
@@ -417,36 +387,6 @@ export function PlanEditor({
         <div
           className={`planning-view__wp-surface${canAddWorkPackages ? ' planning-view__wp-surface--editable' : ''}`}
         >
-          <div className="planning-view__items-header">
-            <h2 id="work-packages-heading" className="planning-view__items-title">
-              Work Packages
-            </h2>
-            <div className="planning-view__items-summary">
-              <span>{currentPlan.lineItems.length} packages</span>
-              <span className="planning-view__items-summary-asm">
-                Assembly {assemblyPersonHours.toFixed(1)} ph
-              </span>
-              <span className="planning-view__items-summary-dis">
-                Dismantle {dismantlePersonHours.toFixed(1)} ph
-              </span>
-            </div>
-          </div>
-
-          {canAddWorkPackages && (
-            <AddWorkPackageBar
-              onAdd={handleAddLineItem}
-              importPendingCount={importPendingCount}
-              importWorkUnitPreview={importWorkUnitPreview}
-              applyImportedUnitLabels={applyImportedUnitLabels}
-              onApplyImportedUnitLabelsChange={setApplyImportedUnitLabels}
-              isImportApplying={isImportApplying}
-              importFileInputRef={importFileInputRef}
-              onImportFileChange={handleImportFileChange}
-              onImportConfirm={handleImportConfirm}
-              onImportCancel={handleImportCancel}
-            />
-          )}
-
           <div className="planning-view__wp-table-zone">
             <WorkPackageTable
               lineItems={currentPlan.lineItems}
@@ -465,6 +405,21 @@ export function PlanEditor({
               }
             />
           </div>
+
+          {canAddWorkPackages && (
+            <AddWorkPackageBar
+              onAdd={handleAddLineItem}
+              importPendingCount={importPendingCount}
+              importWorkUnitPreview={importWorkUnitPreview}
+              applyImportedUnitLabels={applyImportedUnitLabels}
+              onApplyImportedUnitLabelsChange={setApplyImportedUnitLabels}
+              isImportApplying={isImportApplying}
+              importFileInputRef={importFileInputRef}
+              onImportFileChange={handleImportFileChange}
+              onImportConfirm={handleImportConfirm}
+              onImportCancel={handleImportCancel}
+            />
+          )}
         </div>
       </section>
 
