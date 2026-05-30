@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useCrewPoolStore } from '../../lib/stores/crew-pool-store';
 import { usePlanEditorState } from './hooks/usePlanEditorState';
 import { usePlanLineItemImport } from './hooks/usePlanLineItemImport';
 import { type Project } from '../../lib/types';
@@ -12,7 +11,6 @@ import {
   duplicateAllLineItemsInPlan,
   duplicateLineItem,
   getPlanDisplayName,
-  planTotalPersonHours,
   removeAllLineItemsFromPlan,
   removeLineItemFromPlan,
   updatePlanLineItem,
@@ -25,8 +23,6 @@ import {
   setPlanPhaseDate,
 } from '../../lib/planning/scheduling/plan-schedule-update';
 import {
-  dayAvailablePersonHours,
-  generateDefaultWorkCalendarForSpans,
 } from '../../lib/planning/scheduling/work-calendar';
 import { ChevronLeftIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -37,7 +33,6 @@ import {
   type PhaseDateField,
   getPrimaryScheduleRange,
   getScheduleRangeForWorkCalendar,
-  getWorkCalendarPhaseSpans,
   readPhaseDateValues,
 } from './schedule/schedule-date-ui';
 import {
@@ -79,8 +74,6 @@ export function PlanEditor({
   onRegisterBeforeScheduleSwitch,
 }: PlanEditorProps) {
   const { currentPlan, mutatePlan, flushAndWait } = usePlanEditorState({ plan, onSave });
-  const { defaultCrewSize: systemDefaultCrewSize } = useCrewPoolStore();
-  const effectiveCrewSize = systemDefaultCrewSize ?? currentPlan.defaultCrewSize;
   const {
     fileInputRef: importFileInputRef,
     handleFileChange: handleImportFileChange,
@@ -120,15 +113,6 @@ export function PlanEditor({
     currentPlan.eventStartDate,
     currentPlan.eventEndDate,
   );
-  const workCalendarPhaseSpans = useMemo(
-    () => getWorkCalendarPhaseSpans(phaseDates),
-    [
-      phaseDates.assemblyStartDate,
-      phaseDates.assemblyEndDate,
-      phaseDates.dismantleStartDate,
-      phaseDates.dismantleEndDate,
-    ],
-  );
   const summaryRange = workCalendarRange ?? primaryRange;
 
   const suggestions = useMemo(
@@ -148,23 +132,6 @@ export function PlanEditor({
     () => new Map(suggestions.items.map((item) => [item.lineItemId, item])),
     [suggestions.items],
   );
-  const totalPersonHours = planTotalPersonHours(currentPlan);
-
-  const availableScope = (() => {
-    const { workCalendar } = currentPlan;
-    if (workCalendar.length === 0 && workCalendarPhaseSpans.length === 0) return null;
-    const calendar =
-      workCalendar.length > 0
-        ? workCalendar
-        : generateDefaultWorkCalendarForSpans(workCalendarPhaseSpans, effectiveCrewSize);
-    const workDays = calendar.filter((d) => d.isWorkDay);
-    const totalAvailable = calendar.reduce(
-      (sum, d) => sum + dayAvailablePersonHours(d, effectiveCrewSize),
-      0,
-    );
-    const headroom = totalAvailable - totalPersonHours;
-    return { workDayCount: workDays.length, totalAvailable, headroom };
-  })();
 
   const planEditorMetrics = useMemo(
     () => getPlanEditorMetrics(currentPlan),
