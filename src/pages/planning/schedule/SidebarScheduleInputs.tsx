@@ -120,6 +120,7 @@ function DerivedPhaseRow({
         <span className="sidebar-phase-row__name sidebar-derived-row__name">{name}</span>
         <span className="sidebar-phase-row__dates">{formatRange(start, end)}</span>
         <span className="sidebar-phase-row__day-count">{days}d</span>
+        <span aria-hidden />
       </div>
     </div>
   );
@@ -210,22 +211,6 @@ export function SidebarScheduleInputs({
     [eventEndDate, dismantleStartDate],
   );
 
-  // Per-phase day counts for summary
-  const phaseCounts = useMemo(() => {
-    const counts: { label: string; days: number }[] = [];
-    if (assemblyStartDate && assemblyEndDate)
-      counts.push({ label: 'Assembly', days: countDays(assemblyStartDate, assemblyEndDate) });
-    if (movingInSpan)
-      counts.push({ label: 'Moving In', days: countDays(movingInSpan.start, movingInSpan.end) });
-    if (eventStartDate && eventEndDate)
-      counts.push({ label: 'Event', days: countDays(eventStartDate, eventEndDate) });
-    if (movingOutSpan)
-      counts.push({ label: 'Moving Out', days: countDays(movingOutSpan.start, movingOutSpan.end) });
-    if (dismantleStartDate && dismantleEndDate)
-      counts.push({ label: 'Dismantle', days: countDays(dismantleStartDate, dismantleEndDate) });
-    return counts;
-  }, [assemblyStartDate, assemblyEndDate, movingInSpan, eventStartDate, eventEndDate, movingOutSpan, dismantleStartDate, dismantleEndDate]);
-
   function toggle(phase: 'assembly' | 'event' | 'dismantle') {
     setExpandedPhase((prev) => (prev === phase ? null : phase));
   }
@@ -240,29 +225,14 @@ export function SidebarScheduleInputs({
   return (
     <div className="sidebar-schedule-inputs">
       {primaryRange && (
-        <p className="sidebar-schedule-inputs__summary">
+        <div className="sidebar-schedule-inputs__summary">
           <span className="sidebar-schedule-inputs__summary-range">
             {formatShortDate(primaryRange.start)} – {formatShortDate(primaryRange.end)}
           </span>
-          {phaseCounts.length > 1 ? (
-            phaseCounts.map((p, i) => (
-              <span key={p.label} className="sidebar-schedule-inputs__summary-phase">
-                {i === 0 && <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>}
-                {i > 0 && <span className="sidebar-schedule-inputs__summary-dot" aria-hidden>·</span>}
-                <span className="sidebar-schedule-inputs__summary-phase-label">{p.label}</span>
-                {' '}
-                <span className="sidebar-schedule-inputs__summary-phase-count">{p.days}d</span>
-              </span>
-            ))
-          ) : (
-            <>
-              <span className="sidebar-schedule-inputs__summary-sep" aria-hidden>·</span>
-              <span className="sidebar-schedule-inputs__summary-count">
-                {countDays(primaryRange.start, primaryRange.end)} days
-              </span>
-            </>
-          )}
-        </p>
+          <span className="sidebar-schedule-inputs__summary-total">
+            {countDays(primaryRange.start, primaryRange.end)}d
+          </span>
+        </div>
       )}
 
       <div className="sidebar-phase-stack">
