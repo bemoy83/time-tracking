@@ -20,21 +20,36 @@
   overflow: hidden;
 }
 
+/* ── Card header: section label ─────────────────────────────── */
+
+.planning-view__wp-card-header {
+  display: flex;
+  align-items: center;
+  padding: 10px var(--wp-card-padding, var(--space-md)) 8px;
+}
+
+.planning-view__wp-card-title {
+  margin: 0;
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+/* When no add bar is present (locked/readonly), put a divider before the table */
+.planning-view__wp-card-header + .planning-view__wp-table-zone {
+  border-top: 1px solid var(--surface-contained-border);
+}
+
+/* ────────────────────────────────────────────────────────────── */
+
 .planning-view__wp-table-zone {
   min-width: 0;
 }
 
-/* Add zone sits below the table — top divider + top padding for breathing room */
-.planning-view__wp-table-zone + .planning-view__wp-add-zone {
-  border-top: 1px solid var(--surface-contained-border);
-  padding-top: var(--wp-card-padding);
-}
-
 .planning-view__wp-add-zone {
-  padding: var(--wp-card-padding);
-  padding-bottom: 0;
   background: var(--surface-contained-bg);
-  border-bottom: none;
 }
 
 .planning-view__work-package-table-wrap {
@@ -524,11 +539,6 @@
     --wp-card-padding: var(--space-md);
   }
 
-  .planning-workspace__editor-canvas .planning-view__wp-add-zone {
-    padding: var(--wp-card-padding);
-    padding-bottom: 0;
-  }
-
   .planning-workspace__editor-canvas .planning-view__wp-add-zone .planning-view__wp-add-bar {
     gap: 6px;
   }
@@ -539,14 +549,6 @@
     --wp-card-padding: var(--space-sm);
   }
 
-  .planning-view__wp-add-zone {
-    padding: var(--wp-card-padding);
-    padding-bottom: 0;
-  }
-
-  .planning-view__wp-table-zone + .planning-view__wp-add-zone {
-    padding-top: var(--wp-card-padding);
-  }
 
   /* Tighter columns on narrow screens so numbers stay visible when table scrolls */
   .planning-view__wp-title-col,

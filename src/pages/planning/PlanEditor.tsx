@@ -380,13 +380,31 @@ export function PlanEditor({
         </div>
       </div>
 
-      <section
-        className="planning-view__work-packages-section"
-        aria-labelledby="work-packages-heading"
-      >
+      <section className="planning-view__work-packages-section">
         <div
           className={`planning-view__wp-surface${canAddWorkPackages ? ' planning-view__wp-surface--editable' : ''}`}
         >
+          <header className="planning-view__wp-card-header">
+            <h2 className="planning-view__wp-card-title" id="work-packages-heading">
+              Work Packages
+            </h2>
+          </header>
+
+          {canAddWorkPackages && (
+            <AddWorkPackageBar
+              onAdd={handleAddLineItem}
+              importPendingCount={importPendingCount}
+              importWorkUnitPreview={importWorkUnitPreview}
+              applyImportedUnitLabels={applyImportedUnitLabels}
+              onApplyImportedUnitLabelsChange={setApplyImportedUnitLabels}
+              isImportApplying={isImportApplying}
+              importFileInputRef={importFileInputRef}
+              onImportFileChange={handleImportFileChange}
+              onImportConfirm={handleImportConfirm}
+              onImportCancel={handleImportCancel}
+            />
+          )}
+
           <div className="planning-view__wp-table-zone">
             <WorkPackageTable
               lineItems={currentPlan.lineItems}
@@ -405,21 +423,6 @@ export function PlanEditor({
               }
             />
           </div>
-
-          {canAddWorkPackages && (
-            <AddWorkPackageBar
-              onAdd={handleAddLineItem}
-              importPendingCount={importPendingCount}
-              importWorkUnitPreview={importWorkUnitPreview}
-              applyImportedUnitLabels={applyImportedUnitLabels}
-              onApplyImportedUnitLabelsChange={setApplyImportedUnitLabels}
-              isImportApplying={isImportApplying}
-              importFileInputRef={importFileInputRef}
-              onImportFileChange={handleImportFileChange}
-              onImportConfirm={handleImportConfirm}
-              onImportCancel={handleImportCancel}
-            />
-          )}
         </div>
       </section>
 
