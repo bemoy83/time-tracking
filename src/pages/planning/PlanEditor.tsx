@@ -32,7 +32,7 @@ import { ChevronLeftIcon } from '../../components/icons';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { WorkPackageTable } from './WorkPackageTable';
 import { shouldClearPlanProjectId } from './plan-editor-state';
-import { PlanScheduleInputsPanel } from './schedule/PlanScheduleInputsPanel';
+import { PlanScheduleInputs } from './schedule/PlanScheduleInputs';
 import {
   type PhaseDateField,
   getPrimaryScheduleRange,
@@ -360,7 +360,7 @@ export function PlanEditor({
         onDefaultCrewSizeChange={handleSetDefaultCrewSize}
         onDefaultEfficiencyChange={handleSetDefaultEfficiency}
       >
-        <PlanScheduleInputsPanel
+        <PlanScheduleInputs
           assemblyStartDate={phaseDates.assemblyStartDate}
           assemblyEndDate={phaseDates.assemblyEndDate}
           dismantleStartDate={phaseDates.dismantleStartDate}

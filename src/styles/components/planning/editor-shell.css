@@ -496,6 +496,28 @@
   padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
 }
 
+/* ── Schedule validation ── */
+
+.planning-view__schedule-validation {
+  margin: 0;
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-small);
+}
+
+.planning-view__schedule-validation p {
+  margin: 0;
+}
+
+.planning-view__schedule-validation p + p {
+  margin-top: 4px;
+}
+
+.planning-view__schedule-validation--error {
+  background: var(--state-danger-bg);
+  color: var(--state-danger-fg-strong);
+}
+
 /* ── Plan Schedule Inputs strip (psi-*) ── */
 
 .psi-strip {
