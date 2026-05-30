@@ -301,7 +301,6 @@ export function SidebarScheduleInputs({
         <PhaseRow
           phase="event"
           name="Event"
-          tag="Show"
           dateLabel={formatRange(eventStartDate, eventEndDate)}
           dayCount={eventDays}
           expanded={expandedPhase === 'event'}
