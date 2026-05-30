@@ -22,6 +22,8 @@ import {
   TrashIcon,
 } from '../../../components/icons';
 import { readLocalStorage, writeLocalStorage } from '../../../lib/localStorage';
+import { AlertDialog } from '../../../components/AlertDialog';
+import { WarningIcon } from '../../../components/icons';
 
 interface GroupState {
   drafts: boolean;
@@ -644,6 +646,7 @@ function PlanRow({
   onDelete,
   onOpenWrapUp,
 }: PlanRowProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const displayName = getPlanDisplayName(
     plan,
     plan.projectId ? (projectById.get(plan.projectId) ?? null) : null,
@@ -759,7 +762,7 @@ function PlanRow({
           className="plan-row__delete"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(plan.id);
+            setConfirmDelete(true);
           }}
           aria-label={`Delete ${displayName}`}
           title="Delete"
@@ -767,6 +770,23 @@ function PlanRow({
           <TrashIcon className="plan-row__delete-icon" />
         </button>
       </div>
+      <AlertDialog
+        isOpen={confirmDelete}
+        tone="danger"
+        title="Delete plan?"
+        titleIcon={<WarningIcon className="alert-dialog__icon" />}
+        description={`"${displayName}" will be permanently deleted. This cannot be undone.`}
+        onClose={() => setConfirmDelete(false)}
+        actions={[
+          { label: 'Cancel', onClick: () => setConfirmDelete(false), variant: 'secondary' },
+          {
+            label: 'Delete',
+            onClick: () => { setConfirmDelete(false); onDelete(plan.id); },
+            variant: 'danger',
+            icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
+          },
+        ]}
+      />
     </li>
   );
 }
