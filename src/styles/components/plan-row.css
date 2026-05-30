@@ -8,29 +8,21 @@
   align-items: stretch;
 }
 
-/* Inset divider between rows */
-.plan-row:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: var(--space-md);
-  right: var(--space-md);
-  height: 1px;
-  background: var(--color-border);
-  pointer-events: none;
-}
-
 .plan-row__item {
   display: flex;
   align-items: center;
   flex: 1;
   min-width: 0;
   position: relative;
-  transition: background-color 0.15s;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--surface-contained-bg);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: background-color 0.15s, box-shadow 0.15s;
 }
 
 .plan-row--has-project .plan-row__item {
-  border-inline-start: 4px solid var(--plan-row-accent);
+  border-inline-start: 3px solid var(--plan-row-accent);
 }
 
 .plan-row__item:hover {
@@ -39,6 +31,9 @@
 
 .plan-row--selected .plan-row__item {
   background: var(--surface-brand-subtle);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 .plan-row--selected .plan-row__btn {
@@ -47,6 +42,9 @@
 
 .plan-row--shared-selected .plan-row__item {
   background: var(--surface-brand-subtle);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 /* Main select button */
@@ -81,7 +79,7 @@
   padding: 0;
   margin-left: var(--space-sm);
   border: 1px solid var(--surface-contained-border);
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   background: var(--surface-contained-bg);
   color: var(--state-on-solid);
   cursor: pointer;
@@ -107,8 +105,8 @@
 }
 
 .plan-row__shared-toggle-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 .plan-row__content {
@@ -201,4 +199,18 @@
 .plan-row__delete-icon {
   width: 13px;
   height: 13px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .plan-row__item {
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .plan-row--selected .plan-row__item,
+  .plan-row--shared-selected .plan-row__item {
+    box-shadow:
+      1px 0 2px rgba(0, 0, 0, 0.15),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  }
 }
