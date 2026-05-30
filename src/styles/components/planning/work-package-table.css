@@ -589,6 +589,37 @@
   min-height: 34px;
 }
 
+/* Title: fixed width, no stretch */
+.planning-view__wp-add-bar-title {
+  flex: 0 0 220px;
+}
+
+/* + circle button — override all btn base sizing */
+.planning-view__wp-add-bar-btn.planning-view__wp-add-bar-btn {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Work type — wider for longer names */
+.planning-view__wp-add-bar-type {
+  width: 220px;
+}
+
+/* Import CSV pinned to the right */
+.planning-view__wp-add-bar-import-btn {
+  margin-left: auto;
+}
+
 /* 1. Summary badges — subtle chips (inherits from base) */
 
 /* 2. Thead pinned to card surface — square corners (no radius) so no gap for scroll; phase tints override */

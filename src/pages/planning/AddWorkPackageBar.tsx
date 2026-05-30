@@ -166,15 +166,14 @@ export function AddWorkPackageBar({
 
             <button
               type="button"
-              className="btn btn--primary btn--sm planning-view__wp-add-bar-btn"
+              className="btn btn--primary planning-view__wp-add-bar-btn"
               onClick={handleAddRow}
               disabled={addDisabledReason != null}
               title={addDisabledReason ?? 'Add work package'}
+              aria-label="Add work package"
             >
-              Add
+              +
             </button>
-
-            <span className="planning-view__wp-add-bar-sep" aria-hidden>·</span>
 
             <button
               type="button"
