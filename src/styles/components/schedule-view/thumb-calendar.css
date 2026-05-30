@@ -11,6 +11,56 @@
   padding: 0 var(--space-md) var(--space-md);
 }
 
+/* --- Month navigation --- */
+
+.thumb-calendar__month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 8px;
+}
+
+.thumb-calendar__month-label {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+  flex: 1;
+}
+
+.thumb-calendar__month-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  min-width: unset;
+  min-height: unset;
+  transition: background-color 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+
+.thumb-calendar__month-btn:hover:not(:disabled) {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.thumb-calendar__month-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* --- Grid header and rows --- */
+
 .thumb-calendar__header,
 .thumb-calendar__row {
   display: grid;
@@ -37,6 +87,8 @@
   justify-content: center;
   opacity: 0.6;
 }
+
+/* --- Cells --- */
 
 .thumb-calendar__cell {
   position: relative;
@@ -78,11 +130,11 @@
   background: transparent;
   cursor: default;
   pointer-events: none;
+  color: var(--color-text-muted);
+  opacity: 0.4;
 }
 
-.thumb-calendar__cell--off {
-  opacity: 0.35;
-}
+/* Phase zone tints — 5-zone system */
 
 .thumb-calendar__cell--assembly {
   background: color-mix(in srgb, var(--phase-assembly-fg) 12%, transparent);
@@ -95,6 +147,40 @@
 .thumb-calendar__cell--dismantle {
   background: color-mix(in srgb, var(--phase-dismantle-fg) 12%, transparent);
 }
+
+/* Moving-in / moving-out: diagonal stripe, same pattern as grid extended-zone */
+
+.thumb-calendar__cell--moving-in {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--phase-assembly-fg) 16%, transparent) 0,
+    color-mix(in srgb, var(--phase-assembly-fg) 16%, transparent) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
+
+.thumb-calendar__cell--moving-out {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--phase-dismantle-fg) 16%, transparent) 0,
+    color-mix(in srgb, var(--phase-dismantle-fg) 16%, transparent) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
+
+/* Off-day: muted color (not opacity — avoids inconsistency with grid pattern) */
+
+.thumb-calendar__cell--off {
+  color: var(--color-text-muted);
+}
+
+.thumb-calendar__cell--off .thumb-calendar__today-dot {
+  background: var(--color-primary);
+}
+
+/* Today */
 
 .thumb-calendar__cell--today {
   color: var(--color-primary);
@@ -110,13 +196,24 @@
   flex-shrink: 0;
 }
 
+/* Selected */
+
 .thumb-calendar__cell--selected {
   outline: 2px solid var(--color-primary);
   outline-offset: 0px;
   z-index: 1;
 }
 
-/* --- Day editor panel --- */
+/* --- Summary line --- */
+
+.thumb-calendar__summary {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  padding: 6px 0 0;
+  line-height: 1.4;
+}
+
+/* --- Day editor panel — always rendered, fixed slot --- */
 
 .thumb-calendar__day-editor {
   margin-top: 8px;
@@ -127,6 +224,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 110px;
+}
+
+.thumb-calendar__day-editor-placeholder {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: auto;
+  opacity: 0.6;
 }
 
 .thumb-calendar__day-editor-header {
