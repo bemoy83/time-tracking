@@ -3,7 +3,7 @@
    ============================================================ */
 
 .planning-view--editor {
-  gap: var(--space-sm);
+  gap: 0;
 }
 
 /* ── Sticky metric strip ─────────────────────────────────────── */
@@ -16,27 +16,6 @@
 }
 
 /* ── Merged overview card (identity + schedule inputs) ──────── */
-
-.planning-view__overview-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--card-radius);
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-  overflow: hidden;
-}
-
-/* Strip card chrome from overview-block when nested inside the merged card */
-.planning-view__overview-card .planning-view__overview-block {
-  background: none;
-  box-shadow: none;
-  border-radius: 0;
-}
-
-/* Separator between identity and schedule inputs */
-.planning-view__overview-card .planning-view__schedule-inputs-wrap {
-  border-top: 1px solid var(--surface-contained-border);
-}
 
 /* ─────────────────────────────────────────────────────────────── */
 
@@ -76,9 +55,10 @@
 
 .planning-view__overview-block {
   position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: var(--space-sm);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-md);
   padding: var(--space-md);
   border-radius: var(--card-radius);
   background: var(--card-bg);
@@ -86,6 +66,7 @@
 }
 
 .planning-view__overview-identity {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -506,10 +487,256 @@
   cursor: not-allowed;
 }
 
-.planning-view__schedule-inputs-wrap {
+
+/* Schedule inputs strip when inside overview-block */
+.planning-view__overview-block .psi-strip {
+  flex: 1 1 0;
+  min-width: 0;
+  border-left: 1px solid var(--color-border);
+  padding: var(--space-xs) 0 var(--space-xs) var(--space-md);
+}
+
+/* ── Plan Schedule Inputs strip (psi-*) ── */
+
+.psi-strip {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+}
+
+.psi-phases {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-sm) var(--space-md);
+  align-items: start;
+}
+
+/* Phase / derived / crew columns */
+
+.psi-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.psi-col--phase,
+.psi-col--derived {
+  min-width: 0;
+}
+
+/* Column label row */
+
+.psi-col__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+  margin-bottom: 2px;
+}
+
+.psi-col__label-text {
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.psi-col__label-text--muted {
+  opacity: 0.7;
+}
+
+/* Phase dots — mirrors sidebar-phase-row__dot */
+
+.psi-col__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.psi-col__dot--assembly  { background: var(--phase-assembly-fg); }
+.psi-col__dot--event     { background: var(--phase-event-fg); }
+.psi-col__dot--dismantle { background: var(--phase-dismantle-fg); }
+
+.psi-col__dot--derived {
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+.psi-col__dot--moving-in {
+  border: 1px solid color-mix(in srgb, var(--phase-assembly-fg) 40%, transparent);
+}
+
+.psi-col__dot--moving-out {
+  border: 1px solid color-mix(in srgb, var(--phase-dismantle-fg) 40%, transparent);
+}
+
+.psi-col__dot--moving-in::before,
+.psi-col__dot--moving-out::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  transform-origin: center;
+}
+
+.psi-col__dot--moving-in::before  { background: var(--phase-assembly-fg); }
+.psi-col__dot--moving-out::before { background: var(--phase-dismantle-fg); }
+
+/* Date picker field */
+
+.psi-date-field {
+  position: relative;
+}
+
+.psi-date-field input[type="date"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  width: 100%;
+}
+
+.psi-date-display {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-caption);
+  color: var(--color-text);
+  min-height: 32px;
+  cursor: default;
+}
+
+.psi-date-display svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.psi-date-display--interactive {
+  cursor: pointer;
+}
+
+.psi-date-display--interactive:hover {
+  border-color: var(--color-border-focus, var(--color-primary));
+  background: var(--color-surface-subtle);
+}
+
+.psi-date-placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Derived phase range display */
+
+.psi-derived-range {
+  font-size: var(--font-caption);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.psi-derived-count {
+  font-size: 11px;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--color-text-muted);
+}
+
+.psi-derived-empty {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+/* Crew / efficiency row inside identity block */
+
+.planning-view__overview-crew {
+  display: flex;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.planning-view__overview-crew-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.planning-view__overview-crew-field:first-child {
+  flex: 0 0 64px;
+}
+
+.planning-view__overview-crew-field .input {
+  font-size: var(--font-caption);
+  padding: 5px 8px;
+  min-height: 32px;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.planning-view__overview-crew-field--custom {
+  flex: 0 0 auto;
+}
+
+.planning-view__overview-crew-label {
+  font-size: var(--font-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.planning-view__overview-efficiency-slider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.planning-view__overview-efficiency-slider--hidden {
+  visibility: hidden;
+}
+
+.planning-view__overview-efficiency-slider input[type="range"] {
+  flex: 1;
+  height: 3px;
+  accent-color: var(--color-primary);
+}
+
+.planning-view__overview-efficiency-pct {
+  font-size: var(--font-caption);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  color: var(--color-text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+.planning-view__overview-efficiency-custom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.planning-view__overview-efficiency-custom .input {
+  width: 64px;
+}
+
+.planning-view__overview-efficiency-unit {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
 }
 
 .planning-view--editor .schedule-view__block-header {

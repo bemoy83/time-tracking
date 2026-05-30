@@ -46,6 +46,7 @@
 
 .planning-view__wp-table-zone {
   min-width: 0;
+  padding-top: var(--space-sm);
 }
 
 .planning-view__wp-add-zone {

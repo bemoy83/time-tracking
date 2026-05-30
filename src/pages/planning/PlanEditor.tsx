@@ -347,38 +347,31 @@ export function PlanEditor({
         />
       </div>
 
-      <div className="planning-view__overview-card">
-        <PlanOverviewSection
-          title={title}
-          selectedProject={selectedProject}
-          planDisplayName={planDisplayName}
-          readOnly={readOnly}
-          isLocked={isLocked}
-          identityError={identityError}
-          onOpenProjectPicker={() => setShowProjectPicker(true)}
+      <PlanOverviewSection
+        title={title}
+        selectedProject={selectedProject}
+        planDisplayName={planDisplayName}
+        readOnly={readOnly}
+        isLocked={isLocked}
+        identityError={identityError}
+        defaultCrewSize={currentPlan.defaultCrewSize}
+        defaultEfficiency={currentPlan.defaultEfficiency}
+        onOpenProjectPicker={() => setShowProjectPicker(true)}
+        onDefaultCrewSizeChange={handleSetDefaultCrewSize}
+        onDefaultEfficiencyChange={handleSetDefaultEfficiency}
+      >
+        <PlanScheduleInputsPanel
+          assemblyStartDate={phaseDates.assemblyStartDate}
+          assemblyEndDate={phaseDates.assemblyEndDate}
+          dismantleStartDate={phaseDates.dismantleStartDate}
+          dismantleEndDate={phaseDates.dismantleEndDate}
+          eventStartDate={currentPlan.eventStartDate}
+          eventEndDate={currentPlan.eventEndDate}
+          readOnly={readOnly || isLocked}
+          onPhaseDateChange={handleSetPhaseDate}
+          onEventDateChange={handleSetEventDate}
         />
-        <div className="planning-view__schedule-inputs-wrap">
-          <PlanScheduleInputsPanel
-            assemblyStartDate={phaseDates.assemblyStartDate}
-            assemblyEndDate={phaseDates.assemblyEndDate}
-            dismantleStartDate={phaseDates.dismantleStartDate}
-            dismantleEndDate={phaseDates.dismantleEndDate}
-            eventStartDate={currentPlan.eventStartDate}
-            eventEndDate={currentPlan.eventEndDate}
-            defaultCrewSize={currentPlan.defaultCrewSize}
-            defaultEfficiency={currentPlan.defaultEfficiency}
-            readOnly={readOnly || isLocked}
-            primaryRange={summaryRange}
-            dayCount={availableScope?.workDayCount ?? 0}
-            crewSize={effectiveCrewSize ?? null}
-            totalAvailable={availableScope?.totalAvailable ?? 0}
-            onPhaseDateChange={handleSetPhaseDate}
-            onEventDateChange={handleSetEventDate}
-            onDefaultCrewSizeChange={handleSetDefaultCrewSize}
-            onDefaultEfficiencyChange={handleSetDefaultEfficiency}
-          />
-        </div>
-      </div>
+      </PlanOverviewSection>
 
       <section className="planning-view__work-packages-section">
         <div

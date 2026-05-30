@@ -247,9 +247,7 @@ export function WorkPackageTable({
         </caption>
         <thead>
           <tr className="planning-view__wp-header-group">
-            <th colSpan={5} className="planning-view__wp-group-heading" scope="colgroup">
-              Work Package
-            </th>
+            <th colSpan={5} className="planning-view__wp-group-heading" scope="colgroup" />
             <th
               colSpan={3}
               className="planning-view__wp-group-heading planning-view__wp-group-heading--phase planning-view__wp-group-heading--assembly planning-view__wp-phase-group-start"

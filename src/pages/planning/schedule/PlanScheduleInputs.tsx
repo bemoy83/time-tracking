@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { CalendarIcon } from '../../../components/icons';
-import { DEFAULT_PLAN_EFFICIENCY } from '../../../lib/planning/plan-model';
 import {
   type PhaseDateField,
   type PhaseDateValues,
@@ -15,74 +14,113 @@ function formatShortDate(dateStr: string | null): string {
 
 function openDatePicker(e: React.MouseEvent | React.KeyboardEvent) {
   const input = (e.currentTarget.parentElement?.querySelector('input[type="date"]') as HTMLInputElement | null);
-  try {
-    input?.showPicker?.();
-  } catch {
-    /* showPicker requires user gesture; fallback: input receives click if not disabled */
-  }
+  try { input?.showPicker?.(); } catch { /* fallback */ }
+}
+
+function shiftDate(date: string, delta: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  return [
+    dt.getFullYear(),
+    String(dt.getMonth() + 1).padStart(2, '0'),
+    String(dt.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 interface PlanScheduleInputsProps extends PhaseDateValues {
   eventStartDate: string | null;
   eventEndDate: string | null;
-  defaultCrewSize: number | null;
-  defaultEfficiency: number | null;
   readOnly: boolean;
   onPhaseDateChange: (field: PhaseDateField, value: string) => void;
   onEventDateChange: (field: 'eventStartDate' | 'eventEndDate', value: string) => void;
-  onDefaultCrewSizeChange: (value: string) => void;
-  onDefaultEfficiencyChange: (value: string) => void;
 }
 
-const EFFICIENCY_PRESETS = [
-  { value: '80', label: 'Conservative — 80%' },
-  { value: '90', label: 'Normal — 90%' },
-  { value: '100', label: 'Full pace — 100%' },
-] as const;
-
-function DateInput({
-  label,
-  labelMod,
+function DateField({
   value,
   readOnly,
+  placeholder,
   onChange,
 }: {
-  label: string;
-  labelMod?: string;
   value: string | null;
   readOnly: boolean;
+  placeholder: string;
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="planning-view__schedule-input">
-      <span className={`planning-view__schedule-label-text${labelMod ? ` ${labelMod}` : ''}`}>{label}</span>
-      <div className="planning-view__date-display-wrap">
-        <div
-          className={`planning-view__date-display${!readOnly ? ' planning-view__date-display--interactive' : ''}`}
-          aria-hidden="true"
-          onClick={!readOnly ? openDatePicker : undefined}
-          onKeyDown={
-            !readOnly
-              ? (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openDatePicker(e);
-                  }
-                }
-              : undefined
-          }
-        >
-          <CalendarIcon /><span>{formatShortDate(value)}</span>
-        </div>
-        <input
-          className="input"
-          type="date"
-          disabled={readOnly}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-        />
+    <div className="psi-date-field">
+      <div
+        className={`psi-date-display${!readOnly ? ' psi-date-display--interactive' : ''}`}
+        aria-hidden="true"
+        onClick={!readOnly ? openDatePicker : undefined}
+        onKeyDown={!readOnly ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDatePicker(e); }
+        } : undefined}
+      >
+        <CalendarIcon />
+        <span className={value ? undefined : 'psi-date-placeholder'}>
+          {value ? formatShortDate(value) : placeholder}
+        </span>
       </div>
-    </label>
+      <input
+        className="input"
+        type="date"
+        disabled={readOnly}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function PhaseColumn({
+  label,
+  dotClass,
+  startDate,
+  endDate,
+  readOnly,
+  onStartChange,
+  onEndChange,
+}: {
+  label: string;
+  dotClass: string;
+  startDate: string | null;
+  endDate: string | null;
+  readOnly: boolean;
+  onStartChange: (v: string) => void;
+  onEndChange: (v: string) => void;
+}) {
+  return (
+    <div className="psi-col">
+      <div className="psi-col__label">
+        <span className={`psi-col__dot ${dotClass}`} />
+        <span className="psi-col__label-text">{label}</span>
+      </div>
+      <DateField value={startDate} readOnly={readOnly} placeholder="From" onChange={onStartChange} />
+      <DateField value={endDate} readOnly={readOnly} placeholder="To" onChange={onEndChange} />
+    </div>
+  );
+}
+
+function DerivedColumn({
+  label,
+  dotClass,
+  startDate,
+  endDate,
+}: {
+  label: string;
+  dotClass: string;
+  startDate: string | null;
+  endDate: string | null;
+}) {
+  return (
+    <div className="psi-col psi-col--derived">
+      <div className="psi-col__label">
+        <span className={`psi-col__dot psi-col__dot--derived ${dotClass}`} />
+        <span className="psi-col__label-text psi-col__label-text--muted">{label}</span>
+      </div>
+      <DateField value={startDate} readOnly placeholder="From" onChange={() => {}} />
+      <DateField value={endDate} readOnly placeholder="To" onChange={() => {}} />
+    </div>
   );
 }
 
@@ -93,30 +131,17 @@ export function PlanScheduleInputs({
   dismantleEndDate,
   eventStartDate,
   eventEndDate,
-  defaultCrewSize,
-  defaultEfficiency,
   readOnly,
   onPhaseDateChange,
   onEventDateChange,
-  onDefaultCrewSizeChange,
-  onDefaultEfficiencyChange,
 }: PlanScheduleInputsProps) {
-  const currentPct =
-    defaultEfficiency != null ? Math.round(defaultEfficiency * 100) : Math.round(DEFAULT_PLAN_EFFICIENCY * 100);
-  const isKnownPreset = EFFICIENCY_PRESETS.some((p) => p.value === String(currentPct));
+  const movingInStart = assemblyEndDate ? shiftDate(assemblyEndDate, 1) : null;
+  const movingInEnd = eventStartDate ? shiftDate(eventStartDate, -1) : null;
+  const movingInVisible = movingInStart != null && movingInEnd != null && movingInStart <= movingInEnd;
 
-  const [customMode, setCustomMode] = useState(() => !isKnownPreset);
-
-  const selectValue = customMode ? 'custom' : String(currentPct);
-
-  function handleEfficiencySelectChange(val: string) {
-    if (val === 'custom') {
-      setCustomMode(true);
-    } else {
-      setCustomMode(false);
-      onDefaultEfficiencyChange(val);
-    }
-  }
+  const movingOutStart = eventEndDate ? shiftDate(eventEndDate, 1) : null;
+  const movingOutEnd = dismantleStartDate ? shiftDate(dismantleStartDate, -1) : null;
+  const movingOutVisible = movingOutStart != null && movingOutEnd != null && movingOutStart <= movingOutEnd;
 
   const validationErrors = useMemo(
     () => getScheduleDateValidationErrors(
@@ -128,96 +153,56 @@ export function PlanScheduleInputs({
   );
 
   return (
-    <>
-      <div className="planning-view__schedule-inputs planning-view__schedule-inputs--phase">
-        {/* Row 1: phase dates */}
-        <DateInput
-          label="Assembly from"
-          labelMod="planning-view__schedule-label-text--assembly"
-          value={assemblyStartDate}
+    <div className="psi-strip">
+      <div className="psi-phases">
+        <PhaseColumn
+          label="Assembly"
+          dotClass="psi-col__dot--assembly"
+          startDate={assemblyStartDate}
+          endDate={assemblyEndDate}
           readOnly={readOnly}
-          onChange={(v) => onPhaseDateChange('assemblyStartDate', v)}
-        />
-        <DateInput
-          label="Assembly to"
-          labelMod="planning-view__schedule-label-text--assembly"
-          value={assemblyEndDate}
-          readOnly={readOnly}
-          onChange={(v) => onPhaseDateChange('assemblyEndDate', v)}
-        />
-        <DateInput
-          label="Dismantle from"
-          labelMod="planning-view__schedule-label-text--dismantle"
-          value={dismantleStartDate}
-          readOnly={readOnly}
-          onChange={(v) => onPhaseDateChange('dismantleStartDate', v)}
-        />
-        <DateInput
-          label="Dismantle to"
-          labelMod="planning-view__schedule-label-text--dismantle"
-          value={dismantleEndDate}
-          readOnly={readOnly}
-          onChange={(v) => onPhaseDateChange('dismantleEndDate', v)}
+          onStartChange={(v) => onPhaseDateChange('assemblyStartDate', v)}
+          onEndChange={(v) => onPhaseDateChange('assemblyEndDate', v)}
         />
 
-        {/* Row 2: crew, usable time, event dates */}
-        <label className="planning-view__schedule-input">
-          <span className="planning-view__schedule-label-text">Default crew</span>
-          <input
-            className="input"
-            type="number"
-            min={0}
-            step={1}
-            disabled={readOnly}
-            value={defaultCrewSize ?? ''}
-            onChange={(e) => onDefaultCrewSizeChange(e.target.value)}
+        {movingInVisible && (
+          <DerivedColumn
+            label="Moving In"
+            dotClass="psi-col__dot--moving-in"
+            startDate={movingInStart}
+            endDate={movingInEnd}
           />
-        </label>
+        )}
 
-        <label className="planning-view__schedule-input">
-          <span className="planning-view__schedule-label-text">Base efficiency</span>
-          <select
-            className="input"
-            disabled={readOnly}
-            value={selectValue}
-            onChange={(e) => handleEfficiencySelectChange(e.target.value)}
-          >
-            {EFFICIENCY_PRESETS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-            <option value="custom">Custom…</option>
-          </select>
-        </label>
-
-        <DateInput
-          label="Event from"
-          value={eventStartDate}
+        <PhaseColumn
+          label="Event"
+          dotClass="psi-col__dot--event"
+          startDate={eventStartDate}
+          endDate={eventEndDate}
           readOnly={readOnly}
-          onChange={(v) => onEventDateChange('eventStartDate', v)}
+          onStartChange={(v) => onEventDateChange('eventStartDate', v)}
+          onEndChange={(v) => onEventDateChange('eventEndDate', v)}
         />
-        <DateInput
-          label="Event to"
-          value={eventEndDate}
+
+        {movingOutVisible && (
+          <DerivedColumn
+            label="Moving Out"
+            dotClass="psi-col__dot--moving-out"
+            startDate={movingOutStart}
+            endDate={movingOutEnd}
+          />
+        )}
+
+        <PhaseColumn
+          label="Dismantle"
+          dotClass="psi-col__dot--dismantle"
+          startDate={dismantleStartDate}
+          endDate={dismantleEndDate}
           readOnly={readOnly}
-          onChange={(v) => onEventDateChange('eventEndDate', v)}
+          onStartChange={(v) => onPhaseDateChange('dismantleStartDate', v)}
+          onEndChange={(v) => onPhaseDateChange('dismantleEndDate', v)}
         />
       </div>
-
-      {customMode && (
-        <div className="planning-view__schedule-slider-wrap">
-          <input
-            type="range"
-            className="planning-view__schedule-slider"
-            min={60}
-            max={100}
-            step={1}
-            disabled={readOnly}
-            value={Math.min(100, Math.max(60, currentPct))}
-            onChange={(e) => onDefaultEfficiencyChange(e.target.value)}
-          />
-          <span className="planning-view__schedule-slider-value">{currentPct}%</span>
-        </div>
-      )}
 
       {validationErrors.length > 0 && (
         <div className="planning-view__schedule-validation planning-view__schedule-validation--error" role="alert">
@@ -226,6 +211,6 @@ export function PlanScheduleInputs({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
