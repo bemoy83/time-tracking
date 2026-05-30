@@ -170,10 +170,15 @@
   );
 }
 
-/* Off-day: muted color (not opacity — avoids inconsistency with grid pattern) */
+/* Off-day: muted text + washed-out background + suppressed hover */
 
 .thumb-calendar__cell--off {
   color: var(--color-text-muted);
+  opacity: 0.45;
+}
+
+.thumb-calendar__cell--off:hover {
+  background: transparent;
 }
 
 .thumb-calendar__cell--off .thumb-calendar__today-dot {

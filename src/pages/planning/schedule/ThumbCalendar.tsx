@@ -106,8 +106,28 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
 
   const selectedDay = selectedDate ? calendarByDate.get(selectedDate) ?? null : null;
 
+  const selectedZone = useMemo(() => {
+    if (!selectedDate) return 'outside' as const;
+    const inRange = selectedDate >= calendarStart && selectedDate <= calendarEnd;
+    return inRange
+      ? classifyDayZone(selectedDate, phaseDates, eventStartDate, eventEndDate)
+      : ('outside' as const);
+  }, [selectedDate, calendarStart, calendarEnd, phaseDates, eventStartDate, eventEndDate]);
+
+  const selectedIsExtendedZone = selectedZone === 'moving-in' || selectedZone === 'moving-out';
+
   const handleToggleWorkday = useCallback(() => {
-    if (!selectedDate || !selectedDay || !ctx) return;
+    if (!selectedDate || !ctx) return;
+    if (!selectedDay) {
+      // No calendar entry yet (extended zone day) — create it as a work day
+      ctx.onUpdateCalendarDay(selectedDate, {
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: null,
+      });
+      return;
+    }
     const nowWork = !selectedDay.isWorkDay;
     ctx.onUpdateCalendarDay(selectedDate, {
       isWorkDay: nowWork,
@@ -174,10 +194,11 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
           {week.map((date) => {
             const inRange = date >= calendarStart && date <= calendarEnd;
             const calDay = calendarByDate.get(date);
-            const isOff = calDay ? !calDay.isWorkDay : false;
             const zone = inRange
               ? classifyDayZone(date, phaseDates, eventStartDate, eventEndDate)
               : 'outside';
+            const isExtendedZone = zone === 'moving-in' || zone === 'moving-out';
+            const isOff = calDay ? !calDay.isWorkDay : isExtendedZone;
             const isToday = date === todayIso;
             const isSelected = date === selectedDate;
             const dayNum = parseInt(date.slice(8), 10);
@@ -232,7 +253,7 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
 
       {/* Day editor — always rendered to avoid layout shift */}
       <div className="thumb-calendar__day-editor">
-        {selectedDate && selectedDay && ctx ? (
+        {selectedDate && (selectedDay || selectedIsExtendedZone) && ctx ? (
           <>
             <div className="thumb-calendar__day-editor-header">
               <span className="thumb-calendar__day-editor-date">
@@ -240,15 +261,15 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
               </span>
               <button
                 type="button"
-                className={`thumb-calendar__day-editor-toggle${selectedDay.isWorkDay ? '' : ' thumb-calendar__day-editor-toggle--off'}`}
+                className={`thumb-calendar__day-editor-toggle${(selectedDay?.isWorkDay ?? false) ? '' : ' thumb-calendar__day-editor-toggle--off'}`}
                 onClick={handleToggleWorkday}
                 disabled={ctx.readOnly}
               >
-                {selectedDay.isWorkDay ? 'Work day' : 'Off day'}
+                {(selectedDay?.isWorkDay ?? false) ? 'Work day' : 'Off day'}
               </button>
             </div>
 
-            {selectedDay.isWorkDay && (
+            {selectedDay?.isWorkDay && (
               <div className="thumb-calendar__day-editor-fields">
                 <label className="thumb-calendar__day-editor-field">
                   <span className="thumb-calendar__day-editor-label">Crew</span>

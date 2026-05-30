@@ -249,7 +249,15 @@ export function useScheduleViewState({
   const handleUpdateCalendarDay = useCallback(
     (date: string, updates: Partial<Plan['workCalendar'][number]>) => {
       clearAssistantReport();
-      mutatePlan((prev) => updatePlanCalendarDay(prev, date, updates));
+      mutatePlan((prev) => {
+        const existing = prev.workCalendar.find((d) => d.date === date);
+        if (!existing) {
+          // No entry yet — only meaningful for extended zone days being enabled
+          if (!updates.isWorkDay) return prev;
+          return addExtendedZoneDayToPlan(prev, date);
+        }
+        return updatePlanCalendarDay(prev, date, updates);
+      });
       trackTelemetryEvent('schedule_calendar_edit');
     },
     [clearAssistantReport, mutatePlan],

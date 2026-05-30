@@ -94,17 +94,33 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
       (raw.defaultCrewSize as number | null) ?? null,
     );
   } else {
-    raw.workCalendar = reconcileWorkCalendarForSpans(
-      raw.workCalendar as unknown as Array<{
-        date: string;
-        isWorkDay: boolean;
-        accessStart: string | null;
-        accessEnd: string | null;
-        crewSize: number | null;
-      }>,
+    const rawCalendar = raw.workCalendar as unknown as Array<{
+      date: string;
+      isWorkDay: boolean;
+      accessStart: string | null;
+      accessEnd: string | null;
+      crewSize: number | null;
+    }>;
+    // Preserve explicitly-enabled extended zone days (moving-in / moving-out) that
+    // fall outside commercial phase spans — these are user-authored entries that
+    // reconcileWorkCalendarForSpans would otherwise silently discard.
+    const spanDates = new Set(phaseSpans.flatMap(s => listDateRange(s.start, s.end)));
+    const extendedWorkDays = rawCalendar.filter(d => d.isWorkDay && !spanDates.has(d.date));
+    const reconciled = reconcileWorkCalendarForSpans(
+      rawCalendar,
       phaseSpans,
       (raw.defaultCrewSize as number | null) ?? null,
     );
+    if (extendedWorkDays.length > 0) {
+      const reconciledDates = new Set(reconciled.map(d => d.date));
+      const merged = [
+        ...reconciled,
+        ...extendedWorkDays.filter(d => !reconciledDates.has(d.date)),
+      ].sort((a, b) => a.date.localeCompare(b.date));
+      raw.workCalendar = merged;
+    } else {
+      raw.workCalendar = reconciled;
+    }
   }
 
   if (Array.isArray(raw.lineItems)) {
