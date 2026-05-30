@@ -76,6 +76,7 @@ export function WorkspaceSidebar({
   );
   const [mode, setMode] = useState<'list' | 'detail'>('list');
   const [drillPlanId, setDrillPlanId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
 
@@ -92,6 +93,29 @@ export function WorkspaceSidebar({
     () => [...inProgressPlans, ...readyPlans, ...draftPlans, ...archivedPlans],
     [inProgressPlans, readyPlans, draftPlans, archivedPlans],
   );
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filterPlans = useCallback((group: Plan[]) => {
+    if (!normalizedQuery) return group;
+    return group.filter((plan) => {
+      const name = getPlanDisplayName(
+        plan,
+        plan.projectId ? (projectById.get(plan.projectId) ?? null) : null,
+      ).toLowerCase();
+      return name.includes(normalizedQuery);
+    });
+  }, [normalizedQuery, projectById]);
+
+  const filteredInProgress = useMemo(() => filterPlans(inProgressPlans), [filterPlans, inProgressPlans]);
+  const filteredReady      = useMemo(() => filterPlans(readyPlans),      [filterPlans, readyPlans]);
+  const filteredDrafts     = useMemo(() => filterPlans(draftPlans),      [filterPlans, draftPlans]);
+  const filteredArchived   = useMemo(() => filterPlans(archivedPlans),   [filterPlans, archivedPlans]);
+  const isSearching        = normalizedQuery.length > 0;
+  const noSearchResults    = isSearching
+    && filteredInProgress.length === 0
+    && filteredReady.length === 0
+    && filteredDrafts.length === 0
+    && filteredArchived.length === 0;
 
   const handleToggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -293,14 +317,17 @@ export function WorkspaceSidebar({
               className="workspace-sidebar__search-input"
               placeholder="Search plans…"
               aria-label="Search plans"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
             />
           </div>
           <div className="workspace-sidebar__groups">
-            {inProgressPlans.length > 0 && (
+            {filteredInProgress.length > 0 && (
               <PlanGroup
                 label="In Progress"
-                plans={inProgressPlans}
-                expanded={groupState.inprogress}
+                plans={filteredInProgress}
+                expanded={isSearching || groupState.inprogress}
                 onToggle={() => handleToggleGroup('inprogress')}
                 activePlanId={activePlan?.id ?? null}
                 projectById={projectById}
@@ -316,11 +343,11 @@ export function WorkspaceSidebar({
                 onOpenWrapUp={onOpenWrapUp}
               />
             )}
-            {readyPlans.length > 0 && (
+            {filteredReady.length > 0 && (
               <PlanGroup
                 label="Ready"
-                plans={readyPlans}
-                expanded={groupState.ready}
+                plans={filteredReady}
+                expanded={isSearching || groupState.ready}
                 onToggle={() => handleToggleGroup('ready')}
                 activePlanId={activePlan?.id ?? null}
                 projectById={projectById}
@@ -336,11 +363,11 @@ export function WorkspaceSidebar({
                 onOpenWrapUp={onOpenWrapUp}
               />
             )}
-            {draftPlans.length > 0 && (
+            {filteredDrafts.length > 0 && (
               <PlanGroup
                 label="Drafts"
-                plans={draftPlans}
-                expanded={groupState.drafts}
+                plans={filteredDrafts}
+                expanded={isSearching || groupState.drafts}
                 onToggle={() => handleToggleGroup('drafts')}
                 activePlanId={activePlan?.id ?? null}
                 projectById={projectById}
@@ -356,11 +383,11 @@ export function WorkspaceSidebar({
                 onOpenWrapUp={onOpenWrapUp}
               />
             )}
-            {archivedPlans.length > 0 && (
+            {filteredArchived.length > 0 && (
               <PlanGroup
                 label={`Completed (${archivedPlans.length})`}
-                plans={archivedPlans}
-                expanded={groupState.completed}
+                plans={filteredArchived}
+                expanded={isSearching || groupState.completed}
                 onToggle={() => handleToggleGroup('completed')}
                 activePlanId={activePlan?.id ?? null}
                 projectById={projectById}
@@ -376,8 +403,10 @@ export function WorkspaceSidebar({
                 onOpenWrapUp={onOpenWrapUp}
               />
             )}
-            {plans.length === 0 && (
-              <p className="workspace-sidebar__empty">No plans yet.</p>
+            {(plans.length === 0 || noSearchResults) && (
+              <p className="workspace-sidebar__empty">
+                {noSearchResults ? `No plans match "${searchQuery}"` : 'No plans yet.'}
+              </p>
             )}
           </div>
           {showSharedScheduleSelector && <CrewPoolSidebarSection />}

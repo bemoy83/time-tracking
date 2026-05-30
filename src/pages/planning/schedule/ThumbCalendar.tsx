@@ -106,26 +106,17 @@ export function ThumbCalendar({ calendar, phaseDates }: ThumbCalendarProps) {
 
   const selectedDay = selectedDate ? calendarByDate.get(selectedDate) ?? null : null;
 
-  const selectedZone = useMemo(() => {
-    if (!selectedDate) return 'outside' as const;
-    const inRange = selectedDate >= calendarStart && selectedDate <= calendarEnd;
-    return inRange
-      ? classifyDayZone(selectedDate, phaseDates, eventStartDate, eventEndDate)
-      : ('outside' as const);
+  const selectedIsExtendedZone = useMemo(() => {
+    if (!selectedDate || selectedDate < calendarStart || selectedDate > calendarEnd) return false;
+    const z = classifyDayZone(selectedDate, phaseDates, eventStartDate, eventEndDate);
+    return z === 'moving-in' || z === 'moving-out';
   }, [selectedDate, calendarStart, calendarEnd, phaseDates, eventStartDate, eventEndDate]);
-
-  const selectedIsExtendedZone = selectedZone === 'moving-in' || selectedZone === 'moving-out';
 
   const handleToggleWorkday = useCallback(() => {
     if (!selectedDate || !ctx) return;
     if (!selectedDay) {
       // No calendar entry yet (extended zone day) — create it as a work day
-      ctx.onUpdateCalendarDay(selectedDate, {
-        isWorkDay: true,
-        accessStart: '08:00',
-        accessEnd: '16:00',
-        crewSize: null,
-      });
+      ctx.onUpdateCalendarDay(selectedDate, { isWorkDay: true });
       return;
     }
     const nowWork = !selectedDay.isWorkDay;

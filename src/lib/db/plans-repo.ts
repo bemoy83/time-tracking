@@ -111,16 +111,9 @@ export function normalizePlan(raw: Record<string, unknown>): Plan {
       phaseSpans,
       (raw.defaultCrewSize as number | null) ?? null,
     );
-    if (extendedWorkDays.length > 0) {
-      const reconciledDates = new Set(reconciled.map(d => d.date));
-      const merged = [
-        ...reconciled,
-        ...extendedWorkDays.filter(d => !reconciledDates.has(d.date)),
-      ].sort((a, b) => a.date.localeCompare(b.date));
-      raw.workCalendar = merged;
-    } else {
-      raw.workCalendar = reconciled;
-    }
+    raw.workCalendar = extendedWorkDays.length > 0
+      ? [...reconciled, ...extendedWorkDays].sort((a, b) => a.date.localeCompare(b.date))
+      : reconciled;
   }
 
   if (Array.isArray(raw.lineItems)) {
