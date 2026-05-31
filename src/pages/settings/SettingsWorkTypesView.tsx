@@ -6,6 +6,7 @@ import {
   WorkTypeFilterBar,
   DEFAULT_WORK_TYPE_FILTERS,
   type WorkTypeFilters,
+  type TagOption,
 } from './WorkTypeFilterBar';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { DeleteWorkTypeConfirm } from '../../components/DeleteWorkTypeConfirm';
@@ -50,6 +51,21 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
       .map(([id, count]) => ({ id, label: resolveWorkUnitLabel(id), count }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [editableWorkTypes]);
+
+  const tagOptions = useMemo<TagOption[]>(() => {
+    const counts = new Map<string, number>();
+    for (const wt of editableWorkTypes) {
+      const seen = new Set([...(wt.tagIds ?? []), ...(wt.skillTagId ? [wt.skillTagId] : [])]);
+      for (const id of seen) counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .flatMap(([id, count]) => {
+        const tag = tagById.get(id);
+        if (!tag) return [];
+        return [{ id, name: tag.name, color: tag.color, count, isSkill: tag.skillTag }];
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [editableWorkTypes, tagById]);
 
   const displayedWorkTypes = useMemo(() => {
     let result = editableWorkTypes;
@@ -219,6 +235,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
             filters={filters}
             onChange={setFilters}
             unitOptions={unitOptions}
+            tagOptions={tagOptions}
             totalCount={editableWorkTypes.length}
             filteredCount={displayedWorkTypes.length}
           />

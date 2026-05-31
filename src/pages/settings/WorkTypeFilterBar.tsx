@@ -4,7 +4,6 @@ export interface WorkTypeFilters {
   search: string;
   unitFilter: string[];
   sortOrder: 'az' | 'za' | 'updated';
-  /** Reserved for Tier 2 tag filter — empty = no filter applied. */
   tagFilter: string[];
 }
 
@@ -21,10 +20,19 @@ export interface WorkUnitOption {
   count: number;
 }
 
+export interface TagOption {
+  id: string;
+  name: string;
+  color: string;
+  count: number;
+  isSkill: boolean;
+}
+
 interface WorkTypeFilterBarProps {
   filters: WorkTypeFilters;
   onChange: (next: WorkTypeFilters) => void;
   unitOptions: WorkUnitOption[];
+  tagOptions: TagOption[];
   totalCount: number;
   filteredCount: number;
 }
@@ -33,6 +41,7 @@ export function WorkTypeFilterBar({
   filters,
   onChange,
   unitOptions,
+  tagOptions,
   totalCount,
   filteredCount,
 }: WorkTypeFilterBarProps) {
@@ -58,6 +67,13 @@ export function WorkTypeFilterBar({
     onChange({ ...filters, unitFilter: next });
   }
 
+  function toggleTag(id: string) {
+    const next = filters.tagFilter.includes(id)
+      ? filters.tagFilter.filter((t) => t !== id)
+      : [...filters.tagFilter, id];
+    onChange({ ...filters, tagFilter: next });
+  }
+
   function handleSortChange(e: ChangeEvent<HTMLSelectElement>) {
     onChange({ ...filters, sortOrder: e.target.value as WorkTypeFilters['sortOrder'] });
   }
@@ -65,6 +81,9 @@ export function WorkTypeFilterBar({
   function clearAll() {
     onChange(DEFAULT_WORK_TYPE_FILTERS);
   }
+
+  const regularTags = tagOptions.filter((t) => !t.isSkill);
+  const skillTags = tagOptions.filter((t) => t.isSkill);
 
   return (
     <div className="wt-filter-bar">
@@ -123,6 +142,49 @@ export function WorkTypeFilterBar({
           </div>
         )}
       </div>
+
+      {regularTags.length > 0 && (
+        <div className="wt-filter-bar__tag-row" role="group" aria-label="Filter by tag">
+          {regularTags.map((t) => {
+            const active = filters.tagFilter.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={`wt-filter-bar__tag-chip${active ? ' wt-filter-bar__tag-chip--active' : ''}`}
+                style={{ '--tag-color': t.color } as React.CSSProperties}
+                onClick={() => toggleTag(t.id)}
+                aria-pressed={active}
+              >
+                {t.name}
+                <span className="wt-filter-bar__chip-count">{t.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {skillTags.length > 0 && (
+        <div className="wt-filter-bar__tag-row" role="group" aria-label="Filter by skill">
+          <span className="wt-filter-bar__tag-group-label">Skill</span>
+          {skillTags.map((t) => {
+            const active = filters.tagFilter.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={`wt-filter-bar__tag-chip${active ? ' wt-filter-bar__tag-chip--active' : ''}`}
+                style={{ '--tag-color': t.color } as React.CSSProperties}
+                onClick={() => toggleTag(t.id)}
+                aria-pressed={active}
+              >
+                {t.name}
+                <span className="wt-filter-bar__chip-count">{t.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {(isFiltered || showCount) && (
         <div className="wt-filter-bar__meta-row">
