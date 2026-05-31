@@ -690,6 +690,92 @@ button.settings-view__row:active {
   color: var(--color-primary-hover);
 }
 
+/* ============================================================
+   Work Type header actions (Select + Add buttons)
+   ============================================================ */
+
+.wt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* ============================================================
+   Work Type usage badge
+   ============================================================ */
+
+.wt-usage-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: var(--state-neutral-bg);
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Work Type selection mode
+   ============================================================ */
+
+.wt-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0 var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.wt-selection-bar__select-all {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.wt-selection-bar__select-all input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.wt-selection-bar__count {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  margin-left: auto;
+}
+
+.wt-selection-bar__trash-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.wt-row-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-right: var(--space-xs);
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.settings-view__list-item--selectable {
+  padding-left: var(--space-xs);
+}
+
+.settings-view__row--selected {
+  background: var(--surface-contained-hover);
+}
+
 .wt-filter-bar__tag-row {
   display: flex;
   flex-wrap: wrap;

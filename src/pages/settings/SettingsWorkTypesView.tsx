@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
+import { useTaskStore } from '../../lib/stores/task-store';
 import type { WorkType } from '../../lib/types';
 import { resolveWorkUnitLabel } from '../../lib/types';
 import {
@@ -10,7 +11,8 @@ import {
 } from './WorkTypeFilterBar';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { DeleteWorkTypeConfirm } from '../../components/DeleteWorkTypeConfirm';
-import { ExportIcon, PencilIcon, RulerIcon, TrashIcon } from '../../components/icons';
+import { AlertDialog } from '../../components/AlertDialog';
+import { ExportIcon, PencilIcon, RulerIcon, TrashIcon, WarningIcon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { SettingsDetailLayout } from './SettingsDetailLayout';
 import { exportWorkTypesCsv } from '../../lib/interop/work-type-export';
@@ -37,9 +39,25 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
   const { workTypes } = useWorkTypeStore();
   const { definitions: workUnitDefinitions } = useWorkUnitStore();
   const { tags } = useTagStore();
-  const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
-  const editableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
+  const { tasks } = useTaskStore();
 
+  const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
+  const editableWorkTypes = useMemo(
+    () => workTypes.filter((wt) => wt.readOnly !== true),
+    [workTypes],
+  );
+
+  // ── Usage counts ─────────────────────────────────────────────
+  const usageByWorkTypeId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const task of tasks) {
+      if (task.archivedAt !== null || !task.workTypeId) continue;
+      map.set(task.workTypeId, (map.get(task.workTypeId) ?? 0) + 1);
+    }
+    return map;
+  }, [tasks]);
+
+  // ── Filter / sort state ───────────────────────────────────────
   const [filters, setFilters] = useState<WorkTypeFilters>(DEFAULT_WORK_TYPE_FILTERS);
 
   const unitOptions = useMemo(() => {
@@ -94,26 +112,57 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     return sorted;
   }, [editableWorkTypes, filters]);
 
+  // ── Selection / bulk delete state ────────────────────────────
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  function enterSelectionMode() {
+    setSelectionMode(true);
+    setSelectedIds([]);
+  }
+
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    setSelectedIds([]);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function selectAllVisible() {
+    const visibleIds = displayedWorkTypes.map((wt) => wt.id);
+    const allSelected = visibleIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  }
+
+  const visibleAllSelected =
+    displayedWorkTypes.length > 0 &&
+    displayedWorkTypes.every((wt) => selectedIds.includes(wt.id));
+
+  async function handleBulkDeleteConfirmed() {
+    setIsBulkDeleting(true);
+    try {
+      await Promise.all(selectedIds.map((id) => removeWorkType(id)));
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkConfirm(false);
+      exitSelectionMode();
+    }
+  }
+
+  // ── Single-item CRUD ─────────────────────────────────────────
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
   const [deleteConfirmWorkType, setDeleteConfirmWorkType] = useState<WorkType | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [workTypePreview, setWorkTypePreview] = useState<WorkTypeImportPreview | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [isApplyingImport, setIsApplyingImport] = useState(false);
-  const [importSummary, setImportSummary] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    preview: workUnitPreview,
-    applyImportedLabels: applyImportedUnitLabels,
-    setApplyImportedLabels: setApplyImportedUnitLabels,
-  } = useWorkUnitImportPreview(
-    workTypePreview?.items.map(({ item }) => ({
-      id: item.workUnit,
-      label: item.workUnitLabel,
-    })) ?? null,
-    workUnitDefinitions,
-  );
 
   const handleAddWorkType = () => {
     setEditingWorkType(null);
@@ -121,6 +170,10 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
   };
 
   const handleEditWorkType = (wt: WorkType) => {
+    if (selectionMode) {
+      toggleSelected(wt.id);
+      return;
+    }
     setEditingWorkType(wt);
     setShowWorkTypeForm(true);
   };
@@ -139,6 +192,25 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
       setEditingWorkType(null);
     }
   };
+
+  // ── Export / import ──────────────────────────────────────────
+  const [isExporting, setIsExporting] = useState(false);
+  const [workTypePreview, setWorkTypePreview] = useState<WorkTypeImportPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isApplyingImport, setIsApplyingImport] = useState(false);
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    preview: workUnitPreview,
+    applyImportedLabels: applyImportedUnitLabels,
+    setApplyImportedLabels: setApplyImportedUnitLabels,
+  } = useWorkUnitImportPreview(
+    workTypePreview?.items.map(({ item }) => ({
+      id: item.workUnit,
+      label: item.workUnitLabel,
+    })) ?? null,
+    workUnitDefinitions,
+  );
 
   const handleExportWorkTypes = () => {
     setIsExporting(true);
@@ -205,21 +277,47 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────
   return (
     <SettingsDetailLayout title="Work Types" onBack={onBack}>
       <div className="settings-view__card">
         <div className="settings-view__card-header">
           <h2 className="settings-view__sub-header">Work Types</h2>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm btn--circle"
-            onClick={handleAddWorkType}
-          >
-            +
-          </button>
+          <div className="wt-header-actions">
+            {editableWorkTypes.length > 1 && (
+              selectionMode ? (
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={exitSelectionMode}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={enterSelectionMode}
+                >
+                  Select
+                </button>
+              )
+            )}
+            {!selectionMode && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm btn--circle"
+                onClick={handleAddWorkType}
+              >
+                +
+              </button>
+            )}
+          </div>
         </div>
+
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
-        {onManageUnits && (
+
+        {onManageUnits && !selectionMode && (
           <button
             type="button"
             className="btn btn--secondary btn--sm"
@@ -241,6 +339,35 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
           />
         )}
 
+        {selectionMode && displayedWorkTypes.length > 0 && (
+          <div className="wt-selection-bar">
+            <label className="wt-selection-bar__select-all">
+              <input
+                type="checkbox"
+                checked={visibleAllSelected}
+                onChange={selectAllVisible}
+                aria-label="Select all visible work types"
+              />
+              <span>{visibleAllSelected ? 'Deselect all' : 'Select all'}</span>
+            </label>
+            {selectedIds.length > 0 && (
+              <span className="wt-selection-bar__count">
+                {selectedIds.length} selected
+              </span>
+            )}
+            {selectedIds.length > 0 && (
+              <button
+                type="button"
+                className="btn btn--danger btn--sm"
+                onClick={() => setShowBulkConfirm(true)}
+              >
+                <TrashIcon className="wt-selection-bar__trash-icon" />
+                Delete ({selectedIds.length})
+              </button>
+            )}
+          </div>
+        )}
+
         {editableWorkTypes.length === 0 ? (
           <div className="empty-state">
             <RulerIcon className="empty-state__icon" aria-hidden />
@@ -251,54 +378,79 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
           <p className="settings-view__empty">No work types match the current filters.</p>
         ) : (
           <div className="settings-view__list">
-            {displayedWorkTypes.map((wt) => (
-              <div key={wt.id} className="settings-view__list-item">
-                <button
-                  className="settings-view__row"
-                  onClick={() => handleEditWorkType(wt)}
+            {displayedWorkTypes.map((wt) => {
+              const usageCount = usageByWorkTypeId.get(wt.id) ?? 0;
+              const isSelected = selectedIds.includes(wt.id);
+              return (
+                <div
+                  key={wt.id}
+                  className={`settings-view__list-item${selectionMode ? ' settings-view__list-item--selectable' : ''}`}
                 >
-                  <div className="settings-view__template-info">
-                    <span className="settings-view__row-label">{wt.title}</span>
-                    <span className="settings-view__row-detail">
-                      {resolveWorkUnitLabel(wt.workUnit)} · Assembly {wt.assemblyRate} · Dismantle{' '}
-                      {wt.dismantleRate} {resolveWorkUnitLabel(wt.workUnit)}/person-hr
-                    </span>
-                    {wt.tagIds && wt.tagIds.length > 0 && (
-                      <span className="settings-view__row-tags">
-                        {wt.tagIds.map((id) => {
-                          const tag = tagById.get(id);
-                          return tag ? <TagPill key={id} tag={tag} /> : null;
-                        })}
-                      </span>
-                    )}
-                    {wt.skillTagId && (() => {
-                      const skillTag = tagById.get(wt.skillTagId);
-                      return skillTag ? (
-                        <span className="settings-view__row-detail" style={{ fontSize: 12 }}>
-                          Skill: <TagPill tag={skillTag} />
-                        </span>
-                      ) : null;
-                    })()}
-                  </div>
-                </button>
-                <div className="settings-view__list-item-actions">
-                  <IconButton
-                    icon={<PencilIcon className="settings-detail__icon" />}
-                    ariaLabel={`Edit work type ${wt.title}`}
+                  {selectionMode && (
+                    <input
+                      type="checkbox"
+                      className="wt-row-checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelected(wt.id)}
+                      aria-label={`Select ${wt.title}`}
+                    />
+                  )}
+                  <button
+                    className={`settings-view__row${isSelected ? ' settings-view__row--selected' : ''}`}
                     onClick={() => handleEditWorkType(wt)}
-                    variant="ghost"
-                    className="icon-btn--edit"
-                  />
-                  <IconButton
-                    icon={<TrashIcon className="settings-detail__icon" />}
-                    ariaLabel={`Delete work type ${wt.title}`}
-                    onClick={() => setDeleteConfirmWorkType(wt)}
-                    variant="ghost"
-                    className="icon-btn--danger"
-                  />
+                  >
+                    <div className="settings-view__template-info">
+                      <span className="settings-view__row-label">
+                        {wt.title}
+                        {usageCount > 0 && (
+                          <span className="wt-usage-badge">
+                            {usageCount} {usageCount === 1 ? 'task' : 'tasks'}
+                          </span>
+                        )}
+                      </span>
+                      <span className="settings-view__row-detail">
+                        {resolveWorkUnitLabel(wt.workUnit)} · Assembly {wt.assemblyRate} · Dismantle{' '}
+                        {wt.dismantleRate} {resolveWorkUnitLabel(wt.workUnit)}/person-hr
+                      </span>
+                      {wt.tagIds && wt.tagIds.length > 0 && (
+                        <span className="settings-view__row-tags">
+                          {wt.tagIds.map((id) => {
+                            const tag = tagById.get(id);
+                            return tag ? <TagPill key={id} tag={tag} /> : null;
+                          })}
+                        </span>
+                      )}
+                      {wt.skillTagId && (() => {
+                        const skillTag = tagById.get(wt.skillTagId);
+                        return skillTag ? (
+                          <span className="settings-view__row-detail" style={{ fontSize: 12 }}>
+                            Skill: <TagPill tag={skillTag} />
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+                  </button>
+                  {!selectionMode && (
+                    <div className="settings-view__list-item-actions">
+                      <IconButton
+                        icon={<PencilIcon className="settings-detail__icon" />}
+                        ariaLabel={`Edit work type ${wt.title}`}
+                        onClick={() => handleEditWorkType(wt)}
+                        variant="ghost"
+                        className="icon-btn--edit"
+                      />
+                      <IconButton
+                        icon={<TrashIcon className="settings-detail__icon" />}
+                        ariaLabel={`Delete work type ${wt.title}`}
+                        onClick={() => setDeleteConfirmWorkType(wt)}
+                        variant="ghost"
+                        className="icon-btn--danger"
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -346,6 +498,29 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         }}
         onCancel={() => setDeleteConfirmWorkType(null)}
       />
+
+      <AlertDialog
+        isOpen={showBulkConfirm}
+        tone="danger"
+        title={`Delete ${selectedIds.length} work ${selectedIds.length === 1 ? 'type' : 'types'}?`}
+        titleIcon={<WarningIcon className="alert-dialog__icon" />}
+        description={`This will permanently delete ${selectedIds.length} work ${selectedIds.length === 1 ? 'type' : 'types'}.`}
+        onClose={() => setShowBulkConfirm(false)}
+        ariaLabelledBy="bulk-delete-wt-title"
+        ariaDescribedBy="bulk-delete-wt-desc"
+        actions={[
+          { label: 'Cancel', onClick: () => setShowBulkConfirm(false), variant: 'secondary' },
+          {
+            label: isBulkDeleting ? 'Deleting…' : `Delete ${selectedIds.length}`,
+            onClick: () => { void handleBulkDeleteConfirmed(); },
+            variant: 'danger',
+            icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
+            disabled: isBulkDeleting,
+          },
+        ]}
+      >
+        <p className="alert-dialog__warning">This cannot be undone.</p>
+      </AlertDialog>
     </SettingsDetailLayout>
   );
 }
