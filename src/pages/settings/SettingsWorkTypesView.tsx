@@ -2,6 +2,11 @@ import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import type { WorkType } from '../../lib/types';
 import { resolveWorkUnitLabel } from '../../lib/types';
+import {
+  WorkTypeFilterBar,
+  DEFAULT_WORK_TYPE_FILTERS,
+  type WorkTypeFilters,
+} from './WorkTypeFilterBar';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { DeleteWorkTypeConfirm } from '../../components/DeleteWorkTypeConfirm';
 import { ExportIcon, PencilIcon, RulerIcon, TrashIcon } from '../../components/icons';
@@ -33,6 +38,46 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
   const { tags } = useTagStore();
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
   const editableWorkTypes = workTypes.filter((wt) => wt.readOnly !== true);
+
+  const [filters, setFilters] = useState<WorkTypeFilters>(DEFAULT_WORK_TYPE_FILTERS);
+
+  const unitOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const wt of editableWorkTypes) {
+      counts.set(wt.workUnit, (counts.get(wt.workUnit) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([id, count]) => ({ id, label: resolveWorkUnitLabel(id), count }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [editableWorkTypes]);
+
+  const displayedWorkTypes = useMemo(() => {
+    let result = editableWorkTypes;
+
+    const q = filters.search.trim().toLowerCase();
+    if (q) result = result.filter((wt) => wt.title.toLowerCase().includes(q));
+
+    if (filters.unitFilter.length > 0) {
+      const unitSet = new Set(filters.unitFilter);
+      result = result.filter((wt) => unitSet.has(wt.workUnit));
+    }
+
+    if (filters.tagFilter.length > 0) {
+      const tagSet = new Set(filters.tagFilter);
+      result = result.filter(
+        (wt) =>
+          wt.tagIds?.some((id) => tagSet.has(id)) || (wt.skillTagId && tagSet.has(wt.skillTagId)),
+      );
+    }
+
+    const sorted = [...result];
+    if (filters.sortOrder === 'az') sorted.sort((a, b) => a.title.localeCompare(b.title));
+    else if (filters.sortOrder === 'za') sorted.sort((a, b) => b.title.localeCompare(a.title));
+    else sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+    return sorted;
+  }, [editableWorkTypes, filters]);
+
   const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
   const [deleteConfirmWorkType, setDeleteConfirmWorkType] = useState<WorkType | null>(null);
@@ -169,15 +214,27 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
           </button>
         )}
 
+        {editableWorkTypes.length > 0 && (
+          <WorkTypeFilterBar
+            filters={filters}
+            onChange={setFilters}
+            unitOptions={unitOptions}
+            totalCount={editableWorkTypes.length}
+            filteredCount={displayedWorkTypes.length}
+          />
+        )}
+
         {editableWorkTypes.length === 0 ? (
           <div className="empty-state">
             <RulerIcon className="empty-state__icon" aria-hidden />
             <p className="empty-state__heading">No work types yet</p>
             <p className="empty-state__text">Add one to categorise tasks.</p>
           </div>
+        ) : displayedWorkTypes.length === 0 ? (
+          <p className="settings-view__empty">No work types match the current filters.</p>
         ) : (
           <div className="settings-view__list">
-            {editableWorkTypes.map((wt) => (
+            {displayedWorkTypes.map((wt) => (
               <div key={wt.id} className="settings-view__list-item">
                 <button
                   className="settings-view__row"

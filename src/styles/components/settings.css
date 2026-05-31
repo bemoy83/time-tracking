@@ -549,3 +549,143 @@ button.settings-view__row:active {
   letter-spacing: 0.05em;
   margin: 0;
 }
+
+/* ============================================================
+   Work Type Filter Bar
+   ============================================================ */
+
+.wt-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.wt-filter-bar__search-row {
+  display: flex;
+  align-items: center;
+}
+
+.wt-filter-bar__search-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.wt-filter-bar__search-input {
+  width: 100%;
+  padding-right: 2rem;
+  /* override default input sizing */
+  box-sizing: border-box;
+}
+
+/* hide native × in Chrome/Safari search inputs */
+.wt-filter-bar__search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.wt-filter-bar__clear-search {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: var(--radius-md);
+  transition: color 0.15s;
+}
+
+.wt-filter-bar__clear-search:hover {
+  color: var(--color-text);
+}
+
+.wt-filter-bar__controls-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.wt-filter-bar__sort {
+  min-height: 32px;
+  height: 32px;
+  font-size: var(--font-small);
+  padding-top: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
+}
+
+.wt-filter-bar__unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.wt-filter-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-caption);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.wt-filter-bar__chip:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.wt-filter-bar__chip--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.wt-filter-bar__chip--active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #fff;
+}
+
+.wt-filter-bar__chip-count {
+  font-size: var(--font-caption);
+  opacity: 0.7;
+}
+
+.wt-filter-bar__meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.wt-filter-bar__count {
+  font-size: var(--font-caption);
+  color: var(--color-text-muted);
+}
+
+.wt-filter-bar__clear-all {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-caption);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wt-filter-bar__clear-all:hover {
+  color: var(--color-primary-hover);
+}
