@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { WorkType } from '../../../lib/types';
 import { removeWorkType } from '../../../lib/stores/work-type-store';
 
-interface WorkTypeSelectionState {
+export interface WorkTypeSelectionState {
   selectionMode: boolean;
   selectedIds: string[];
   showBulkConfirm: boolean;

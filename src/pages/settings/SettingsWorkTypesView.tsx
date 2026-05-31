@@ -1,10 +1,14 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { useWorkTypeStore } from '../../lib/stores/work-type-store';
+import { useWorkTypeStore, removeWorkType } from '../../lib/stores/work-type-store';
 import { useTaskStore } from '../../lib/stores/task-store';
 import type { WorkType } from '../../lib/types';
+import { useMediaQuery, WORKSPACE_MIN_WIDTH } from '../../lib/hooks/useMediaQuery';
 import { useWorkTypeListData } from './hooks/useWorkTypeListData';
 import { useWorkTypeSelection } from './hooks/useWorkTypeSelection';
 import { WorkTypeFilterBar, DEFAULT_WORK_TYPE_FILTERS, type WorkTypeFilters } from './WorkTypeFilterBar';
+import { WorkTypeToolbar } from './WorkTypeToolbar';
+import { WorkTypeTable } from './WorkTypeTable';
+import { WorkTypeEditPanel } from './WorkTypeEditPanel';
 import { WorkTypeListItem } from './WorkTypeListItem';
 import { WorkTypeFormSheet } from '../../components/WorkTypeFormSheet';
 import { DeleteWorkTypeConfirm } from '../../components/DeleteWorkTypeConfirm';
@@ -24,7 +28,6 @@ import { WorkTypeImportCard } from './WorkTypeImportCard';
 import { useWorkUnitStore } from '../../lib/stores/work-unit-store';
 import { useWorkUnitImportPreview } from '../../lib/hooks/useWorkUnitImportPreview';
 import { useTagStore } from '../../lib/stores/tag-store';
-import { removeWorkType } from '../../lib/stores/work-type-store';
 import './settings-styles';
 
 interface SettingsWorkTypesViewProps {
@@ -33,13 +36,14 @@ interface SettingsWorkTypesViewProps {
 }
 
 export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTypesViewProps) {
+  const isDesktop = useMediaQuery(WORKSPACE_MIN_WIDTH);
+
   const { workTypes } = useWorkTypeStore();
   const { definitions: workUnitDefinitions } = useWorkUnitStore();
   const { tags } = useTagStore();
   const { tasks } = useTaskStore();
 
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
-
   const [filters, setFilters] = useState<WorkTypeFilters>(DEFAULT_WORK_TYPE_FILTERS);
 
   const { editableWorkTypes, unitOptions, tagOptions, displayedWorkTypes, usageByWorkTypeId } =
@@ -48,8 +52,8 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
   const selection = useWorkTypeSelection(displayedWorkTypes);
 
   // ── Single-item CRUD ─────────────────────────────────────────
-  const [showWorkTypeForm, setShowWorkTypeForm] = useState(false);
   const [editingWorkType, setEditingWorkType] = useState<WorkType | null>(null);
+  const [showWorkTypeForm, setShowWorkTypeForm] = useState(false); // mobile sheet
   const [deleteConfirmWorkType, setDeleteConfirmWorkType] = useState<WorkType | null>(null);
 
   const handleAddWorkType = () => {
@@ -57,8 +61,14 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     setShowWorkTypeForm(true);
   };
 
+  const handleAddWorkTypeDesktop = () => {
+    setEditingWorkType(null); // open panel in create mode
+    // For desktop we reuse editingWorkType = null with panel open flag
+    setShowWorkTypeForm(true); // reuse flag as "panel open"
+  };
+
   const handleEditWorkType = (wt: WorkType) => {
-    if (selection.selectionMode) {
+    if (!isDesktop && selection.selectionMode) {
       selection.toggleSelected(wt.id);
       return;
     }
@@ -66,7 +76,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     setShowWorkTypeForm(true);
   };
 
-  const handleCloseWorkTypeForm = () => {
+  const handleCloseForm = () => {
     setShowWorkTypeForm(false);
     setEditingWorkType(null);
   };
@@ -75,10 +85,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     if (!deleteConfirmWorkType) return;
     await removeWorkType(deleteConfirmWorkType.id);
     setDeleteConfirmWorkType(null);
-    if (editingWorkType?.id === deleteConfirmWorkType.id) {
-      setShowWorkTypeForm(false);
-      setEditingWorkType(null);
-    }
+    if (editingWorkType?.id === deleteConfirmWorkType.id) handleCloseForm();
   };
 
   // ── Export / import ──────────────────────────────────────────
@@ -94,10 +101,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     applyImportedLabels: applyImportedUnitLabels,
     setApplyImportedLabels: setApplyImportedUnitLabels,
   } = useWorkUnitImportPreview(
-    workTypePreview?.items.map(({ item }) => ({
-      id: item.workUnit,
-      label: item.workUnitLabel,
-    })) ?? null,
+    workTypePreview?.items.map(({ item }) => ({ id: item.workUnit, label: item.workUnitLabel })) ?? null,
     workUnitDefinitions,
   );
 
@@ -125,17 +129,13 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         const text = await file.text();
         const parsed = parseWorkTypeCsv(text);
         if (!parsed.valid) {
-          setImportSummary(
-            parsed.errors.map((e) => `Row ${e.row}: ${e.field} - ${e.message}`).join('; '),
-          );
+          setImportSummary(parsed.errors.map((e) => `Row ${e.row}: ${e.field} - ${e.message}`).join('; '));
           return;
         }
-        const warningSummary =
-          parsed.warnings.length > 0
-            ? parsed.warnings.map((w) => `Row ${w.row}: ${w.message}`).join('; ')
-            : null;
+        const warningSummary = parsed.warnings.length > 0
+          ? parsed.warnings.map((w) => `Row ${w.row}: ${w.message}`).join('; ')
+          : null;
         if (parsed.items.length === 0) {
-          setWorkTypePreview(null);
           setImportSummary(warningSummary ?? 'No rows to import.');
           return;
         }
@@ -165,10 +165,124 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────
   const { selectionMode, selectedIds, showBulkConfirm, isBulkDeleting } = selection;
   const bulkCount = selectedIds.length;
 
+  // ── Desktop layout ────────────────────────────────────────────
+  if (isDesktop) {
+    const panelOpen = showWorkTypeForm;
+    return (
+      <div className="swt-desktop">
+        <div className="swt-page-header">
+          <h1 className="swt-page-header__title">Work Types</h1>
+          <p className="swt-page-header__subtitle">Add and manage reusable work categories for estimates</p>
+        </div>
+
+        <WorkTypeToolbar
+          filters={filters}
+          onChange={setFilters}
+          unitOptions={unitOptions}
+          tagOptions={tagOptions}
+          onAdd={handleAddWorkTypeDesktop}
+          onExport={handleExportWorkTypes}
+          onImport={() => fileInputRef.current?.click()}
+        />
+
+        <div className="swt-desktop__pane">
+          {editableWorkTypes.length === 0 ? (
+            <div className="swt-desktop__table-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="empty-state">
+                <RulerIcon className="empty-state__icon" aria-hidden />
+                <p className="empty-state__heading">No work types yet</p>
+                <p className="empty-state__text">Add one to get started.</p>
+              </div>
+            </div>
+          ) : displayedWorkTypes.length === 0 ? (
+            <div className="swt-desktop__table-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p className="settings-view__empty">No work types match the current filters.</p>
+            </div>
+          ) : (
+            <WorkTypeTable
+              rows={displayedWorkTypes}
+              usageByWorkTypeId={usageByWorkTypeId}
+              tagById={tagById}
+              selection={selection}
+              editingId={editingWorkType?.id ?? null}
+              onEdit={handleEditWorkType}
+              onDelete={setDeleteConfirmWorkType}
+            />
+          )}
+
+          {panelOpen && (
+            <WorkTypeEditPanel
+              workType={editingWorkType}
+              onClose={handleCloseForm}
+              onDelete={editingWorkType ? () => setDeleteConfirmWorkType(editingWorkType) : undefined}
+            />
+          )}
+        </div>
+
+        {/* Hidden import file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          style={{ display: 'none' }}
+          onChange={(e) => { void handleFileChange(e); }}
+        />
+
+        {/* Import preview — shows inline below pane if active */}
+        {(workTypePreview ?? importSummary) ? (
+          <div style={{ marginTop: 16 }}>
+            <WorkTypeImportCard
+              summaryMessage={importSummary}
+              fileInputRef={fileInputRef}
+              onFileChange={(e) => { void handleFileChange(e); }}
+              preview={workTypePreview}
+              workUnitPreview={workUnitPreview}
+              applyImportedUnitLabels={applyImportedUnitLabels}
+              onToggleApplyImportedUnitLabels={setApplyImportedUnitLabels}
+              isLoadingPreview={isLoadingPreview}
+              isApplying={isApplyingImport}
+              onApply={() => { void handleApplyImport(); }}
+            />
+          </div>
+        ) : null}
+
+        <DeleteWorkTypeConfirm
+          isOpen={!!deleteConfirmWorkType}
+          workTypeTitle={deleteConfirmWorkType?.title ?? ''}
+          onConfirm={() => { void handleDeleteWorkTypeConfirmed(); }}
+          onCancel={() => setDeleteConfirmWorkType(null)}
+        />
+
+        <AlertDialog
+          isOpen={showBulkConfirm}
+          tone="danger"
+          title={`Delete ${bulkCount} work ${bulkCount === 1 ? 'type' : 'types'}?`}
+          titleIcon={<WarningIcon className="alert-dialog__icon" />}
+          description={`Permanently delete ${bulkCount} work ${bulkCount === 1 ? 'type' : 'types'}.`}
+          onClose={selection.closeBulkConfirm}
+          ariaLabelledBy="bulk-delete-wt-title"
+          ariaDescribedBy="bulk-delete-wt-desc"
+          actions={[
+            { label: 'Cancel', onClick: selection.closeBulkConfirm, variant: 'secondary' },
+            {
+              label: isBulkDeleting ? 'Deleting…' : `Delete ${bulkCount}`,
+              onClick: () => { void selection.handleBulkDeleteConfirmed(); },
+              variant: 'danger',
+              icon: <TrashIcon className="alert-dialog__icon alert-dialog__icon--sm" />,
+              disabled: isBulkDeleting,
+            },
+          ]}
+        >
+          <p className="alert-dialog__warning">This cannot be undone.</p>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  // ── Mobile layout (unchanged) ────────────────────────────────
   return (
     <SettingsDetailLayout title="Work Types" onBack={onBack}>
       <div className="settings-view__card">
@@ -177,19 +291,11 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
           <div className="wt-header-actions">
             {editableWorkTypes.length > 1 && (
               selectionMode ? (
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={selection.exitSelectionMode}
-                >
+                <button type="button" className="btn btn--secondary btn--sm" onClick={selection.exitSelectionMode}>
                   Cancel
                 </button>
               ) : (
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  onClick={selection.enterSelectionMode}
-                >
+                <button type="button" className="btn btn--ghost btn--sm" onClick={selection.enterSelectionMode}>
                   Select
                 </button>
               )
@@ -209,12 +315,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         <p className="settings-view__helper">Add and manage work categories for estimates</p>
 
         {onManageUnits && !selectionMode && (
-          <button
-            type="button"
-            className="btn btn--secondary btn--sm"
-            onClick={onManageUnits}
-            style={{ marginBottom: 12 }}
-          >
+          <button type="button" className="btn btn--secondary btn--sm" onClick={onManageUnits} style={{ marginBottom: 12 }}>
             Manage units
           </button>
         )}
@@ -241,15 +342,9 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
               />
               <span>{selection.visibleAllSelected ? 'Deselect all' : 'Select all'}</span>
             </label>
+            {bulkCount > 0 && <span className="wt-selection-bar__count">{bulkCount} selected</span>}
             {bulkCount > 0 && (
-              <span className="wt-selection-bar__count">{bulkCount} selected</span>
-            )}
-            {bulkCount > 0 && (
-              <button
-                type="button"
-                className="btn btn--danger btn--sm"
-                onClick={selection.openBulkConfirm}
-              >
+              <button type="button" className="btn btn--danger btn--sm" onClick={selection.openBulkConfirm}>
                 <TrashIcon className="wt-selection-bar__trash-icon" />
                 Delete ({bulkCount})
               </button>
@@ -300,7 +395,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
       <WorkTypeImportCard
         summaryMessage={importSummary}
         fileInputRef={fileInputRef}
-        onFileChange={handleFileChange}
+        onFileChange={(e) => { void handleFileChange(e); }}
         preview={workTypePreview}
         workUnitPreview={workUnitPreview}
         applyImportedUnitLabels={applyImportedUnitLabels}
@@ -312,7 +407,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
 
       <WorkTypeFormSheet
         isOpen={showWorkTypeForm}
-        onClose={handleCloseWorkTypeForm}
+        onClose={handleCloseForm}
         workType={editingWorkType}
         onDelete={editingWorkType ? () => setDeleteConfirmWorkType(editingWorkType) : undefined}
       />
@@ -329,7 +424,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
         tone="danger"
         title={`Delete ${bulkCount} work ${bulkCount === 1 ? 'type' : 'types'}?`}
         titleIcon={<WarningIcon className="alert-dialog__icon" />}
-        description={`This will permanently delete ${bulkCount} work ${bulkCount === 1 ? 'type' : 'types'}.`}
+        description={`Permanently delete ${bulkCount} work ${bulkCount === 1 ? 'type' : 'types'}.`}
         onClose={selection.closeBulkConfirm}
         ariaLabelledBy="bulk-delete-wt-title"
         ariaDescribedBy="bulk-delete-wt-desc"

@@ -1,0 +1,723 @@
+/* ============================================================
+   Settings Workspace — two-column desktop shell
+   ============================================================ */
+
+.settings-workspace {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--surface-base-bg);
+}
+
+/* ── Nav sidebar ─────────────────────────────────────────── */
+
+.settings-workspace__nav {
+  width: 220px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+/* ── Body (right of nav) ─────────────────────────────────── */
+
+.settings-workspace__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Content pane ────────────────────────────────────────── */
+
+.settings-workspace__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 28px 32px 40px;
+}
+
+/* ── Nav component ──────────────────────────────────────── */
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.settings-nav__header {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-nav__title {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.settings-nav__exit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xs);
+  transition: color 0.12s, background-color 0.12s;
+  width: 100%;
+  text-align: left;
+}
+
+.settings-nav__exit:hover {
+  color: var(--color-text);
+  background: var(--surface-contained-hover);
+}
+
+.settings-nav__exit-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.settings-nav__groups {
+  flex: 1;
+  padding: 8px 0;
+}
+
+.settings-nav__group {
+  padding: 0 0 4px;
+}
+
+.settings-nav__group-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 10px 16px 4px;
+}
+
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 16px;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.12s, background-color 0.12s, border-color 0.12s;
+}
+
+.settings-nav__item:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.settings-nav__item--active {
+  background: #eff6ff;
+  border-left-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.settings-nav__item--active:hover {
+  background: #dbeafe;
+  color: var(--color-primary);
+}
+
+.settings-nav__item-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.settings-nav__item--active .settings-nav__item-icon {
+  opacity: 1;
+}
+
+.settings-nav__footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Work Types — desktop layout
+   ============================================================ */
+
+.swt-desktop {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.swt-desktop__pane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--surface-contained-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.swt-desktop__table-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Work Type Toolbar ──────────────────────────────────── */
+
+.wt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.wt-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.wt-toolbar__search-wrap {
+  position: relative;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.wt-toolbar__search-input {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  padding-left: 32px;
+  padding-right: 28px;
+  font-size: var(--font-small);
+  box-sizing: border-box;
+}
+
+.wt-toolbar__search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.wt-toolbar__search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.wt-toolbar__clear-search {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.wt-toolbar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.wt-toolbar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.wt-toolbar__chip:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.wt-toolbar__chip--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.wt-toolbar__chip--active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #fff;
+}
+
+.wt-toolbar__tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tag-color, #2563eb) 32%, transparent);
+  background: color-mix(in srgb, var(--tag-color, #2563eb) 12%, transparent);
+  color: color-mix(in srgb, var(--tag-color, #2563eb) 80%, var(--color-text));
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.wt-toolbar__tag-chip:hover {
+  background: color-mix(in srgb, var(--tag-color, #2563eb) 24%, transparent);
+}
+
+.wt-toolbar__tag-chip--active {
+  background: color-mix(in srgb, var(--tag-color, #2563eb) 72%, transparent);
+  border-color: color-mix(in srgb, var(--tag-color, #2563eb) 80%, transparent);
+}
+
+.wt-toolbar__chip-count {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.wt-toolbar__btn-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.wt-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.wt-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Work Type Table ─────────────────────────────────────── */
+
+.wt-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--font-small);
+}
+
+.wt-table__thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.wt-table__th {
+  padding: 0 12px;
+  height: 38px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--surface-contained-inset);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.wt-table__th:first-child {
+  border-radius: var(--card-radius) 0 0 0;
+}
+
+.wt-table__th--left { text-align: left; }
+.wt-table__th--center { text-align: center; }
+.wt-table__th--right { text-align: right; }
+
+.wt-table__th--sortable {
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.wt-table__th--sortable:hover {
+  color: var(--color-text);
+}
+
+.wt-table__th--sorted {
+  color: var(--color-primary);
+}
+
+.wt-table__sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+.wt-table__tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color 0.1s;
+}
+
+.wt-table__tr:last-child {
+  border-bottom: none;
+}
+
+.wt-table__tr:hover {
+  background: #f8f8fc;
+}
+
+.wt-table__tr--selected {
+  background: #eff6ff;
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.wt-table__tr--selected:hover {
+  background: #dbeafe;
+}
+
+.wt-table__tr--editing {
+  background: #eff6ff;
+}
+
+.wt-table__tr--editing:hover {
+  background: #dbeafe;
+}
+
+.wt-table__td {
+  padding: 0 12px;
+  height: 52px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wt-table__td--center { text-align: center; }
+.wt-table__td--right { text-align: right; }
+
+.wt-table__checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.wt-table__name {
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: var(--font-small);
+}
+
+.wt-table__usage-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: #eff6ff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 7px;
+  vertical-align: middle;
+}
+
+.wt-table__unit {
+  color: var(--color-text-muted);
+  font-size: var(--font-small);
+}
+
+.wt-table__rate {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.wt-table__rate-unit {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-left: 3px;
+}
+
+.wt-table__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+
+.wt-table__empty-cell {
+  color: var(--color-text-muted);
+  opacity: 0.4;
+}
+
+/* Actions — hidden by default, revealed on row hover */
+.wt-table__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.wt-table__tr:hover .wt-table__actions,
+.wt-table__tr--editing .wt-table__actions {
+  opacity: 1;
+}
+
+.wt-table__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.wt-table__action-btn:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.wt-table__action-btn--danger:hover {
+  background: var(--color-recording-bg, #fee2e2);
+  color: var(--color-recording, #dc2626);
+}
+
+.wt-table__action-icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Table bulk bar */
+.wt-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 48px;
+  background: #1a1a2e;
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  flex-shrink: 0;
+  animation: slideUp 0.15s ease;
+}
+
+.wt-bulk-bar__count {
+  font-size: var(--font-small);
+  color: #e0e0e8;
+  font-weight: 500;
+}
+
+.wt-bulk-bar__select-all {
+  font-size: var(--font-small);
+  color: #93c5fd;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.wt-bulk-bar__spacer {
+  flex: 1;
+}
+
+/* ── Edit Panel ──────────────────────────────────────────── */
+
+.wt-edit-panel {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--color-border);
+  background: var(--surface-contained-bg);
+  overflow: hidden;
+  animation: slideInRight 0.18s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.wt-edit-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.wt-edit-panel__title {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wt-edit-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.wt-edit-panel__close:hover {
+  background: var(--surface-contained-hover);
+  color: var(--color-text);
+}
+
+.wt-edit-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wt-edit-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wt-edit-panel__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wt-edit-panel__rates-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.wt-edit-panel__error {
+  font-size: var(--font-small);
+  color: var(--color-recording, #dc2626);
+  padding: 8px 0;
+}
+
+.wt-edit-panel__footer {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 20px;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.wt-edit-panel__footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.wt-edit-panel__hint {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+}
+
+/* ── Settings page header (desktop) ─────────────────────── */
+
+.swt-page-header {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.swt-page-header__title {
+  font-size: var(--font-large);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 4px;
+}
+
+.swt-page-header__subtitle {
+  font-size: var(--font-small);
+  color: var(--color-text-muted);
+  margin: 0;
+}

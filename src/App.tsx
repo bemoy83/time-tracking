@@ -63,6 +63,7 @@ const SettingsTelemetryView = lazyNamedExport(() => import('./pages/settings/Set
 const SettingsCloudSyncView = lazyNamedExport(() => import('./pages/settings/SettingsCloudSyncView'), 'SettingsCloudSyncView');
 const SettingsDataTransferView = lazyNamedExport(() => import('./pages/settings/SettingsDataTransferView'), 'SettingsDataTransferView');
 const FieldPlanView = lazyNamedExport(() => import('./pages/field-plan/FieldPlanView'), 'FieldPlanView');
+const SettingsWorkspaceShell = lazyNamedExport(() => import('./pages/settings/workspace/SettingsWorkspaceShell'), 'SettingsWorkspaceShell');
 
 function App() {
   const [initialized, setInitialized] = useState(false);
@@ -133,6 +134,13 @@ function App() {
     isWideScreen &&
     view.type === 'tab' &&
     view.tab === 'planning';
+
+  const isSettingsWorkspaceActive =
+    isWideScreen &&
+    (
+      (view.type === 'tab' && view.tab === 'settings') ||
+      view.type === 'settingsDetail'
+    );
 
   // Redirect away from planning when viewport becomes too narrow (e.g. resize)
   useEffect(() => {
@@ -225,7 +233,15 @@ function App() {
       {view.type === 'tab' && view.tab === 'fieldPlan' && (
         <FieldPlanView />
       )}
-      {view.type === 'tab' && view.tab === 'settings' && (
+      {/* Desktop settings workspace */}
+      {isSettingsWorkspaceActive && (
+        <SettingsWorkspaceShell
+          initialSection={view.type === 'settingsDetail' ? view.section : 'workTypes'}
+          onExit={() => setView({ type: 'tab', tab: 'settings' })}
+        />
+      )}
+      {/* Mobile settings list */}
+      {!isSettingsWorkspaceActive && view.type === 'tab' && view.tab === 'settings' && (
         <SettingsView
           onNavigateToSection={(section) =>
             setView({ type: 'settingsDetail', section, returnTab: 'settings' })
@@ -251,52 +267,53 @@ function App() {
           }}
         />
       )}
-      {view.type === 'settingsDetail' && view.section === 'workTypes' && (
+      {/* Mobile settings detail views — only when desktop shell is not active */}
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'workTypes' && (
         <SettingsWorkTypesView
           onBack={handleBack}
           onManageUnits={() => setView({ type: 'settingsDetail', section: 'workUnits', returnTab: 'settings' })}
         />
       )}
-      {view.type === 'settingsDetail' && view.section === 'tags' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'tags' && (
         <SettingsTagsView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'tagSequence' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'tagSequence' && (
         <SettingsTagSequenceView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'crew' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'crew' && (
         <SettingsCrewView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'workUnits' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'workUnits' && (
         <SettingsWorkUnitsView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'projects' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'projects' && (
         <SettingsProjectsView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'templates' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'templates' && (
         <SettingsTemplatesView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'planLineItems' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'planLineItems' && (
         <SettingsPlanLineItemsView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'productivity' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'productivity' && (
         <SettingsProductivityView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'attribution' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'attribution' && (
         <SettingsAttributionView
           onBack={handleBack}
           onOpenRemediation={() => setView({ type: 'settingsDetail', section: 'remediation', returnTab: 'settings' })}
         />
       )}
-      {view.type === 'settingsDetail' && view.section === 'remediation' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'remediation' && (
         <SettingsRemediationView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'telemetry' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'telemetry' && (
         <SettingsTelemetryView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'cloudSync' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'cloudSync' && (
         <SettingsCloudSyncView onBack={handleBack} />
       )}
-      {view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
+      {!isSettingsWorkspaceActive && view.type === 'settingsDetail' && view.section === 'dataTransfer' && (
         <SettingsDataTransferView onBack={handleBack} />
       )}
     </>
@@ -311,7 +328,7 @@ function App() {
         id="main-content"
         role="main"
         aria-label="Main content"
-        className={isPlanningWorkspaceActive ? 'main--workspace' : undefined}
+        className={(isPlanningWorkspaceActive || isSettingsWorkspaceActive) ? 'main--workspace' : undefined}
       >
         <Suspense fallback={<LoadingBlock message="Loading..." />}>
           {routeContent}
