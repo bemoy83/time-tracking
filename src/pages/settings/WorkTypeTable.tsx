@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { WorkType } from '../../lib/types';
 import { resolveWorkUnitLabel } from '../../lib/types';
 import type { Tag } from '../../lib/tags';
@@ -54,8 +54,18 @@ export function WorkTypeTable({
   }
 
   const sortedRows = sortRows(rows, sortCol, sortDir);
+  const someVisibleSelected = sortedRows.some((wt) => selection.selectedIds.includes(wt.id));
   const allVisibleSelected =
     sortedRows.length > 0 && sortedRows.every((wt) => selection.selectedIds.includes(wt.id));
+  const isIndeterminate = someVisibleSelected && !allVisibleSelected;
+
+  // The :indeterminate CSS pseudo-class requires the JS property to be set via ref
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
 
   function toggleSelectAll() {
     if (allVisibleSelected) {
@@ -70,8 +80,23 @@ export function WorkTypeTable({
   }
 
   function sortIndicator(col: SortCol) {
-    if (col !== sortCol) return <span className="wt-table__sort-icon" aria-hidden>↕</span>;
-    return <span className="wt-table__sort-icon" aria-hidden>{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    if (col !== sortCol) {
+      return (
+        <svg className="wt-table__sort-icon wt-table__sort-icon--idle" aria-hidden viewBox="0 0 8 12" fill="none">
+          <path d="M4 1L1.5 4.5H6.5L4 1Z" fill="currentColor" opacity="0.35" />
+          <path d="M4 11L6.5 7.5H1.5L4 11Z" fill="currentColor" opacity="0.35" />
+        </svg>
+      );
+    }
+    return sortDir === 'asc' ? (
+      <svg className="wt-table__sort-icon" aria-hidden viewBox="0 0 8 6" fill="none">
+        <path d="M4 0L7.5 5.5H0.5L4 0Z" fill="currentColor" />
+      </svg>
+    ) : (
+      <svg className="wt-table__sort-icon" aria-hidden viewBox="0 0 8 6" fill="none">
+        <path d="M4 6L0.5 0.5H7.5L4 6Z" fill="currentColor" />
+      </svg>
+    );
   }
 
   function thClass(col: SortCol, align: 'left' | 'right' | 'center' = 'left') {
@@ -100,6 +125,7 @@ export function WorkTypeTable({
           <tr>
             <th className="wt-table__th wt-table__th--center">
               <input
+                ref={selectAllRef}
                 type="checkbox"
                 className="wt-table__checkbox"
                 checked={allVisibleSelected}

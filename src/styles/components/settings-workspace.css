@@ -139,14 +139,14 @@
 }
 
 .settings-nav__item--active {
-  background: #eff6ff;
+  background: var(--state-info-bg);
   border-left-color: var(--color-primary);
   color: var(--color-primary);
   font-weight: 600;
 }
 
 .settings-nav__item--active:hover {
-  background: #dbeafe;
+  background: var(--state-info-bg-strong);
   color: var(--color-primary);
 }
 
@@ -408,9 +408,11 @@
 
 .wt-table__sort-icon {
   display: inline-block;
+  width: 8px;
+  height: 8px;
   margin-left: 4px;
-  font-size: 10px;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .wt-table__tr {
@@ -423,24 +425,24 @@
 }
 
 .wt-table__tr:hover {
-  background: #f8f8fc;
+  background: var(--surface-contained-hover);
 }
 
 .wt-table__tr--selected {
-  background: #eff6ff;
+  background: var(--state-info-bg);
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .wt-table__tr--selected:hover {
-  background: #dbeafe;
+  background: var(--state-info-bg-strong);
 }
 
 .wt-table__tr--editing {
-  background: #eff6ff;
+  background: var(--state-info-bg);
 }
 
 .wt-table__tr--editing:hover {
-  background: #dbeafe;
+  background: var(--state-info-bg-strong);
 }
 
 .wt-table__td {
@@ -456,11 +458,47 @@
 .wt-table__td--right { text-align: right; }
 
 .wt-table__checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-block;
   width: 16px;
   height: 16px;
+  min-width: 16px;
+  margin: 0;
   border-radius: 4px;
+  border: 1.5px solid var(--wt-checkbox-border, #c4c4d0);
+  background: var(--surface-contained-bg);
   cursor: pointer;
-  accent-color: var(--color-primary);
+  transition: background 0.12s ease, border-color 0.12s ease;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.wt-table__checkbox:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5L3.8 7.5 8.5 2' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 11px 11px;
+}
+
+.wt-table__checkbox:indeterminate {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5h6' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 11px 11px;
+}
+
+.wt-table__checkbox:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { --wt-checkbox-border: #4a4a5a; }
 }
 
 .wt-table__name {
@@ -473,8 +511,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-primary);
-  background: #eff6ff;
+  color: var(--state-info-fg);
+  background: var(--color-primary-bg-badge);
   padding: 1px 6px;
   border-radius: 4px;
   margin-left: 7px;
@@ -720,4 +758,23 @@
   font-size: var(--font-small);
   color: var(--color-text-muted);
   margin: 0;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  /* Bulk bar: in dark mode the near-black bg merges with the card.
+     Switch to an elevated surface with a top border for separation. */
+  .wt-bulk-bar {
+    background: var(--surface-elevated-bg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .wt-bulk-bar__count {
+    color: var(--color-text);
+  }
+
+  .wt-bulk-bar__select-all {
+    color: var(--state-info-fg-strong);
+  }
 }
