@@ -35,6 +35,15 @@
   padding: 0;
 }
 
+.workspace-sidebar__title {
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .workspace-sidebar__header-actions {
   display: flex;
   align-items: center;
@@ -165,8 +174,6 @@
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s, transform 0.15s;
-  min-width: unset;
-  min-height: unset;
 }
 
 .workspace-sidebar__new-plan-pill:hover {
@@ -327,8 +334,6 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
-  min-width: unset;
-  min-height: unset;
 }
 
 .workspace-sidebar__back-btn:hover {

@@ -62,8 +62,6 @@
   color: inherit;
   border-radius: 0;
   transition: background-color 0.12s;
-  min-width: unset;
-  min-height: unset;
 }
 
 .sidebar-phase-row__btn:hover {
@@ -236,8 +234,6 @@
   background: var(--surface-contained-bg);
   color: var(--color-text);
   width: 100%;
-  min-width: unset;
-  min-height: unset;
 }
 
 .sidebar-date-field__input:focus-visible {
@@ -277,8 +273,6 @@
   background: var(--surface-contained-bg);
   color: var(--color-text);
   width: 100%;
-  min-width: unset;
-  min-height: unset;
 }
 
 .sidebar-crew-eff__input:focus-visible {
@@ -305,8 +299,6 @@
   padding: 0;
   cursor: pointer;
   white-space: nowrap;
-  min-width: unset;
-  min-height: unset;
 }
 
 .sidebar-schedule-inputs__errors {

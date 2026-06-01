@@ -32,7 +32,6 @@ function renderWorkspaceHtml(overrides: Partial<React.ComponentProps<typeof Plan
         onOpenWrapUp={vi.fn()}
         onCloseWrapUp={vi.fn()}
         onWrapUpCompleted={vi.fn()}
-        onExit={vi.fn()}
         {...overrides}
       />,
     ),

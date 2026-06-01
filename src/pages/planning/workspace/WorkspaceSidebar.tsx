@@ -42,7 +42,6 @@ export interface WorkspaceSidebarProps {
   onCreatePlan: () => void;
   onDeletePlan: (id: string) => void;
   onOpenWrapUp: (plan: Plan) => void;
-  onExit: () => void;
   footer?: React.ReactNode;
   selectedPlanIdsForSharedSchedule: Set<string>;
   onSelectedPlanIdsChange: (planIds: Set<string>) => void;
@@ -58,7 +57,6 @@ export function WorkspaceSidebar({
   onCreatePlan,
   onDeletePlan,
   onOpenWrapUp,
-  onExit,
   footer,
   selectedPlanIdsForSharedSchedule,
   onSelectedPlanIdsChange,
@@ -182,28 +180,8 @@ export function WorkspaceSidebar({
     <aside className={sidebarClass}>
       {/* Header */}
       <div className="workspace-sidebar__header">
-        {!collapsed && (
-          <button
-            type="button"
-            className="planning-workspace__exit"
-            onClick={onExit}
-            aria-label="Exit workspace"
-          >
-            <span>Exit workspace</span>
-          </button>
-        )}
+        {!collapsed && <h2 className="workspace-sidebar__title">Planning</h2>}
         <div className="workspace-sidebar__header-actions">
-          {!collapsed && (
-            <button
-              type="button"
-              className="workspace-sidebar__create-btn"
-              onClick={onCreatePlan}
-              aria-label="New plan"
-              title="New plan"
-            >
-              <PlusIcon className="workspace-sidebar__action-icon" />
-            </button>
-          )}
           <button
             type="button"
             className="workspace-sidebar__collapse-btn"

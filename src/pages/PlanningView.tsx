@@ -12,15 +12,12 @@ interface PlanningViewProps {
   initialPlanId?: string | null;
   initialSubView?: 'edit' | 'schedule' | 'progress' | 'insights';
   onInitialNavigationHandled?: () => void;
-  /** Called when the workspace exit control is clicked. */
-  onExitWorkspace?: () => void;
 }
 
 export function PlanningView({
   initialPlanId,
   initialSubView,
   onInitialNavigationHandled,
-  onExitWorkspace,
 }: PlanningViewProps = {}) {
   const workspace = usePlanningWorkspaceState({
     initialPlanId,
@@ -75,7 +72,6 @@ export function PlanningView({
           onOpenWrapUp={workspace.openWrapUp}
           onCloseWrapUp={workspace.closeWrapUp}
           onWrapUpCompleted={workspace.handleWrapUpCompleted}
-          onExit={onExitWorkspace ?? (() => {})}
         />
       </Suspense>
       {wrapUpSheet}

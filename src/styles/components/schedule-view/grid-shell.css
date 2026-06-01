@@ -245,7 +245,6 @@
   white-space: nowrap;
 }
 
-/* Override _a11y.css 44px touch target — compact info icon in dense header */
 /* Max ~15px to stay within day-label row height (11px font × 1.4 line-height) */
 .schedule-grid__day-warning-icon {
   appearance: none;
@@ -514,8 +513,6 @@
   font-family: inherit;
   color: inherit;
   cursor: pointer;
-  min-width: unset;
-  min-height: unset;
 }
 
 .schedule-grid__day-toggle:hover {
@@ -541,10 +538,6 @@
   font: inherit;
   color: inherit;
   cursor: pointer;
-  /* Opt out of the global 44px touch-target floor — this is a dense grid header
-     element; the full day-col column is the effective tap target. */
-  min-height: unset;
-  min-width: unset;
   /* Pin content to the bottom edge so meta text sits near the util bar */
   align-items: flex-end;
 }

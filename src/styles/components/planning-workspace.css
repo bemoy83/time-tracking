@@ -500,18 +500,14 @@
   .planning-workspace__tabs {
     background: var(--surface-contained-inset);
     border-bottom: 1px solid var(--surface-contained-border);
-    min-height: unset;
     padding: 0 20px;
     gap: 0;
     align-items: stretch;
     background-image: none;
   }
 
-  /* Tab items — override global a11y min-size; use underline active indicator */
   .planning-workspace__tab {
     padding: 10px 16px;
-    min-height: unset;
-    min-width: unset;
     line-height: 1;
     font-size: var(--font-small);
     font-weight: 500;

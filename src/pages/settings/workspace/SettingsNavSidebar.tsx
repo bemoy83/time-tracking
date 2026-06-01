@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  BackIcon,
   RulerIcon,
   TagIcon,
   PeopleIcon,
@@ -81,26 +80,16 @@ const NAV_GROUPS: NavGroup[] = [
 interface SettingsNavSidebarProps {
   activeSection: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
-  onExit: () => void;
 }
 
 export function SettingsNavSidebar({
   activeSection,
   onSectionChange,
-  onExit,
 }: SettingsNavSidebarProps) {
   return (
     <nav className="settings-nav" aria-label="Settings navigation">
       <div className="settings-nav__header">
-        <button
-          type="button"
-          className="settings-nav__exit"
-          onClick={onExit}
-          aria-label="Exit settings"
-        >
-          <BackIcon className="settings-nav__exit-icon" />
-          Settings
-        </button>
+        <h2 className="settings-nav__title">Settings</h2>
       </div>
 
       <div className="settings-nav__groups">

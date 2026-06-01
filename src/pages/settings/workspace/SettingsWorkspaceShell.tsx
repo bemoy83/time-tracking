@@ -36,12 +36,11 @@ const SettingsDataTransferView  = lazyNamedExport(() => import('../SettingsDataT
 
 interface SettingsWorkspaceShellProps {
   initialSection: SettingsSection;
-  onExit: () => void;
 }
 
 const noop = () => {};
 
-export function SettingsWorkspaceShell({ initialSection, onExit }: SettingsWorkspaceShellProps) {
+export function SettingsWorkspaceShell({ initialSection }: SettingsWorkspaceShellProps) {
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
 
   function renderSection() {
@@ -93,7 +92,6 @@ export function SettingsWorkspaceShell({ initialSection, onExit }: SettingsWorks
         <SettingsNavSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
-          onExit={onExit}
         />
       </div>
       <div className="settings-workspace__body">

@@ -80,7 +80,6 @@
   padding-inline: 14px;
   height: 28px;
   white-space: nowrap;
-  min-width: unset;
   min-height: 28px;
 }
 
@@ -110,7 +109,6 @@
   padding-inline: 12px;
   height: 28px;
   white-space: nowrap;
-  min-width: unset;
   min-height: 28px;
 }
 

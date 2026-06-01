@@ -184,7 +184,6 @@
 }
 
 /* Icon-only wrap-up button (compact sidebar) — matches status badge size */
-/* Override _a11y.css min 44px so compact icons stay 22px */
 .planning-view__list--compact .planning-view__item-wrap-up-btn,
 .planning-view__list--compact .planning-view__item-delete {
   min-width: 22px;

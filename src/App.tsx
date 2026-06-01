@@ -193,10 +193,6 @@ function App() {
     setView({ type: 'tab', tab });
   };
 
-  const handleExitWorkspace = () => {
-    setPlanningLaunch(null);
-    setView({ type: 'tab', tab: previousTabRef.current });
-  };
 
   const handleNavigateToProject = (project: Project) => {
     setView({
@@ -227,7 +223,6 @@ function App() {
           initialPlanId={planningLaunch?.planId ?? null}
           initialSubView={planningLaunch?.subView}
           onInitialNavigationHandled={() => setPlanningLaunch(null)}
-          onExitWorkspace={handleExitWorkspace}
         />
       )}
       {view.type === 'tab' && view.tab === 'fieldPlan' && (
@@ -237,7 +232,6 @@ function App() {
       {isSettingsWorkspaceActive && (
         <SettingsWorkspaceShell
           initialSection={view.type === 'settingsDetail' ? view.section : 'workTypes'}
-          onExit={() => setView({ type: 'tab', tab: 'settings' })}
         />
       )}
       {/* Mobile settings list */}
@@ -336,8 +330,8 @@ function App() {
       </main>
 
       {/* Tab Navigation */}
-      {view.type === 'tab' && (
-        <nav className={`tab-nav${isPlanningWorkspaceActive ? ' tab-nav--hidden' : ''}`} role="navigation" aria-label="Main navigation">
+      {(view.type === 'tab' || isSettingsWorkspaceActive) && (
+        <nav className="tab-nav" role="navigation" aria-label="Main navigation">
           <button
             className={`tab-nav__btn ${currentTab === 'today' ? 'tab-nav__btn--active' : ''}`}
             onClick={() => handleTabChange('today')}

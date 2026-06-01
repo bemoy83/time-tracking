@@ -197,6 +197,7 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
                 <p className="empty-state__text">Add one to get started.</p>
               </div>
             </div>
+
           ) : displayedWorkTypes.length === 0 ? (
             <div className="swt-desktop__table-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <p className="settings-view__empty">No work types match the current filters.</p>
@@ -213,14 +214,15 @@ export function SettingsWorkTypesView({ onBack, onManageUnits }: SettingsWorkTyp
             />
           )}
 
-          {panelOpen && (
-            <WorkTypeEditPanel
-              workType={editingWorkType}
-              onClose={handleCloseForm}
-              onDelete={editingWorkType ? () => setDeleteConfirmWorkType(editingWorkType) : undefined}
-            />
-          )}
         </div>
+
+        {panelOpen && (
+          <WorkTypeEditPanel
+            workType={editingWorkType}
+            onClose={handleCloseForm}
+            onDelete={editingWorkType ? () => setDeleteConfirmWorkType(editingWorkType) : undefined}
+          />
+        )}
 
         {/* Hidden import file input */}
         <input

@@ -52,7 +52,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Override _a11y.css global `button { min-height/min-width: 44px }` — chip remove is dense UI */
   min-width: 12px;
   min-height: 12px;
   width: 12px;

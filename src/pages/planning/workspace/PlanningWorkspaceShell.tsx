@@ -60,7 +60,6 @@ interface PlanningWorkspaceShellProps {
   onWrapUpCompleted: (plan: Plan, success: boolean) => void;
 
   // App chrome
-  onExit: () => void;
 }
 
 export function PlanningWorkspaceShell({
@@ -87,7 +86,6 @@ export function PlanningWorkspaceShell({
   onOpenWrapUp,
   onCloseWrapUp,
   onWrapUpCompleted,
-  onExit,
 }: PlanningWorkspaceShellProps) {
   const planIdsWithImportedExecutionReturns = usePlanIdsWithImportedExecutionReturns();
   const [scheduleCtx, setScheduleCtx] = useState<ScheduleEditContextValue | null>(null);
@@ -155,7 +153,6 @@ export function PlanningWorkspaceShell({
         onCreatePlan={onCreatePlan}
         onDeletePlan={onDeletePlan}
         onOpenWrapUp={onOpenWrapUp}
-        onExit={onExit}
         footer={sidebarFooter}
         selectedPlanIdsForSharedSchedule={selectedPlanIdsForSharedSchedule}
         onSelectedPlanIdsChange={onSetSelectedPlanIdsForSharedSchedule}

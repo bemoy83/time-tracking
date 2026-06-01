@@ -43,8 +43,6 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   padding: 0;
-  min-width: unset;
-  min-height: unset;
   transition: background-color 0.1s, color 0.1s;
   flex-shrink: 0;
 }
@@ -108,8 +106,6 @@
   padding: 0;
   gap: 1px;
   transition: background-color 0.1s;
-  min-width: unset;
-  min-height: unset;
 }
 
 .thumb-calendar__cell:hover:not(:disabled) {
@@ -265,8 +261,6 @@
   padding: 2px 8px;
   cursor: pointer;
   white-space: nowrap;
-  min-width: unset;
-  min-height: unset;
   transition: background-color 0.15s;
   flex-shrink: 0;
 }
@@ -343,8 +337,6 @@
   padding: 0;
   cursor: pointer;
   text-align: left;
-  min-width: unset;
-  min-height: unset;
   opacity: 0.8;
   transition: opacity 0.15s;
 }
