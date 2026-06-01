@@ -6,13 +6,13 @@
   gap: 0;
 }
 
-/* ── Sticky metric strip ─────────────────────────────────────── */
+/* ── Metric strip — content card between overview and work packages ── */
 
-.planning-view__metric-strip-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--color-bg);
+.planning-view__metric-strip-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
 }
 
 /* ── Merged overview card (identity + schedule inputs) ──────── */
@@ -854,9 +854,11 @@
 
 /* ─── Desktop refinements (≥768px) ─────────────────────────────── */
 @media (min-width: 768px) {
-  /* Metric strip sticky bg — canvas bg must not show */
-  .planning-workspace__editor-canvas .planning-view__metric-strip-sticky {
-    background: transparent;
+  /* Metric strip card — inherit card tokens on desktop */
+  .planning-workspace__editor-canvas .planning-view__metric-strip-card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
   }
 
   .planning-workspace__editor-canvas .planning-view__identity-input,

@@ -306,14 +306,6 @@ export function PlanEditor({
         </header>
       )}
 
-      <div className="planning-view__metric-strip-sticky">
-        <ScheduleMetricStrip
-          metrics={planEditorMetrics}
-          steps={setupSteps}
-          readOnly={readOnly}
-        />
-      </div>
-
       <PlanOverviewSection
         title={title}
         selectedProject={selectedProject}
@@ -339,6 +331,14 @@ export function PlanEditor({
           onEventDateChange={handleSetEventDate}
         />
       </PlanOverviewSection>
+
+      <div className="planning-view__metric-strip-card">
+        <ScheduleMetricStrip
+          metrics={planEditorMetrics}
+          steps={setupSteps}
+          readOnly={readOnly}
+        />
+      </div>
 
       <section className="planning-view__work-packages-section">
         <div

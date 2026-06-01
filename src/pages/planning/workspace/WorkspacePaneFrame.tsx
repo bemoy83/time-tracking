@@ -57,9 +57,11 @@ export function WorkspacePaneFrame({
 
   return (
     <div className="planning-workspace__main-inner">
-      {contextStrip}
-      {activeTab && (
-        <WorkspaceTabStrip tabs={tabs} activeTab={activeTab} />
+      {(contextStrip || tabs.length > 0) && (
+        <div className="planning-workspace__plan-header">
+          {contextStrip}
+          {activeTab && <WorkspaceTabStrip tabs={tabs} activeTab={activeTab} />}
+        </div>
       )}
       <div className="planning-workspace__tab-content" role="tabpanel" aria-label={ariaLabel}>
         <div className={canvasClass}>

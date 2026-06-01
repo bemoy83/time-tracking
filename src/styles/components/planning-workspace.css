@@ -7,6 +7,7 @@
   display: flex;
   height: 100dvh;
   overflow: hidden;
+  background: var(--surface-base-bg);
 }
 
 /* --- Sidebar --- */
@@ -18,7 +19,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--surface-contained-border);
-  background: var(--surface-contained-inset);
+  background: var(--surface-contained-bg);
   overflow: hidden;
 }
 
@@ -119,6 +120,14 @@
   height: 100%;
 }
 
+/* --- Plan header: unified container for context bar + tab strip --- */
+
+.planning-workspace__plan-header {
+  background: var(--surface-contained-bg);
+  border-bottom: 1px solid var(--surface-contained-border);
+  flex-shrink: 0;
+}
+
 .planning-workspace__empty {
   display: flex;
   flex-direction: column;
@@ -157,17 +166,14 @@
 .planning-workspace__tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--surface-contained-border);
+  border: none;
   padding: 0 var(--space-md);
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 50;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: var(--surface-contained-inset);
+  background-color: var(--surface-contained-bg);
   /* Scroll shadow indicators — fade at overflowing edges */
   --_scroll-shadow-size: 24px;
   --_scroll-shadow-color: var(--surface-contained-inset);
@@ -214,7 +220,7 @@
 .planning-workspace__tab-content {
   flex: 1;
   min-height: 0;
-  padding: 0 var(--space-md) var(--space-md);
+  padding: var(--space-md);
   overflow-y: auto;
 }
 
@@ -369,8 +375,8 @@
   align-items: center;
   gap: var(--space-md);
   padding: 0 var(--space-md);
-  border-bottom: 1px solid var(--surface-contained-border);
-  background: var(--surface-contained-inset);
+  border-bottom: none;
+  background: var(--surface-contained-bg);
   flex-shrink: 0;
   min-height: var(--planning-workspace-header-height);
   overflow: hidden;
@@ -486,7 +492,7 @@
     flex: 1;
     min-width: 0;
     max-width: var(--planning-workspace-main-max);
-    background: var(--surface-contained-bg);
+    background: var(--surface-base-bg);
     overflow: clip;
   }
 
@@ -494,16 +500,6 @@
   .planning-workspace__editor-canvas .planning-view__items-title {
     font-size: var(--font-caption);
     letter-spacing: 0.09em;
-  }
-
-  /* Tab strip — underline style, unified with context bar and metric strip */
-  .planning-workspace__tabs {
-    background: var(--surface-contained-inset);
-    border-bottom: 1px solid var(--surface-contained-border);
-    padding: 0 20px;
-    gap: 0;
-    align-items: stretch;
-    background-image: none;
   }
 
   .planning-workspace__tab {
@@ -516,16 +512,28 @@
     justify-content: center;
   }
 
-  /* Context bar */
+  /* Context bar — part of plan-header, no own border */
   .planning-workspace__plan-context-bar {
+    background: var(--surface-contained-bg);
     border-bottom: none;
     padding: 0 24px;
     min-height: var(--planning-workspace-header-height);
     align-items: center;
   }
 
+  /* Tab strip — no borders, unified with context bar in plan-header */
+  .planning-workspace__tabs {
+    background: var(--surface-contained-bg);
+    border: none;
+    padding: 0 20px;
+    gap: 0;
+    align-items: stretch;
+    background-image: none;
+  }
+
   .planning-workspace__plan-context-title {
-    font-size: 0.9375rem;
+    font-size: var(--font-heading);
+    font-weight: 700;
   }
 
   /* Inactive tab hover */

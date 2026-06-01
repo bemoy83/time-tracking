@@ -4,7 +4,7 @@
 
 :root {
   /* Surface layers */
-  --surface-base-bg: #e8eaf0;
+  --surface-base-bg: #eeeef4;
   --surface-base-border: #e0e0e0;
   --surface-contained-bg: #ffffff;
   --surface-contained-border: #e0e0e0;
@@ -158,7 +158,7 @@
   /* Shared card / lifted surface — use for consistent card look app-wide */
   --card-bg: var(--surface-contained-bg);
   --card-radius: var(--radius-lg);
-  --card-shadow: none;
+  --card-shadow: var(--shadow-xs);
 
   /* Budget status colors */
   --color-budget-under: var(--state-success-fg);

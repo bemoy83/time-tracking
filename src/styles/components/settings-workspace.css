@@ -12,8 +12,8 @@
 /* ── Nav sidebar ─────────────────────────────────────────── */
 
 .settings-workspace__nav {
-  width: 220px;
-  min-width: 220px;
+  width: 240px;
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--color-border);
