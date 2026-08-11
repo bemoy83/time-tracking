@@ -98,6 +98,12 @@
   color: var(--color-primary);
 }
 
+.plan-row__shared-toggle:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--surface-brand-subtle);
+  color: var(--color-primary);
+}
+
 .plan-row__shared-toggle[aria-pressed='true'] {
   border-color: var(--color-primary);
   background: var(--color-primary);
@@ -166,6 +172,10 @@
   background: var(--state-success-bg);
 }
 
+.plan-row__wrapup-btn:focus-visible {
+  background: var(--state-success-bg);
+}
+
 .plan-row__drill {
   color: var(--color-text-muted);
   opacity: 0;
@@ -173,12 +183,15 @@
 }
 
 .plan-row__item:hover .plan-row__drill,
-.plan-row--selected .plan-row__drill {
+.plan-row__item:focus-within .plan-row__drill,
+.plan-row--selected .plan-row__drill,
+.plan-row__drill:focus-visible {
   opacity: 0.7;
 }
 
 .plan-row__item:hover .plan-row__drill:hover,
-.plan-row--selected .plan-row__drill:hover {
+.plan-row--selected .plan-row__drill:hover,
+.plan-row__drill:focus-visible {
   opacity: 1;
   background: var(--surface-contained-active);
 }
@@ -189,11 +202,14 @@
   margin-right: var(--space-xs);
 }
 
-.plan-row__item:hover .plan-row__delete {
+.plan-row__item:hover .plan-row__delete,
+.plan-row__item:focus-within .plan-row__delete,
+.plan-row__delete:focus-visible {
   opacity: 0.5;
 }
 
-.plan-row__item:hover .plan-row__delete:hover {
+.plan-row__item:hover .plan-row__delete:hover,
+.plan-row__delete:focus-visible {
   opacity: 1;
   color: var(--state-danger-fg);
   background: var(--state-danger-bg-soft);

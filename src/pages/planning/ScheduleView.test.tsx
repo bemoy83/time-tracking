@@ -43,6 +43,67 @@ describe('ScheduleView', () => {
     expect(within(container).getByText('Hand off')).toBeTruthy();
   });
 
+  it('shows a scheduling next-step banner when work exists but no hours are scheduled', async () => {
+    const plan = createPlan('Unscheduled');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+    plan.lineItems = [createLineItem('WP-0', 'Long setup work', 'm2', 8, 1, 0)];
+
+    const { container } = renderSchedule(plan, true);
+
+    expect(within(container).getByText('No work is scheduled yet')).toBeTruthy();
+    expect(within(container).getByText('Review the scheduling issue to assign work packages across available crew days.')).toBeTruthy();
+
+    const cta = within(container).getByRole('button', { name: 'Review scheduling issue' });
+    fireEvent.click(cta);
+
+    expect(await within(container).findByRole('dialog', { name: 'Schedule Assistant' })).toBeTruthy();
+  });
+
+  it('closes the schedule assistant with Escape and returns focus to the opening control', async () => {
+    const plan = createPlan('Assistant Focus');
+    plan.assemblyStartDate = '2026-03-02';
+    plan.assemblyEndDate = '2026-03-02';
+    plan.defaultCrewSize = 1;
+    plan.workCalendar = [
+      {
+        date: '2026-03-02',
+        isWorkDay: true,
+        accessStart: '08:00',
+        accessEnd: '16:00',
+        crewSize: 1,
+      },
+    ];
+    plan.lineItems = [createLineItem('WP-0', 'Long setup work', 'm2', 8, 1, 0)];
+
+    const { container } = renderSchedule(plan, true);
+    const cta = within(container).getByRole('button', { name: 'Review scheduling issue' });
+    cta.focus();
+    fireEvent.click(cta);
+
+    const dialog = await within(container).findByRole('dialog', { name: 'Schedule Assistant' });
+    await waitFor(() => {
+      expect(within(dialog).getByRole('button', { name: 'Close Schedule Assistant' })).toBe(document.activeElement);
+    });
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(dialog.getAttribute('aria-hidden')).toBe('true');
+      expect(cta).toBe(document.activeElement);
+    });
+  });
+
   it('clears a scheduled row from the row face clear action', async () => {
     const plan = createPlan('Clear Row');
     plan.assemblyStartDate = '2026-03-02';

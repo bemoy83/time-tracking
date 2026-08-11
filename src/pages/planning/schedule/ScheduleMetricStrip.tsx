@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import type { RefObject } from 'react';
 import { CheckIcon } from '../../../components/icons';
 import type { SidebarMetricDescriptor } from '../workspace/workspace-metrics';
 import type { SetupStep } from '../PlanSetupStepper';
@@ -15,6 +16,7 @@ interface ScheduleMetricStripProps {
   onRevertToDraft?: () => void;
   showFullSpan?: boolean;
   onToggleFullSpan?: () => void;
+  assistantButtonRef?: RefObject<HTMLButtonElement>;
 }
 
 export function ScheduleMetricStrip({
@@ -29,6 +31,7 @@ export function ScheduleMetricStrip({
   onRevertToDraft,
   showFullSpan = false,
   onToggleFullSpan,
+  assistantButtonRef,
 }: ScheduleMetricStripProps) {
   const assistantVariant =
     criticalIssueCount > 0
@@ -135,6 +138,7 @@ export function ScheduleMetricStrip({
         )}
         {onOpenAssistant && (
           <button
+            ref={assistantButtonRef}
             type="button"
             className={[
               'btn',

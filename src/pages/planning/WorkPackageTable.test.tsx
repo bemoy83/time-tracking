@@ -46,6 +46,21 @@ function renderTable({
 }
 
 describe('WorkPackageTable batch actions', () => {
+  it('renders long editable titles with full title exposure', () => {
+    const longTitle = 'TRANSPORT 2026 Engangstepper m² Planlagt med ekstra lang forklaring';
+    const item = createLineItem('WP-long', 'Transport', 'm2', 100, 10, 0);
+    item.title = longTitle;
+    renderTable({
+      lineItems: [item],
+    });
+
+    const titleControl = screen.getByRole('textbox', { name: `Title for ${longTitle}` });
+
+    expect(titleControl.tagName).toBe('TEXTAREA');
+    expect(titleControl.getAttribute('title')).toBe(longTitle);
+    expect(titleControl.classList.contains('planning-view__wp-title-input')).toBe(true);
+  });
+
   it('renders batch controls only when callbacks are provided', () => {
     renderTable();
 

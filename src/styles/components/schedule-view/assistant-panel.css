@@ -80,20 +80,36 @@
 
 .schedule-assistant-panel__close {
   appearance: none;
-  background: none;
-  border: none;
-  padding: 4px 8px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0;
   cursor: pointer;
-  font-size: var(--font-small);
   color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   line-height: 1;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .schedule-assistant-panel__close:hover {
   background: var(--surface-contained-inset);
+  border-color: var(--surface-contained-border);
   color: var(--color-text);
+}
+
+.schedule-assistant-panel__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.schedule-assistant-panel__close-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
 }
 
 .schedule-assistant-panel__header-meta {

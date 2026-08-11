@@ -2,7 +2,10 @@
   --schedule-view-section-gap: var(--space-md);
   --schedule-view-block-padding: var(--space-md);
   --schedule-view-block-gap: var(--space-sm);
-  gap: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--schedule-view-section-gap);
+  min-width: 0;
 }
 
 
@@ -22,6 +25,44 @@
   flex-direction: column;
   gap: var(--schedule-view-section-gap);
   min-width: 0;
+}
+
+.schedule-view__empty-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) 24px;
+  border: 1px solid var(--surface-contained-border);
+  border-radius: var(--card-radius);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 70%),
+    var(--surface-contained-bg);
+  box-shadow: var(--card-shadow);
+}
+
+.schedule-view__empty-banner-copy {
+  min-width: 0;
+}
+
+.schedule-view__empty-banner-title {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.schedule-view__empty-banner-text {
+  margin: 3px 0 0;
+  max-width: 68ch;
+  font-size: var(--font-small);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.schedule-view__empty-banner-action {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .schedule-view__block-header {
@@ -45,6 +86,16 @@
 @media (max-width: 780px) {
   .schedule-view__inputs {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-view__empty-banner {
+    align-items: stretch;
+    flex-direction: column;
+    padding: var(--space-md);
+  }
+
+  .schedule-view__empty-banner-action {
+    align-self: flex-start;
   }
 }
 
@@ -124,11 +175,17 @@
 }
 
 /* Editor canvas: tighter spacing + staggered entrance animations */
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .planning-workspace__editor-canvas .schedule-view {
     --schedule-view-section-gap: var(--space-sm);
     --schedule-view-block-padding: var(--space-sm);
     --schedule-view-block-gap: var(--space-xs);
+  }
+
+  .planning-workspace__editor-canvas .schedule-metric-strip {
+    border: 1px solid var(--surface-contained-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
   }
 
   .planning-workspace__editor-canvas .schedule-view__grid-stack > .schedule-view__block {

@@ -141,6 +141,7 @@ function App() {
       (view.type === 'tab' && view.tab === 'settings') ||
       view.type === 'settingsDetail'
     );
+  const isDesktopWorkspaceActive = isPlanningWorkspaceActive || isSettingsWorkspaceActive;
 
   // Redirect away from planning when viewport becomes too narrow (e.g. resize)
   useEffect(() => {
@@ -204,6 +205,7 @@ function App() {
 
   const rootClass = [
     showNetworkStatus && 'has-network-status',
+    isDesktopWorkspaceActive && 'app-shell--workspace',
   ]
     .filter(Boolean)
     .join(' ');
@@ -318,11 +320,61 @@ function App() {
       {/* Network status bar - disabled until sync is implemented */}
       {/* <NetworkStatus /> */}
 
+      {isDesktopWorkspaceActive && (
+        <nav className="workspace-app-nav" role="navigation" aria-label="Workspace navigation">
+          <button
+            className={`workspace-app-nav__btn ${currentTab === 'today' ? 'workspace-app-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('today')}
+            aria-label="Today view"
+            aria-current={currentTab === 'today' ? 'page' : undefined}
+          >
+            <TodayIcon />
+            <span>Today</span>
+          </button>
+          <button
+            className={`workspace-app-nav__btn ${currentTab === 'fieldPlan' ? 'workspace-app-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('fieldPlan')}
+            aria-label="Field Plan"
+            aria-current={currentTab === 'fieldPlan' ? 'page' : undefined}
+          >
+            <FieldPlanIcon />
+            <span>Field Plan</span>
+          </button>
+          <button
+            className={`workspace-app-nav__btn ${currentTab === 'projects' ? 'workspace-app-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('projects')}
+            aria-label="Projects"
+            aria-current={currentTab === 'projects' ? 'page' : undefined}
+          >
+            <ProjectsIcon />
+            <span>Projects</span>
+          </button>
+          <button
+            className={`workspace-app-nav__btn ${currentTab === 'planning' ? 'workspace-app-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('planning')}
+            aria-label="Planning"
+            aria-current={currentTab === 'planning' ? 'page' : undefined}
+          >
+            <PlanningIcon />
+            <span>Planning</span>
+          </button>
+          <button
+            className={`workspace-app-nav__btn ${currentTab === 'settings' ? 'workspace-app-nav__btn--active' : ''}`}
+            onClick={() => handleTabChange('settings')}
+            aria-label="Settings"
+            aria-current={currentTab === 'settings' ? 'page' : undefined}
+          >
+            <SettingsIcon />
+            <span>Settings</span>
+          </button>
+        </nav>
+      )}
+
       <main
         id="main-content"
         role="main"
         aria-label="Main content"
-        className={(isPlanningWorkspaceActive || isSettingsWorkspaceActive) ? 'main--workspace' : undefined}
+        className={isDesktopWorkspaceActive ? 'main--workspace' : undefined}
       >
         <Suspense fallback={<LoadingBlock message="Loading..." />}>
           {routeContent}
@@ -330,7 +382,7 @@ function App() {
       </main>
 
       {/* Tab Navigation */}
-      {(view.type === 'tab' || isSettingsWorkspaceActive) && (
+      {!isDesktopWorkspaceActive && (view.type === 'tab' || isSettingsWorkspaceActive) && (
         <nav className="tab-nav" role="navigation" aria-label="Main navigation">
           <button
             className={`tab-nav__btn ${currentTab === 'today' ? 'tab-nav__btn--active' : ''}`}
@@ -430,4 +482,5 @@ function ProjectsIcon() {
   );
 }
 
+export { App };
 export default App;

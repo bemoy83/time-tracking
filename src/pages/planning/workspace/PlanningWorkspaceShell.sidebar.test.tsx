@@ -75,8 +75,8 @@ describe('PlanningWorkspaceShell sidebar', () => {
       onSetActiveTab,
     });
 
-    const { getByLabelText } = render(<PlanningWorkspaceShell {...props} />);
-    fireEvent.click(getByLabelText('Shared Schedule'));
+    const { getByRole } = render(<PlanningWorkspaceShell {...props} />);
+    fireEvent.click(getByRole('button', { name: 'Shared Schedule' }));
 
     expect(onSetActiveTab).toHaveBeenCalledWith('edit');
   });

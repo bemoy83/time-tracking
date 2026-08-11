@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ScheduleMetricStrip } from './schedule/ScheduleMetricStrip';
-import { type Plan } from '../../lib/planning/plan-model';
+import { planTotalPersonHours, type Plan } from '../../lib/planning/plan-model';
 import { ScheduleGrid } from './schedule/ScheduleGrid';
 import { AmendmentPopover } from './schedule/AmendmentPopover';
 import { DayEditPopover } from './schedule/grid/DayEditPopover';
@@ -26,6 +26,8 @@ export function ScheduleView({
   topLevelAccentColor,
 }: ScheduleViewProps) {
   const scheduleGridRef = useRef<HTMLDivElement>(null);
+  const assistantTriggerRef = useRef<HTMLButtonElement>(null);
+  const assistantReturnFocusRef = useRef<HTMLElement | null>(null);
   const [isAssistantPanelOpen, setIsAssistantPanelOpen] = useState(false);
   const [dayEdit, setDayEdit] = useState<{ date: string; anchor: HTMLElement } | null>(null);
   const [showFullSpan, setShowFullSpan] = useState(false);
@@ -70,6 +72,15 @@ export function ScheduleView({
     if (!showFullSpan || fullEventSpan == null) return currentPlan.workCalendar;
     return generateFullSpanVirtualDays(fullEventSpan, currentPlan.workCalendar, currentPlan.defaultCrewSize);
   }, [showFullSpan, fullEventSpan, currentPlan.workCalendar, currentPlan.defaultCrewSize]);
+  const totalRequiredPersonHours = planTotalPersonHours(currentPlan);
+  const showUnscheduledEmptyState =
+    !readOnly &&
+    totalRequiredPersonHours > 0 &&
+    capacity.totalRequiredPersonHours === 0;
+  const handleOpenAssistant = useCallback((returnFocusTarget?: HTMLElement | null) => {
+    assistantReturnFocusRef.current = returnFocusTarget ?? assistantTriggerRef.current;
+    setIsAssistantPanelOpen(true);
+  }, []);
 
   return (
     <div className="planning-view schedule-view">
@@ -80,7 +91,8 @@ export function ScheduleView({
         issueCount={assistantIssueCount}
         criticalIssueCount={assistantCriticalIssueCount}
         warningIssueCount={assistantWarningIssueCount}
-        onOpenAssistant={() => setIsAssistantPanelOpen(true)}
+        onOpenAssistant={() => handleOpenAssistant(assistantTriggerRef.current)}
+        assistantButtonRef={assistantTriggerRef}
         isLocked={isLocked}
         onRevertToDraft={handleRevertToDraft}
         showFullSpan={showFullSpan}
@@ -88,6 +100,23 @@ export function ScheduleView({
       />
 
       <div ref={scheduleGridRef} className="schedule-view__grid-stack">
+        {showUnscheduledEmptyState && (
+          <section className="schedule-view__empty-banner" aria-label="Schedule next step">
+            <div className="schedule-view__empty-banner-copy">
+              <h3 className="schedule-view__empty-banner-title">No work is scheduled yet</h3>
+              <p className="schedule-view__empty-banner-text">
+                Review the scheduling issue to assign work packages across available crew days.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm schedule-view__empty-banner-action"
+              onClick={(event) => handleOpenAssistant(event.currentTarget)}
+            >
+              Review scheduling issue
+            </button>
+          </section>
+        )}
         <ScheduleGrid
           planId={currentPlan.id}
           lineItems={currentPlan.lineItems}
@@ -139,6 +168,7 @@ export function ScheduleView({
         payload={issuePanelPayload}
         isOpen={isAssistantPanelOpen}
         onClose={() => setIsAssistantPanelOpen(false)}
+        returnFocusRef={assistantReturnFocusRef}
       />
     </div>
   );

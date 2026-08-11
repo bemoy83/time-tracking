@@ -71,6 +71,14 @@ main.main--workspace {
   max-width: none;
   padding: 0;
   padding-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-shell--workspace {
+  display: flex;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 main:target {

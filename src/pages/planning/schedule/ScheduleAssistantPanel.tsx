@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, type KeyboardEvent, type RefObject } from 'react';
+import { XIcon } from '../../../components/icons';
 import { buildIssueSuggestions } from '../workspace/schedule-issue-suggestions';
 import type {
   ScheduleAssistantStatus,
@@ -12,6 +13,7 @@ interface ScheduleAssistantPanelProps {
   payload: ScheduleIssuePanelPayload | null;
   isOpen: boolean;
   onClose: () => void;
+  returnFocusRef?: RefObject<HTMLElement>;
 }
 
 const CATEGORY_ORDER: ScheduleIssueCategory[] = ['blocking', 'adjustment', 'optimization'];
@@ -51,13 +53,79 @@ function groupIssues(issues: ScheduleIssueItem[]): Array<{
   return groups;
 }
 
-export function ScheduleAssistantPanel({ payload, isOpen, onClose }: ScheduleAssistantPanelProps) {
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+export function ScheduleAssistantPanel({
+  payload,
+  isOpen,
+  onClose,
+  returnFocusRef,
+}: ScheduleAssistantPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const visibleIssues = useMemo(() => {
     if (!payload) return [];
     return getVisibleScheduleIssues(payload.state);
   }, [payload]);
 
   const issueGroups = useMemo(() => groupIssues(visibleIssues), [visibleIssues]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousActiveElement = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    return () => {
+      const focusTarget = returnFocusRef?.current ?? previousActiveElement;
+      if (focusTarget && document.contains(focusTarget)) {
+        window.requestAnimationFrame(() => focusTarget.focus());
+      }
+    };
+  }, [isOpen, returnFocusRef]);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+      .filter((element) => !element.hasAttribute('disabled'));
+    if (focusable.length === 0) {
+      event.preventDefault();
+      panel.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <>
@@ -72,22 +140,26 @@ export function ScheduleAssistantPanel({ payload, isOpen, onClose }: ScheduleAss
 
       {/* Panel */}
       <div
+        ref={panelRef}
         className={`schedule-assistant-panel${isOpen ? ' schedule-assistant-panel--open' : ''}`}
         role="dialog"
-        aria-modal="false"
+        aria-modal="true"
         aria-label="Schedule Assistant"
         aria-hidden={!isOpen}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
       >
         <div className="schedule-assistant-panel__header">
           <div className="schedule-assistant-panel__header-title-row">
             <h2 className="schedule-assistant-panel__title">Schedule Assistant</h2>
             <button
+              ref={closeButtonRef}
               type="button"
               className="schedule-assistant-panel__close"
               onClick={onClose}
               aria-label="Close Schedule Assistant"
             >
-              ✕
+              <XIcon className="schedule-assistant-panel__close-icon" />
             </button>
           </div>
           {payload && (

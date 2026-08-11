@@ -213,6 +213,11 @@ export function WorkPackageTable({
     confirmKind === 'duplicate'
       ? `Are you sure you want to duplicate all. This will duplicate ${workPackageCount} work packages`
       : `Are you sure you want to delete all. This will delete ${workPackageCount} work packages`;
+  const handleTitleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.currentTarget.blur();
+  };
 
   const getPhaseActivationProps = (
     item: PlanLineItem,
@@ -389,14 +394,17 @@ export function WorkPackageTable({
 
             return (
               <tr key={item.id} className="planning-view__wp-row">
-                <td className="planning-view__wp-cell">
+                <td className="planning-view__wp-cell planning-view__wp-title-cell" title={item.title}>
                   {isLocked ? (
                     <span className="planning-view__wp-static">{item.title}</span>
                   ) : (
-                    <input
-                      className="input planning-view__wp-cell-input"
+                    <textarea
+                      className="input planning-view__wp-cell-input planning-view__wp-title-input"
                       value={item.title}
+                      title={item.title}
+                      rows={2}
                       onChange={(e) => onUpdate(item.id, { title: e.target.value })}
+                      onKeyDown={handleTitleKeyDown}
                       aria-label={`Title for ${item.title}`}
                     />
                   )}
