@@ -183,7 +183,7 @@
   }
 
   .planning-workspace__editor-canvas .schedule-metric-strip {
-    border: 1px solid var(--surface-contained-border);
+    border: none;
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
   }

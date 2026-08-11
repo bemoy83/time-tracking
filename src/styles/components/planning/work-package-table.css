@@ -353,7 +353,7 @@
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.planning-view__wp-title-input {
+textarea.input.planning-view__wp-title-input {
   display: block;
   width: 100%;
   min-height: 44px;
@@ -363,6 +363,7 @@
   resize: none;
   overflow: hidden;
   white-space: normal;
+  align-content: center;
 }
 
 .planning-view__wp-cell-input:disabled {
@@ -390,7 +391,6 @@
 }
 
 .planning-view__wp-add-zone .planning-view__wp-add-bar {
-  padding: 0;
   border-radius: 0;
   background: transparent;
   border: none;
